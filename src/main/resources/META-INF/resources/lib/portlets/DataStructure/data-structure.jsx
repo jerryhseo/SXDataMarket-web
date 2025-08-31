@@ -9,11 +9,10 @@ export class DataStructure extends GroupParameter {
 	};
 
 	static GotoBasis = {
-		PARAM_NAME: "paramName",
+		PARAM_CODE: "paramCode",
 		DISPLAY_NAME: "displayName"
 	};
 
-	#dataStructureId = 0;
 	#paramDelimiter = ";";
 	#paramDelimiterPosition = "end";
 	#paramValueDelimiter = "=";
@@ -21,8 +20,10 @@ export class DataStructure extends GroupParameter {
 	#enableGoTo = false;
 	#hierarchicalData = false;
 
-	constructor(namespace, formId, languageId, availableLanguageIds, paramType = ParamType.GROUP) {
-		super(namespace, formId, languageId, availableLanguageIds, paramType);
+	constructor(namespace, formId, languageId, availableLanguageIds, json = {}) {
+		super(namespace, formId, languageId, availableLanguageIds);
+
+		this.parse(json);
 	}
 
 	get paramDelimiter() {
@@ -44,10 +45,10 @@ export class DataStructure extends GroupParameter {
 		return this.#hierarchicalData;
 	}
 	get dataStructureId() {
-		return this.#dataStructureId;
+		return this.paramId;
 	}
-	get dataStructureName() {
-		return this.paramName;
+	get dataStructureCode() {
+		return this.paramCode;
 	}
 	get dataStructureVersion() {
 		return this.paramVersion;
@@ -75,10 +76,10 @@ export class DataStructure extends GroupParameter {
 		this.#hierarchicalData = val;
 	}
 	set dataStructureId(val) {
-		this.#dataStructureId = val;
+		this.paramId = val;
 	}
-	set dataStructureName(val) {
-		this.paramName = val;
+	set dataStructureCode(val) {
+		this.paramCode = val;
 	}
 	set dataStructureVersion(val) {
 		this.paramVersion = val;
@@ -105,75 +106,81 @@ export class DataStructure extends GroupParameter {
 		return duplicated;
 	}
 
-	getSiblingParameters({ groupName = "", groupVersion = "", paramName, paramVersion }) {
+	addMember(member) {
+		super.addMember(member);
+
+		member.parent = {};
+	}
+
+	getSiblingParameters({ groupCode = "", groupVersion = "", paramCode, paramVersion }) {
 		let siblings;
 
-		if (!groupName) {
+		if (!groupCode) {
 			siblings = this.members;
 		} else {
-			const group = this.findParameter(groupName, groupVersion);
+			const group = this.findParameter(groupCode, groupVersion);
 			siblings = group.members;
 		}
 
-		return siblings.filter((param) => !(param.paramName === paramName && param.paramVersion === paramVersion));
+		return siblings.filter((param) => !(param.paramCode === paramCode && param.paramVersion === paramVersion));
 	}
 
-	getSiblingGroups({ groupName = "", groupVersion = "", paramName, paramVersion }) {
+	getSiblingGroups({ groupCode = "", groupVersion = "", paramCode, paramVersion }) {
 		let siblings;
 
-		if (!groupName) {
+		if (!groupCode) {
 			siblings = this.members;
 		} else {
-			const group = this.findParameter(groupName, groupVersion);
+			const group = this.findParameter(groupCode, groupVersion);
 			siblings = group.members;
 		}
 
 		return siblings.filter(
-			(param) => param.isGroup && (param.paramName !== paramName || param.paramVersion !== paramVersion)
+			(param) => param.isGroup && (param.paramCode !== paramCode || param.paramVersion !== paramVersion)
 		);
 	}
 
-	getChildParameters({ paramName, paramVersion }) {
-		if (Util.isEmpty(paramName)) {
+	getChildParameters({ paramCode, paramVersion }) {
+		if (Util.isEmpty(paramCode)) {
 			return this.members;
 		} else {
-			const groupParam = this.getParameter(paramName, paramVersion);
+			const groupParam = this.getParameter(paramCode, paramVersion);
 
 			return groupParam.members;
 		}
 	}
 
-	getSiblingParamsAsSelectItems({ groupName = "", groupVersion = "", paramName, paramVersion }) {
+	getSiblingParamsAsSelectItems({ groupCode = "", groupVersion = "", paramCode, paramVersion }) {
 		const siblings = this.getSiblingParameters({
-			groupName: groupName,
+			groupCode: groupCode,
 			groupVersion: groupVersion,
-			paramName: paramName,
+			paramCode: paramCode,
 			paramVersion: paramVersion
 		});
 
 		return siblings.map((param) => param.convertToSelectItem());
 	}
 
-	getSiblingGroupsAsSelectItems({ groupName = "", groupVersion = "", paramName, paramVersion }) {
-		const param = this.getParameter(paramName, paramVersion);
+	getSiblingGroupsAsSelectItems({ groupCode = "", groupVersion = "", paramCode, paramVersion }) {
+		const param = this.getParameter(paramCode, paramVersion);
 
 		const siblings = this.getSiblingGroups({
-			groupName: groupName,
+			groupCode: groupCode,
 			groupVersion: groupVersion,
-			paramName: paramName,
+			paramCode: paramCode,
 			paramVersion: paramVersion
 		});
 
 		return siblings.map((param) => param.convertToSelectItem());
 	}
 
-	getGroups({ paramName, paramVersion }) {
+	getGroups({ paramCode, paramVersion }) {
 		let groups = [];
 
 		const pickUpGroup = (params) => {
 			params.forEach((param) => {
 				if (param.isGroup) {
-					if (!param.equalTo(paramName, paramVersion)) {
+					if (!param.equalTo(paramCode, paramVersion)) {
 						groups.push(param);
 					}
 
@@ -189,10 +196,10 @@ export class DataStructure extends GroupParameter {
 
 	moveParameterGroup(param, srcGroup, targetGroup) {
 		console.log("moveParameterGroup: ", param, srcGroup, targetGroup);
-		targetGroup.addMember(srcGroup.removeMember({ paramName: param.paramName, paramVersion: param.paramVersion }));
+		targetGroup.addMember(srcGroup.removeMember({ paramCode: param.paramCode, paramVersion: param.paramVersion }));
 	}
 
-	getGotoAutoCompleteItems(rootGroup, basis = DataStructure.GotoBasis.PARAM_NAME) {
+	getGotoAutoCompleteItems(rootGroup, basis = DataStructure.GotoBasis.PARAM_CODE) {
 		const members = !!rootGroup ? rootGroup.members : this.members;
 		let items = [];
 
@@ -201,8 +208,8 @@ export class DataStructure extends GroupParameter {
 				items = items.concat(this.getGotoAutoCompleteItems(param, basis));
 			}
 
-			basis === DataStructure.GotoBasis.PARAM_NAME
-				? items.push({ name: param.paramName, version: param.paramVersion })
+			basis === DataStructure.GotoBasis.PARAM_CODE
+				? items.push({ name: param.paramCode, version: param.paramVersion })
 				: items.push({ name: param.getDisplayName(this.languageId), version: param.paramVersion });
 		});
 
@@ -222,7 +229,7 @@ export class DataStructure extends GroupParameter {
 		this.paramDelimiterPosition = json.paramDelimiterPosition ?? "end";
 		this.paramValueDelimiter = json.paramValueDelimiter ?? "=";
 
-		this.dataStructureId = json.dataStructureId;
+		this.dataStructureId = json.paramId ?? json.dataStructureId;
 		this.enableInputStatus = json.enableInputStatus ?? false;
 		this.enableGoTo = json.enableGoTo ?? false;
 	}

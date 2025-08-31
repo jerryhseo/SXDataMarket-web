@@ -185,7 +185,7 @@ export class Parameter {
 	#error = {};
 
 	#paramType;
-	#paramName = "";
+	#paramCode = "";
 	#paramVersion = Parameter.DEFAULT_VERSION;
 	#displayName = {};
 	#displayType = Parameter.DisplayTypes.FORM_FIELD;
@@ -200,10 +200,10 @@ export class Parameter {
 	#order = 0;
 	#defaultValue = null;
 	#parent = {
-		name: GroupParameter.ROOT_GROUP,
+		code: GroupParameter.ROOT_GROUP,
 		version: Parameter.DEFAULT_VERSION
 	};
-	#parameterId = 0;
+	#paramId = 0;
 	#standard = false;
 	#status = Constant.Status.PENDING;
 	#state = Constant.State.ACTIVE;
@@ -214,6 +214,12 @@ export class Parameter {
 	#style = {};
 
 	#value;
+
+	companyId = 0;
+	groupId = 0;
+	userid = 0;
+	createDate = null;
+	modifedDate = null;
 
 	inputStatus = false;
 	commentable = false;
@@ -253,8 +259,8 @@ export class Parameter {
 	get paramType() {
 		return this.#paramType;
 	}
-	get paramName() {
-		return this.#paramName;
+	get paramCode() {
+		return this.#paramCode;
 	}
 	get paramVersion() {
 		return this.#paramVersion;
@@ -312,14 +318,14 @@ export class Parameter {
 	get parent() {
 		return this.#parent;
 	}
-	get parentName() {
-		return this.parent.name;
+	get parentCode() {
+		return this.parent.code;
 	}
 	get parentVersion() {
 		return this.parent.version;
 	}
-	get parameterId() {
-		return this.#parameterId;
+	get paramId() {
+		return this.#paramId;
 	}
 	get standard() {
 		return this.#standard;
@@ -372,6 +378,9 @@ export class Parameter {
 	get error() {
 		return this.#error;
 	}
+	get errorProperty() {
+		return this.error.property ?? "value";
+	}
 	get errorMessage() {
 		return this.error.message ?? "";
 	}
@@ -388,10 +397,10 @@ export class Parameter {
 		return this.#focused;
 	}
 	get tagId() {
-		return this.namespace + this.paramName + "_" + this.paramVersion;
+		return this.namespace + this.paramCode + "_" + this.paramVersion;
 	}
 	get tagName() {
-		return this.namespace + this.paramName;
+		return this.namespace + this.paramCode;
 	}
 	get style() {
 		return this.#style;
@@ -429,8 +438,8 @@ export class Parameter {
 	set paramType(val) {
 		this.#paramType = val;
 	}
-	set paramName(val) {
-		this.#paramName = val;
+	set paramCode(val) {
+		this.#paramCode = val;
 	}
 	set paramVersion(val) {
 		this.#paramVersion = val;
@@ -490,20 +499,20 @@ export class Parameter {
 	set parent(val) {
 		this.#parent = val;
 	}
-	set parentName(val) {
+	set parentCode(val) {
 		this.parent = {
-			name: val,
+			code: val,
 			version: this.parent.version
 		};
 	}
 	set parentVersion(val) {
 		this.parent = {
-			name: this.parent.name,
+			code: this.parent.code,
 			version: val
 		};
 	}
-	set parameterId(val) {
-		this.#parameterId = val;
+	set paramId(val) {
+		this.#paramId = val;
 	}
 	set standard(val) {
 		this.#standard = val;
@@ -528,6 +537,9 @@ export class Parameter {
 	}
 	set error(val) {
 		this.#error = val;
+	}
+	set errorProperty(prop) {
+		this.#error.property = prop;
 	}
 	set errorMessage(message) {
 		this.error.message = message;
@@ -566,7 +578,7 @@ export class Parameter {
 	}
 
 	checkDuplicateParam(param) {
-		return this.paramName === param.paramName;
+		return this.paramCode === param.paramCode;
 	}
 
 	setDirty() {
@@ -586,9 +598,9 @@ export class Parameter {
 		this.#validation.required.message = msg;
 	}
 
-	setParent(parentName, parentVersion) {
+	setParent(parentCode, parentVersion) {
 		this.parent = {
-			name: parentName,
+			code: parentCode,
 			version: parentVersion
 		};
 	}
@@ -629,16 +641,16 @@ export class Parameter {
 		this.tooltip = Parameter.removeLocalized(this.tooltip, languageId);
 	}
 
-	equalTo(name, version) {
+	equalTo(code, version) {
 		if (version) {
-			return name === this.paramName && version === this.paramVersion;
+			return code === this.paramCode && version === this.paramVersion;
 		} else {
-			return name === this.paramName;
+			return code === this.paramCode;
 		}
 	}
 
 	isMemberOf(assembly) {
-		return assembly.name === this.parentName && assembly.version === this.parentVersion;
+		return assembly.code === this.parentCode && assembly.version === this.parentVersion;
 	}
 
 	get isGroup() {
@@ -646,7 +658,7 @@ export class Parameter {
 	}
 
 	postfixParameterCode(postfix) {
-		this.paramName += "_" + postfix;
+		this.paramCode += "_" + postfix;
 		this.paramVersion = Parameter.DEFAULT_VERSION;
 	}
 
@@ -660,14 +672,14 @@ export class Parameter {
 			JSON.parse(JSON.stringify(this))
 		);
 
-		copied.paramName = this.paramName + "_copied_" + Util.randomKey(12);
+		copied.paramCode = this.paramCode + "_copied_" + Util.randomKey(12);
 		copied.paramVersion = Parameter.DEFAULT_VERSION;
 
 		return copied;
 	}
 
-	focus(paramName, paramVersion) {
-		const focus = this.equalTo(paramName, paramVersion);
+	focus(paramCode, paramVersion) {
+		const focus = this.equalTo(paramCode, paramVersion);
 
 		if (this.focused !== focus) {
 			this.focused = focus;
@@ -719,42 +731,45 @@ export class Parameter {
 		return this.error.errorClass === ErrorClass.ERROR || this.error.errorClass === ErrorClass.WARNING;
 	}
 
-	clearError() {
-		this.error = {};
+	setError(errorClass, errorMessage, errorProperty = "value") {
+		this.errorClass = errorClass;
+		this.errorMessage = errorMessage;
+		this.errorProperty = errorProperty;
+	}
+
+	clearError(errorProperty = "value") {
+		if (errorProperty === this.errorProperty) {
+			this.error = {};
+		}
 	}
 
 	checkIntegrity() {
-		if (Util.isEmpty(this.paramName)) {
-			this.error = {
-				message: Util.translate("parameter-name-is-missing"),
-				errorClass: ErrorClass.ERROR
-			};
+		if (this.hasError()) {
+			return false;
+		}
+
+		if (Util.isEmpty(this.paramCode)) {
+			this.setError(ErrorClass.ERROR, Util.translate("parameter-code-is-missing"), "paramCode");
 
 			this.dirty = true;
-			this.refreshKey();
+			//this.refreshKey();
 
 			return false;
 		}
 
 		if (Util.isEmpty(this.paramVersion)) {
-			this.error = {
-				message: Util.translate("parameter-version-is-missing"),
-				errorClass: ErrorClass.ERROR
-			};
+			this.setError(ErrorClass.ERROR, Util.translate("parameter-version-is-missing"), "paramVersion");
 
 			this.dirty = true;
-			this.refreshKey();
+			//this.refreshKey();
 			return false;
 		}
 
 		if (Util.isEmpty(this.displayName)) {
-			this.error = {
-				message: Util.translate("display-name-is-missing"),
-				errorClass: ErrorClass.ERROR
-			};
+			this.setError(ErrorClass.ERROR, Util.translate("display-name-is-missing"), "displayName");
 
 			this.dirty = true;
-			this.refreshKey();
+			//this.refreshKey();
 			return false;
 		}
 
@@ -864,7 +879,7 @@ export class Parameter {
 	convertToSelectItem() {
 		return {
 			label: this.displayName,
-			value: this.paramName
+			value: this.paramCode
 		};
 	}
 
@@ -923,7 +938,7 @@ export class Parameter {
 	fireRefresh(cellIndex) {
 		Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
 			targetFormId: this.formId,
-			paramName: this.paramName,
+			paramCode: this.paramCode,
 			paramVersion: this.paramVersion,
 			parameter: this,
 			cellIndex: cellIndex
@@ -934,7 +949,7 @@ export class Parameter {
 		if (this.displayType === Parameter.DisplayTypes.GRID_CELL) {
 			Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
 				targetFormId: this.formId,
-				paramName: this.parent.name,
+				paramCode: this.parent.code,
 				paramVersion: this.parent.version,
 				parameter: this,
 				cellIndex: cellIndex
@@ -942,7 +957,7 @@ export class Parameter {
 		} else {
 			Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
 				targetFormId: this.formId,
-				paramName: this.paramName,
+				paramCode: this.paramCode,
 				paramVersion: this.paramVersion,
 				parameter: this,
 				cellIndex: cellIndex
@@ -953,7 +968,7 @@ export class Parameter {
 	fireFocus(cellIndex) {
 		Event.fire(Event.SX_FOCUS, this.namespace, this.namespace, {
 			targetFormId: this.formId,
-			paramName: this.paramName,
+			paramCode: this.paramCode,
 			paramVersion: this.paramVersion,
 			parameter: this,
 			cellIndex: cellIndex
@@ -961,10 +976,9 @@ export class Parameter {
 	}
 
 	fireValueChanged(cellIndex) {
-		console.log("fireValueChanged: ", this);
 		Event.fire(Event.SX_FIELD_VALUE_CHANGED, this.namespace, this.namespace, {
 			targetFormId: this.formId,
-			paramName: this.paramName,
+			paramCode: this.paramCode,
 			paramVersion: this.paramVersion,
 			parameter: this,
 			cellIndex: cellIndex
@@ -1224,7 +1238,7 @@ export class Parameter {
 		let data = {};
 
 		if (this.hasValue()) {
-			data[this.paramName] = {
+			data[this.paramCode] = {
 				freezed: this.freezed,
 				verified: this.verified,
 				value: this.value
@@ -1237,8 +1251,10 @@ export class Parameter {
 	toJSON() {
 		let json = new Object();
 
+		if (this.paramId > 0) json.paramId = this.paramId;
+
 		if (Util.isNotEmpty(this.paramType)) json.paramType = this.paramType;
-		if (Util.isNotEmpty(this.paramName)) json.paramName = this.paramName;
+		if (Util.isNotEmpty(this.paramCode)) json.paramCode = this.paramCode;
 		if (Util.isNotEmpty(this.paramVersion)) json.paramVersion = this.paramVersion;
 		if (Util.isNotEmpty(this.displayName)) json.displayName = this.displayName;
 		if (Util.isNotEmpty(this.definition)) json.definition = this.definition;
@@ -1255,7 +1271,7 @@ export class Parameter {
 		if (!this.searchable) json.searchable = this.searchable;
 		if (!this.downloadable) json.downloadable = this.downloadable;
 		if (this.order > 0) json.order = this.order;
-		if (this.id > 0) json.id = this.id;
+
 		json.status = this.status;
 		json.state = this.state;
 
@@ -1268,11 +1284,11 @@ export class Parameter {
 		return {
 			key: this.key,
 			paramType: this.paramType,
-			paramName: this.paramName,
+			paramCode: this.paramCode,
 			paramVersion: this.paramVersion,
 			parent: this.parent,
-			tagId: this.paramName,
-			tagName: this.paramName,
+			tagId: this.paramCode,
+			tagName: this.paramCode,
 			label: this.label,
 			definition: this.getDefinition(this.languageId),
 			showDefinition: this.showDefinition,
@@ -1498,15 +1514,13 @@ export class StringParameter extends Parameter {
 	}
 
 	getTranslation(languageId, cellIndex) {
-		if (!(this.localized && this.hasValue())) {
+		const translations = this.getValue(cellIndex);
+
+		if (!(this.localized && Util.isNotEmpty(translations))) {
 			return "";
 		}
 
-		if (cellIndex >= 0) {
-			return this.value[cellIndex] ? this.value[cellIndex][languageId] ?? "" : "";
-		} else {
-			return this.value[languageId] ?? "";
-		}
+		return translations[languageId] ?? "";
 	}
 
 	setTranslation(languageId, translation, cellIndex) {
@@ -1514,27 +1528,17 @@ export class StringParameter extends Parameter {
 			return;
 		}
 
-		if (this.isGridCell(cellIndex)) {
-			if (!this.value) {
-				this.value = [];
-			}
+		const translations = this.getValue(cellIndex);
 
-			if (!this.value[cellIndex]) {
-				this.value[cellIndex] = {};
-			}
+		translations[languageId] = translation;
 
-			this.value[cellIndex][languageId] = translation;
-		} else {
-			if (!this.value) {
-				this.value = {};
-			}
-
-			this.value[languageId] = translation;
-		}
+		super.setValue({ value: translations, cellIndex: cellIndex, validate: true });
 	}
 
 	getTranslations(cellIndex) {
-		return cellIndex >= 0 ? this.value[cellIndex] ?? {} : this.value;
+		const translations = this.getValue(cellIndex);
+
+		return this.localized && Util.isNotEmpty(translations) ? translations : {};
 	}
 
 	parse(json = {}) {
@@ -1965,12 +1969,6 @@ export class SelectParameter extends Parameter {
 	}
 
 	addOption(option) {
-		let duplicated = checkDuplicatedOptionValue(option.value);
-
-		if (duplicated) {
-			return 0;
-		}
-
 		this.#options.push(option);
 
 		this.refreshKey();
@@ -1995,7 +1993,8 @@ export class SelectParameter extends Parameter {
 		this.#options.splice(index, 1);
 
 		this.refreshKey();
-		return this.options.length;
+
+		return this.#options.length > 0 ? this.#options[0] : {};
 	}
 
 	switchOptions(index1, index2) {
@@ -2171,9 +2170,16 @@ export class DualListParameter extends Parameter {
 
 	setValue({ value, cellIndex }) {
 		const values = value.map((option) => option.value);
+		console.log(
+			"DualList values: ",
+			values,
+			this.options,
+			this.options.filter((option) => values.includes(option.value))
+		);
 		super.setValue({
 			value: this.options.filter((option) => values.includes(option.value)),
-			cellIndex: cellIndex
+			cellIndex: cellIndex,
+			validate: true
 		});
 	}
 
@@ -2189,10 +2195,8 @@ export class DualListParameter extends Parameter {
 	}
 
 	getRightOptions(cellIndex) {
-		const leftOptions = this.getValue(cellIndex);
-
 		return this.options
-			.filter((option) => this.notIncludedInValues(cellIndex))
+			.filter((option) => this.notIncludedInValues(option.value, cellIndex))
 			.map((option) => ({
 				key: option.value,
 				label: option.label[this.languageId],
@@ -2207,7 +2211,7 @@ export class DualListParameter extends Parameter {
 	includedInValues(value, cellIndex) {
 		const values = this.getValue(cellIndex);
 
-		const result = this.value.filter((val) => val.value === value);
+		const result = values.filter((val) => val.value === value);
 		return result.length > 0;
 	}
 
@@ -2223,6 +2227,7 @@ export class DualListParameter extends Parameter {
 		this.value = this.value.filter((elem) => elem.value !== val);
 	}
 
+	/*
 	validate(cellIndex) {
 		for (const validationType in this.validation) {
 			switch (validationType) {
@@ -2253,6 +2258,7 @@ export class DualListParameter extends Parameter {
 			errorClass: ErrorClass.SUCCESS
 		};
 	}
+		*/
 
 	parse(json) {
 		super.parse(json);
@@ -3413,11 +3419,11 @@ export class GroupParameter extends Parameter {
 		this.#titleDisplay = val;
 	}
 
-	get paramName() {
-		return super.paramName;
+	get paramCode() {
+		return super.paramCode;
 	}
-	set paramName(val) {
-		super.paramName = val;
+	set paramCode(val) {
+		super.paramCode = val;
 
 		this.updateMemberParents();
 	}
@@ -3441,7 +3447,7 @@ export class GroupParameter extends Parameter {
 	}
 
 	checkDuplicateParam(param) {
-		let duplicated = this.paramName === param.paramName;
+		let duplicated = this.paramCode === param.paramCode;
 
 		if (!duplicated) {
 			this.members.every((member) => {
@@ -3457,7 +3463,7 @@ export class GroupParameter extends Parameter {
 	}
 
 	updateMemberParents() {
-		this.#members.forEach((member) => (member.parent = { name: this.paramName, version: this.paramVersion }));
+		this.#members.forEach((member) => (member.parent = { code: this.paramCode, version: this.paramVersion }));
 	}
 
 	setMemberOrders() {
@@ -3467,7 +3473,7 @@ export class GroupParameter extends Parameter {
 	addMember(member, memOrder = this.members.length) {
 		this.setMemberDisplayType(member);
 
-		member.parent = { name: this.paramName, version: this.paramVersion };
+		member.parent = { code: this.paramCode, version: this.paramVersion };
 
 		member.order = this.members.length + 1;
 
@@ -3509,11 +3515,11 @@ export class GroupParameter extends Parameter {
 		this.setDirty();
 	}
 
-	isMember(paramName, paramVersion) {
+	isMember(paramCode, paramVersion) {
 		let isMember = false;
 
 		this.members.every((member) => {
-			if (member.equalTo(paramName, paramVersion)) {
+			if (member.equalTo(paramCode, paramVersion)) {
 				isMember = true;
 
 				return Constant.STOP_EVERY;
@@ -3536,13 +3542,13 @@ export class GroupParameter extends Parameter {
 		return removed;
 	}
 
-	deleteMemberByName(memName, memVersion) {
+	deleteMemberByCode(memCode, memVersion) {
 		let order = -1;
 
 		this.members.every((member, index) => {
-			if (!memVersion && member.paramName === memName) {
+			if (!memVersion && member.paramCode === memCode) {
 				order = index;
-			} else if (member.paramVersion === memVersion && member.paramName === memName) {
+			} else if (member.paramVersion === memVersion && member.paramCode === memCode) {
 				order = index;
 			}
 
@@ -3554,10 +3560,10 @@ export class GroupParameter extends Parameter {
 		}
 	}
 
-	removeMember({ paramName, paramVersion, memOrder }) {
-		Util.isEmpty(memOrder) ? this.deleteMemberByName(paramName, paramVersion) : this.deleteMemberByIndex(memOrder);
+	removeMember({ paramCode, paramVersion, memOrder }) {
+		Util.isEmpty(memOrder) ? this.deleteMemberByCode(paramCode, paramVersion) : this.deleteMemberByIndex(memOrder);
 
-		console.log("Group Parameter removeMember: ", paramName, paramVersion, this.members);
+		console.log("Group Parameter removeMember: ", paramCode, paramVersion, this.members);
 
 		return this.memberCount;
 	}
@@ -3572,13 +3578,13 @@ export class GroupParameter extends Parameter {
 		return copied;
 	}
 
-	copyMemberByName(memName, memVersion) {
+	copyMemberByCode(memCode, memVersion) {
 		let order = -1;
 
 		this.members.every((member, index) => {
-			if (!memVersion && member.paramName === memName) {
+			if (!memVersion && member.paramCode === memCode) {
 				order = index;
-			} else if (member.paramVersion === memVersion && member.paramName === memName) {
+			} else if (member.paramVersion === memVersion && member.paramCode === memCode) {
 				order = index;
 			}
 
@@ -3590,9 +3596,9 @@ export class GroupParameter extends Parameter {
 		}
 	}
 
-	copyMember({ paramName, paramVersion, memOrder }) {
+	copyMember({ paramCode, paramVersion, memOrder }) {
 		return Util.isEmpty(memOrder)
-			? this.copyMemberByName(paramName, paramVersion)
+			? this.copyMemberByCode(paramCode, paramVersion)
 			: this.copyMemberByIndex(memOrder);
 	}
 
@@ -3600,19 +3606,19 @@ export class GroupParameter extends Parameter {
 		return this.members[index];
 	}
 
-	findParameter({ paramName, paramVersion = Parameter.DEFAULT_VERSION, descendant = true }) {
-		if (this.equalTo(paramName, paramVersion)) {
+	findParameter({ paramCode, paramVersion = Parameter.DEFAULT_VERSION, descendant = true }) {
+		if (this.equalTo(paramCode, paramVersion)) {
 			return this;
 		}
 
 		let found = null;
 
 		this.members.every((field) => {
-			if (field.equalTo(paramName, paramVersion)) {
+			if (field.equalTo(paramCode, paramVersion)) {
 				found = field;
 			} else if (descendant && field.isGroup) {
 				found = field.findParameter({
-					paramName: paramName,
+					paramCode: paramCode,
 					paramVersion: paramVersion,
 					descendant: descendant
 				});
@@ -3647,7 +3653,7 @@ export class GroupParameter extends Parameter {
 	}
 
 	postfixParameterCode(postfix) {
-		this.paramName += "_" + postfix;
+		this.paramCode += "_" + postfix;
 		this.paramVersion = Parameter.DEFAULT_VERSION;
 
 		this.members.forEach((member, index) => member.postfixParameterCode(postfix + "_" + index));
@@ -3684,22 +3690,17 @@ export class GroupParameter extends Parameter {
 		return this.members.length;
 	}
 
-	focus(paramName, paramVersion) {
-		this.focused = this.equalTo(paramName, paramVersion);
+	focus(paramCode, paramVersion) {
+		this.focused = this.equalTo(paramCode, paramVersion);
 
 		this.members.forEach((param) => {
-			param.focus(paramName, paramVersion);
+			param.focus(paramCode, paramVersion);
 		});
-	}
-
-	setError(errorClass, errorMessage) {
-		this.errorClass = errorClass;
-		this.errorMessage = errorMessage;
 	}
 
 	loadData(data) {
 		this.members.forEach((member) => {
-			const value = data[member.paramName];
+			const value = data[member.paramCode];
 			if (Util.isNotEmpty(value)) {
 				member.loadData(value);
 			}
@@ -3729,7 +3730,6 @@ export class GroupParameter extends Parameter {
 			this.members = json.members.map((member) => {
 				let parameter;
 				if (member instanceof Parameter) {
-					console.log("This is an instance of Parameter");
 					parameter = member;
 				} else {
 					parameter = Parameter.createParameter(
@@ -3767,7 +3767,7 @@ export class GroupParameter extends Parameter {
 			return memberOutputs;
 		} else {
 			let groupOutput = {};
-			groupOutput[this.paramName] = {
+			groupOutput[this.paramCode] = {
 				freezed: this.freezed,
 				verified: this.verified,
 				value: memberOutputs
@@ -3805,7 +3805,7 @@ export class GroupParameter extends Parameter {
 		json.tagName = tagName;
 
 		json.members = this.members.map((member) => {
-			return member.toProperties(member.paramName, member.paramName);
+			return member.toProperties(member.paramCode, member.paramCode);
 		});
 
 		return json;
@@ -3922,7 +3922,7 @@ export class GridParameter extends GroupParameter {
 	}
 
 	addMember(column) {
-		column.parent = { name: this.paramName, version: this.paramVersion };
+		column.parent = { code: this.paramCode, version: this.paramVersion };
 		column.displayType = Parameter.DisplayTypes.GRID_CELL;
 
 		column.order = this.columnCount + 1;
@@ -3937,12 +3937,12 @@ export class GridParameter extends GroupParameter {
 		this.insertMember(column, colOrder);
 	}
 
-	isColumn(colName, colVersion) {
-		return this.isMember(colName, colVersion);
+	isColumn(colCode, colVersion) {
+		return this.isMember(colCode, colVersion);
 	}
 
-	removeColumn({ colName, colVersion = Parameter.DEFAULT_VERSION }) {
-		return this.removeMember({ paramName: colName, paramVersion: colVersion });
+	removeColumn({ colCode, colVersion = Parameter.DEFAULT_VERSION }) {
+		return this.removeMember({ paramCode: colCode, paramVersion: colVersion });
 	}
 
 	/**
@@ -3954,11 +3954,11 @@ export class GridParameter extends GroupParameter {
 		this.removeMember({ memOrder: colIndex });
 	}
 
-	findColumn({ colName, colVersion = Parameter.DEFAULT_VERSION }) {
+	findColumn({ colCode, colVersion = Parameter.DEFAULT_VERSION }) {
 		let found = null;
 
 		this.columns.every((column) => {
-			if (column.equalTo(colName, colVersion)) {
+			if (column.equalTo(colCode, colVersion)) {
 				found = column;
 			}
 
@@ -4053,11 +4053,11 @@ export class GridParameter extends GroupParameter {
 		this.refreshKey();
 	}
 
-	fireColumnSelected(colName, targetForm) {
+	fireColumnSelected(colCode, targetForm) {
 		let colFound;
 
 		this.columns.every((column) => {
-			if (column.paramName === colName) {
+			if (column.paramCode === colCode) {
 				colFound = column;
 
 				return Constant.STOP_EVERY;

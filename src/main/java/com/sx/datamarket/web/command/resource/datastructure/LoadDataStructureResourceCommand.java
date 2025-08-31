@@ -1,13 +1,16 @@
-package com.sx.datamarket.web.command.resource.datastructure.builder;
+package com.sx.datamarket.web.command.resource.datastructure;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.sx.icecap.constant.DataTypeProperties;
@@ -18,8 +21,10 @@ import com.sx.constant.StationXWebKeys;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataStructure;
 import com.sx.icecap.model.DataType;
+import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
+import com.sx.icecap.service.TypeStructureLinkLocalService;
 
 import java.io.PrintWriter;
 import java.util.Iterator;
@@ -37,7 +42,7 @@ import org.osgi.service.component.annotations.Reference;
 	    immediate = true,
 	    property = {
 	        "javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_DATA_STRUCTURE
+	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_DATASTRUCTURE
 	    },
 	    service = MVCResourceCommand.class
 )
@@ -48,45 +53,32 @@ public class LoadDataStructureResourceCommand extends BaseMVCResourceCommand{
 			throws Exception {
 		
 		long dataTypeId = ParamUtil.getLong(resourceRequest, WebKey.DATATYPE_ID, 0);
-		long dataStructureId = ParamUtil.getLong(resourceRequest, WebKey.DATASTRUCTURE_ID, 0);
+		long dataStructureId = ParamUtil.getLong(resourceRequest, "dataStructureId", 0);
 		
-		System.out.println("LoadDataTypeResourceCommand:  " + dataTypeId + ", " + dataStructureId);
+		System.out.println("LoadDataTypeResourceCommand:  " + dataTypeId + ", dataStructureId: " + dataStructureId );
 		
-		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
-		JSONObject result = null;
+		TypeStructureLink typeStructureLink = null;
+		try{
+			typeStructureLink = _typeStructureLocalService.getTypeStructureLink(dataTypeId);
+			dataStructureId = typeStructureLink.getDataStructureId();
+			result.put("typeStructureLink", typeStructureLink.toJSON());
+		} catch( PortalException e) {
+			System.out.println("No TypeStructureLink while loading data structure");
+		}
+		
+		if( dataTypeId > 0 ) {
+			DataType dataType = _dataTypeLocalService.getDataType(dataTypeId);
+			result.put("dataType", dataType.toJSON( ));
+		}
 		
 		if( dataStructureId > 0) {
 			DataStructure dataStructure = _dataStructureLocalService.getDataStructure(dataStructureId);
-			result = dataStructure.toJSON();
-		}
-		else if( dataTypeId > 0 ) {
-			DataType dataType = _dataTypeLocalService.getDataType(dataTypeId);
-			
-			result = JSONFactoryUtil.createJSONObject();
-			result.put("dataStructureId", 0);
-			result.put("paramName", dataType.getDataTypeName());
-			result.put("paramVersion", "1.0.0");
-			
-			Map<Locale, String> displayNameMap = dataType.getDisplayNameMap();
-			JSONObject displayName = JSONFactoryUtil.createJSONObject();
-			for (Map.Entry<Locale, String> entry : displayNameMap.entrySet()) {
-				displayName.put(entry.getKey().toLanguageTag(), entry.getValue());
-	        }
-			result.put("displayName", displayName);
-			
-			JSONObject definition = JSONFactoryUtil.createJSONObject();
-			Map<Locale, String> descriptionMap = dataType.getDescriptionMap();
-			for (Map.Entry<Locale, String> entry : descriptionMap.entrySet()) {
-				definition.put(entry.getKey().toLanguageTag(), entry.getValue());
-			}
-			result.put("definition", definition);
-		}
-		else {
-			result = JSONFactoryUtil.createJSONObject();
+			result.put("dataStructure", dataStructure.toJSON());
 		}
 		
-		System.out.println("Result: " + result.toJSONString());
+		System.out.println("Result: " + result.toString(4));
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(result.toJSONString());
 		pw.flush();
@@ -98,4 +90,10 @@ public class LoadDataStructureResourceCommand extends BaseMVCResourceCommand{
 	
 	@Reference
 	private DataTypeLocalService _dataTypeLocalService;
+	
+	@Reference
+	private TypeStructureLinkLocalService _typeStructureLocalService;
+	
+	@Reference
+	private UserLocalService _userLocalService;
 }

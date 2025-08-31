@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.datastructure.builder;
+package com.sx.datamarket.web.command.resource.datastructure;
 
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -22,7 +22,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 		property = {
 				"javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
-				"mvc.command.name=" + MVCCommand.RESOURCE_DELETE_DATA_STRUCTURE
+				"mvc.command.name=" + MVCCommand.RESOURCE_DELETE_DATASTRUCTURE
 		},
 		service = MVCResourceCommand.class
 )

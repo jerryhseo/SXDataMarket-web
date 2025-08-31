@@ -21,7 +21,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 		property = {
 				"javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
-				"mvc.command.name=" + MVCCommand.ACTION_DELETE_DATA_STRUCTURE
+				"mvc.command.name=" + MVCCommand.ACTION_DELETE_DATASTRUCTURE
 		},
 		service = MVCActionCommand.class
 )

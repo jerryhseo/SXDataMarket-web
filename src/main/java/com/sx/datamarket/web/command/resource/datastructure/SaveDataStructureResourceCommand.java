@@ -1,20 +1,30 @@
-package com.sx.datamarket.web.command.resource.datastructure.builder;
+package com.sx.datamarket.web.command.resource.datastructure;
 
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.sx.icecap.constant.MVCCommand;
 import com.sx.icecap.constant.ParameterType;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataStructure;
+import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.ParameterLocalService;
+import com.sx.icecap.service.TypeStructureLinkLocalService;
+import com.sx.util.SXLocalizationUtil;
 
 import java.io.PrintWriter;
 import java.util.HashMap;
@@ -31,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
 	    immediate = true,
 	    property = {
 	        "javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_UPDATE_DATA_STRUCTURE
+	        "mvc.command.name="+MVCCommand.RESOURCE_UPDATE_DATASTRUCTURE
 	    },
 	    service = MVCResourceCommand.class
 )
@@ -41,25 +51,105 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
 		
-		long dataCollectionId = ParamUtil.getLong(resourceRequest, "dataCollectionId");
-		long dataSetId = ParamUtil.getLong(resourceRequest, "dataSetId");
-		long dataTypeId = ParamUtil.getLong(resourceRequest, "dataTypeId");
-		long dataStructureId = ParamUtil.getLong(resourceRequest, "dataStructureId");
-		String dataStructureVersion = ParamUtil.getString(resourceRequest, "dataStructureVersion");
-		String strDataStructure = ParamUtil.getString(resourceRequest, "dataStructure");
-
-		System.out.println("dataTypeId: " + dataTypeId);
-		System.out.println("dataStructureId: " + dataStructureId);
-		System.out.println("dataStructureVersion: " + dataStructureVersion);
-		System.out.println("dataStructure: " + strDataStructure);
+		System.out.println("SaveDataStructureResourceCommand");
 		
-		DataStructure dataStructure = _dataStructureLocalService.updateStructure(dataTypeId, strDataStructure);
+		// Save data structure
+		String strDataStructure = ParamUtil.getString(resourceRequest, "dataStructure", "{}");
+		JSONObject jsonDataStructure = JSONFactoryUtil.createJSONObject(strDataStructure);
+		System.out.println("Data Structure: " + jsonDataStructure.toString(4));
+		
+		long dataStructureId = jsonDataStructure.getLong("paramId", 0);
+		String dataStructureCode = jsonDataStructure.getString("paramCode", "");
+		String dataStructureVersion = jsonDataStructure.getString("paramVersion", "");
+		JSONObject jsonDataStructureDisplayName = jsonDataStructure.getJSONObject("displayName");
+		JSONObject jsonDataStructureDescription = jsonDataStructure.getJSONObject("description");
+
+		ServiceContext dataStructureSC = ServiceContextFactory.getInstance(DataStructure.class.getName(), resourceRequest);
+		
+		if( dataStructureId == 0 ) {
+			DataStructure dataStructure = _dataStructureLocalService.addDataStructure(
+					dataStructureCode, 
+					dataStructureVersion, 
+					SXLocalizationUtil.jsonToLocalizedMap(jsonDataStructureDisplayName), 
+					SXLocalizationUtil.jsonToLocalizedMap(jsonDataStructureDescription), 
+					strDataStructure, 
+					WorkflowConstants.STATUS_APPROVED, 
+					dataStructureSC);
+			
+			dataStructureId = dataStructure.getDataStructureId();
+		}
+		else {
+			_dataStructureLocalService.updateDataStructure(
+					dataStructureId, 
+					dataStructureCode, 
+					dataStructureVersion, 
+					SXLocalizationUtil.jsonToLocalizedMap(jsonDataStructureDisplayName),
+					SXLocalizationUtil.jsonToLocalizedMap(jsonDataStructureDescription), 
+					strDataStructure, 
+					WorkflowConstants.STATUS_APPROVED, 
+					dataStructureSC);
+		}
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
-		result.put("dataTypeId", dataStructure.getDataStructureId());
+		result.put("dataStructureId", dataStructureId);
+
+		//Save DataType-DataStructure Link if dataTypeId > 0
+		
+		JSONObject jsonTypeStructureLink = JSONFactoryUtil.createJSONObject(
+							ParamUtil.getString(resourceRequest, "typeStructureLink", "{}"));
+		
+		System.out.println("Data jsonTypeStructureLink: " + jsonTypeStructureLink.toString(4));
+
+		long dataTypeId = jsonTypeStructureLink.getLong("dataTypeId", 0);
+		
+		if( dataTypeId > 0 ) {
+			boolean commentable = jsonTypeStructureLink.getBoolean("commentable", false);
+			boolean verifiable = jsonTypeStructureLink.getBoolean("verifiable", false);
+			boolean freezable = jsonTypeStructureLink.getBoolean("freezable", false);
+			boolean verified = jsonTypeStructureLink.getBoolean("verified", false);
+			boolean freezed = jsonTypeStructureLink.getBoolean("freezed", false);
+			boolean inputStatus = jsonTypeStructureLink.getBoolean("inputStatus", false);
+			boolean jumpTo = jsonTypeStructureLink.getBoolean("jumpTo", false);
+			
+			ServiceContext linkSC = ServiceContextFactory.getInstance(TypeStructureLink.class.getName(), resourceRequest);
+			
+			try {
+				TypeStructureLink typeStructureLink = _typeStructureLinkLocalService.getTypeStructureLink(dataTypeId);
+				
+				_typeStructureLinkLocalService.updateTypeDataStructureLink(
+						dataTypeId, dataStructureId, 
+						commentable, 
+						verifiable, 
+						freezable, 
+						verified, 
+						freezed,
+						inputStatus,
+						jumpTo,
+						linkSC);
+				
+				result.put("dataTypeId", dataTypeId);
+			} catch( PortalException e ) {
+				TypeStructureLink typeStructureLink = 
+						_typeStructureLinkLocalService.addTypeDataStructureLink(
+								dataTypeId, 
+								dataStructureId, 
+								commentable, 
+								verifiable,
+								freezable,
+								verified,
+								freezed,
+								inputStatus,
+								jumpTo,
+								linkSC	);
+				
+				result.put("dataTypeId", typeStructureLink.getDataTypeId() );
+			}
+		}
+		
+		
 		//result.put("dataStructureId", 12345);
 		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
+		pw.write(result.toString());
 		pw.flush();
 		pw.close();
 	}
@@ -268,6 +358,9 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 	}
 	
 	@Reference
+	TypeStructureLinkLocalService _typeStructureLinkLocalService;
+	
+	@Reference
 	private DataTypeLocalService _dataTypeLocalService;
 	
 	@Reference
@@ -275,4 +368,7 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 	
 	@Reference
 	private ParameterLocalService _parameterLocalService;
+	
+	@Reference
+	private UserLocalService _userLocalService;
 }

@@ -38,7 +38,7 @@ class SXDataStructurePreviewer extends React.Component {
 
 		const parameter = e.dataPacket.parameter;
 		const group = this.dataStructure.findParameter({
-			paramName: parameter.parentName,
+			paramCode: parameter.parentCode,
 			paramVersion: parameter.parentVersion,
 			descendant: true
 		});
@@ -58,7 +58,7 @@ class SXDataStructurePreviewer extends React.Component {
 
 		const parameter = e.dataPacket.parameter;
 		const group = this.dataStructure.findParameter({
-			paramName: parameter.parentName,
+			paramCode: parameter.parentCode,
 			paramVersion: parameter.parentVersion,
 			descendant: true
 		});

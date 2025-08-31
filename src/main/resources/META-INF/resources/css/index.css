@@ -143,17 +143,32 @@ span.toggle-switch-bar {
 .sx-option-preview-row {
 	display: inline-flex;
 	border: 1px solid #dfdfdf;
-	padding: 5px;
 	width: 100%;
 	align-items: center;
 }
 
-.sx-option-preview-cell {
-	padding: 5px;
+.sx-focused td {
+	border: 2px solid #f495da;
 }
 
-.sx-option-focused {
-	border: 2px solid #f495da;
+.sx-option-table td {
+	padding: 0;
+}
+
+.table.sx-option-table th:first-child,
+.table.sx-option-table td:first-child,
+.table.sx-option-table .table-column-start {
+	padding: 0;
+}
+
+.table-list.sx-option-table th:last-child,
+.table-list.sx-option-table td:last-child {
+	padding: 0;
+}
+
+.sx-option-table.table-sm th,
+.sx-option-table.table-sm td {
+	padding: 0;
 }
 
 .sx-table-row {
@@ -265,13 +280,16 @@ div .under-construction {
 	display: flex;
 	flex-direction: row;
 }
+.sx-dual-listbox .form-group {
+	margin-bottom: 0;
+}
 .sx-dual-listbox .clay-reorder {
 	display: flex;
 	flex-direction: column;
 	flex-grow: 1;
 }
 .sx-dual-listbox label {
-	margin-bottom: 1rem;
+	margin-bottom: 0;
 }
 
 .sx-dual-listbox-item {
@@ -414,6 +432,14 @@ div .under-construction {
 	position: absolute;
 	top: -1rem; /* Adjust to move the legend up */
 	left: 10px;
+}
+
+.sx-fieldset .table-responsive {
+	margin-bottom: 0;
+}
+
+.sx-multistep {
+	border: 2px solid #d1d6dc;
 }
 
 .modal-open .modal {

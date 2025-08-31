@@ -9,8 +9,8 @@ import {
 	Parameter,
 	SelectParameter
 } from "../../stationx/parameter";
-import { ClayButtonWithIcon } from "@clayui/button";
-import { Body, Button, Cell, Head, Icon, Table } from "@clayui/core";
+import Button, { ClayButtonWithIcon } from "@clayui/button";
+import { Table, Head, Body, Cell, Icon, Row } from "@clayui/core";
 import Form, { ClayInput, ClaySelectWithOption } from "@clayui/form";
 import { SXModalDialog } from "../../stationx/modal";
 import SXActionDropdown from "../../stationx/dropdown";
@@ -52,11 +52,11 @@ class SXGroupBuilder extends React.Component {
 			this.availableLanguageIds,
 			ParamType.STRING,
 			{
-				paramName: "memberCode",
+				paramCode: "memberCode",
 				displayName: Util.getTranslationObject(this.languageId, "member-code"),
 				tooltip: Util.getTranslationObject(this.languageId, "member-code-tooltip"),
 				placeholder: Util.getTranslationObject(this.languageId, "code-name-for-member"),
-				value: this.state.selectedMember ? this.state.selectedMember.paramName : ""
+				value: this.state.selectedMember ? this.state.selectedMember.paramCode : ""
 			}
 		);
 		this.fieldMemberDisplayName = Parameter.createParameter(
@@ -66,7 +66,7 @@ class SXGroupBuilder extends React.Component {
 			this.availableLanguageIds,
 			ParamType.STRING,
 			{
-				paramName: "memberDisplayName",
+				paramCode: "memberDisplayName",
 				displayName: Util.getTranslationObject(this.languageId, "display-name"),
 				tooltip: Util.getTranslationObject(this.languageId, "display-name-tooltip"),
 				placeholder: Util.getTranslationObject(this.languageId, "translation-for-display-name"),
@@ -94,9 +94,9 @@ class SXGroupBuilder extends React.Component {
 				);
 				*/
 
-				switch (dataPacket.paramName) {
+				switch (dataPacket.paramCode) {
 					case "memberCode": {
-						this.state.selectedMember.paramName = this.fieldMemberCode.getValue();
+						this.state.selectedMember.paramCode = this.fieldMemberCode.getValue();
 
 						break;
 					}
@@ -119,12 +119,24 @@ class SXGroupBuilder extends React.Component {
 		this.forceUpdate();
 	};
 
+	listenerPopActionClicked = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
+			console.log("listenerPopActionClicked event rejected: ", dataPacket);
+			return;
+		}
+		console.log("listenerPopActionClicked: ", dataPacket);
+	};
+
 	componentDidMount() {
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+		Event.on(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 	}
 
 	componentWillUnmount() {
-		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+		Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 	}
 
 	moveMemberUp = (member) => {
@@ -144,7 +156,7 @@ class SXGroupBuilder extends React.Component {
 	};
 
 	removeMember = (member) => {
-		let memberCount = this.groupParam.removeMember({ paramName: member.paramName });
+		let memberCount = this.groupParam.removeMember({ paramCode: member.paramCode });
 
 		const firstMember = memberCount > 0 ? this.groupParam.members[0] : null;
 
@@ -178,7 +190,7 @@ class SXGroupBuilder extends React.Component {
 			this.availableLanguageIds,
 			memberType,
 			{
-				paramName: "member_" + Util.randomKey(8),
+				paramCode: "member_" + Util.randomKey(8),
 				displayType: this.memberDisplayType
 			}
 		);
@@ -197,7 +209,7 @@ class SXGroupBuilder extends React.Component {
 
 	render() {
 		if (this.state.selectedMember) {
-			this.fieldMemberCode.setValue({ value: this.state.selectedMember.paramName });
+			this.fieldMemberCode.setValue({ value: this.state.selectedMember.paramCode });
 			this.fieldMemberCode.refreshKey();
 			this.fieldMemberDisplayName.setValue({ value: this.state.selectedMember.displayName });
 			this.fieldMemberDisplayName.refreshKey();
@@ -235,7 +247,7 @@ class SXGroupBuilder extends React.Component {
 				)}
 				<div className="sx-option-builder-label">
 					<SXLabel
-						label={Util.translate("members")}
+						label={Util.translate("group-members")}
 						forHtml=""
 						required={true}
 						style={{
@@ -284,7 +296,7 @@ class SXGroupBuilder extends React.Component {
 
 							return (
 								<div
-									key={member.paramName}
+									key={member.paramCode}
 									className={className}
 									onClick={(e) => {
 										this.handleMemberSelected(member);
@@ -310,6 +322,7 @@ class SXGroupBuilder extends React.Component {
 										<SXActionDropdown
 											key={this.groupParam.memberCount - index}
 											namespace={this.namespace}
+											formId={this.formId}
 											actionItems={actionItems}
 											dataKey={member}
 											symbol="ellipsis-v"
@@ -338,17 +351,13 @@ class SXSelectOptionBuilder extends React.Component {
 		this.availableLanguageIds = this.workingParam.availableLanguageIds;
 		this.spritemap = props.spritemap;
 
-		this.locales = this.availableLanguageIds.map((locale) => ({
-			label: locale,
-			symbol: locale.toLowerCase()
-		}));
-
+		this.selectedOption = this.workingParam.getOption(0) ?? {};
 		this.state = {
-			selectedOption: this.workingParam.getOption(0) ?? {},
 			optionValueDuplicated: false
 		};
 
 		this.formId = this.namespace + "selectOptionBuilder";
+
 		this.fieldOptionLabel = Parameter.createParameter(
 			this.namespace,
 			this.formId,
@@ -356,47 +365,105 @@ class SXSelectOptionBuilder extends React.Component {
 			this.availableLanguageIds,
 			ParamType.STRING,
 			{
-				paramName: "optionLabel",
+				paramCode: "optionLabel",
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "option-label"),
-				placeholder: Util.getTranslationObject(this.languageId, "label-for-the-option"),
-				value: this.state.selectedOption.label
+				placeholder: Util.getTranslationObject(this.languageId, "option-label"),
+				value: this.selectedOption.label ?? {}
+			}
+		);
+
+		this.fieldOptionValue = Parameter.createParameter(
+			this.namespace,
+			this.formId,
+			this.languageId,
+			this.availableLanguageIds,
+			ParamType.STRING,
+			{
+				paramCode: "optionValue",
+				displayName: Util.getTranslationObject(this.languageId, "option-value"),
+				placeholder: Util.getTranslationObject(this.languageId, "option-value"),
+				value: this.selectedOption.value ?? ""
 			}
 		);
 	}
 
-	fieldValueChangedHandler = (e) => {
-		const dataPacket = Event.pickUpDataPacket(e, this.namespace, this.formId, "optionLabel");
+	listenerFieldValueChanged = (event) => {
+		console.log("Before SXSelectOptionBuilder SX_FIELD_VALUE_CHANGED: ", event);
+		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
 
 		if (!dataPacket) {
 			return;
 		}
 
-		//console.log("SXSelectOptionBuilder SX_FIELD_VALUE_CHANGED: ", dataPacket);
+		console.log(
+			"SXSelectOptionBuilder SX_FIELD_VALUE_CHANGED: ",
+			dataPacket.parameter,
+			dataPacket.parameter.getValue()
+		);
 
-		this.state.selectedOption.label = this.fieldOptionLabel.getValue();
+		if (dataPacket.paramCode === "optionLabel") {
+			this.selectedOption.label = this.fieldOptionLabel.getValue();
+		} else {
+			this.selectedOption.value = this.fieldOptionValue.getValue();
+		}
+
 		this.forceUpdate();
 	};
 
+	listenerPopActionClicked = (event) => {
+		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
+
+		if (!dataPacket) {
+			return;
+		}
+
+		console.log("SXSelectOptionBuilder listenerPopActionClicked: ", dataPacket);
+		switch (dataPacket.action) {
+			case "copy": {
+				this.copyOption(dataPacket.data);
+
+				break;
+			}
+			case "delete": {
+				this.removeOption(dataPacket.data);
+
+				break;
+			}
+			case "up": {
+				this.moveOptionUp(dataPacket.data);
+
+				break;
+			}
+			case "down": {
+				this.moveOptionDown(dataPacket.data);
+
+				break;
+			}
+		}
+	};
+
 	componentDidMount() {
-		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+		Event.on(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 	}
 
 	componentWillUnmount() {
-		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+		Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 	}
 
 	handleNewOption() {
 		this.fieldOptionLabel.setValue({ value: {} });
 		this.fieldOptionLabel.refreshKey();
 
-		this.setState({
-			selectedOption: {}
-		});
+		this.selectedOption = {};
+		this.forceUpdate();
 	}
 
 	handleAddOption() {
-		const optionLength = this.workingParam.addOption(this.state.selectedOption);
+		console.log("handleAddOption: ", this.selectedOption);
+		const optionLength = this.workingParam.addOption(this.selectedOption);
 		if (optionLength.length === 0) {
 			return;
 		}
@@ -407,11 +474,10 @@ class SXSelectOptionBuilder extends React.Component {
 	}
 
 	copyOption = (index) => {
-		this.setState({
-			selectedOption: this.workingParam.copyOption(index)
-		});
+		this.selectedOption = this.workingParam.copyOption(index);
 
 		this.workingParam.fireRefreshPreview();
+		this.forceUpdate();
 	};
 
 	moveOptionUp = (index) => {
@@ -431,45 +497,29 @@ class SXSelectOptionBuilder extends React.Component {
 	};
 
 	removeOption = (index) => {
-		let optionCount = this.workingParam.removeOption(index);
-		this.fieldOptionLabel.setValue({ value: {} });
+		this.selectedOption = this.workingParam.removeOption(index);
+		this.fieldOptionLabel.setValue({ value: this.selectedOption.label });
+		this.fieldOptionValue.setValue({ value: this.selectedOption.value });
 		this.fieldOptionLabel.refreshKey();
-
-		this.setState({
-			selectedOption: {}
-		});
+		this.fieldOptionValue.refreshKey();
 
 		this.workingParam.fireRefreshPreview();
+
+		this.forceUpdate();
 	};
 
 	handleOptionSelected(option) {
 		this.fieldOptionLabel.setValue({ value: option.label });
 		this.fieldOptionLabel.refreshKey();
+		this.fieldOptionValue.setValue({ value: option.value });
+		this.fieldOptionValue.refreshKey();
 
-		this.setState({
-			selectedOption: option
-		});
-	}
-
-	handleOptionValueChanged(val) {
-		const duplicate = this.workingParam.checkDuplicatedOptionValue(val);
-		if (duplicate) {
-			this.setState({ optionValueDuplicated: true });
-
-			return;
-		}
-
-		this.state.selectedOption.value = val;
-
-		this.workingParam.fireRefreshPreview();
+		this.selectedOption = option;
 
 		this.forceUpdate();
 	}
 
 	render() {
-		this.fieldOptionLabel.setValue({ value: this.state.selectedOption.label });
-		this.fieldOptionLabel.refreshKey();
-
 		return (
 			<>
 				<div className="sx-option-builder-title">{Util.translate("option-builder")}</div>
@@ -485,138 +535,178 @@ class SXSelectOptionBuilder extends React.Component {
 						spritemap={this.spritemap}
 					/>
 				</div>
-				<div className="sx-option-preview">
-					{this.workingParam.options.map((option, index) => {
-						let actionItems = [
-							{
-								id: "copy", //
-								name: Util.translate("copy"),
-								symbol: "copy",
-								action: this.copyOption
-							},
-							{
-								id: "delete", //
-								name: Util.translate("delete"),
-								symbol: "times",
-								action: this.removeOption
-							}
-						];
-						if (index > 0) {
-							actionItems.push({
-								id: "up",
-								name: Util.translate("moveUp"),
-								symbol: "order-arrow-up",
-								action: this.moveOptionUp
-							});
-						}
-						if (index < this.workingParam.options.length - 1) {
-							actionItems.push({
-								id: "down",
-								name: Util.translate("moveDown"),
-								symbol: "order-arrow-down",
-								action: this.moveOptionDown
-							});
-						}
-
-						return (
-							<div
-								key={option.value}
-								aria-hidden="undefined"
-								className={
-									option === this.state.selectedOption
-										? "sx-option-preview-row sx-option-focused"
-										: "sx-option-preview-row"
-								}
-								onClick={(e) => {
-									this.handleOptionSelected(option);
-								}}
-							>
-								<div
-									className="sx-option-preview-cell"
-									style={{ width: "50%" }}
-								>
-									{option.label[this.languageId]}
-								</div>
-								<div
-									className="sx-option-preview-cell"
-									style={{ minWidth: "40%" }}
-								>
-									{option.value}
-								</div>
-								<div
-									className="sx-option-preview-cell"
-									style={{ width: "auto" }}
-								>
-									<SXActionDropdown
-										key={this.workingParam.options.length - index}
-										namespace={this.namespace}
-										actionItems={actionItems}
-										dataKey={index}
-										symbol="ellipsis-v"
-										spritemap={this.spritemap}
-									/>
-								</div>
-							</div>
-						);
-					})}
-				</div>
-				<Button.Group
-					spaced
-					className="sx-option-builder-btn-group"
+				<Table
+					columnsVisibility={false}
+					borderedColumns={false}
+					size="sm"
+					hover={false}
+					striped={false}
+					className="sx-option-table"
 				>
-					<Button
-						aria-label={Util.translate("add-option")}
-						displayType="secondary"
-						size="sm"
-						onClick={(e) => {
-							e.stopPropagation();
-							this.handleAddOption();
-						}}
-						title={Util.translate("add-option")}
-						disabled={Util.isNotEmpty(this.state.selectedOption)}
+					<Head
+						items={[
+							{ id: "label", name: Util.translate("label"), width: "auto" },
+							{ id: "value", name: Util.translate("value"), width: "6rem" },
+							{ id: "actions", name: "actions", width: "3.5rem" }
+						]}
 					>
-						<Icon
-							symbol="caret-top"
-							spritemap={this.props.spritemap}
-						/>
-					</Button>
-					<ClayButtonWithIcon
-						aria-label={Util.translate("new-option")}
-						size="sm"
-						symbol="plus"
-						title={Util.translate("new-option")}
-						onClick={(e) => {
-							e.stopPropagation();
-							this.handleNewOption();
+						{(column) => {
+							if (column.id === "actions") {
+								return (
+									<Cell
+										key={column.id}
+										textValue="actions"
+										textAlign="center"
+										width={column.width}
+									>
+										<Icon
+											symbol="ellipsis-v"
+											spritemap={this.spritemap}
+										/>
+									</Cell>
+								);
+							} else {
+								return (
+									<Cell
+										key={column.id}
+										textAlign="center"
+										width={column.width}
+									>
+										{column.name}
+									</Cell>
+								);
+							}
 						}}
-						spritemap={this.props.spritemap}
-						style={{ leftMargin: "auto" }}
-					/>
-				</Button.Group>
+					</Head>
+					<Body defaultItems={this.workingParam.options}>
+						{(option, index) => {
+							let actionItems = [
+								{
+									id: "copy", //
+									name: Util.translate("copy"),
+									symbol: "copy",
+									action: this.copyOption
+								},
+								{
+									id: "delete", //
+									name: Util.translate("delete"),
+									symbol: "times",
+									action: this.removeOption
+								}
+							];
+							if (index > 0) {
+								actionItems.push({
+									id: "up",
+									name: Util.translate("moveUp"),
+									symbol: "order-arrow-up",
+									action: this.moveOptionUp
+								});
+							}
+							if (index < this.workingParam.options.length - 1) {
+								actionItems.push({
+									id: "down",
+									name: Util.translate("moveDown"),
+									symbol: "order-arrow-down",
+									action: this.moveOptionDown
+								});
+							}
+
+							const selected = option === this.selectedOption;
+							const selectedColor = "#fae6ecff";
+							return (
+								<Row
+									key={option.value}
+									className={selected ? "sx-focused" : ""}
+									onClick={(e) => {
+										this.handleOptionSelected(option);
+									}}
+								>
+									<Cell
+										textAlign="center"
+										style={{ border: selected ? "none" : "inherit" }}
+									>
+										<div style={{ backgroundColor: selected ? selectedColor : "inherit" }}>
+											{option.label[this.languageId]}
+										</div>
+									</Cell>
+									<Cell
+										textAlign="center"
+										style={{ border: selected ? "none" : "inherit" }}
+									>
+										<div style={{ backgroundColor: selected ? selectedColor : "inherit" }}>
+											{option.value}
+										</div>
+									</Cell>
+									<Cell
+										textAlign="center"
+										style={{ border: selected ? "none" : "inherit" }}
+									>
+										<div style={{ backgroundColor: selected ? selectedColor : "inherit" }}>
+											<SXActionDropdown
+												key={this.workingParam.options.length - index}
+												namespace={this.namespace}
+												formId={this.formId}
+												actionItems={actionItems}
+												triggerType="icon"
+												dataKey={index}
+												symbol="ellipsis-v"
+												spritemap={this.spritemap}
+											/>
+										</div>
+									</Cell>
+								</Row>
+							);
+						}}
+					</Body>
+				</Table>
+				<div className="autofit-float autofit-padded-no-gutters-x autofit-row">
+					<div className="autofit-col autofit-col-expand">
+						<div style={{ textAlign: "center" }}>
+							<Button
+								aria-label={Util.translate("add-option")}
+								displayType="secondary"
+								size="sm"
+								onClick={(e) => {
+									e.stopPropagation();
+									this.handleAddOption();
+								}}
+								title={Util.translate("add-option")}
+								disabled={Util.isEmpty(this.selectedOption)}
+							>
+								<Icon
+									symbol="caret-top"
+									spritemap={this.props.spritemap}
+								/>
+							</Button>
+						</div>
+					</div>
+					<div className="autofit-col">
+						<ClayButtonWithIcon
+							aria-label={Util.translate("new-option")}
+							size="sm"
+							symbol="plus"
+							title={Util.translate("new-option")}
+							onClick={(e) => {
+								e.stopPropagation();
+								this.handleNewOption();
+							}}
+							spritemap={this.props.spritemap}
+							style={{ leftMargin: "auto" }}
+						/>
+					</div>
+				</div>
 
 				{this.fieldOptionLabel.renderField({
 					spritemap: this.spritemap
 				})}
 
-				<Form.Group>
-					<SXLabel
-						label={Util.translate("option-value")}
-						spritemap={this.props.spritemap}
-					/>
-					<ClayInput
-						key={Util.randomKey()}
-						placeholder={Util.translate("option-value")}
-						defaultValue={this.state.selectedOption.value ?? ""}
-						onBlur={(e) => {
-							e.stopPropagation();
-							this.handleOptionValueChanged(e.target.value);
-						}}
-					/>
-				</Form.Group>
+				{this.fieldOptionValue.renderField({
+					spritemap: this.spritemap
+				})}
 				{this.state.optionValueDuplicated && (
 					<SXModalDialog
 						header={Util.translate("error")}
-						body={Util.translate("option-value-is-already-exist-try-another-value")}
+						body={Util.translate("the-option-value-exists-already-try-another-value")}
 						buttons={[
 							{
 								label: Util.translate("ok"),
@@ -654,7 +744,7 @@ class SXStringTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.PLACEHOLDER,
+					paramCode: ParamProperty.PLACEHOLDER,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "placeholder"),
 					tooltip: Util.getTranslationObject(this.languageId, "placeholder-tooltip"),
@@ -670,7 +760,7 @@ class SXStringTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.MULTIPLE_LINE,
+					paramCode: ParamProperty.MULTIPLE_LINE,
 					viewType: BooleanParameter.ViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "multiple-line"),
 					tooltip: Util.getTranslationObject(this.languageId, "multiple-line-tooltip"),
@@ -686,7 +776,7 @@ class SXStringTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.LOCALIZED,
+					paramCode: ParamProperty.LOCALIZED,
 					viewType: BooleanParameter.ViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "localized"),
 					tooltip: Util.getTranslationObject(this.languageId, "localized-tooltip"),
@@ -701,7 +791,7 @@ class SXStringTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.PREFIX,
+					paramCode: ParamProperty.PREFIX,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "prefix"),
 					tooltip: Util.getTranslationObject(this.languageId, "prefix-tooltip"),
@@ -716,7 +806,7 @@ class SXStringTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.POSTFIX,
+					paramCode: ParamProperty.POSTFIX,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "postfix"),
 					tooltip: Util.getTranslationObject(this.languageId, "postfix-tooltip"),
@@ -735,7 +825,7 @@ class SXStringTypeOptionForm extends React.Component {
 
 		//("SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ", dataPacket, this.workingParam);
 
-		this.workingParam[dataPacket.paramName] = this.fields[dataPacket.paramName].getValue();
+		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
 		if (this.workingParam.isRendered()) {
 			this.workingParam.fireRefreshPreview();
@@ -782,7 +872,7 @@ class SXNumericTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.IS_INTEGER,
+					paramCode: ParamProperty.IS_INTEGER,
 					viewType: BooleanParameter.ViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "integer"),
 					tooltip: Util.getTranslationObject(this.languageId, "integer-tooltip"),
@@ -797,7 +887,7 @@ class SXNumericTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.UNCERTAINTY,
+					paramCode: ParamProperty.UNCERTAINTY,
 					viewType: BooleanParameter.ViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "uncertainty"),
 					tooltip: Util.getTranslationObject(this.languageId, "uncertainty-tooltip"),
@@ -812,7 +902,7 @@ class SXNumericTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.NUMERIC,
 				{
-					paramName: ParamProperty.DECIMAL_PLACES,
+					paramCode: ParamProperty.DECIMAL_PLACES,
 					isInteger: true,
 					displayName: Util.getTranslationObject(this.languageId, "decimal-places"),
 					tooltip: Util.getTranslationObject(this.languageId, "decimal-places-tooltip"),
@@ -827,7 +917,7 @@ class SXNumericTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.UNIT,
+					paramCode: ParamProperty.UNIT,
 					displayName: Util.getTranslationObject(this.languageId, "unit"),
 					tooltip: Util.getTranslationObject(this.languageId, "unit-tooltip"),
 					value: this.workingParam.unit
@@ -840,7 +930,7 @@ class SXNumericTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.PREFIX,
+					paramCode: ParamProperty.PREFIX,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "prefix"),
 					tooltip: Util.getTranslationObject(this.languageId, "prefix-tooltip"),
@@ -855,7 +945,7 @@ class SXNumericTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.POSTFIX,
+					paramCode: ParamProperty.POSTFIX,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "postfix"),
 					tooltip: Util.getTranslationObject(this.languageId, "postfix-tooltip"),
@@ -874,9 +964,9 @@ class SXNumericTypeOptionForm extends React.Component {
 
 		//console.log("SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ", dataPacket, this.workingParam);
 
-		this.workingParam[dataPacket.paramName] = this.fields[dataPacket.paramName].getValue();
+		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
-		if (dataPacket.paramName === ParamProperty.IS_INTEGER) {
+		if (dataPacket.paramCode === ParamProperty.IS_INTEGER) {
 			this.setState({ isInteger: this.workingParam.isInteger });
 		}
 
@@ -899,9 +989,9 @@ class SXNumericTypeOptionForm extends React.Component {
 		return (
 			<>
 				{fields.map((field) => {
-					if (field.paramName === ParamProperty.DECIMAL_PLACES && !this.state.isInteger) {
+					if (field.paramCode === ParamProperty.DECIMAL_PLACES && !this.state.isInteger) {
 						return field.renderField({ spritemap: this.spritemap });
-					} else if (field.paramName !== ParamProperty.DECIMAL_PLACES) {
+					} else if (field.paramCode !== ParamProperty.DECIMAL_PLACES) {
 						return field.renderField({ spritemap: this.spritemap });
 					}
 				})}
@@ -953,7 +1043,7 @@ class SXSelectTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.SELECT,
 				{
-					paramName: ParamProperty.VIEW_TYPE,
+					paramCode: ParamProperty.VIEW_TYPE,
 					viewType: SelectParameter.ViewTypes.RADIO,
 					options: viewTypes,
 					optionsPerRow: 2,
@@ -975,7 +1065,7 @@ class SXSelectTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.NUMERIC,
 				{
-					paramName: ParamProperty.OPTIONS_PER_ROW,
+					paramCode: ParamProperty.OPTIONS_PER_ROW,
 					isInteger: true,
 					displayName: Util.getTranslationObject(this.languageId, "options-per-row"),
 					tooltip: Util.getTranslationObject(this.languageId, "options-per-row-tooltip"),
@@ -1006,12 +1096,12 @@ class SXSelectTypeOptionForm extends React.Component {
 			"SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ",
 			dataPacket,
 			this.workingParam,
-			this.fields[dataPacket.paramName],
-			this.fields[dataPacket.paramName].getValue()
+			this.fields[dataPacket.paramCode],
+			this.fields[dataPacket.paramCode].getValue()
 		);
 		*/
 
-		this.workingParam[dataPacket.paramName] = this.fields[dataPacket.paramName].getValue();
+		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 		//this.workingParam.initValue();
 
 		this.forceUpdate();
@@ -1069,7 +1159,7 @@ class SXBooleanTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.SELECT,
 				{
-					paramName: ParamProperty.VIEW_TYPE,
+					paramCode: ParamProperty.VIEW_TYPE,
 					viewType: SelectParameter.ViewTypes.RADIO,
 					options: [
 						{
@@ -1108,7 +1198,7 @@ class SXBooleanTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.TRUE_LABEL,
+					paramCode: ParamProperty.TRUE_LABEL,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "true-label"),
 					placeholder: Util.getTranslationObject(this.languageId, "label-for-true-option"),
@@ -1124,7 +1214,7 @@ class SXBooleanTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.FALSE_LABEL,
+					paramCode: ParamProperty.FALSE_LABEL,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "false-label"),
 					placeholder: Util.getTranslationObject(this.languageId, "label-for-false-option"),
@@ -1146,11 +1236,11 @@ class SXBooleanTypeOptionForm extends React.Component {
 			"SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ",
 			dataPacket,
 			this.workingParam,
-			this.fields[dataPacket.paramName].getValue()
+			this.fields[dataPacket.paramCode].getValue()
 		);
 		*/
 
-		this.workingParam[dataPacket.paramName] = this.fields[dataPacket.paramName].getValue();
+		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
 		if (this.workingParam.isRendered()) {
 			this.workingParam.fireRefreshPreview();
@@ -1197,7 +1287,7 @@ class SXPhoneTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.ENABLE_COUNTRY_NO,
+					paramCode: ParamProperty.ENABLE_COUNTRY_NO,
 					viewType: BooleanParameter.ViewTypes.TOGGLE,
 					displayName: Util.getTranslationObject(this.languageId, "enable-country-no"),
 					tooltip: Util.getTranslationObject(this.languageId, "enable-country-no-tooltip"),
@@ -1219,11 +1309,11 @@ class SXPhoneTypeOptionForm extends React.Component {
 			"SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ",
 			dataPacket,
 			this.workingParam,
-			this.fields[dataPacket.paramName].getValue()
+			this.fields[dataPacket.paramCode].getValue()
 		);
 		*/
 
-		this.workingParam[dataPacket.paramName] = this.fields[dataPacket.paramName].getValue();
+		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
 		if (this.workingParam.isRendered()) {
 			this.workingParam.fireRefreshPreview();
@@ -1264,7 +1354,7 @@ class SXAddressTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.SELECT,
 				{
-					paramName: ParamProperty.VIEW_TYPE,
+					paramCode: ParamProperty.VIEW_TYPE,
 					viewType: SelectParameter.ViewTypes.RADIO,
 					displayName: Util.getTranslationObject(this.languageId, "view-type"),
 					options: [
@@ -1300,11 +1390,11 @@ class SXAddressTypeOptionForm extends React.Component {
 			"SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ",
 			dataPacket,
 			this.workingParam,
-			this.fields[dataPacket.paramName].getValue()
+			this.fields[dataPacket.paramCode].getValue()
 		);
 		*/
 
-		this.workingParam[dataPacket.paramName] = this.fields[dataPacket.paramName].getValue();
+		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
 		if (this.workingParam.isRendered()) {
 			this.workingParam.fireRefreshPreview();
@@ -1345,7 +1435,7 @@ class SXDateTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.ENABLE_TIME,
+					paramCode: ParamProperty.ENABLE_TIME,
 					viewType: BooleanParameter.ViewTypes.TOGGLE,
 					displayName: Util.getTranslationObject(this.languageId, "enable-time"),
 					tooltip: Util.getTranslationObject(this.languageId, "enable-time-tooltip"),
@@ -1360,7 +1450,7 @@ class SXDateTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.NUMERIC,
 				{
-					paramName: ParamProperty.START_YEAR,
+					paramCode: ParamProperty.START_YEAR,
 					displayName: Util.getTranslationObject(this.languageId, "start-year"),
 					isInteger: true,
 					tooltip: Util.getTranslationObject(this.languageId, "start-year-tooltip"),
@@ -1375,7 +1465,7 @@ class SXDateTypeOptionForm extends React.Component {
 				this.availableLanguageIds,
 				ParamType.NUMERIC,
 				{
-					paramName: ParamProperty.END_YEAR,
+					paramCode: ParamProperty.END_YEAR,
 					displayName: Util.getTranslationObject(this.languageId, "end-year"),
 					isInteger: true,
 					tooltip: Util.getTranslationObject(this.languageId, "end-year-tooltip"),
@@ -1396,11 +1486,11 @@ class SXDateTypeOptionForm extends React.Component {
 			"SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ",
 			dataPacket,
 			this.workingParam,
-			this.fields[dataPacket.paramName].getValue()
+			this.fields[dataPacket.paramCode].getValue()
 		);
 		*/
 
-		this.workingParam[dataPacket.paramName] = this.fields[dataPacket.paramName].getValue();
+		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
 		if (this.workingParam.isRendered()) {
 			this.workingParam.initValue();
@@ -1450,13 +1540,17 @@ class SXGroupTypeOptionForm extends React.Component {
 			this.availableLanguageIds,
 			ParamType.SELECT,
 			{
-				paramName: ParamProperty.VIEW_TYPE,
+				paramCode: ParamProperty.VIEW_TYPE,
 				viewType: SelectParameter.ViewTypes.RADIO,
 				displayName: Util.getTranslationObject(this.languageId, "view-type"),
 				options: [
 					{
 						label: Util.getTranslationObject(this.languageId, "Arrangement"),
 						value: GroupParameter.ViewTypes.ARRANGEMENT
+					},
+					{
+						label: Util.getTranslationObject(this.languageId, "Fieldset"),
+						value: GroupParameter.ViewTypes.FIELDSET
 					},
 					{
 						label: Util.getTranslationObject(this.languageId, "Panel"),
@@ -1481,7 +1575,7 @@ class SXGroupTypeOptionForm extends React.Component {
 			this.availableLanguageIds,
 			ParamType.NUMERIC,
 			{
-				paramName: ParamProperty.MEMBERS_PER_ROW,
+				paramCode: ParamProperty.MEMBERS_PER_ROW,
 				isInteger: true,
 				displayName: Util.getTranslationObject(this.languageId, "members-per-row"),
 				tooltip: Util.getTranslationObject(this.languageId, "members-per-row-tooltip"),
@@ -1497,7 +1591,7 @@ class SXGroupTypeOptionForm extends React.Component {
 			this.availableLanguageIds,
 			ParamType.BOOLEAN,
 			{
-				paramName: ParamProperty.EXPANDED,
+				paramCode: ParamProperty.EXPANDED,
 				viewType: BooleanParameter.ViewTypes.CHECKBOX,
 				displayName: Util.getTranslationObject(this.languageId, "expanded"),
 				tooltip: Util.getTranslationObject(this.languageId, "expanded-tooltip"),
@@ -1521,7 +1615,7 @@ class SXGroupTypeOptionForm extends React.Component {
 		);
 		*/
 
-		switch (dataPacket.paramName) {
+		switch (dataPacket.paramCode) {
 			case ParamProperty.VIEW_TYPE: {
 				this.workingParam.viewType = this.fieldViewType.getValue();
 				break;

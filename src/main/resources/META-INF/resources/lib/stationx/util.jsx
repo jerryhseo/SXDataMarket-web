@@ -214,22 +214,29 @@ export const Util = {
 		*/
 	},
 
-	translate: (key) => {
-		return Liferay.Language.get(key);
+	translate: (key, ...args) => {
+		let message = Liferay.Language.get(key);
+
+		args.forEach((arg, index) => {
+			message = message.replace("{" + index + "}", String(arg));
+		});
+
+		return message;
 	},
 
-	getTranslationObject(languageId, key) {
+	getTranslationObject(languageId, key, ...args) {
+		let message = Liferay.Language.get(key);
 		const transObject = {};
-		transObject[languageId] = Liferay.Language.get(key);
+		transObject[languageId] = Util.translate(key, args);
 
 		return transObject;
 	},
 
-	getTranslationsObject(languageIds, key) {
+	getTranslationsObject(languageIds, key, postfix) {
 		const transObject = {};
 
 		languageIds.forEach((lang) => {
-			transObject[lang] = Liferay.Language.get(key);
+			transObject[lang] = Liferay.Language.get(key) + (postfix ?? "");
 		});
 
 		return transObject;
@@ -255,19 +262,6 @@ export const Util = {
 
 		return rows;
 	},
-
-	getCurrentLanguageId: () => {
-		return Liferay.ThemeDisplay.getLanguageId();
-	},
-
-	getAvailableLanguageIds: () => {
-		//const ids = Liferay.Language.getAvailableLocales();
-		console.log("Available Locales: ", Liferay.ThemeDisplay);
-		return Liferay.ThemeDisplay.getAvailableLocales();
-
-		//return ids;
-	},
-
 	randomKey: (length = 32) => {
 		let mask = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -277,5 +271,10 @@ export const Util = {
 		}
 
 		return result;
+	},
+	unicodeToString: (str) => {
+		return str.replace(/\\u([\d\w]{4})/gi, (match, grp) => {
+			return String.fromCharCode(parseInt(grp, 16));
+		});
 	}
 };

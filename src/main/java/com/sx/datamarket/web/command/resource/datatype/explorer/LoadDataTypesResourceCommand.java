@@ -21,9 +21,11 @@ import com.sx.constant.StationXConstants;
 import com.sx.constant.StationXWebKeys;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataType;
+import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.security.permission.resource.datatype.DataTypeModelPermissionHelper;
 import com.sx.icecap.security.permission.resource.datatype.DataTypeResourcePermissionHelper;
 import com.sx.icecap.service.DataTypeLocalService;
+import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.icecap.service.persistence.impl.constants.SX_ICECAPPersistenceConstants;
 
 import java.io.PrintWriter;
@@ -59,7 +61,7 @@ public class LoadDataTypesResourceCommand extends BaseMVCResourceCommand{
 		long userId = ParamUtil.getLong(resourceRequest, StationXWebKeys.USER_ID, 0);
 		int status = ParamUtil.getInteger(resourceRequest, StationXWebKeys.STATUS, WorkflowConstants.STATUS_APPROVED);
 		String navigation = ParamUtil.getString(resourceRequest, StationXWebKeys.NAVIGATION, StationXConstants.NAVIGATION_MINE);
-		String orderCol = ParamUtil.getString(resourceRequest, StationXWebKeys.ORDER_BY_COL, DataTypeProperties.DATATYPE_NAME);
+		String orderCol = ParamUtil.getString(resourceRequest, StationXWebKeys.ORDER_BY_COL, DataTypeProperties.DATATYPE_CODE);
 		String orderType = ParamUtil.getString(resourceRequest, StationXWebKeys.ORDER_BY_TYPE, StationXConstants.ASC);
 		String keywords = ParamUtil.getString(resourceRequest, StationXWebKeys.KEYWORDS, "");
 		
@@ -70,49 +72,51 @@ public class LoadDataTypesResourceCommand extends BaseMVCResourceCommand{
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		JSONArray jsonDataTypes = JSONFactoryUtil.createJSONArray();
 		
+		List<DataType> dataTypeList = null;
 		if(loadType.equalsIgnoreCase("dataType")) {
 			System.out.println("Start: " + start);
 			System.out.println("End: " + end);
-			List<DataType> dataTypes = _dataTypeLocalService.getDataTypes(start, end);
-			
-			PermissionChecker permissionChecker = themeDisplay.getPermissionChecker();
-			List<ResourceAction> resourceActions = _resouceActionLocalService.getResourceActions(Constant.ICECAP_RESOURCE_NAME);
-			System.out.println("Model Actions: " + resourceActions);
-			
-			for(int i=0; i<dataTypes.size(); i++) {
-				DataType dataType = dataTypes.get(i);
-				JSONObject jsonDataType = dataType.toJSON(themeDisplay.getLocale());
-				
-				JSONArray permissions = JSONFactoryUtil.createJSONArray();
-				for (ResourceAction resourceAction : resourceActions) {
-					String actionId = resourceAction.getActionId();
-	
-					// Check if the user has the permission for the action
-					boolean hasPermission = DataTypeModelPermissionHelper.contains(permissionChecker, dataType.getDataTypeId(), actionId);
-	
-					if (hasPermission) {
-						permissions.put(actionId);
-					}
-				}
-				
-				jsonDataType.put("permissions", permissions);
-				
-				jsonDataTypes.put(jsonDataType);
-			}
+			dataTypeList = _dataTypeLocalService.getDataTypes(start, end);
 		}
 		else {
-			List<DataType> dataTypes = _dataTypeLocalService.getAllDataTypes();
+			dataTypeList = _dataTypeLocalService.getAllDataTypes();
+		}
+		
+		PermissionChecker permissionChecker = themeDisplay.getPermissionChecker();
+		List<ResourceAction> resourceActions = _resouceActionLocalService.getResourceActions(Constant.ICECAP_RESOURCE_NAME);
+		System.out.println("Model Actions: " + resourceActions);
+		
+		
+		Iterator<DataType> iterator = dataTypeList.iterator();
+		while(iterator.hasNext()) {
+			DataType dataType =  iterator.next();
+			JSONObject jsonDataType = dataType.toJSON(themeDisplay.getLocale());
 			
-			Iterator<DataType> iterator = dataTypes.iterator();
-			while(iterator.hasNext()) {
-				DataType dataType = iterator.next();
-				
-				JSONObject item = JSONFactoryUtil.createJSONObject();
-				item.put("id", dataType.getDataTypeId());
-				item.put("label", dataType.getDisplayName(themeDisplay.getLocale()));
-				
-				jsonDataTypes.put(item);
+			JSONArray permissions = JSONFactoryUtil.createJSONArray();
+			for (ResourceAction resourceAction : resourceActions) {
+				String actionId = resourceAction.getActionId();
+
+				// Check if the user has the permission for the action
+				boolean hasPermission = DataTypeModelPermissionHelper.contains(permissionChecker, dataType.getDataTypeId(), actionId);
+
+				if (hasPermission) {
+					permissions.put(actionId);
+				}
 			}
+			
+			jsonDataType.put("permissions", permissions);
+			
+			// set link information to data structure
+			try {
+				TypeStructureLink typeStructureLink = 
+						_typeStructureLinkLocalService.getTypeStructureLink(dataType.getDataTypeId());
+				
+				jsonDataType.put("typeStructureLink", typeStructureLink.toJSON());
+			} catch( PortalException e ) {
+				System.out.println("No type-structure link: " + dataType.getDisplayName(themeDisplay.getLocale()));
+			}
+			
+			jsonDataTypes.put(jsonDataType);
 		}
 		
 		result.put("dataTypes", jsonDataTypes);
@@ -126,6 +130,9 @@ public class LoadDataTypesResourceCommand extends BaseMVCResourceCommand{
 	
 	@Reference
 	private DataTypeLocalService _dataTypeLocalService;
+	
+	@Reference
+	private TypeStructureLinkLocalService _typeStructureLinkLocalService;
 	
 	@Reference
 	private ResourceActionLocalService _resouceActionLocalService;

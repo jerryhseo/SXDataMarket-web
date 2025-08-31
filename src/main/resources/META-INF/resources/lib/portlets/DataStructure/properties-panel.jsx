@@ -28,7 +28,7 @@ class GroupSelectorBody extends React.Component {
 
 		this.state = {
 			selected: this.getOption(
-				this.workingParam.parentName ? this.workingParam.parentName : GroupParameter.ROOT_GROUP
+				this.workingParam.parentCode ? this.workingParam.parentCode : GroupParameter.ROOT_GROUP
 			)
 		};
 	}
@@ -37,41 +37,41 @@ class GroupSelectorBody extends React.Component {
 	 * Gets groups as select options in the data structure parameters except of the working group parameter.
 	 * "Top Level Group" should be added as first option.
 	 *
-	 * @param {{paramName: String, paramVersion:String}} param0
+	 * @param {{paramCode: String, paramVersion:String}} param0
 	 * @returns
 	 */
 	convertGroupsToOptions() {
 		return [
 			{
 				label: Util.translate("top-level"),
-				paramName: GroupParameter.ROOT_GROUP,
+				paramCode: GroupParameter.ROOT_GROUP,
 				paramVersion: Parameter.DEFAULT_VERSION
 			},
 			...this.dataStructure
 				.getGroups({
-					paramName: this.workingParam.paramName,
+					paramCode: this.workingParam.paramCode,
 					paramVersion: this.workingParam.paramVersion
 				})
 				.map((group) => ({
 					label: group.label,
-					paramName: group.paramName,
+					paramCode: group.paramCode,
 					paramVersion: group.paramVersion
 				}))
 		];
 	}
 
-	getOption(paramName) {
-		return this.options.filter((option) => option.paramName === paramName)[0];
+	getOption(paramCode) {
+		return this.options.filter((option) => option.paramCode === paramCode)[0];
 	}
 
 	handleGroupSelected(option) {
 		const srcGroup = this.dataStructure.findParameter({
-			paramName: this.workingParam.parentName,
+			paramCode: this.workingParam.parentCode,
 			paramVersion: this.workingParam.parentVersion,
 			descendant: true
 		});
 		const targetGroup = this.dataStructure.findParameter({
-			paramName: option.paramName,
+			paramCode: option.paramCode,
 			paramVersion: option.paramVersion,
 			descendant: true
 		});
@@ -97,8 +97,8 @@ class GroupSelectorBody extends React.Component {
 										key={Util.randomKey()}
 										name={this.namespace + "group"}
 										label={option.label}
-										value={option.paramName}
-										defaultChecked={option.paramName === this.state.selected.paramName}
+										value={option.paramCode}
+										defaultChecked={option.paramCode === this.state.selected.paramCode}
 										onChange={(e) => {
 											e.stopPropagation();
 											this.handleGroupSelected(option);
@@ -290,7 +290,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 								prepend
 								style={{ padding: "5px", backgroundColor: "#effccf", justifyContent: "center" }}
 							>
-								{this.state.group ?? Util.translate("root")}
+								{this.state.group ?? "Root"}
 							</ClayInput.GroupItem>
 							<ClayInput.GroupItem
 								append
@@ -338,7 +338,11 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 						spritemap={this.spritemap}
 					/>
 				)}
-				<ClayMultiStepNav style={{ paddingTop: "1.5rem", border: "2px solid #a9aaab" }}>
+				<ClayMultiStepNav
+					className="sx-multistep"
+					style={{ padding: "10px" }}
+					center="true"
+				>
 					{this.panelSteps.map(({ subTitle, title }, i) => {
 						let panelStep = this.state.panelStep < 0 ? 0 : this.state.panelStep;
 						const complete = i < this.state.panelStep;
@@ -349,6 +353,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 								expand={i + 1 !== this.panelSteps.length}
 								key={i}
 								state={complete ? "complete" : undefined}
+								style={{ padding: "0", marginBottom: "0" }}
 							>
 								<ClayMultiStepNav.Title>{title}</ClayMultiStepNav.Title>
 								<ClayMultiStepNav.Divider />

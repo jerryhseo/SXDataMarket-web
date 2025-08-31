@@ -19,40 +19,44 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		this.spritemap = props.spritemap;
 
 		this.state = {
-			paramNameDuplicatedErrorDlg: false
+			paramCodeDuplicatedErrorDlg: false
 		};
 
 		this.fields = {
-			paramName: Parameter.createParameter(
+			paramCode: Parameter.createParameter(
 				this.namespace,
 				this.formIds.basicPropertiesFormId,
 				this.languageId,
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.PARAM_NAME,
-					displayName: Util.getTranslationObject(this.languageId, "parameter-name"),
-					placeholder: Util.getTranslationObject(this.languageId, "code-name-of-the-parameter"),
-					tooltip: Util.getTranslationObject(this.languageId, "code-name-of-the-parameter-tooltip"),
+					paramCode: ParamProperty.PARAM_CODE,
+					displayName: Util.getTranslationObject(this.languageId, "parameter-code"),
+					placeholder: Util.getTranslationObject(this.languageId, "code-of-the-parameter"),
+					tooltip: Util.getTranslationObject(this.languageId, "code-tooltip"),
 					validation: {
 						required: {
 							value: true,
-							message: Util.getTranslationObject(this.languageId, "this-field-is-required")
+							message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+							errorClass: ErrorClass.ERROR
 						},
 						pattern: {
 							value: ValidationRule.VARIABLE,
-							message: Util.getTranslationObject(this.languageId, "invalid-parameter-name")
+							message: Util.getTranslationObject(this.languageId, "invalid-code"),
+							errorClass: ErrorClass.ERROR
 						},
-						min: {
-							value: 8,
-							message: Util.getTranslationObject(this.languageId, "too-short")
+						minLength: {
+							value: 3,
+							message: Util.getTranslationObject(this.languageId, "shorter-than", 3),
+							errorClass: ErrorClass.ERROR
 						},
-						max: {
+						maxLength: {
 							value: 32,
-							message: Util.getTranslationObject(this.languageId, "too-long")
+							message: Util.getTranslationObject(this.languageId, "longer-than", 32),
+							errorClass: ErrorClass.ERROR
 						}
 					},
-					value: this.workingParam.paramName
+					value: this.workingParam.paramCode
 				}
 			),
 			paramVersion: Parameter.createParameter(
@@ -62,19 +66,21 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.PARAM_VERSION,
+					paramCode: ParamProperty.PARAM_VERSION,
 					displayName: Util.getTranslationObject(this.languageId, "version"),
 					placeholder: Util.getTranslationObject(this.languageId, "version-of-the-parameter"),
-					tooltip: Util.getTranslationObject(this.languageId, "version-of-the-parameter-tooltip"),
+					tooltip: Util.getTranslationObject(this.languageId, "version-tooltip"),
 					defaultValue: "1.0.0",
 					validation: {
 						required: {
 							value: true,
-							message: Util.getTranslationObject(this.languageId, "Parameter version is required")
+							message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+							errorClass: ErrorClass.ERROR
 						},
 						pattern: {
 							value: ValidationRule.VERSION,
-							message: Util.getTranslationObject(this.languageId, "invalid-parameter-version")
+							message: Util.getTranslationObject(this.languageId, "invalid-version-format"),
+							errorClass: ErrorClass.ERROR
 						}
 					},
 					value: this.workingParam.paramVersion
@@ -87,23 +93,26 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.DISPLAY_NAME,
+					paramCode: ParamProperty.DISPLAY_NAME,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "display-name"),
-					placeholder: Util.getTranslationObject(this.languageId, "display-name-of-the-parameter"),
-					tooltip: Util.getTranslationObject(this.languageId, "display-name-of-the-parameter-tooltip"),
+					placeholder: Util.getTranslationObject(this.languageId, "display-name"),
+					tooltip: Util.getTranslationObject(this.languageId, "display-name-tooltip"),
 					validation: {
 						required: {
 							value: true,
-							message: Util.getTranslationObject(this.languageId, "display-name-is-required")
+							message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+							errorClass: ErrorClass.ERROR
 						},
-						min: {
-							value: 2,
-							message: Util.getTranslationObject(this.languageId, "too-short")
+						minLength: {
+							value: 6,
+							message: Util.getTranslationObject(this.languageId, "shorter-than", 6),
+							errorClass: ErrorClass.ERROR
 						},
-						max: {
-							value: 32,
-							message: Util.getTranslationObject(this.languageId, "too-long")
+						maxLength: {
+							value: 64,
+							message: Util.getTranslationObject(this.languageId, "longer-than", 64),
+							errorClass: ErrorClass.ERROR
 						}
 					},
 					value: this.workingParam.displayName ?? {}
@@ -116,16 +125,17 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.DEFINITION,
+					paramCode: ParamProperty.DEFINITION,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "definition"),
 					multipleLine: true,
 					placeholder: Util.getTranslationObject(this.languageId, "definition-of-the-parameter"),
-					tooltip: Util.getTranslationObject(this.languageId, "definition-of-the-parameter-tooltip"),
+					tooltip: Util.getTranslationObject(this.languageId, "parameter-definition-tooltip", 512),
 					validation: {
 						max: {
 							value: 512,
-							message: Util.getTranslationObject(this.languageId, "too-long")
+							message: Util.getTranslationObject(this.languageId, "longer-than", 512),
+							errorClass: ErrorClass.ERROR
 						}
 					},
 					value: this.workingParam.definition
@@ -138,10 +148,10 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.SHOW_DEFINITION,
+					paramCode: ParamProperty.SHOW_DEFINITION,
 					viewType: BooleanParameter.ViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "show-definition"),
-					tooltip: Util.getTranslationObject(this.languageId, "show-definition-of-the-parameter-tooltip"),
+					tooltip: Util.getTranslationObject(this.languageId, "show-description-tooltip"),
 					value: this.workingParam.showDefinition
 				}
 			),
@@ -152,11 +162,11 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.TOOLTIP,
+					paramCode: ParamProperty.TOOLTIP,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "tooltip"),
-					placeholder: Util.getTranslationObject(this.languageId, "tooltip-of-the-parameter"),
-					tooltip: Util.getTranslationObject(this.languageId, "tooltip-of-the-parameter-tooltip"),
+					placeholder: Util.getTranslationObject(this.languageId, "tooltip"),
+					tooltip: Util.getTranslationObject(this.languageId, "tooltip-tooltip"),
 					value: this.workingParam.tooltip
 				}
 			),
@@ -167,10 +177,10 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 				this.availableLanguageIds,
 				ParamType.STRING,
 				{
-					paramName: ParamProperty.SYNONYMS,
+					paramCode: ParamProperty.SYNONYMS,
 					displayName: Util.getTranslationObject(this.languageId, "synonyms"),
-					placeholder: Util.getTranslationObject(this.languageId, "synonyms-of-the-parameter"),
-					tooltip: Util.getTranslationObject(this.languageId, "synonyms-of-the-parameter-tooltip"),
+					placeholder: Util.getTranslationObject(this.languageId, "code1, code2"),
+					tooltip: Util.getTranslationObject(this.languageId, "synonyms-tooltip"),
 					value: this.workingParam.synonyms
 				}
 			)
@@ -197,7 +207,6 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 			return;
 		}
 
-		/*
 		console.log(
 			"RECEIVED - SXDSBuilderBasicPropertiesPanel SX_FIELD_VALUE_CHANGED: ",
 			dataPacket,
@@ -205,36 +214,54 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 			this.workingParam,
 			dataPacket.parameter
 		);
-		*/
 
-		this.workingParam[dataPacket.paramName] = dataPacket.parameter.getValue();
+		if (dataPacket.parameter.hasError()) {
+			this.workingParam.setError(
+				dataPacket.parameter.errorClass,
+				dataPacket.parameter.errorMessage,
+				dataPacket.parameter.paramCode
+			);
+		} else {
+			this.workingParam[dataPacket.paramCode] = dataPacket.parameter.getValue();
+			this.workingParam.clearError(dataPacket.parameter.paramCode);
+		}
 
 		/*
 			if (
 				(this.workingParam.paramType === paramType.GROUP || this.workingParam.paramType === paramType.GRID) &&
-				(dataPacket.paramName === ParamProperty.PARAM_NAME ||
-					dataPacket.paramName === ParamProperty.PARAM_VERSION)
+				(dataPacket.paramCode === ParamProperty.PARAM_CODE ||
+					dataPacket.paramCode === ParamProperty.PARAM_VERSION)
 			) {
 				this.workingParam.updateMemberParents();
 			}
 				*/
 
-		if (dataPacket.paramName === ParamProperty.PARAM_NAME) {
+		if (dataPacket.paramCode === ParamProperty.PARAM_CODE) {
 			if (this.dataStructure.checkDuplicateParam(this.workingParam)) {
-				this.fields.paramName.errorClass = ErrorClass.ERROR;
-				this.fields.paramName.errorMessage = Util.translate("parameter-name-must-be-unique");
-				this.fields.paramName.dirty = true;
-				this.fields.paramName.refreshKey();
+				this.fields.paramCode.setError(
+					ErrorClass.ERROR,
+					Util.translate("parameter-code-must-be-unique", "value")
+				);
+				this.fields.paramCode.dirty = true;
+				this.fields.paramCode.refreshKey();
 
-				this.setState({ paramNameDuplicatedErrorDlg: true });
+				this.workingParam.setError(
+					ErrorClass.ERROR,
+					Util.translate("parameter-code-must-be-unique"),
+					"paramCode"
+				);
+
+				this.setState({ paramCodeDuplicatedErrorDlg: true });
 				return;
+			} else {
+				this.workingParam.clearError(ParamProperty.PARAM_CODE);
 			}
 		}
 
 		if (this.workingParam.isRendered()) {
 			if (this.workingParam.displayType === Parameter.DisplayTypes.GRID_CELL) {
 				const gridParam = this.dataStructure.findParameter({
-					paramName: this.workingParam.parent.name,
+					paramCode: this.workingParam.parent.code,
 					paramVersion: this.workingParam.parent.version,
 					descendant: true
 				});
@@ -268,14 +295,14 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 						spritemap: this.spritemap
 					})
 				)}
-				{this.state.paramNameDuplicatedErrorDlg && (
+				{this.state.paramCodeDuplicatedErrorDlg && (
 					<SXModalDialog
 						header="Error"
-						body={Util.translate("parameter-name-must-be-unique")}
+						body={Util.translate("parameter-code-must-be-unique")}
 						buttons={[
 							{
 								onClick: () => {
-									this.setState({ paramNameDuplicatedErrorDlg: false });
+									this.setState({ paramCodeDuplicatedErrorDlg: false });
 								},
 								label: Util.translate("ok"),
 								displayType: "primary"

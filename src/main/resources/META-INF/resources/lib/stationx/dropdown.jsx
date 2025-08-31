@@ -26,10 +26,11 @@ class SXActionDropdown extends React.Component {
 		};
 	}
 
-	handleActionClick = (actionItem) => {
+	handleActionClick = (actionItem, index) => {
 		Event.fire(Event.SX_POP_ACTION_CLICKED, this.namespace, this.namespace, {
 			targetFormId: this.formId,
-			actionItem: actionItem.id,
+			action: actionItem.id,
+			index: index,
 			data: this.data
 		});
 
@@ -75,10 +76,10 @@ class SXActionDropdown extends React.Component {
 				menuWidth="shrink"
 			>
 				<DropDown.ItemList items={this.actionItems}>
-					{(actionItem) => (
+					{(actionItem, index) => (
 						<DropDown.Item
 							key={actionItem.id}
-							onClick={(e) => this.handleActionClick(actionItem)}
+							onClick={(e) => this.handleActionClick(actionItem, index)}
 						>
 							<Icon
 								spritemap={this.spritemap}

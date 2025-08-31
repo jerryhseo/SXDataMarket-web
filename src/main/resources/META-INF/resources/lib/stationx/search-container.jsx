@@ -314,7 +314,6 @@ export class SXSearchResultConainer extends React.Component {
 		this.checkbox = props.checkbox ?? true;
 		this.checkAll = props.checkAll ?? false;
 		this.index = props.index ?? true;
-		this.actionItems = props.actionItems ?? [];
 		this.spritemap = props.spritemap;
 
 		this.rows = [];
@@ -349,6 +348,7 @@ export class SXSearchResultConainer extends React.Component {
 
 			row = [...row, ...result];
 
+			/*
 			row.push({
 				id: "actions",
 				value: (
@@ -361,6 +361,7 @@ export class SXSearchResultConainer extends React.Component {
 					/>
 				)
 			});
+			*/
 
 			this.rows.push(row);
 		});
@@ -433,14 +434,33 @@ export class SXSearchResultConainer extends React.Component {
 					{(row, index) => {
 						return (
 							<Row key={index}>
-								{row.map((column) => (
-									<Cell
-										key={column.id}
-										textAlign="center"
-									>
-										{column.value}
-									</Cell>
-								))}
+								{row.map((column) => {
+									if (column.id === "actions") {
+										return (
+											<Cell
+												key={column.id}
+												textAlign="center"
+											>
+												<SXActionDropdown
+													namespace={this.namespace}
+													formId={this.formId}
+													actionItems={column.value}
+													dataKey={index}
+													spritemap={this.spritemap}
+												/>
+											</Cell>
+										);
+									} else {
+										return (
+											<Cell
+												key={column.id}
+												textAlign="center"
+											>
+												{column.value}
+											</Cell>
+										);
+									}
+								})}
 							</Row>
 						);
 					}}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" id="copy">
+  <path fill="#80d8ff" d="M47 53v6H9V9h6v44h32zM53 15H43V5l10 10z"></path>
+  <path fill="#fff" d="M53 15v38H15V5h28v10h10z"></path>
+  <path fill="#0091ea" d="M53 54H15a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h28a1 1 0 0 1 .71.29l10 10A1 1 0 0 1 54 15v38a1 1 0 0 1-1 1Zm-37-2h36V15.41L42.59 6H16Z"></path>
+  <path fill="#0091ea" d="M53 16H43a1 1 0 0 1-1-1V5a1 1 0 0 1 2 0v9h9a1 1 0 0 1 0 2zm-6 44H9a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h6a1 1 0 0 1 0 2h-5v48h36v-5a1 1 0 0 1 2 0v6a1 1 0 0 1-1 1z"></path>
+  <path fill="#0091ea" d="M45 26H23a1 1 0 0 1 0-2h22a1 1 0 0 1 0 2zm0 6H23a1 1 0 0 1 0-2h22a1 1 0 0 1 0 2zm0 6H23a1 1 0 0 1 0-2h22a1 1 0 0 1 0 2z"></path>
+</svg>

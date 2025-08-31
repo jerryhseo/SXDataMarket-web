@@ -21,9 +21,11 @@ import com.sx.constant.StationXConstants;
 import com.sx.constant.StationXWebKeys;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataType;
+import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.security.permission.resource.datatype.DataTypeModelPermissionHelper;
 import com.sx.icecap.security.permission.resource.datatype.DataTypeResourcePermissionHelper;
 import com.sx.icecap.service.DataTypeLocalService;
+import com.sx.icecap.service.TypeStructureLinkLocalService;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -67,28 +69,47 @@ public class SearchDataTypesResourceCommand extends BaseMVCResourceCommand{
 		
 		System.out.println("Start: " + start);
 		System.out.println("End: " + end);
-		List<DataType> dataTypes = null;
+		List<DataType> dataTypeList = null;
 		
 		if(keywords.isEmpty()) {
-			dataTypes = _dataTypeLocalService.getDataTypesByG_S(groupId, status, start, end);
+			dataTypeList = _dataTypeLocalService.getDataTypesByG_S(groupId, status, start, end);
 		}
 		else {
-			dataTypes = new ArrayList<>();
+			dataTypeList = new ArrayList<>();
 		}
 		
-		JSONArray jsonDataTypes = JSONFactoryUtil.createJSONArray();
+		JSONArray result = JSONFactoryUtil.createJSONArray();
 		
-		Iterator<DataType> iter = dataTypes.iterator();
+		Iterator<DataType> iter = dataTypeList.iterator();
 		while(iter.hasNext()) {
-			jsonDataTypes.put(iter.next().toJSON(themeDisplay.getLocale()));
+			JSONObject dataTypeInfo = JSONFactoryUtil.createJSONObject();
+			
+			DataType dataType = iter.next();
+			
+			dataTypeInfo.put("dataType", dataType.toJSON(themeDisplay.getLocale()));
+
+			try {
+				TypeStructureLink typeStructureLink = 
+						_typeStructureLinkLocalService.getTypeStructureLink(dataType.getDataTypeId());
+				
+				dataTypeInfo.put("typeStructureLink", typeStructureLink.toJSON());
+			} catch( PortalException e) {
+				System.out.println("No DataType - DataStructure link: " + 
+						dataType.getDisplayName(themeDisplay.getLocale()));
+			}
+			
+			result.put(dataTypeInfo);
 		}
 
 		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(jsonDataTypes.toJSONString());
+		pw.write(result.toJSONString());
 		pw.flush();
 		pw.close();
 	}
 	
 	@Reference
 	private DataTypeLocalService _dataTypeLocalService;
+	
+	@Reference
+	private TypeStructureLinkLocalService _typeStructureLinkLocalService;
 }

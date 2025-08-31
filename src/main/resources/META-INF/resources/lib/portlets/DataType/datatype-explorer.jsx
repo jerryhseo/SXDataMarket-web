@@ -12,7 +12,7 @@ import {
 } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
 import { Context } from "@clayui/modal";
-import { openConfirmModal, SXErrorModal, SXLoadingModal } from "../../stationx/modal";
+import { openConfirmModal, SXErrorModal, SXLoadingModal, SXModalDialog } from "../../stationx/modal";
 import { Body, Cell, Head, Row, Table } from "@clayui/core";
 import { ClayCheckbox, ClayInput } from "@clayui/form";
 import { ClayDropDownWithItems } from "@clayui/drop-down";
@@ -23,6 +23,7 @@ import Toolbar from "@clayui/toolbar";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { FilterOptions } from "../../stationx/search-container";
 import SXActionDropdown from "../../stationx/dropdown";
+import { SXFreezeIcon, SXLinkIcon, SXVerifyIcon } from "../../stationx/icon";
 
 class DataTypeExplorer extends React.Component {
 	constructor(props) {
@@ -96,6 +97,8 @@ class DataTypeExplorer extends React.Component {
 		this.searchResults = [];
 		this.selectedResults = [];
 
+		this.confirmDialogHeader = <></>;
+		this.confirmDialogBody = <></>;
 		this.state = {
 			displayStyle: this.params.displayStyle ?? this.displayStyles[0].value, //table
 			filterBy: this.params.filterBy ?? this.filterOptions[0], //groupId
@@ -126,7 +129,7 @@ class DataTypeExplorer extends React.Component {
 			});
 			this.contentActionMenus.push({
 				id: "editStructure",
-				name: Util.translate("edit-structure"),
+				name: Util.translate("edit-datastructure"),
 				symbol: "edit-layout"
 			});
 		}
@@ -158,6 +161,11 @@ class DataTypeExplorer extends React.Component {
 				id: "datatype-code",
 				name: Util.translate("datatype-code"),
 				width: "15rem"
+			},
+			{
+				id: "datastructure",
+				name: Util.translate("datastructure"),
+				width: "10rem"
 			},
 			{
 				id: "actions",
@@ -237,7 +245,7 @@ class DataTypeExplorer extends React.Component {
 
 		const dataType = this.searchResults[dataPacket.data];
 
-		switch (dataPacket.actionItem) {
+		switch (dataPacket.action) {
 			case "update": {
 				Util.redirectTo(
 					this.workbench.url,
@@ -252,6 +260,34 @@ class DataTypeExplorer extends React.Component {
 							dataTypeId: dataType[0].value
 						})
 					}
+				);
+			}
+			case "editStructure": {
+				Util.redirectTo(
+					this.workbench.url,
+					{
+						namespace: this.workbench.namespace,
+						portletId: this.workbench.portletId,
+						windowState: WindowState.NORMAL
+					},
+					{
+						workingPortletName: PortletKeys.DATASTRUCTURE_BUILDER,
+						workingPortletParams: JSON.stringify({
+							dataTypeId: dataType[0].value
+						})
+					}
+				);
+			}
+			case "delete": {
+				this.confirmDialogHeader = (
+					<div style={{ color: "#ad970bff" }}>
+						<Icon
+							symbol="warning"
+							spritemap={this.spritemap}
+							style={{ marginRight: "1rem" }}
+						/>
+						{Util.translate("error")}
+					</div>
 				);
 			}
 		}
@@ -329,6 +365,7 @@ class DataTypeExplorer extends React.Component {
 				this.convertSearchResultsToContent(result);
 
 				console.log("search results: ", result);
+
 				this.setState({
 					loadingStatus: LoadingStatus.COMPLETE,
 					searchContainerKey: Util.randomKey()
@@ -344,7 +381,39 @@ class DataTypeExplorer extends React.Component {
 	}
 
 	convertSearchResultsToContent(results) {
-		this.searchResults = results.map((dataType, index) => {
+		this.searchResults = results.map((result, index) => {
+			const { dataType, typeStructureLink } = result;
+
+			console.log("convertSearchResultsToContent: ", result, dataType, Util.isNotEmpty(typeStructureLink));
+			const contentActionMenus = [];
+
+			if (this.permissions.includes(ActionKeys.UPDATE)) {
+				contentActionMenus.push({
+					id: "update",
+					name: Util.translate("update"),
+					symbol: "pencil"
+				});
+				contentActionMenus.push({
+					id: "delete",
+					name: Util.translate("delete"),
+					symbol: "trash"
+				});
+
+				if (Util.isNotEmpty(typeStructureLink)) {
+					contentActionMenus.push({
+						id: "editStructure",
+						name: Util.translate("edit-datastructure"),
+						symbol: "edit-layout"
+					});
+				}
+			}
+
+			contentActionMenus.push({
+				name: Util.translate("advanced-search"),
+				id: "advancedSearch",
+				symbol: "search-experiences"
+			});
+
 			let row = [
 				{
 					id: "dataTypeId",
@@ -359,8 +428,32 @@ class DataTypeExplorer extends React.Component {
 					value: dataType.dataTypeVersion
 				},
 				{
-					id: "dataTypeName",
-					value: dataType.dataTypeName
+					id: "dataTypeCode",
+					value: dataType.dataTypeCode
+				},
+				{
+					id: "structureStatus",
+					value: (
+						<>
+							<span style={{ marginRight: "5px" }}>
+								<SXLinkIcon linked={Util.isNotEmpty(typeStructureLink)} />
+							</span>
+							{Util.isNotEmpty(typeStructureLink) && (
+								<span style={{ marginRight: "5px" }}>
+									<SXVerifyIcon verified={typeStructureLink.verified} />
+								</span>
+							)}
+							{Util.isNotEmpty(typeStructureLink) && (
+								<span style={{ marginRight: "5px" }}>
+									<SXFreezeIcon freezed={typeStructureLink.freezed} />
+								</span>
+							)}
+						</>
+					)
+				},
+				{
+					id: "actions",
+					value: contentActionMenus
 				}
 			];
 
@@ -412,9 +505,30 @@ class DataTypeExplorer extends React.Component {
 						columns={this.tableColumns}
 						searchResults={this.searchResults}
 						selectedResults={this.selectedResults}
-						actionItems={this.contentActionMenus}
 						spritemap={this.spritemap}
 					/>
+					{this.state.confirmDialog && (
+						<SXModalDialog
+							header={Util.translate("warning")}
+							body={Util.translate("this-is-not-recoverable-are-you-sure-delete-the-data-type")}
+							buttons={[
+								{
+									label: Util.translate("confirm"),
+									onClick: (e) => {
+										this.proceedDelete();
+										this.setState({ deleteConfirmDlgStatus: false });
+									},
+									displayType: "secondary"
+								},
+								{
+									label: Util.translate("cancel"),
+									onClick: (e) => {
+										this.setState({ deleteConfirmDlgStatus: false });
+									}
+								}
+							]}
+						/>
+					)}
 				</div>
 			);
 		}
@@ -737,7 +851,7 @@ const DataTypeExplorer = ({ portletParameters }) => {
 				sortable: false,
 				type: "text",
 				label: "Name",
-				property: "dataTypeName",
+				property: "dataTypeCode",
 				width: "20%"
 			},
 			{

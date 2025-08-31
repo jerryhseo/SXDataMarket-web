@@ -63,7 +63,7 @@ public class DeleteDataTypeResourceCommand extends BaseMVCResourceCommand{
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
 		result.put("dataTypeId", dataType.getDataTypeId());
-		result.put("dataTypeName", dataType.getDataTypeName());
+		result.put("dataTypeCode", dataType.getDataTypeCode());
 		result.put("dataTypeVersion", dataType.getDataTypeVersion());
 		
 		pw.write(result.toJSONString());

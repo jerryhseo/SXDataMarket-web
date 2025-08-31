@@ -8,7 +8,7 @@ export const SXModalDialog = ({
 	size,
 	status = "secondary",
 	spritemap,
-	header = "",
+	header = <></>,
 	body,
 	buttons,
 	withTitle = false,
@@ -24,7 +24,12 @@ export const SXModalDialog = ({
 			disableAutoClose={disableAutoClose}
 			center
 		>
-			<Modal.Header withTitle={withTitle}>{header}</Modal.Header>
+			<Modal.Header
+				withTitle={withTitle}
+				style={{ backgroundColor: "#dcf09c" }}
+			>
+				<h3>{header}</h3>
+			</Modal.Header>
 			<Modal.Body style={{ justifyItems: "center" }}>{body}</Modal.Body>
 			<Modal.Footer
 				last={

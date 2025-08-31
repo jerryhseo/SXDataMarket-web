@@ -3,7 +3,8 @@ import { Util } from "./util";
 export const EditStatus = {
 	UPDATE: "update",
 	ADD: "add",
-	UPGRADE: "upgrade"
+	UPGRADE: "upgrade",
+	IMPORT: "import"
 };
 
 export const LiferayProperty = {
@@ -207,7 +208,7 @@ export const ParamProperty = {
 	OPTIONS: "options",
 	OPTIONS_PER_ROW: "optionsPerRow",
 	ORDER: "order",
-	PARAM_NAME: "paramName",
+	PARAM_CODE: "paramCode",
 	PARAM_TYPE: "paramType",
 	PARAM_VERSION: "paramVersion",
 	PATH: "path",
@@ -268,16 +269,17 @@ export const ResourceIds = {
 	LOAD_DATATYPES: "/ajax/DataType/load-datatypes",
 	LOAD_DATATYPE: "/ajax/DataType/load-datatype",
 	ADD_DATATYPE: "/ajax/DataType/add-datatype",
-	CHECK_DATATYPE_NAME_UNIQUE: "/ajax/DataType/check-datatype-name-unique",
+	CHECK_DATATYPE_UNIQUE: "/ajax/DataType/check-datatype-unique",
 	UPDATE_DATATYPE: "/ajax/DataType/update-datatype",
 	DELETE_DATATYPE: "/ajax/DataType/delete-datatype",
 	DELETE_DATATYPES: "/ajax/DataType/delete-datatypes",
 	SEARCH_DATATYPES: "/ajax/DataType/search-datatypes",
 	LOAD_AVAILABLE_VISUALIZERS: "/ajax/DataType/load-available-visualizers",
-	LOAD_DATA_STRUCTURE: "/ajax/DataStructure/load-data-structure",
-	UPDATE_DATA_STRUCTURE: "/ajax/DataStructure/save-data-structure",
-	DELETE_DATA_STRUCTURE: "/ajax/DataStructure/delete-data-structure",
-	DELETE_TEMP_STRUCTURED_DATA: "/ajax/StructuredData/delete-temp-file"
+	LOAD_DATASTRUCTURE: "/ajax/DataStructure/load-datastructure",
+	SAVE_DATASTRUCTURE: "/ajax/DataStructure/save-datastructure",
+	DELETE_DATASTRUCTURE: "/ajax/DataStructure/delete-datastructure",
+	DELETE_TEMP_STRUCTURED_DATA: "/ajax/StructuredData/delete-temp-file",
+	SAVE_TYPE_STRUCTURE_LINK: "/ajax/DataType/save-type-structure-link"
 };
 
 export const LoadingStatus = {
@@ -502,6 +504,7 @@ export const Event = {
 	SX_ADD_BUTTON_CLICKED: "SX_ADD_BUTTON_CLICKED",
 	SX_ADVANCED_SEARCH_BUTTON_CLICKED: "SX_ADVANCED_SEARCH_BUTTON_CLICKED",
 	SX_ALL_SELECTED: "SX_ALL_SELECTED",
+	SX_AUTOCOMPLETE_SELECTED: "SX_AUTOCOMPLETE_SELECTED",
 	SX_COPY_PARAMETER: "SX_COPY_PARAMETER",
 	SX_DELETE_PARAMETER: "SX_DELETE_PARAMETER",
 	SX_DISTRACT: "SX_DISTRACT",
@@ -690,6 +693,9 @@ export const Event = {
 	},
 	*/
 	fire: (event, sourcePortletId, targetPortletId, payload) => {
+		console.log("Event.fire: ", event, payload, {
+			dataPacket: Event.createEventDataPacket(sourcePortletId, targetPortletId, payload)
+		});
 		Liferay.fire(event, {
 			dataPacket: Event.createEventDataPacket(sourcePortletId, targetPortletId, payload)
 		});
@@ -716,14 +722,14 @@ export const Event = {
 			...params
 		};
 	},
-	pickUpDataPacket: (event, namespace, targetFormId, paramName, paramVersion = "1.0.0") => {
+	pickUpDataPacket: (event, namespace, targetFormId, paramCode, paramVersion) => {
 		if (Util.isEmpty(event.dataPacket)) return;
 
 		if (event.dataPacket.targetPortlet !== namespace || event.dataPacket.targetFormId !== targetFormId) {
 			return;
 		}
 
-		if (paramName && event.dataPacket.paramName !== paramName) {
+		if (paramCode && event.dataPacket.paramCode !== paramCode) {
 			return;
 		}
 
@@ -859,4 +865,15 @@ export const Workbench = {
 			});
 		});
 	}
+};
+
+export const StationXPortal = {
+	user: {
+		userId: Liferay.ThemeDisplay.getUserId(),
+		userName: Util.unicodeToString(Liferay.ThemeDisplay.getUserName())
+	},
+	languageId: Liferay.ThemeDisplay.getLanguageId().replace(/_/g, "-"),
+	defaultLanguageId: Liferay.ThemeDisplay.getDefaultLanguageId().replace(/_/g, "-"),
+
+	availableLanguageIds: Object.keys(Liferay.Language.available).map((lang) => lang.replace(/_/g, "-"))
 };

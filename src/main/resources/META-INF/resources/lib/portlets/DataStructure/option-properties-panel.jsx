@@ -30,10 +30,10 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.ABSTRACT_KEY,
+					paramCode: ParamProperty.ABSTRACT_KEY,
 					viewType: BooleanParameter.ViewTypes.TOGGLE,
 					displayName: Util.getTranslationObject(this.languageId, "abstract-key"),
-					tooltip: Util.getTranslationObject(this.languageId, "abstract-key-of-the-parameter-tooltip"),
+					tooltip: Util.getTranslationObject(this.languageId, "abstract-key-tooltip"),
 					value: this.workingParam.abstractKey
 				}
 			),
@@ -44,10 +44,10 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.DOWNLOADABLE,
+					paramCode: ParamProperty.DOWNLOADABLE,
 					viewType: BooleanParameter.ViewTypes.TOGGLE,
 					displayName: Util.getTranslationObject(this.languageId, "downloadable"),
-					tooltip: Util.getTranslationObject(this.languageId, "downloadable-of-the-parameter-tooltip"),
+					tooltip: Util.getTranslationObject(this.languageId, "downloadable-tooltip"),
 					value: this.workingParam.downloadable
 				}
 			),
@@ -58,10 +58,10 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.SEARCHABLE,
+					paramCode: ParamProperty.SEARCHABLE,
 					viewType: BooleanParameter.ViewTypes.TOGGLE,
 					displayName: Util.getTranslationObject(this.languageId, "searchable"),
-					tooltip: Util.getTranslationObject(this.languageId, "searchable-of-the-parameter-tooltip"),
+					tooltip: Util.getTranslationObject(this.languageId, "searchable-tooltip"),
 					value: this.workingParam.searchable
 				}
 			),
@@ -72,10 +72,10 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 				this.availableLanguageIds,
 				ParamType.BOOLEAN,
 				{
-					paramName: ParamProperty.DISABLED,
+					paramCode: ParamProperty.DISABLED,
 					viewType: BooleanParameter.ViewTypes.TOGGLE,
 					displayName: Util.getTranslationObject(this.languageId, "disabled"),
-					tooltip: Util.getTranslationObject(this.languageId, "disabled-of-the-parameter-tooltip"),
+					tooltip: Util.getTranslationObject(this.languageId, "disabled-tooltip"),
 					value: this.workingParam.disabled
 				}
 			)
@@ -88,7 +88,7 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 			this.availableLanguageIds,
 			ParamType.GROUP,
 			{
-				paramName: "toggleGroup",
+				paramCode: "toggleGroup",
 				viewType: GroupParameter.ViewTypes.ARRANGEMENT,
 				membersPerRow: 1,
 				members: Object.values(this.toggleFields)
@@ -102,9 +102,9 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 			this.availableLanguageIds,
 			ParamType.STRING,
 			{
-				paramName: ParamProperty.CSS_WIDTH,
+				paramCode: ParamProperty.CSS_WIDTH,
 				displayName: Util.getTranslationObject(this.languageId, "width"),
-				placeholder: Util.getTranslationObject(this.languageId, "width-in-pixel-or-rem"),
+				placeholder: Util.getTranslationObject(this.languageId, "20.rem or 100px"),
 				tooltip: Util.getTranslationObject(this.languageId, "width-of-the-parameter-tooltip"),
 				value: this.workingParam.cssWidth
 			}
@@ -125,10 +125,10 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 		);
 		*/
 
-		if (dataPacket.paramName === ParamProperty.CSS_WIDTH) {
+		if (dataPacket.paramCode === ParamProperty.CSS_WIDTH) {
 			this.workingParam.cssWidth = this.fieldCssWidth.getValue();
 		} else {
-			this.workingParam[dataPacket.paramName] = this.toggleFields[dataPacket.paramName].getValue();
+			this.workingParam[dataPacket.paramCode] = this.toggleFields[dataPacket.paramCode].getValue();
 		}
 
 		if (this.workingParam.isRendered()) {

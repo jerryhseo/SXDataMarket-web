@@ -16,7 +16,15 @@ import DropDown from "@clayui/drop-down";
 import ClayLabel from "@clayui/label";
 import { Util } from "./util";
 
-import { ParamType, Event, ErrorClass, ValidationKeys, ValidationSectionProperty, Constant } from "./station-x";
+import {
+	ParamType,
+	Event,
+	ErrorClass,
+	ValidationKeys,
+	ValidationSectionProperty,
+	Constant,
+	DisplayType
+} from "./station-x";
 import {
 	AddressParameter,
 	BooleanParameter,
@@ -31,7 +39,7 @@ import Autocomplete from "@clayui/autocomplete";
 import Panel from "@clayui/panel";
 import Toolbar from "@clayui/toolbar";
 import { DataStructure } from "../portlets/DataStructure/data-structure";
-import { Table } from "@clayui/core";
+import { Table, Text } from "@clayui/core";
 
 export const SXRequiredMark = ({ spritemap }) => {
 	return (
@@ -65,107 +73,6 @@ export const SXTooltip = ({ tooltip, spritemap }) => {
 		</ClayTooltipProvider>
 	);
 };
-
-export class SXAddCommentIcon extends React.Component {
-	constructor(props) {
-		super(props);
-	}
-
-	render() {
-		return (
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="2rem"
-				height="2rem"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="#2563eb"
-				strokeWidth="2"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-				class="lucide lucide-message-square-plus"
-			>
-				<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-				<path d="M12 7v6" />
-				<path d="M15 10h-6" />
-			</svg>
-		);
-	}
-}
-
-export class SXFreezeIcon extends React.Component {
-	constructor(props) {
-		super(props);
-
-		this.freezed = props.freezed;
-	}
-
-	render() {
-		if (this.freezed) {
-			return (
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="2rem"
-					height="2rem"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					class="lucide lucide-lock-keyhole text-gray-700"
-				>
-					<rect
-						width="18"
-						height="11"
-						x="3"
-						y="11"
-						rx="2"
-						ry="2"
-					/>
-					<path d="M7 11V7a5 5 0 0 1 10 0v4" />
-					<circle
-						cx="12"
-						cy="16"
-						r="1"
-					/>
-					<path d="M12 16v3" />
-				</svg>
-			);
-		} else {
-			return (
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="64"
-					height="64"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					class="lucide lucide-unlock-keyhole text-gray-700"
-				>
-					<rect
-						width="18"
-						height="11"
-						x="3"
-						y="11"
-						rx="2"
-						ry="2"
-					/>
-					<path d="M7 11V7a5 5 0 0 1 9.9-1" />
-					<circle
-						cx="12"
-						cy="16"
-						r="1"
-					/>
-					<path d="M12 16v3" />
-				</svg>
-			);
-		}
-	}
-}
 
 export const SXLabel = ({ label, forHtml = "", required = false, tooltip = "", style, spritemap }) => {
 	return (
@@ -210,7 +117,15 @@ export class SXTitleBar extends React.Component {
 	}
 }
 
-export const SXLabeledText = ({ label, text, align = "center", viewType = "INLINE_ATTACH" }) => {
+export const SXLabeledText = ({
+	label,
+	text,
+	align = "center",
+	viewType = "INLINE_ATTACH",
+	className = "",
+	style = {},
+	spritemap
+}) => {
 	const labelStyle = {
 		backgroundColor: "#e7e7ed",
 		marginBottom: "5px"
@@ -225,7 +140,7 @@ export const SXLabeledText = ({ label, text, align = "center", viewType = "INLIN
 	switch (viewType) {
 		case "INLINE_ATTACH": {
 			return (
-				<ClayInput.Group>
+				<ClayInput.Group style={style}>
 					<ClayInput.GroupItem
 						shrink
 						prepend
@@ -243,8 +158,20 @@ export const SXLabeledText = ({ label, text, align = "center", viewType = "INLIN
 				</ClayInput.Group>
 			);
 		}
-		case "INLINE_SPACE": {
-			return <></>;
+		case "FORM_FIELD": {
+			return (
+				<div
+					className={className}
+					style={style}
+				>
+					<SXLabel
+						label={label}
+						spritemap={spritemap}
+					/>
+					<br></br>
+					<Text size={3}>{text}</Text>
+				</div>
+			);
 		}
 		default: {
 			return <></>;
@@ -256,12 +183,19 @@ export class SXAutoComplete extends React.Component {
 	constructor(props) {
 		super(props);
 
+		this.id = props.id;
 		this.namespace = props.namespace;
 		this.formId = props.formId;
 		this.items = props.items;
+		this.itemLabelKey = props.itemLabelKey;
+		this.itemFilterKey = props.itemFilterKey;
+		this.itemValueKey = props.itemValueKey;
 		this.label = props.label;
+		this.disabled = props.disabled;
+		this.symbol = props.symbol;
 		this.spritemap = props.spritemap;
 
+		this.selectedItem = {};
 		this.state = {
 			value: ""
 		};
@@ -271,50 +205,65 @@ export class SXAutoComplete extends React.Component {
 		this.setState({ value: value });
 	};
 
+	handleSelectionSubmit = () => {
+		Event.fire(Event.SX_AUTOCOMPLETE_SELECTED, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			id: this.id,
+			item: this.selectedItem
+		});
+	};
+
 	render() {
 		const inputId = this.namespace + "input";
 
-		let groupClass = "autofit-row";
-		let inputClass = "form-control input-group-inset input-group-inset-after autofit-col autofit-col-expand";
-		const labelClass = " autofit-col";
-
 		return (
-			<div className={groupClass}>
-				<label
-					htmlFor={inputId}
-					style={{ marginRight: "5px" }}
-				>
-					{this.label + ":"}
-				</label>
-				<div className="input-group">
-					<div className="input-group-item">
-						<div className="dropdown">
-							<input
-								className={inputClass}
-								id={inputId}
-								placeholder="Search for..."
-								type="text"
-								value=""
-								onChange={(e) => {
-									e.target.value;
+			<div className="autofit-float-end-sm-down autofit-padded-no-gutters-x autofit-row">
+				<div className="autofit-col">
+					<ClayInput.Group>
+						<ClayInput.GroupItem prepend>
+							<Autocomplete
+								aria-labelledby="clay-autocomplete-label-1"
+								id="clay-autocomplete-1"
+								defaultItems={this.items}
+								messages={{
+									notFound: Util.translate("not-found")
 								}}
+								placeholder="Enter keywords..."
+								disabled={this.disabled}
+								filterKey={this.itemFilterKey}
+								value={this.state.value}
+								onChange={this.handleInputChaned}
+							>
+								{(item) => {
+									return (
+										<Autocomplete.Item
+											key={item[this.itemValueKey]}
+											onClick={(e) => {
+												this.selectedItem = item;
+											}}
+										>
+											{item[this.itemLabelKey]}
+										</Autocomplete.Item>
+									);
+								}}
+							</Autocomplete>
+						</ClayInput.GroupItem>
+						<ClayInput.GroupItem
+							shrink
+							append
+						>
+							<ClayButtonWithIcon
+								aria-labelledby={this.label}
+								title={this.label}
+								symbol={this.symbol}
+								spritemap={this.spritemap}
+								displayType="secondary"
+								disabled={Util.isEmpty(this.state.value)}
+								borderless
+								onClick={(e) => this.handleSelectionSubmit()}
 							/>
-							<ul className="autocomplete-dropdown-menu dropdown-menu">
-								<li className="dropdown-item">
-									<strong>electric toothbrush</strong>
-								</li>
-								<li className="dropdown-item">
-									<strong>electric kettle</strong>
-								</li>
-								<li className="dropdown-item">
-									<strong>electric razor</strong>
-								</li>
-								<li className="dropdown-item">
-									<strong>electrodes for tents</strong>
-								</li>
-							</ul>
-						</div>
-					</div>
+						</ClayInput.GroupItem>
+					</ClayInput.Group>
 				</div>
 			</div>
 		);
@@ -337,9 +286,9 @@ export class SXDataStatusBar extends React.Component {
 		this.spritemap = props.spritemap;
 
 		this.state = {
-			goToBasis: DataStructure.GotoBasis.PARAM_NAME,
+			goToBasis: DataStructure.GotoBasis.PARAM_CODE,
 			autoCompleteItems: this.dataStructure.enableGoTo
-				? this.dataStructure.getGotoAutoCompleteItems(null, DataStructure.GotoBasis.PARAM_NAME)
+				? this.dataStructure.getGotoAutoCompleteItems(null, DataStructure.GotoBasis.PARAM_CODE)
 				: [],
 			goToParam: {}
 		};
@@ -378,7 +327,7 @@ export class SXDataStatusBar extends React.Component {
 			});
 			Event.fire(Event.SX_FOCUS, this.namespace, this.namespace, {
 				target: this.canvasId,
-				paramName: this.state.goToParam.name,
+				paramCode: this.state.goToParam.code,
 				paramVersion: this.state.goToParam.version
 			});
 		}
@@ -417,7 +366,7 @@ export class SXDataStatusBar extends React.Component {
 											aria-label="Select Label"
 											id="mySelectId"
 											options={[
-												{ label: Util.translate("parameter-name"), value: false },
+												{ label: Util.translate("parameter-code"), value: false },
 												{ label: Util.translate("display-name"), value: true }
 											]}
 											onChange={(e) => this.handleBasisChanged(e.target.val)}
@@ -528,7 +477,7 @@ export class SXPreviewRow extends React.Component {
 			e,
 			this.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -537,7 +486,7 @@ export class SXPreviewRow extends React.Component {
 				e,
 				this.namespace,
 				this.parameter.tagName,
-				this.parameter.paramName,
+				this.parameter.paramCode,
 				this.parameter.paramVersion
 			);
 		}
@@ -744,11 +693,15 @@ export const SXFormFieldFeedback = ({ content, level, symbol, spritemap }) => {
 	);
 };
 
-/****************************************************
- *  01. The type of Parametrer is String and
- * 		localized property is false
- ****************************************************/
-export class SXInput extends React.Component {
+class BaseParameterComponent extends React.Component {
+	className = "";
+	style = {};
+	spritemap = "";
+	parameter = null;
+	displayType = Parameter.DisplayTypes.FORM_FIELD;
+	viewType = "";
+	cellIndex = null;
+
 	constructor(props) {
 		super(props);
 
@@ -758,12 +711,6 @@ export class SXInput extends React.Component {
 		this.parameter = props.parameter;
 		this.viewType = props.viewType ?? props.parameter.viewType;
 		this.cellIndex = props.cellIndex;
-
-		this.state = {
-			value: this.parameter.getValue(this.cellIndex)
-		};
-
-		this.focusRef = createRef();
 	}
 
 	refreshHandler = (event) => {
@@ -771,7 +718,7 @@ export class SXInput extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -793,7 +740,7 @@ export class SXInput extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -819,6 +766,26 @@ export class SXInput extends React.Component {
 	componentWillUnmount() {
 		Event.detach(Event.SX_REFRESH, this.refreshHandler);
 		Event.detach(Event.SX_FOCUS, this.focusHandler);
+	}
+
+	render() {
+		return null;
+	}
+}
+
+/****************************************************
+ *  01. The type of Parametrer is String and
+ * 		localized property is false
+ ****************************************************/
+export class SXInput extends BaseParameterComponent {
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			value: this.parameter.getValue(this.cellIndex)
+		};
+
+		this.focusRef = createRef();
 	}
 
 	handleChange(value) {
@@ -894,10 +861,9 @@ export class SXInput extends React.Component {
 							value={this.state.value}
 							disabled={this.parameter.disabled}
 							onChange={(e) => this.handleChange(e.target.value)}
-							onBlur={(e) => {
-								this.fireValueChanged(e.target.value);
-							}}
+							onBlur={(e) => this.fireValueChanged(e.target.value)}
 							ref={this.focusRef}
+							sizing="sm"
 						/>
 					</ClayInput.GroupItem>
 					{!!this.parameter.postfix && this.parameter.renderPostfix()}
@@ -926,16 +892,9 @@ export class SXInput extends React.Component {
  *  02. The type of Parametrer is String and
  * 		localized property is true
  ****************************************************/
-export class SXLocalizedInput extends React.Component {
+export class SXLocalizedInput extends BaseParameterComponent {
 	constructor(props) {
 		super(props);
-
-		this.events = props.events ?? {};
-		this.className = props.className ?? "";
-		this.style = props.style ?? {};
-		this.spritemap = props.spritemap ?? "";
-		this.parameter = props.parameter;
-		this.cellIndex = this.parameter.displayType === Parameter.DisplayTypes.GRID_CELL ? props.cellIndex : undefined;
 
 		this.state = {
 			selectedLang: props.parameter.languageId,
@@ -945,74 +904,20 @@ export class SXLocalizedInput extends React.Component {
 		this.focusRef = createRef();
 	}
 
-	refreshHandler = (event) => {
-		const dataPacket = Event.pickUpDataPacket(
-			event,
-			this.parameter.namespace,
-			this.parameter.formId,
-			this.parameter.paramName,
-			this.parameter.paramVersion
-		);
-
-		if (Util.isEmpty(dataPacket)) {
-			return;
-		}
-
-		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
-				this.forceUpdate();
-				return;
-			}
-		}
-		this.forceUpdate();
-	};
-
-	focusHandler = (event) => {
-		const dataPacket = Event.pickUpDataPacket(
-			event,
-			this.parameter.namespace,
-			this.parameter.formId,
-			this.parameter.paramName,
-			this.parameter.paramVersion
-		);
-
-		if (Util.isEmpty(dataPacket)) {
-			return;
-		}
-
-		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
-				this.focusRef.current.focus();
-				return;
-			}
-		}
-
-		this.focusRef.current.focus();
-	};
-
-	componentDidMount() {
-		Event.on(Event.SX_REFRESH, this.refreshHandler);
-		Event.on(Event.SX_FOCUS, this.focusHandler);
-	}
-
-	componentWillUnmount() {
-		Event.detach(Event.SX_REFRESH, this.refreshHandler);
-		Event.detach(Event.SX_FOCUS, this.focusHandler);
-	}
-
 	handleChange(value) {
 		if (this.state.translation === value) {
 			return;
 		}
 
 		this.parameter.setTranslation(this.state.selectedLang, value, this.cellIndex);
-		this.parameter.dirty = true;
+		//this.parameter.dirty = true;
 
 		this.setState({
 			translation: value
 		});
 
-		this.parameter.validate(this.cellIndex);
+		//this.parameter.validate(this.cellIndex);
+		console.log("SXLocalized handleValue: ", this.parameter);
 	}
 
 	fireValueChanged() {
@@ -1036,6 +941,7 @@ export class SXLocalizedInput extends React.Component {
 							onChange={(e) => this.handleChange(e.target.value)}
 							onBlur={(e) => this.fireValueChanged()}
 							ref={this.focusRef}
+							sizing="sm"
 						/>
 					</ClayInput.GroupItem>
 					{this.parameter.renderPostfix()}
@@ -1044,8 +950,9 @@ export class SXLocalizedInput extends React.Component {
 							trigger={
 								<Button
 									displayType="secondary"
-									className="btn-monospaced btn-md"
+									className="btn-monospaced"
 									disabled={this.parameter.disabled}
+									size="sm"
 								>
 									<Icon
 										symbol={this.state.selectedLang.toLowerCase()}
@@ -1073,9 +980,18 @@ export class SXLocalizedInput extends React.Component {
 										<DropDown.Item
 											key={flag.name}
 											onClick={() => {
+												console.log(
+													"Locealized Dropdown: ",
+													flag.name,
+													this.parameter.value,
+													this.parameter.getTranslation(flag.name, this.cellIndex)
+												);
 												this.setState({
 													selectedLang: flag.name,
-													translation: this.parameter.getTranslation(flag.name)
+													translation: this.parameter.getTranslation(
+														flag.name,
+														this.cellIndex
+													)
 												});
 											}}
 											active={this.state.selectedLang === flag.name}
@@ -1187,7 +1103,7 @@ export class SXNumeric extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -1209,7 +1125,7 @@ export class SXNumeric extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -1272,7 +1188,10 @@ export class SXNumeric extends React.Component {
 	renderClayUI() {
 		return (
 			<>
-				<ClayInput.Group stacked>
+				<ClayInput.Group
+					small
+					stacked
+				>
 					{this.parameter.validationMin && (
 						<>
 							<ClayInput.GroupItem
@@ -1453,8 +1372,6 @@ export class SXBoolean extends React.Component {
 		this.state = {
 			value: this.parameter.getValue(this.cellIndex)
 		};
-
-		console.log("SXBoolean: ", this.parameter);
 	}
 
 	refreshHandler = (event) => {
@@ -1462,7 +1379,7 @@ export class SXBoolean extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -1484,7 +1401,7 @@ export class SXBoolean extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -1814,7 +1731,7 @@ export class SXSelect extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -1836,7 +1753,7 @@ export class SXSelect extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -2230,7 +2147,7 @@ export class SXDualListBox extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -2252,7 +2169,7 @@ export class SXDualListBox extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -2457,7 +2374,7 @@ export class SXFile extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -2479,7 +2396,7 @@ export class SXFile extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -2773,7 +2690,7 @@ export class SXAddress extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -2795,7 +2712,7 @@ export class SXAddress extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -2862,10 +2779,13 @@ export class SXAddress extends React.Component {
 		return (
 			<>
 				{this.state.searched ? (
-					<ClayInput.Group>
-						<ClayInput.GroupItem expand="true">
+					<ClayInput.Group small>
+						<ClayInput.GroupItem
+							prepend
+							expand
+						>
 							<ClayInput
-								style={{ minWidth: "5rem", width: "max-content" }}
+								style={{ minWidth: "5rem", width: "100%" }}
 								value={this.state.zipcode + ", " + this.state.street + ", " + this.state.address}
 								disabled={this.parameter.disabled}
 								onChange={(e) => {
@@ -2879,13 +2799,16 @@ export class SXAddress extends React.Component {
 								ref={this.focusRef}
 							/>
 						</ClayInput.GroupItem>
-						<ClayInput.GroupItem shrink>
+						<ClayInput.GroupItem
+							shrink
+							append
+						>
 							<Button
 								onClick={(e) => this.handleAddressSearch()}
 								size="sm"
 								disabled={this.parameter.disabled}
 							>
-								<span className="inline-item inline-item-before">
+								<span>
 									<Icon
 										symbol="search"
 										spritemap={this.spritemap}
@@ -2942,7 +2865,10 @@ export class SXAddress extends React.Component {
 				)}
 				{this.parameter.viewType === AddressParameter.ViewTypes.ONE_LINE && this.renderOneLineUI()}
 				{this.parameter.viewType === AddressParameter.ViewTypes.INLINE && (
-					<ClayInput.Group style={{ marginLeft: "10px" }}>
+					<ClayInput.Group
+						small
+						style={{ marginLeft: "10px" }}
+					>
 						<ClayInput.GroupItem
 							shrink
 							style={{ alignSelf: "center" }}
@@ -3027,6 +2953,7 @@ export class SXAddress extends React.Component {
 							placeholder={Util.translate("detail-address")}
 							disabled={!this.state.searched}
 							autoFocus={true}
+							sizing="sm"
 							onChange={(e) => this.handleAddressChanged(e.target.value)}
 							ref={this.focusRef}
 						/>
@@ -3074,8 +3001,6 @@ export class SXDate extends React.Component {
 	constructor(props) {
 		super(props);
 
-		super(props);
-
 		this.parameter = props.parameter;
 		this.events = props.events ?? {};
 		this.className = props.className ?? "";
@@ -3091,7 +3016,7 @@ export class SXDate extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3113,7 +3038,7 @@ export class SXDate extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3170,7 +3095,12 @@ export class SXDate extends React.Component {
 		const className = this.className + (this.parameter.dirty ? " " + this.parameter.errorClass : "");
 		return (
 			<div style={{ ...this.style, ...this.parameter.style }}>
-				<ClayForm.Group className={className}>{this.renderDatePicker()}</ClayForm.Group>
+				<ClayForm.Group
+					small
+					className={className}
+				>
+					{this.renderDatePicker()}
+				</ClayForm.Group>
 			</div>
 		);
 	}
@@ -3183,7 +3113,10 @@ export class SXDate extends React.Component {
 
 		return (
 			<div style={{ ...this.style, ...this.parameter.style }}>
-				<ClayForm.Group className={className}>
+				<ClayForm.Group
+					small
+					className={className}
+				>
 					{this.parameter.renderLabel({
 						spritemap: this.spritemap,
 						inputStatus: this.parameter.inputStatus
@@ -3237,7 +3170,7 @@ export class SXPhone extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3259,7 +3192,7 @@ export class SXPhone extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3329,6 +3262,7 @@ export class SXPhone extends React.Component {
 			<>
 				<ClayInput.Group
 					id={tagId}
+					small
 					style={{ marginLeft: "10px" }}
 				>
 					{this.parameter.enableCountryNo && (
@@ -3453,7 +3387,7 @@ export class SXEMail extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3475,7 +3409,7 @@ export class SXEMail extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3549,8 +3483,8 @@ export class SXEMail extends React.Component {
 		const className = this.className + (this.parameter.dirty ? " " + this.parameter.errorClass : "");
 
 		return (
-			<ClayForm.Group className={className}>
-				<ClayInput.Group>
+			<div className={className}>
+				<ClayInput.Group small>
 					<ClayInput.GroupItem>
 						<ClayInput
 							value={this.state.emailId}
@@ -3587,7 +3521,7 @@ export class SXEMail extends React.Component {
 						symbol="exclamation-full"
 					/>
 				)}
-			</ClayForm.Group>
+			</div>
 		);
 	}
 
@@ -3658,7 +3592,7 @@ export class SXGroup extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3674,7 +3608,7 @@ export class SXGroup extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3690,7 +3624,7 @@ export class SXGroup extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.tagName,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3729,7 +3663,7 @@ export class SXGroup extends React.Component {
 			  });
 	}
 
-	renderArrangeMent() {
+	renderArrangement() {
 		const rows = Util.convertArrayToRows(this.parameter.members, this.parameter.membersPerRow);
 
 		return (
@@ -3823,6 +3757,7 @@ export class SXGroup extends React.Component {
 					this.parameter.expanded = expanded;
 					this.setState({ expanded: expanded });
 				}}
+				size="sm"
 				spritemap={this.spritemap}
 				style={{
 					...this.style,
@@ -3831,7 +3766,7 @@ export class SXGroup extends React.Component {
 					marginBottom: "0"
 				}}
 			>
-				<Panel.Body style={{ backgroundColor: "#ffffff" }}>{this.renderArrangeMent()}</Panel.Body>
+				<Panel.Body style={{ backgroundColor: "#ffffff" }}>{this.renderArrangement()}</Panel.Body>
 			</Panel>
 		);
 	}
@@ -3888,7 +3823,7 @@ export class SXGroup extends React.Component {
 						marginBottom: "0"
 					}}
 				>
-					<Panel.Body style={{ backgroundColor: "#ffffff" }}>{this.renderArrangeMent()}</Panel.Body>
+					<Panel.Body style={{ backgroundColor: "#ffffff" }}>{this.renderArrangement()}</Panel.Body>
 				</Table>
 			</div>
 		);
@@ -3897,13 +3832,13 @@ export class SXGroup extends React.Component {
 	render() {
 		switch (this.parameter.viewType) {
 			case GroupParameter.ViewTypes.ARRANGEMENT: {
-				return this.renderArrangeMent();
+				return this.renderArrangement();
 			}
 			case GroupParameter.ViewTypes.FIELDSET: {
 				return (
-					<div class="sx-fieldset">
-						<div class="sx-legend">Contact Information</div>
-						{this.renderPanel()}
+					<div className="sx-fieldset form-group">
+						<div className="sx-legend">{this.parameter.label}</div>
+						{this.renderArrangement()}
 					</div>
 				);
 			}
@@ -3949,7 +3884,7 @@ export class SXGrid extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3965,7 +3900,7 @@ export class SXGrid extends React.Component {
 			event,
 			this.parameter.namespace,
 			this.parameter.formId,
-			this.parameter.paramName,
+			this.parameter.paramCode,
 			this.parameter.paramVersion
 		);
 
@@ -3985,7 +3920,7 @@ export class SXGrid extends React.Component {
 
 		const value = {};
 		this.parameter.columns.map((column) => {
-			value[column.paramName] = column.value;
+			value[column.paramCode] = column.value;
 		});
 		this.parameter.setValue({ value: value });
 
@@ -4065,9 +4000,9 @@ export class SXGrid extends React.Component {
 			},
 			...this.parameter.columns.map((column) => {
 				return {
-					id: column.paramName,
+					id: column.paramCode,
 					name: column.renderLabel({
-						forHtml: column.paramName,
+						forHtml: column.paramCode,
 						inputStatus: this.parameter.inputStatus,
 						spritemap: this.spritemap
 					}),
@@ -4258,6 +4193,7 @@ export const SXButtonWithIcon = ({
 	id,
 	label,
 	symbol,
+	disabled,
 	displayType,
 	href,
 	style,
@@ -4271,6 +4207,7 @@ export const SXButtonWithIcon = ({
 			id={id}
 			displayType={displayType}
 			href={href}
+			disabled={disabled}
 			style={style}
 			size={size}
 			onClick={onClick}
