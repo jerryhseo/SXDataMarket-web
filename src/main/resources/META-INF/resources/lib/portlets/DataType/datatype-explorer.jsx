@@ -261,6 +261,8 @@ class DataTypeExplorer extends React.Component {
 						})
 					}
 				);
+
+				break;
 			}
 			case "editStructure": {
 				Util.redirectTo(
@@ -277,6 +279,8 @@ class DataTypeExplorer extends React.Component {
 						})
 					}
 				);
+
+				break;
 			}
 			case "delete": {
 				this.confirmDialogHeader = (
@@ -289,6 +293,8 @@ class DataTypeExplorer extends React.Component {
 						{Util.translate("error")}
 					</div>
 				);
+
+				break;
 			}
 		}
 	};

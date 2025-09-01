@@ -672,7 +672,7 @@ export class Parameter {
 			JSON.parse(JSON.stringify(this))
 		);
 
-		copied.paramCode = this.paramCode + "_copied_" + Util.randomKey(12);
+		copied.paramCode = "_copied_" + Util.randomKey(8);
 		copied.paramVersion = Parameter.DEFAULT_VERSION;
 
 		return copied;
@@ -729,6 +729,14 @@ export class Parameter {
 
 	hasError() {
 		return this.error.errorClass === ErrorClass.ERROR || this.error.errorClass === ErrorClass.WARNING;
+	}
+
+	checkError() {
+		if (this.hasError()) {
+			return this.error;
+		}
+
+		return null;
 	}
 
 	setError(errorClass, errorMessage, errorProperty = "value") {
@@ -3561,11 +3569,13 @@ export class GroupParameter extends Parameter {
 	}
 
 	removeMember({ paramCode, paramVersion, memOrder }) {
-		Util.isEmpty(memOrder) ? this.deleteMemberByCode(paramCode, paramVersion) : this.deleteMemberByIndex(memOrder);
+		const removed = Util.isEmpty(memOrder)
+			? this.deleteMemberByCode(paramCode, paramVersion)
+			: this.deleteMemberByIndex(memOrder);
 
 		console.log("Group Parameter removeMember: ", paramCode, paramVersion, this.members);
 
-		return this.memberCount;
+		return removed;
 	}
 
 	copyMemberByIndex(index) {
@@ -3631,7 +3641,7 @@ export class GroupParameter extends Parameter {
 	}
 
 	moveMemberUp(paramOrder) {
-		const srcIndex = paramOrder - 1;
+		const srcIndex = paramOrder;
 		const targetIndex = srcIndex - 1;
 		const targetParam = this.members[targetIndex];
 		this.members[targetIndex] = this.members[srcIndex];
@@ -3643,7 +3653,7 @@ export class GroupParameter extends Parameter {
 	}
 
 	moveMemberDown(paramOrder) {
-		const srcIndex = paramOrder - 1;
+		const srcIndex = paramOrder;
 		const targetIndex = srcIndex + 1;
 		const targetParam = this.members[targetIndex];
 		this.members[targetIndex] = this.members[srcIndex];
@@ -3669,6 +3679,21 @@ export class GroupParameter extends Parameter {
 		}
 
 		return Constant.Position.MIDDLE;
+	}
+
+	checkError() {
+		if (this.hasError()) {
+			return this.error;
+		}
+
+		let error = null;
+		this.members.every((member) => {
+			error = member.checkError();
+
+			return Util.isEmpty(error) ? Constant.CONTINUE_EVERY : Constant.STOP_EVERY;
+		});
+
+		return error;
 	}
 
 	copy() {
@@ -4051,6 +4076,21 @@ export class GridParameter extends GroupParameter {
 
 		this.dirty = true;
 		this.refreshKey();
+	}
+
+	checkError() {
+		if (this.hasError()) {
+			return this.error;
+		}
+
+		let error = null;
+		this.members.every((member) => {
+			error = member.checkError();
+
+			return Util.isEmpty(error) ? Constant.CONTINUE_EVERY : Constant.STOP_EVERY;
+		});
+
+		return error;
 	}
 
 	fireColumnSelected(colCode, targetForm) {

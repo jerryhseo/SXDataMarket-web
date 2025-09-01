@@ -106,6 +106,21 @@ export class DataStructure extends GroupParameter {
 		return duplicated;
 	}
 
+	checkError() {
+		if (this.hasError()) {
+			return this.error;
+		}
+
+		let error = null;
+		this.members.every((member) => {
+			error = member.checkError();
+
+			return Util.isEmpty(error) ? Constant.CONTINUE_EVERY : Constant.STOP_EVERY;
+		});
+
+		return error;
+	}
+
 	addMember(member) {
 		super.addMember(member);
 
@@ -174,8 +189,8 @@ export class DataStructure extends GroupParameter {
 		return siblings.map((param) => param.convertToSelectItem());
 	}
 
-	getGroups({ paramCode, paramVersion }) {
-		let groups = [];
+	getAllGroups({ paramCode, paramVersion }) {
+		let groups = [this];
 
 		const pickUpGroup = (params) => {
 			params.forEach((param) => {

@@ -547,6 +547,18 @@ class DataStructureBuilder extends React.Component {
 		console.log(JSON.stringify(this.dataStructure.toJSON(), null, 4));
 		console.log(JSON.stringify(this.typeStructureLink.toJSON(), null, 4));
 
+		const error = this.dataStructure.checkError();
+
+		if (Util.isNotEmpty(error)) {
+			console.log("Data structure has error: ", error);
+			this.setState({
+				confirmDlgState: true,
+				confirmDlgHeader: this.errorDlgHeader,
+				confirmDlgBody: Util.translate(error.message)
+			});
+
+			return;
+		}
 		/*
 		const formData = new FormData();
 		formData.append(this.namespace + "typeStructureLink", this.typeStructureLink.toJSON());
@@ -568,10 +580,11 @@ class DataStructureBuilder extends React.Component {
 					confirmDlgHeader: this.successDlgHeader,
 					confirmDlgBody: (
 						<h4>
-							{"Data structure is saved successfully as " +
-								result.dataStructureId +
-								" which is linked to " +
-								result.dataTypeId}
+							{Util.translate(
+								"datastructure-is-saved-successfully-as-which-is-linked-to",
+								result.dataStructureId,
+								result.dataTypeId
+							)}
 						</h4>
 					)
 				});
@@ -772,7 +785,7 @@ class DataStructureBuilder extends React.Component {
 									position: "relative"
 								}}
 							>
-								<ClayButtonWithIcon
+								{/*<ClayButtonWithIcon
 									aria-label="Move up"
 									title="Move up"
 									symbol="caret-top"
@@ -781,7 +794,7 @@ class DataStructureBuilder extends React.Component {
 									size="md"
 									disabled={this.workingParam.isRendered()}
 									spritemap={this.spritemap}
-								></ClayButtonWithIcon>
+								></ClayButtonWithIcon>*/}
 								<ClayButtonWithIcon
 									aria-label="Add"
 									title="Add"
@@ -794,6 +807,7 @@ class DataStructureBuilder extends React.Component {
 									disabled={this.workingParam.isRendered()}
 									spritemap={this.spritemap}
 								></ClayButtonWithIcon>
+								{/*
 								<ClayButtonWithIcon
 									aria-label="Move down"
 									title="Move down"
@@ -803,7 +817,7 @@ class DataStructureBuilder extends React.Component {
 									size="md"
 									disabled={this.workingParam.isRendered()}
 									spritemap={this.spritemap}
-								></ClayButtonWithIcon>
+								></ClayButtonWithIcon> */}
 							</div>
 						</div>
 						<div style={this.previewPanelStyles}>

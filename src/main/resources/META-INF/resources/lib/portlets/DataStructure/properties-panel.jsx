@@ -28,7 +28,7 @@ class GroupSelectorBody extends React.Component {
 
 		this.state = {
 			selected: this.getOption(
-				this.workingParam.parentCode ? this.workingParam.parentCode : GroupParameter.ROOT_GROUP
+				this.workingParam.parentCode ? this.workingParam.parentCode : this.dataStructure.paramCode
 			)
 		};
 	}
@@ -41,23 +41,16 @@ class GroupSelectorBody extends React.Component {
 	 * @returns
 	 */
 	convertGroupsToOptions() {
-		return [
-			{
-				label: Util.translate("top-level"),
-				paramCode: GroupParameter.ROOT_GROUP,
-				paramVersion: Parameter.DEFAULT_VERSION
-			},
-			...this.dataStructure
-				.getGroups({
-					paramCode: this.workingParam.paramCode,
-					paramVersion: this.workingParam.paramVersion
-				})
-				.map((group) => ({
-					label: group.label,
-					paramCode: group.paramCode,
-					paramVersion: group.paramVersion
-				}))
-		];
+		return this.dataStructure
+			.getAllGroups({
+				paramCode: this.workingParam.paramCode,
+				paramVersion: this.workingParam.paramVersion
+			})
+			.map((group) => ({
+				label: group.label,
+				paramCode: group.paramCode,
+				paramVersion: group.paramVersion
+			}));
 	}
 
 	getOption(paramCode) {
@@ -98,7 +91,10 @@ class GroupSelectorBody extends React.Component {
 										name={this.namespace + "group"}
 										label={option.label}
 										value={option.paramCode}
-										defaultChecked={option.paramCode === this.state.selected.paramCode}
+										defaultChecked={
+											Util.isNotEmpty(this.state.selected) &&
+											option.paramCode === this.state.selected.paramCode
+										}
 										onChange={(e) => {
 											e.stopPropagation();
 											this.handleGroupSelected(option);
@@ -247,7 +243,20 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 	}
 
 	render() {
-		//console.log("SXDSBuilderPropertiesPanel rendered");
+		console.log(
+			"SXDSBuilderPropertiesPanel rendered: ",
+			this.workingParam.parent,
+			Util.isNotEmpty(this.workingParam.parent) ? this.workingParam.parent.code : "Root"
+		);
+
+		const parentGroup = Util.isNotEmpty(this.workingParam.parent)
+			? this.dataStructure.findParameter({
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version
+			  })
+			: null;
+		console.log("Group selector parentGroup: ", parentGroup);
+
 		return (
 			<>
 				<Form.Group className="form-group-sm">
@@ -290,7 +299,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 								prepend
 								style={{ padding: "5px", backgroundColor: "#effccf", justifyContent: "center" }}
 							>
-								{this.state.group ?? "Root"}
+								{parentGroup.label}
 							</ClayInput.GroupItem>
 							<ClayInput.GroupItem
 								append

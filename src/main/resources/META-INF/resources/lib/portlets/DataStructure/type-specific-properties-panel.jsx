@@ -1,6 +1,6 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { Event, ParamProperty, ParamType } from "../../stationx/station-x";
+import { ErrorClass, Event, ParamProperty, ParamType, ValidationRule } from "../../stationx/station-x";
 import SXFormField, { SXDualListBox, SXInput, SXLabel } from "../../stationx/form";
 import {
 	AddressParameter,
@@ -19,7 +19,9 @@ class SXGroupBuilder extends React.Component {
 	constructor(props) {
 		super(props);
 
+		this.dataStructure = props.dataStructure;
 		this.groupParam = props.groupParam;
+		console.log("SXGroupBuilder constructor: ", this.dataStructure);
 
 		this.namespace = this.groupParam.namespace;
 		this.languageId = this.groupParam.languageId;
@@ -31,7 +33,8 @@ class SXGroupBuilder extends React.Component {
 		this.formId = this.namespace + "groupBuilder";
 
 		this.state = {
-			selectedMember: this.groupParam.getMember(0)
+			selectedMember: this.groupParam.getMember(0),
+			showErrorDlg: false
 		};
 
 		this.memberReadyTypes = [
@@ -56,6 +59,28 @@ class SXGroupBuilder extends React.Component {
 				displayName: Util.getTranslationObject(this.languageId, "member-code"),
 				tooltip: Util.getTranslationObject(this.languageId, "member-code-tooltip"),
 				placeholder: Util.getTranslationObject(this.languageId, "code-name-for-member"),
+				validation: {
+					required: {
+						value: true,
+						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+						errorClass: ErrorClass.ERROR
+					},
+					pattern: {
+						value: ValidationRule.VARIABLE,
+						message: Util.getTranslationObject(this.languageId, "invalid-code"),
+						errorClass: ErrorClass.ERROR
+					},
+					minLength: {
+						value: 3,
+						message: Util.getTranslationObject(this.languageId, "shorter-than", 3),
+						errorClass: ErrorClass.ERROR
+					},
+					maxLength: {
+						value: 32,
+						message: Util.getTranslationObject(this.languageId, "longer-than", 32),
+						errorClass: ErrorClass.ERROR
+					}
+				},
 				value: this.state.selectedMember ? this.state.selectedMember.paramCode : ""
 			}
 		);
@@ -71,6 +96,23 @@ class SXGroupBuilder extends React.Component {
 				tooltip: Util.getTranslationObject(this.languageId, "display-name-tooltip"),
 				placeholder: Util.getTranslationObject(this.languageId, "translation-for-display-name"),
 				localized: true,
+				validation: {
+					required: {
+						value: true,
+						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+						errorClass: ErrorClass.ERROR
+					},
+					minLength: {
+						value: 6,
+						message: Util.getTranslationObject(this.languageId, "shorter-than", 6),
+						errorClass: ErrorClass.ERROR
+					},
+					maxLength: {
+						value: 64,
+						message: Util.getTranslationObject(this.languageId, "longer-than", 64),
+						errorClass: ErrorClass.ERROR
+					}
+				},
 				value: this.state.selectedMember ? this.state.selectedMember.displayName : {}
 			}
 		);
@@ -84,7 +126,6 @@ class SXGroupBuilder extends React.Component {
 			return;
 		} else {
 			if (dataPacket.targetFormId === this.formId) {
-				/*
 				console.log(
 					"SXGroupBuilder SX_FIELD_VALUE_CHANGED: ",
 					dataPacket,
@@ -92,23 +133,41 @@ class SXGroupBuilder extends React.Component {
 					this.fieldMemberCode,
 					this.fieldMemberDisplayName
 				);
-				*/
 
+				let duplicated = false;
 				switch (dataPacket.paramCode) {
 					case "memberCode": {
 						this.state.selectedMember.paramCode = this.fieldMemberCode.getValue();
+						duplicated = this.dataStructure.checkDuplicateParam(this.state.selectedMember);
 
+						if (duplicated) {
+							this.fieldMemberCode.setError(
+								ErrorClass.ERROR,
+								Util.translate("parameter-code-must-be-unique"),
+								"value"
+							);
+							this.fieldMemberCode.refreshKey();
+
+							this.groupParam.setError(
+								ErrorClass.ERROR,
+								Util.translate("parameter-code-must-be-unique"),
+								"paramCode"
+							);
+						} else {
+							this.fieldMemberCode.clearError();
+							this.groupParam.clearError("paramCode");
+						}
+						this.state.selectedMember.refreshKey();
+
+						this.forceUpdate();
 						break;
 					}
 					case "memberDisplayName": {
 						this.state.selectedMember.displayName = this.fieldMemberDisplayName.getValue();
-
+						this.state.selectedMember.refreshKey();
 						break;
 					}
 				}
-			} else if (dataPacket.targetFormId === this.groupParam.tagName) {
-			} else {
-				return;
 			}
 		}
 
@@ -127,6 +186,29 @@ class SXGroupBuilder extends React.Component {
 			return;
 		}
 		console.log("listenerPopActionClicked: ", dataPacket);
+
+		switch (dataPacket.action) {
+			case "copy": {
+				this.copyMember(dataPacket.data);
+
+				break;
+			}
+			case "delete": {
+				this.removeMember(dataPacket.data);
+
+				break;
+			}
+			case "up": {
+				this.moveMemberUp(dataPacket.data);
+
+				break;
+			}
+			case "down": {
+				this.moveMemberDown(dataPacket.data);
+
+				break;
+			}
+		}
 	};
 
 	componentDidMount() {
@@ -139,24 +221,24 @@ class SXGroupBuilder extends React.Component {
 		Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 	}
 
-	moveMemberUp = (member) => {
-		this.groupParam.moveMemberUp(member.order);
+	moveMemberUp = (index) => {
+		this.groupParam.moveMemberUp(index);
 
 		this.groupParam.fireRefreshPreview();
 
 		this.forceUpdate();
 	};
 
-	moveMemberDown = (member) => {
-		this.groupParam.moveMemberDown(member.order);
+	moveMemberDown = (index) => {
+		this.groupParam.moveMemberDown(index);
 
 		this.groupParam.fireRefreshPreview();
 
 		this.forceUpdate();
 	};
 
-	removeMember = (member) => {
-		let memberCount = this.groupParam.removeMember({ paramCode: member.paramCode });
+	removeMember = (index) => {
+		let memberCount = this.groupParam.removeMember({ memOrder: index });
 
 		const firstMember = memberCount > 0 ? this.groupParam.members[0] : null;
 
@@ -167,16 +249,26 @@ class SXGroupBuilder extends React.Component {
 		this.forceUpdate();
 	};
 
-	copyMember(member) {
-		let copied = this.groupParam.copyMember({ memOrder: member.order - 1 });
+	copyMember(index) {
+		let copied = this.groupParam.copyMember({ memOrder: index });
 		this.groupParam.fireRefreshPreview();
 
 		this.setState({ selectedMember: copied });
 	}
 
-	handleMemberSelected(member) {
+	handleMemberSelected = (member) => {
+		if (member === this.state.selectedMember) {
+			return;
+		}
+
+		console.log("handleMemberSelected: ", member);
+		this.fieldMemberCode.setValue({ value: member.paramCode });
+		this.fieldMemberCode.refreshKey();
+		this.fieldMemberDisplayName.setValue({ value: member.displayName });
+		this.fieldMemberDisplayName.refreshKey();
+
 		this.setState({ selectedMember: member });
-	}
+	};
 
 	handleMemberTypeSelect(memberType) {
 		if (!memberType) {
@@ -208,13 +300,6 @@ class SXGroupBuilder extends React.Component {
 	}
 
 	render() {
-		if (this.state.selectedMember) {
-			this.fieldMemberCode.setValue({ value: this.state.selectedMember.paramCode });
-			this.fieldMemberCode.refreshKey();
-			this.fieldMemberDisplayName.setValue({ value: this.state.selectedMember.displayName });
-			this.fieldMemberDisplayName.refreshKey();
-		}
-
 		return (
 			<>
 				<div className="sx-option-builder-title">{Util.translate("group-builder")}</div>
@@ -257,83 +342,126 @@ class SXGroupBuilder extends React.Component {
 						spritemap={this.spritemap}
 					/>
 				</div>
-				<div
-					className="sx-table"
-					style={{ marginLeft: "10px" }}
+				<Table
+					columnsVisibility={false}
+					borderedColumns={false}
+					size="sm"
+					hover={false}
+					striped={false}
+					className="sx-option-table"
 				>
-					<div>
-						{this.groupParam.members.map((member, index) => {
+					<Head
+						items={[
+							{ id: "label", name: Util.translate("display-name"), width: "auto" },
+							{ id: "type", name: Util.translate("type"), width: "7rem" },
+							{ id: "actions", name: "actions", width: "3.5rem" }
+						]}
+					>
+						{(column) => {
+							if (column.id === "actions") {
+								return (
+									<Cell
+										key={column.id}
+										textValue="actions"
+										textAlign="center"
+										width={column.width}
+									>
+										<Icon
+											symbol="ellipsis-v"
+											spritemap={this.spritemap}
+										/>
+									</Cell>
+								);
+							} else {
+								return (
+									<Cell
+										key={column.id}
+										textAlign="center"
+										width={column.width}
+									>
+										{column.name}
+									</Cell>
+								);
+							}
+						}}
+					</Head>
+					<Body defaultItems={this.groupParam.members}>
+						{(member, index) => {
 							let actionItems = [
-								{ id: "copy", name: Util.translate("copy"), symbol: "copy", action: this.copyMember },
+								{ id: "copy", name: Util.translate("copy"), symbol: "copy" },
 								{
 									id: "delete",
 									name: Util.translate("delete"),
-									symbol: "times",
-									action: this.removeMember
+									symbol: "times"
 								}
 							];
 							if (member.order > 1) {
 								actionItems.push({
 									id: "up",
 									name: Util.translate("move-up"),
-									symbol: "caret-top",
-									action: this.moveMemberUp
+									symbol: "caret-top"
 								});
 							}
 							if (member.order < this.groupParam.memberCount) {
 								actionItems.push({
 									id: "down",
 									name: Util.translate("move-down"),
-									symbol: "caret-bottom",
-									action: this.moveMemberDown
+									symbol: "caret-bottom"
 								});
 							}
 
-							let className = "autofit-row";
-							if (member === this.state.selectedMember) {
-								className += " sx-option-focused";
-							}
+							const selected = member === this.state.selectedMember;
+							const selectedColor = "#fae6ecff";
 
 							return (
-								<div
+								<Row
 									key={member.paramCode}
-									className={className}
-									onClick={(e) => {
-										this.handleMemberSelected(member);
-									}}
+									onClick={(e) => this.handleMemberSelected(member)}
 								>
-									<div
-										className="autofit-col sx-table-cell"
-										style={{ width: "2rem" }}
-									>
-										{member.order}
-									</div>
-									<div
-										className="autofit-col sx-table-cell"
-										style={{ width: "4rem" }}
-									>
-										{member.paramType}
-									</div>
-									<div className="autofit-col autofit-col-expand sx-table-cell">{member.label}</div>
-									<div
-										className="autofit-col sx-table-cell"
-										style={{ width: "auto" }}
-									>
-										<SXActionDropdown
-											key={this.groupParam.memberCount - index}
-											namespace={this.namespace}
-											formId={this.formId}
-											actionItems={actionItems}
-											dataKey={member}
-											symbol="ellipsis-v"
-											spritemap={this.spritemap}
-										/>
-									</div>
-								</div>
+									<Cell textAlign="center">
+										<div
+											style={{
+												backgroundColor: selected ? selectedColor : "inherit",
+												width: "100%"
+											}}
+										>
+											{member.label}
+										</div>
+									</Cell>
+									<Cell textAlign="center">
+										<div
+											style={{
+												backgroundColor: selected ? selectedColor : "inherit",
+												width: "100%"
+											}}
+										>
+											{member.paramType}
+										</div>
+									</Cell>
+									<Cell textAlign="center">
+										<div
+											style={{
+												backgroundColor: selected ? selectedColor : "inherit",
+												width: "100%"
+											}}
+										>
+											<SXActionDropdown
+												key={this.groupParam.members.length - index}
+												namespace={this.namespace}
+												formId={this.formId}
+												actionItems={actionItems}
+												triggerType="icon"
+												dataKey={index}
+												symbol="ellipsis-v"
+												spritemap={this.spritemap}
+											/>
+										</div>
+									</Cell>
+								</Row>
 							);
-						})}
-					</div>
-				</div>
+						}}
+					</Body>
+				</Table>
 			</>
 		);
 	}
@@ -616,31 +744,21 @@ class SXSelectOptionBuilder extends React.Component {
 							return (
 								<Row
 									key={option.value}
-									className={selected ? "sx-focused" : ""}
 									onClick={(e) => {
 										this.handleOptionSelected(option);
 									}}
 								>
-									<Cell
-										textAlign="center"
-										style={{ border: selected ? "none" : "inherit" }}
-									>
+									<Cell textAlign="center">
 										<div style={{ backgroundColor: selected ? selectedColor : "inherit" }}>
 											{option.label[this.languageId]}
 										</div>
 									</Cell>
-									<Cell
-										textAlign="center"
-										style={{ border: selected ? "none" : "inherit" }}
-									>
+									<Cell textAlign="center">
 										<div style={{ backgroundColor: selected ? selectedColor : "inherit" }}>
 											{option.value}
 										</div>
 									</Cell>
-									<Cell
-										textAlign="center"
-										style={{ border: selected ? "none" : "inherit" }}
-									>
+									<Cell textAlign="center">
 										<div style={{ backgroundColor: selected ? selectedColor : "inherit" }}>
 											<SXActionDropdown
 												key={this.workingParam.options.length - index}
@@ -1657,6 +1775,7 @@ class SXGroupTypeOptionForm extends React.Component {
 					this.fieldMembersPerRow.renderField({ spritemap: this.spritemap })}
 				{this.fieldExpanded.renderField({ spritemap: this.spritemap })}
 				<SXGroupBuilder
+					dataStructure={this.dataStructure}
 					groupParam={this.workingParam}
 					spritemap={this.spritemap}
 					availableParamTypes={this.availableMemberTypes}
@@ -1672,6 +1791,7 @@ class SXGridTypeOptionForm extends React.Component {
 		super(props);
 
 		this.formIds = props.formIds;
+		this.dataStructure = props.dataStructure;
 		this.workingParam = props.workingParam;
 		this.namespace = props.workingParam.namespace;
 		this.languageId = props.workingParam.languageId;
@@ -1695,6 +1815,7 @@ class SXGridTypeOptionForm extends React.Component {
 	render() {
 		return (
 			<SXGroupBuilder
+				dataStructure={this.dataStructure}
 				groupParam={this.workingParam}
 				spritemap={this.spritemap}
 				availableParamTypes={this.availableColumnTypes}
@@ -1799,6 +1920,7 @@ class SXDSBuilderTypeSpecificPanel extends React.Component {
 				return (
 					<SXGridTypeOptionForm
 						formIds={this.formIds}
+						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>

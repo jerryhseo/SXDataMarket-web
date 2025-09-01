@@ -129,7 +129,12 @@ span.toggle-switch-bar {
 .sx-preview-row {
 	padding-left: 5px;
 	padding-right: 5px;
-	margin-bottom: 1.5rem;
+	margin-bottom: 1rem;
+}
+
+.sx-preview-row-end {
+	padding-left: 5px;
+	padding-right: 5px;
 }
 
 .sx-preview-row .form-group {
@@ -147,12 +152,16 @@ span.toggle-switch-bar {
 	align-items: center;
 }
 
-.sx-focused td {
-	border: 2px solid #f495da;
-}
-
 .sx-option-table td {
 	padding: 0;
+}
+
+.sx-option-table .text-truncate-inline {
+	width: 100%;
+}
+
+.sx-option-table .text-truncate-inline span {
+	width: 100%;
 }
 
 .table.sx-option-table th:first-child,

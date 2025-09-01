@@ -572,8 +572,8 @@ export class SXPreviewRow extends React.Component {
 				this.parameter.viewType === BooleanParameter.ViewTypes.TOGGLE)
 		) {
 			style = {
-				marginTop: "15px",
-				marginBottom: "15px"
+				marginTop: "0.5rem",
+				marginBottom: "0.5rem"
 			};
 		}
 
@@ -592,10 +592,13 @@ export class SXPreviewRow extends React.Component {
 			actionItems.push({ id: "moveUp", name: Util.translate("move-up"), symbol: "order-arrow-up" });
 		}
 
+		console.log("SXPreviewRow: ", this.parameter);
 		return (
 			<>
 				<div
-					className={className + " sx-preview-row"}
+					className={
+						className + (this.parameter.position === "end" ? " sx-preview-row-end" : " sx-preview-row")
+					}
 					onClick={(e) => {
 						e.stopPropagation();
 						this.handleClick(e);
@@ -814,6 +817,7 @@ export class SXInput extends BaseParameterComponent {
 					disabled={this.parameter.disabled}
 					onChange={(e) => this.handleChange(e.target.value)}
 					onBlur={(e) => this.fireValueChanged(e.target.value)}
+					sizing="sm"
 					style={{ border: "none" }}
 					ref={this.focusRef}
 				/>
@@ -1454,8 +1458,8 @@ export class SXBoolean extends React.Component {
 
 		return (
 			<div
-				className={className}
-				style={{ ...this.style, ...this.parameter.style }}
+				className={className + "input-group-sm"}
+				style={{ ...this.style, ...this.parameter.style, justifyItems: "center" }}
 				ref={this.focusRef}
 			>
 				{this.parameter.viewType === BooleanParameter.ViewTypes.CHECKBOX && (
@@ -2036,7 +2040,10 @@ export class SXSelect extends React.Component {
 		const tagName = this.parameter.tagName;
 
 		return (
-			<div style={{ ...this.style, ...this.parameter.style }}>
+			<div
+				style={{ ...this.style, ...this.parameter.style }}
+				className="input-group-sm"
+			>
 				{this.parameter.viewType === SelectParameter.ViewTypes.DROPDOWN && this.renderDropDown(tagId, tagName)}
 				{this.parameter.viewType === SelectParameter.ViewTypes.RADIO && (
 					<div style={{ width: "max-content" }}>{this.renderRadioGroup(tagId, tagName)}</div>
@@ -2065,7 +2072,7 @@ export class SXSelect extends React.Component {
 
 		return (
 			<div
-				className={className}
+				className={className + "input-group-sm"}
 				style={{ ...this.style, ...this.parameter.style }}
 				ref={this.focusRef}
 			>
@@ -3095,12 +3102,7 @@ export class SXDate extends React.Component {
 		const className = this.className + (this.parameter.dirty ? " " + this.parameter.errorClass : "");
 		return (
 			<div style={{ ...this.style, ...this.parameter.style }}>
-				<ClayForm.Group
-					small
-					className={className}
-				>
-					{this.renderDatePicker()}
-				</ClayForm.Group>
+				<div className={className + "input-group-sm"}>{this.renderDatePicker()}</div>
 			</div>
 		);
 	}
@@ -4016,7 +4018,7 @@ export class SXGrid extends React.Component {
 		];
 	}
 
-	getBodyRows() {
+	renderBodyRows() {
 		let rows = [];
 		let rowCount = this.parameter.rowCount;
 
@@ -4046,7 +4048,7 @@ export class SXGrid extends React.Component {
 					<td>
 						<DropDown
 							active={this.state.activeDropdown && this.state.selectedRow === rowIndex}
-							trigger={<div>{rowIndex + 1}</div>}
+							trigger={<div style={{ textAlign: "center" }}>{rowIndex + 1}</div>}
 							onActiveChange={(val) => {
 								this.setState({ activeDropdown: val, selectedRow: rowIndex });
 							}}
@@ -4155,7 +4157,7 @@ export class SXGrid extends React.Component {
 								))}
 							</tr>
 						</thead>
-						<tbody>{this.getBodyRows()}</tbody>
+						<tbody>{this.renderBodyRows()}</tbody>
 					</table>
 				</div>
 			</>
