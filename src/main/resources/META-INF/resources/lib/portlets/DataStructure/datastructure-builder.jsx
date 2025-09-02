@@ -393,11 +393,66 @@ class DataStructureBuilder extends React.Component {
 
 		switch (dataPacket.paramCode) {
 			case "structureCode": {
-				this.dataStructure.paramCode = this.structureCode.getValue();
+				const newCode = this.structureCode.getValue();
+				if (this.structureCode.hasError()) {
+					return;
+				}
+
+				Util.ajax({
+					namespace: this.namespace,
+					baseResourceURL: this.baseResourceURL,
+					resourceId: ResourceIds.CHECK_DATASTRUCTURE_UNIQUE,
+					params: {
+						dataStructureCode: newCode,
+						dataStructureVersion: this.dataStructure.paramVersion
+					},
+					successFunc: (result) => {
+						if (Util.isEmpty(result) || this.dataStructure.dataStructureId === result.dataStructureId) {
+							this.dataStructure.paramCode = newCode;
+							this.dataStructure.updateMemberParents();
+							//this.structureCode.clearError();
+						} else {
+							this.structureCode.setError(
+								ErrorClass.ERROR,
+								Util.translate("datastructure-code-is-duplicated")
+							);
+						}
+					},
+					errorFunc: (err) => {
+						console.log("[ERROR] While checking DataStructure unique: ", err);
+					}
+				});
 				break;
 			}
 			case "structureVersion": {
 				this.dataStructure.paramVersion = this.structureVersion.getValue();
+				if (this.structureVersion.hasError()) {
+					return;
+				}
+
+				Util.ajax({
+					namespace: this.namespace,
+					baseResourceURL: this.baseResourceURL,
+					resourceId: ResourceIds.CHECK_DATASTRUCTURE_UNIQUE,
+					params: {
+						dataStructureCode: this.dataStructure.paramCode,
+						dataStructureVersion: this.dataStructure.paramVersion
+					},
+					successFunc: (result) => {
+						if (Util.isEmpty(result) || this.dataStructure.dataStructureId === result.dataStructureId) {
+							this.dataStructure.updateMemberParents();
+							this.structureVersion.clearError();
+						} else {
+							this.structureCode.setError(
+								ErrorClass.ERROR,
+								Util.translate("datastructure-is-duplicated")
+							);
+						}
+					},
+					errorFunc: (err) => {
+						console.log("[ERROR] While checking DataStructure unique: ", err);
+					}
+				});
 				break;
 			}
 			case "structureDisplayName": {

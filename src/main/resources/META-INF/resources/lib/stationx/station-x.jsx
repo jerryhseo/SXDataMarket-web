@@ -270,6 +270,7 @@ export const ResourceIds = {
 	LOAD_DATATYPE: "/ajax/DataType/load-datatype",
 	ADD_DATATYPE: "/ajax/DataType/add-datatype",
 	CHECK_DATATYPE_UNIQUE: "/ajax/DataType/check-datatype-unique",
+	CHECK_DATASTRUCTURE_UNIQUE: "/ajax/DataStructure/check-datastructure-unique",
 	UPDATE_DATATYPE: "/ajax/DataType/update-datatype",
 	DELETE_DATATYPE: "/ajax/DataType/delete-datatype",
 	DELETE_DATATYPES: "/ajax/DataType/delete-datatypes",

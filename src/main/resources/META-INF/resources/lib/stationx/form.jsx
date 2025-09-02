@@ -40,6 +40,7 @@ import Panel from "@clayui/panel";
 import Toolbar from "@clayui/toolbar";
 import { DataStructure } from "../portlets/DataStructure/data-structure";
 import { Table, Text } from "@clayui/core";
+import { SXLinkIcon, SXQMarkIcon } from "./icon";
 
 export const SXRequiredMark = ({ spritemap }) => {
 	return (
@@ -95,25 +96,77 @@ export const SXLabel = ({ label, forHtml = "", required = false, tooltip = "", s
 
 export class SXTitleBar extends React.Component {
 	constructor(props) {
+		super(props);
+
 		this.namespace = props.namespace;
 		this.formId = props.formId;
-		this.forField = props.forField;
-		this.title = props.title;
-		this.refLink = props.refLink ?? false;
-		this.inputStatus = props.inputStatus ?? false;
-		this.hasInput = props.hasInput ?? false;
-		this.required = props.required ?? false;
-		this.tooltip = props.tooltip ?? "";
-		this.commentable = props.commentable ?? false;
-		this.verifiable = props.verifiable ?? false;
-		(this.freezable = props.freezable ?? false),
-			(this.verified = props.verified ?? true),
-			(this.freezed = props.freezed ?? false),
-			spritemap;
+		this.spritemap = props.spritemap;
+		this.parameter = props.parameter;
+
+		this.title = this.parameter.label;
+		this.refLink = this.parameter.refLink ?? false;
+		this.inputStatus = this.parameter.inputStatus ?? false;
+		this.hasValue = this.parameter.hasValue();
+		this.required = this.parameter.required ?? false;
+		this.tooltip = this.parameter.getTooltip() ?? "";
+		this.commentable = this.parameter.commentable ?? false;
+		this.verifiable = this.parameter.verifiable ?? false;
+		this.freezable = this.parameter.freezable ?? false;
+		this.verified = this.parameter.verified ?? true;
+		this.freezed = this.parameter.freezed ?? false;
 	}
 
+	handlerQMarkClicked = () => {
+		console.log("SXTitleBar: QMark clicked");
+	};
+
+	handlerVerifyClicked = () => {
+		console.log("SXTitleBar: Verified clicked");
+	};
+
+	handlerVerifyClicked = () => {
+		console.log("SXTitleBar: Freezed clicked");
+	};
+
 	render() {
-		return <></>;
+		const titleClass = this.inputStatus && this.hasValue ? "sx-control-label no-value" : "sx-control-label";
+
+		return (
+			<div className="autofit-row">
+				<div
+					className={"autofit-col autofit-col-expand " + titleClass}
+					style={{ display: "inline-block" }}
+				>
+					<span>{this.title}</span>
+					<span>{this.required && <SXRequiredMark spritemap={this.spritemap} />}</span>
+					<span>
+						{Util.isNotEmpty(this.tooltip) && (
+							<SXTooltip
+								tooltip={this.tooltip}
+								spritemap={this.spritemap}
+							/>
+						)}
+					</span>
+					{this.refLink && <SXLinkIcon />}
+					{this.inputStatus}
+				</div>
+				<div className="autofit-col">
+					{this.commentable && <SXQMarkIcon onClick={this.handlerQMarkClicked} />}
+					{this.verifiable && (
+						<SXVerifiyIcon
+							verified={this.verified}
+							onClick={() => this.handlerVerifyClicked()}
+						/>
+					)}
+					{this.freezable && (
+						<SXVerifiyIcon
+							freezed={this.freezed}
+							onClick={() => this.handlerFreezeClicked()}
+						/>
+					)}
+				</div>
+			</div>
+		);
 	}
 }
 
@@ -843,11 +896,7 @@ export class SXInput extends BaseParameterComponent {
 				className={className}
 				style={{ ...style, marginBottom: "0" }}
 			>
-				{this.parameter.renderLabel({
-					forHtml: this.parameter.tagId,
-					spritemap: this.spritemap,
-					inputStatus: this.parameter.inputStatus
-				})}
+				{this.parameter.renderTitle({ spritemap: this.spritemap })}
 				{this.parameter.showDefinition && (
 					<div className="sx-param-definition">
 						<pre>{this.parameter.getDefinition(this.parameter.languageId)}</pre>
@@ -1047,10 +1096,8 @@ export class SXLocalizedInput extends BaseParameterComponent {
 				className={className}
 				style={{ ...this.style, ...this.parameter.style }}
 			>
-				{this.parameter.renderLabel({
-					forHtml: this.parameter.tagId,
-					spritemap: this.spritemap,
-					inputStatus: this.parameter.inputStatus
+				{this.parameter.renderTitle({
+					spritemap: this.spritemap
 				})}
 				{this.parameter.showDefinition && (
 					<div className="sx-param-definition">
@@ -1330,9 +1377,8 @@ export class SXNumeric extends React.Component {
 				className={className}
 				style={{ ...this.style, ...this.parameter.style }}
 			>
-				{this.parameter.renderLabel({
-					spritemap: this.spritemap,
-					inputStatus: this.parameter.inputStatus
+				{this.parameter.renderTitle({
+					spritemap: this.spritemap
 				})}
 				<div style={{ paddingLeft: "10px" }}>
 					{this.parameter.showDefinition && (
@@ -1575,9 +1621,8 @@ export class SXBoolean extends React.Component {
 						id={tagId}
 						name={tagName}
 						aria-label={this.parameter.label}
-						label={this.parameter.renderLabel({
+						label={this.parameter.renderTitle({
 							spritemap: this.spritemap,
-							inputStatus: this.parameter.inputStatus,
 							style: {
 								paddingLeft: "0",
 								fontSize: "0.875rem"
@@ -1591,9 +1636,8 @@ export class SXBoolean extends React.Component {
 				)}
 				{this.parameter.viewType === BooleanParameter.ViewTypes.DROPDOWN && (
 					<div ref={this.focusRef}>
-						{this.parameter.renderLabel({
-							spritemap: this.spritemap,
-							inputStatus: this.parameter.inputStatus
+						{this.parameter.renderTitle({
+							spritemap: this.spritemap
 						})}
 						{this.parameter.showDefinition && (
 							<div className="sx-param-definition">
@@ -1620,9 +1664,8 @@ export class SXBoolean extends React.Component {
 				)}
 				{this.parameter.viewType === BooleanParameter.ViewTypes.RADIO && (
 					<div ref={this.focusRef}>
-						{this.parameter.renderLabel({
-							spritemap: this.spritemap,
-							inputStatus: this.parameter.inputStatus
+						{this.parameter.renderTitle({
+							spritemap: this.spritemap
 						})}
 						{this.parameter.showDefinition && (
 							<div className="sx-param-definition">
@@ -1666,9 +1709,8 @@ export class SXBoolean extends React.Component {
 					<ClayToggle
 						id={tagId}
 						name={tagName}
-						label={this.parameter.renderLabel({
-							spritemap: this.spritemap,
-							inputStatus: this.parameter.inputStatus
+						label={this.parameter.renderTitle({
+							spritemap: this.spritemap
 						})}
 						onToggle={(e) => this.handleValueChange(!this.state.value)}
 						spritemap={this.spritemap}
@@ -2076,9 +2118,7 @@ export class SXSelect extends React.Component {
 				style={{ ...this.style, ...this.parameter.style }}
 				ref={this.focusRef}
 			>
-				{this.parameter.renderLabel({
-					forHtml: tagId,
-					inputStatus: this.parameter.inputStatus,
+				{this.parameter.renderTitle({
 					spritemap: this.spritemap
 				})}
 				{this.parameter.showDefinition && (
@@ -2256,10 +2296,8 @@ export class SXDualListBox extends React.Component {
 				style={{ ...this.style, ...this.parameter.style }}
 				ref={this.focusRef}
 			>
-				{this.parameter.renderLabel({
-					forHtml: this.parameter.tagId,
-					spritemap: this.spritemap,
-					inputStatus: this.parameter.inputStatus
+				{this.parameter.renderTitle({
+					spritemap: this.spritemap
 				})}
 				{this.parameter.showDefinition && (
 					<div className="sx-param-definition">
@@ -2597,9 +2635,8 @@ export class SXFile extends React.Component {
 				className=""
 				style={{ ...this.style, ...this.parameter.style }}
 			>
-				{this.parameter.renderLabel({
-					spritemap: this.spritemap,
-					inputStatus: this.parameter.inputStatus
+				{this.parameter.renderTitle({
+					spritemap: this.spritemap
 				})}
 				{this.parameter.showDefinition && (
 					<div className="sx-param-definition">
@@ -2861,9 +2898,8 @@ export class SXAddress extends React.Component {
 				className={className}
 				style={{ ...this.style, ...this.parameter.style }}
 			>
-				{this.parameter.renderLabel({
-					spritemap: this.spritemap,
-					inputStatus: this.parameter.inputStatus
+				{this.parameter.renderTitle({
+					spritemap: this.spritemap
 				})}
 				{this.parameter.showDefinition && (
 					<div className="sx-param-definition">
@@ -3119,9 +3155,8 @@ export class SXDate extends React.Component {
 					small
 					className={className}
 				>
-					{this.parameter.renderLabel({
-						spritemap: this.spritemap,
-						inputStatus: this.parameter.inputStatus
+					{this.parameter.renderTitle({
+						spritemap: this.spritemap
 					})}
 					{this.parameter.showDefinition && (
 						<div className="sx-param-definition">
@@ -3341,9 +3376,8 @@ export class SXPhone extends React.Component {
 				className={className}
 				style={{ ...this.style, ...this.parameter.style }}
 			>
-				{this.parameter.renderLabel({
-					spritemap: this.spritemap,
-					inputStatus: this.parameter.inputStatus
+				{this.parameter.renderTitle({
+					spritemap: this.spritemap
 				})}
 				{this.parameter.showDefinition && (
 					<div className="sx-param-definition">
@@ -3542,9 +3576,8 @@ export class SXEMail extends React.Component {
 				className={className}
 				style={{ ...this.style, ...this.parameter.style }}
 			>
-				{this.parameter.renderLabel({
-					spritemap: this.spritemap,
-					inputStatus: this.parameter.inputStatus
+				{this.parameter.renderTitle({
+					spritemap: this.spritemap
 				})}
 				{this.parameter.showDefinition && (
 					<div className="sx-param-definition">
@@ -3781,7 +3814,7 @@ export class SXGroup extends React.Component {
 					...this.parameter.style
 				}}
 			>
-				{this.parameter.renderLabel({ spritemap: this.spritemap })}
+				{this.parameter.renderTitle({ spritemap: this.spritemap })}
 				<Table
 					displayTitle={
 						<Panel.Title>
@@ -4003,9 +4036,7 @@ export class SXGrid extends React.Component {
 			...this.parameter.columns.map((column) => {
 				return {
 					id: column.paramCode,
-					name: column.renderLabel({
-						forHtml: column.paramCode,
-						inputStatus: this.parameter.inputStatus,
+					name: column.renderTitle({
 						spritemap: this.spritemap
 					}),
 					textValue: column.label,
@@ -4090,7 +4121,7 @@ export class SXGrid extends React.Component {
 	render() {
 		return (
 			<>
-				{this.parameter.renderLabel({ spritemap: this.spritemap, inputStatus: this.parameter.inputStatus })}
+				{this.parameter.renderTitle({ spritemap: this.spritemap })}
 				<div style={{ paddingLeft: "10px", overflowX: "auto", width: "100%" }}>
 					<table
 						className="sx-table"

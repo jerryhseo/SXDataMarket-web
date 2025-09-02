@@ -18,9 +18,11 @@ import SXFormField, {
 	SXPreviewRow,
 	SXRequiredMark,
 	SXSelect,
+	SXTitleBar,
 	SXTooltip
 } from "./form";
 import { ClayInput } from "@clayui/form";
+import { SXQMarkIcon } from "./icon";
 
 export class Translations {
 	constructor(json) {
@@ -1335,6 +1337,17 @@ export class Parameter {
 					/>
 				)}
 			</div>
+		);
+	}
+
+	renderTitle({ spritemap }) {
+		return (
+			<SXTitleBar
+				namespace={this.namespace}
+				formId={this.formId}
+				parameter={this}
+				spritemap={spritemap}
+			/>
 		);
 	}
 
@@ -3867,6 +3880,17 @@ export class GroupParameter extends Parameter {
 					cellIndex: cellIndex
 				})}
 			</div>
+		);
+	}
+
+	renderTitle({ spritemap }) {
+		return (
+			<SXTitleBar
+				namespace={this.namespace}
+				formId={this.formId}
+				parameter={this}
+				spritemap={spritemap}
+			/>
 		);
 	}
 

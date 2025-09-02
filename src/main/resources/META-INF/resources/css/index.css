@@ -25,6 +25,19 @@
 	--sx-caption-font-size: 0.75rem;
 	--sx-highlight-border: 2px solid #7ff47d;
 }
+
+.sx-control-label {
+	display: inline-block;
+	color: black;
+	margin-bottom: 0.3rem;
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+
+.sx-control-label.no-value {
+	color: rgb(248, 189, 189);
+}
+
 .sx-table {
 	border-collapse: collapse;
 	border: solid 1px #646466;
