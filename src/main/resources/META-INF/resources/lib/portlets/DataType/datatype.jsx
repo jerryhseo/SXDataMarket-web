@@ -25,6 +25,8 @@ export class DataType {
 	description = {};
 	tooltip = {};
 
+	dirty = false;
+
 	constructor(languageId, availableLanguageIds, json) {
 		this.languageId = languageId;
 		this.availableLanguageIds = availableLanguageIds;
@@ -50,8 +52,6 @@ export class DataType {
 		this[prop] = value;
 	}
 
-	is;
-
 	validate() {
 		if (
 			Util.isEmpty(this.dataTypeCode) ||
@@ -63,6 +63,22 @@ export class DataType {
 		}
 
 		return true;
+	}
+
+	copy() {
+		let json = {};
+
+		json.dataTypeCode = "";
+		json.dataTypeVersion = "1.0.0";
+		json.extension = this.extension;
+		json.displayName = this.displayName;
+		json.description = this.description;
+		json.tooltip = this.tooltip;
+
+		json.languageId = this.languageId;
+		json.availableLanguageIds = this.availableLanguageIds;
+
+		return new DataType(this.languageId, this.availableLanguageIds, json);
 	}
 
 	parse(json) {
@@ -140,6 +156,8 @@ export class DataTypeStructureLink {
 	inputStatus = false;
 	jumpTo = false;
 
+	dirty = false;
+
 	constructor(languageId, availableLanguageIds, json) {
 		this.languageId = languageId;
 		this.availableLanguageIds = availableLanguageIds;
@@ -147,6 +165,10 @@ export class DataTypeStructureLink {
 		if (json) {
 			this.parse(json);
 		}
+	}
+
+	copy() {
+		return new DataTypeStructureLink(this.languageId, this.availableLanguageIds, this.toJSON());
 	}
 
 	parse(json) {

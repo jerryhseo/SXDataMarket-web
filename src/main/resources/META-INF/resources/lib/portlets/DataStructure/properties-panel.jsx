@@ -243,11 +243,13 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 	}
 
 	render() {
+		/*
 		console.log(
 			"SXDSBuilderPropertiesPanel rendered: ",
 			this.workingParam.parent,
 			Util.isNotEmpty(this.workingParam.parent) ? this.workingParam.parent.code : "Root"
 		);
+		*/
 
 		const parentGroup = Util.isNotEmpty(this.workingParam.parent)
 			? this.dataStructure.findParameter({
@@ -255,7 +257,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 					paramVersion: this.workingParam.parent.version
 			  })
 			: null;
-		console.log("Group selector parentGroup: ", parentGroup);
+		//console.log("Group selector parentGroup: ", parentGroup);
 
 		return (
 			<>

@@ -17,7 +17,7 @@ import { Body, Cell, Head, Row, Table } from "@clayui/core";
 import { ClayCheckbox, ClayInput } from "@clayui/form";
 import { ClayDropDownWithItems } from "@clayui/drop-down";
 import Button, { ClayButtonWithIcon } from "@clayui/button";
-import { NotFound } from "../../stationx/common";
+import { NotFound, UnderConstruction } from "../../stationx/common";
 import Icon from "@clayui/icon";
 import Toolbar from "@clayui/toolbar";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
@@ -109,7 +109,8 @@ class DataTypeExplorer extends React.Component {
 			start: this.params.start ?? 0,
 			delta: this.params.delta ?? 10,
 			keywords: this.params.keywords ?? "",
-			searchContainerKey: Util.randomKey()
+			searchContainerKey: Util.randomKey(),
+			underConstruction: false
 		};
 
 		this.formId = this.namespace + "dataTypeExplorer";
@@ -189,7 +190,7 @@ class DataTypeExplorer extends React.Component {
 			return;
 		}
 
-		console.log("listenerSelectAll: ", dataPacket);
+		//console.log("listenerSelectAll: ", dataPacket);
 
 		this.selectedResults = dataPacket.selectAll ? [...this.searchResults] : [];
 
@@ -203,9 +204,9 @@ class DataTypeExplorer extends React.Component {
 			console.log("listenerSearchKeywordsChanged event rejected: ", dataPacket);
 			return;
 		}
-		console.log("listenerSearchKeywordsChanged: ", dataPacket);
+		//console.log("listenerSearchKeywordsChanged: ", dataPacket);
 
-		this.setState({ keywords: dataPacket.keywords, loadingStatus: LoadingStatus.PENDING });
+		this.setState({ keywords: dataPacket.keywords, underConstruction: true });
 
 		// perform search here with ajax
 	};
@@ -221,7 +222,7 @@ class DataTypeExplorer extends React.Component {
 
 		const isFilterMenu = this.filterOptions.map((option) => option.value).includes(dataPacket.menuItem.value);
 
-		this.setState({ filterBy: dataPacket.menuItem.value });
+		this.setState({ filterBy: dataPacket.menuItem.value, underConstruction: true });
 	};
 
 	listenerAdvancedSearchButtonClicked = (event) => {
@@ -231,7 +232,8 @@ class DataTypeExplorer extends React.Component {
 			console.log("listenerAdvancedSearchButtonClicked event rejected: ", dataPacket);
 			return;
 		}
-		console.log("listenerAdvancedSearchButtonClicked: ", dataPacket);
+		//console.log("listenerAdvancedSearchButtonClicked: ", dataPacket);
+		this.setState({ underConstruction: true });
 	};
 
 	listenerPopActionClicked = (event) => {
@@ -241,7 +243,7 @@ class DataTypeExplorer extends React.Component {
 			console.log("listenerPopActionClicked event rejected: ", dataPacket);
 			return;
 		}
-		console.log("listenerPopActionClicked: ", dataPacket);
+		//console.log("listenerPopActionClicked: ", dataPacket);
 
 		const dataType = this.searchResults[dataPacket.data];
 
@@ -294,6 +296,7 @@ class DataTypeExplorer extends React.Component {
 					</div>
 				);
 
+				this.setState({ underConstruction: true });
 				break;
 			}
 		}
@@ -306,7 +309,7 @@ class DataTypeExplorer extends React.Component {
 			console.log("listenerAddButtonClicked event rejected: ", dataPacket);
 			return;
 		}
-		console.log("listenerAddButtonClicked: ", dataPacket);
+		//console.log("listenerAddButtonClicked: ", dataPacket);
 
 		Util.redirectTo(
 			this.workbench.url,
@@ -321,6 +324,18 @@ class DataTypeExplorer extends React.Component {
 		);
 	};
 
+	listenerDeleteSelected = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
+			console.log("listenerAddButtonClicked event rejected: ", dataPacket);
+			return;
+		}
+		//console.log("listenerAddButtonClicked: ", dataPacket);
+
+		this.setState({ underConstruction: true });
+	};
+
 	listenerSelectedResultsChanged = (event) => {
 		const dataPacket = event.dataPacket;
 
@@ -328,7 +343,7 @@ class DataTypeExplorer extends React.Component {
 			console.log("listenerSelectedResultsChanged event rejected: ", dataPacket);
 			return;
 		}
-		console.log("listenerSelectedResultsChanged: ", dataPacket);
+		//console.log("listenerSelectedResultsChanged: ", dataPacket);
 		this.selectedResults = dataPacket.selectedResults;
 
 		this.setState({ searchContainerKey: Util.randomKey() });
@@ -339,6 +354,7 @@ class DataTypeExplorer extends React.Component {
 		Event.on(Event.SX_FILTER_MENU_CLICKED, this.listenerFilterMenuClicked);
 		Event.on(Event.SX_ADVANCED_SEARCH_BUTTON_CLICKED, this.listenerAdvancedSearchButtonClicked);
 		Event.on(Event.SX_SELECT_ALL, this.listenerSelectAll);
+		Event.on(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
 		Event.on(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 		Event.on(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
 		Event.on(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
@@ -351,6 +367,7 @@ class DataTypeExplorer extends React.Component {
 		Event.off(Event.SX_FILTER_MENU_CLICKED, this.listenerFilterMenuClicked);
 		Event.off(Event.SX_ADVANCED_SEARCH_BUTTON_CLICKED, this.listenerAdvancedSearchButtonClicked);
 		Event.off(Event.SX_SELECT_ALL, this.listenerSelectAll);
+		Event.off(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
 		Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 		Event.off(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
 		Event.off(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
@@ -474,7 +491,7 @@ class DataTypeExplorer extends React.Component {
 	}
 
 	render() {
-		console.log("DataTypeExplorer render: " + this.state.loadingStatus, this.state.keywords);
+		//console.log("DataTypeExplorer render: " + this.state.loadingStatus, this.state.keywords);
 		if (this.state.loadingStatus === LoadingStatus.PENDING) {
 			return <SXLoadingModal imageURL={this.imagePath + "/searching.gif"} />;
 		} else if (this.state.loadingStatus === LoadingStatus.FAIL) {
@@ -530,6 +547,20 @@ class DataTypeExplorer extends React.Component {
 									label: Util.translate("cancel"),
 									onClick: (e) => {
 										this.setState({ deleteConfirmDlgStatus: false });
+									}
+								}
+							]}
+						/>
+					)}
+					{this.state.underConstruction && (
+						<SXModalDialog
+							header={Util.translate("underconstruction")}
+							body={<UnderConstruction />}
+							buttons={[
+								{
+									label: Util.translate("ok"),
+									onClick: () => {
+										this.setState({ underConstruction: false });
 									}
 								}
 							]}

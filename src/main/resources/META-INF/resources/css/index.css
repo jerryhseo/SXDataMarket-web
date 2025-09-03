@@ -29,9 +29,8 @@
 .sx-control-label {
 	display: inline-block;
 	color: black;
-	margin-bottom: 0.3rem;
-	font-size: 0.85rem;
-	font-weight: 600;
+	/*font-size: 0.85rem;
+	font-weight: 600;*/
 }
 
 .sx-control-label.no-value {
@@ -225,6 +224,20 @@ span.toggle-switch-bar {
 	background-image: url("../asset/images/letter-q-svgrepo-com.svg");
 	background-size: cover;
 	background-position: center;
+}
+
+.sx-form-field span {
+	display: block;
+	padding-bottom: 0;
+	border-radius: 0.25rem;
+	font-size: 0.875rem;
+	height: 2rem;
+	line-height: 1.5;
+	padding-bottom: 0.25rem;
+	padding-left: 0.75rem;
+	padding-right: 0.75rem;
+	padding-top: 0.25rem;
+	background-color: #f1f2f5;
 }
 
 div .not-found {

@@ -362,8 +362,43 @@ class DataTypeEditor extends React.Component {
 			deleteSuccessDlgStatus: false,
 			saveSuccessDlgStatus: false,
 			dataTypeCodeDuplicated: false,
-			dataTypeDuplicated: false
+			dataTypeDuplicated: false,
+			linkWillDeletedWarning: false,
+			linkInfoDirty: false,
+			importDataStructureId: 0,
+			underConstruction: false
 		};
+
+		this.errorDlgHeader = (
+			<div style={{ color: "red" }}>
+				<Icon
+					symbol="exclamation-full"
+					spritemap={this.spritemap}
+					style={{ marginRight: "1rem" }}
+				/>
+				{Util.translate("error")}
+			</div>
+		);
+		this.warningDlgHeader = (
+			<div style={{ color: "#a0870aff" }}>
+				<Icon
+					symbol="warning"
+					spritemap={this.spritemap}
+					style={{ marginRight: "1rem" }}
+				/>
+				{Util.translate("warning")}
+			</div>
+		);
+		this.successDlgHeader = (
+			<div style={{ color: "green" }}>
+				<Icon
+					symbol="check-circle"
+					spritemap={this.spritemap}
+					style={{ marginRight: "1rem" }}
+				/>
+				{Util.translate("success")}
+			</div>
+		);
 
 		this.dataTypeImportId = this.namespace + "dataTypeImport";
 		this.dataStructureImportId = this.namespace + "dataStructureImport";
@@ -396,14 +431,22 @@ class DataTypeEditor extends React.Component {
 
 		//console.log("SX_AUTOCOMPLETE_SELECTED: ", dataPacket);
 
-		this.setState({ loadingStatus: LoadingStatus.PENDING });
 		if (dataPacket.id === this.dataTypeImportId) {
+			this.setState({ loadingStatus: LoadingStatus.PENDING });
 			this.dataType.dataTypeId = dataPacket.item.dataTypeId;
 
 			this.editStatus = EditStatus.IMPORT;
 			this.loadDataType();
 		} else if (dataPacket.id === this.dataStructureImportId) {
 			console.log("Import dataStructure: ", dataPacket);
+			if (this.structureLink.dataTypeId > 0) {
+				this.setState({
+					linkWillDeletedWarning: true,
+					importDataStructureId: dataPacket.item.dataStructureId
+				});
+			} else {
+				this.importDataStructure(dataPacket.item.dataStructureId);
+			}
 		}
 	};
 
@@ -562,6 +605,43 @@ class DataTypeEditor extends React.Component {
 				this.setState({
 					loadingStatus: LoadingStatus.COMPLETE
 				});
+			},
+			errorFunc: (err) => {
+				this.loadingFailMessage = "Error while loading data type: " + this.dataType.dataTypeId;
+				this.setState({ loadingStatus: LoadingStatus.FAIL });
+			}
+		});
+	}
+
+	importDataStructure(dataStructureId) {
+		this.setState({ loadingStatus: LoadingStatus.PENDING });
+		const importDataStructureId = dataStructureId ?? this.state.importDataStructureId;
+
+		Util.ajax({
+			namespace: this.namespace,
+			baseResourceURL: this.baseResourceURL,
+			resourceId: ResourceIds.LOAD_DATASTRUCTURE,
+			type: "post",
+			dataType: "json",
+			params: {
+				dataStructureId: importDataStructureId
+			},
+			successFunc: (result) => {
+				this.dataStructure.parse(result.dataStructure);
+				this.structureLink.dataTypeId = this.dataType.dataTypeId;
+				this.structureLink.dataStructureId = this.dataStructure.dataStructureId;
+				this.structureLink.dirty = true;
+				this.dataStructure.setTitleBarInfos(this.structureLink.toJSON());
+
+				console.log(
+					"importDataStructure: ",
+					result.dataStructure,
+					this.dataTypeId,
+					this.structureLink,
+					this.dataStructure
+				);
+
+				this.setState({ loadingStatus: LoadingStatus.COMPLETE });
 			},
 			errorFunc: (err) => {
 				this.loadingFailMessage = "Error while loading data type: " + this.dataType.dataTypeId;
@@ -763,7 +843,7 @@ class DataTypeEditor extends React.Component {
 			dataType: this.dataType.toJSON()
 		};
 
-		if (Util.isNotEmpty(this.structureLink.toJSON())) {
+		if (this.structureLink.dataTypeId > 0) {
 			formValues.structureLink = this.structureLink.toJSON();
 		}
 
@@ -823,6 +903,9 @@ class DataTypeEditor extends React.Component {
 	}
 
 	handleBtnCopyDataTypeClick() {
+		this.dataType = this.dataType.copy();
+		this.structureLink.dataTypeId = 0;
+
 		this.dataTypeCode.value = "";
 		this.dataTypeVersion.value = "1.0.0";
 		this.extension.value = "";
@@ -861,7 +944,40 @@ class DataTypeEditor extends React.Component {
 		this.dataTypeVersion.setValue({ value: "" });
 	};
 
-	handleRedirectToStructureBuilder = () => {
+	handleUpdateStructure = () => {
+		if (this.structureLink.dirty) {
+			this.setState({ linkInfoDirty: true });
+		} else {
+			this.redirectToStructureBuilder();
+		}
+	};
+
+	handleSaveLinkInfo = (postProc) => {
+		console.log("handleSaveLinkInfo: ", this.structureLink.toJSON());
+
+		Util.ajax({
+			namespace: this.namespace,
+			baseResourceURL: this.baseResourceURL,
+			resourceId: ResourceIds.SAVE_TYPE_STRUCTURE_LINK,
+			type: "post",
+			dataType: "json",
+			params: this.structureLink.toJSON(),
+			successFunc: (result) => {
+				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
+				this.structureLink.dirty = false;
+
+				this.setState({ saveSuccessDlgStatus: true });
+				//this.redirectToStructureBuilder();
+			},
+			errorFunc: (a, b, c, d) => {
+				console.log("ERROR: ", a, b, c, d);
+			}
+		});
+	};
+
+	handleRemoveTypeStructureLink = () => {};
+
+	redirectToStructureBuilder = () => {
 		Util.redirectTo(
 			this.workbench.url,
 			{
@@ -877,33 +993,6 @@ class DataTypeEditor extends React.Component {
 			}
 		);
 	};
-
-	handleSaveLinkInfo = () => {
-		console.log("handleSaveLinkInfo: ", this.structureLink.toJSON());
-
-		/*
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.SAVE_TYPE_STRUCTURE_LINK,
-			type: "post",
-			dataType: "json",
-			params: this.structureLink.toJSON(),
-			successFunc: (result) => {
-				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
-
-				this.setState({
-					saveSuccessDlgStatus: true
-				});
-			},
-			errorFunc: (a, b, c, d) => {
-				console.log("ERROR: ", a, b, c, d);
-			}
-		});
-		*/
-	};
-
-	handleRemoveTypeStructureLink = () => {};
 
 	clearForm() {
 		this.dataTypeCode.clearValue();
@@ -1064,7 +1153,7 @@ class DataTypeEditor extends React.Component {
 								style={{ borderBottom: "3px solid rgb(231,231,237)", marginBottom: "2.0rem" }}
 							>
 								<div className="autofit-col autofit-col-expand">
-									<h3>{Util.translate("linked-data-structure-info")}</h3>
+									<h3>{Util.translate("linked-datastructure-info")}</h3>
 								</div>
 								<div className="autofit-col">
 									<SXAutoComplete
@@ -1089,6 +1178,7 @@ class DataTypeEditor extends React.Component {
 												<Button
 													title={Util.translate("save-link-info")}
 													onClick={this.handleSaveLinkInfo}
+													disabled={!this.structureLink.dirty}
 													displayType="secondary"
 												>
 													<span className="inline-item inline-item-before">
@@ -1118,9 +1208,7 @@ class DataTypeEditor extends React.Component {
 											this.structureLink.dataStructureId > 0 && (
 												<Button
 													title={Util.translate("datastructure-edit")}
-													onClick={() =>
-														this.handleRedirectToStructureBuilder(EditStatus.UPDATE)
-													}
+													onClick={() => this.handleUpdateStructure()}
 													displayType="secondary"
 												>
 													<span className="inline-item inline-item-before">
@@ -1242,6 +1330,53 @@ class DataTypeEditor extends React.Component {
 										this.setState({
 											deleteErrorDlgStatus: false
 										});
+									}
+								}
+							]}
+						/>
+					)}
+					{this.structureLink.dataTypeId > 0 && this.state.linkWillDeletedWarning && (
+						<SXModalDialog
+							header={Util.translate("warning")}
+							body={Util.translate(
+								"current-link-will-be-delete-and-unrecoverable-are-you-sure-to-proceed"
+							)}
+							buttons={[
+								{
+									label: Util.translate("confirm"),
+									onClick: (e) => {
+										this.importDataStructure();
+										this.setState({ linkWillDeletedWarning: false });
+									},
+									displayType: "secondary"
+								},
+								{
+									label: Util.translate("cancel"),
+									onClick: (e) => {
+										this.setState({ linkWillDeletedWarning: false });
+									}
+								}
+							]}
+						/>
+					)}
+					{this.state.linkInfoDirty && (
+						<SXModalDialog
+							header={this.warningDlgHeader}
+							body={Util.translate("link-info-is-not-saved-do-you-save-the-info")}
+							buttons={[
+								{
+									label: Util.translate("save"),
+									onClick: (e) => {
+										this.handleSaveLinkInfo();
+										this.setState({ linkInfoDirty: false });
+									},
+									displayType: "secondary"
+								},
+								{
+									label: Util.translate("cancel"),
+									onClick: (e) => {
+										this.setState({ linkInfoDirty: false });
+										this.redirectToStructureBuilder();
 									}
 								}
 							]}

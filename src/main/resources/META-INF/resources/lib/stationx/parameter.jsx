@@ -178,7 +178,6 @@ export class Parameter {
 			}
 		}
 
-		console.log("Parameter.getTranslation: ", localizationObj, languageId, translation);
 		return translation;
 	}
 	static addTranslation(localizationObj, languageId, translation) {
@@ -244,9 +243,7 @@ export class Parameter {
 	freezable = false;
 	freezableIcon = "";
 	freezed = false;
-	freezedIcon = "";
-	verified = true;
-	verifiedIcon = "";
+	verified = false;
 
 	constructor(namespace, formId, languageId, availableLanguageIds, paramType) {
 		this.#namespace = namespace;
@@ -1392,13 +1389,15 @@ export class Parameter {
 		);
 	}
 
-	renderTitle({ spritemap }) {
+	renderTitle({ spritemap, style }) {
 		return (
 			<SXTitleBar
+				key={Util.randomKey()}
 				namespace={this.namespace}
 				formId={this.formId}
 				parameter={this}
 				spritemap={spritemap}
+				style={style}
 			/>
 		);
 	}
@@ -3784,12 +3783,14 @@ export class GroupParameter extends Parameter {
 		return this.members.length;
 	}
 
-	setTitleBarInfo(property, value) {
+	setTitleBarInfo(property, value, setMembers = true) {
 		super.setTitleBarInfo(property, value);
 
-		this.members.forEach((member) => {
-			member.setTitleBarInfo(property, value);
-		});
+		if (setMembers) {
+			this.members.forEach((member) => {
+				member.setTitleBarInfo(property, value);
+			});
+		}
 	}
 
 	focus(paramCode, paramVersion) {
@@ -3944,17 +3945,6 @@ export class GroupParameter extends Parameter {
 					cellIndex: cellIndex
 				})}
 			</div>
-		);
-	}
-
-	renderTitle({ spritemap }) {
-		return (
-			<SXTitleBar
-				namespace={this.namespace}
-				formId={this.formId}
-				parameter={this}
-				spritemap={spritemap}
-			/>
 		);
 	}
 
@@ -4179,6 +4169,10 @@ export class GridParameter extends GroupParameter {
 		});
 
 		return error;
+	}
+
+	setTitleBarInfo(property, value) {
+		super.setTitleBarInfo(property, value, false);
 	}
 
 	fireColumnSelected(colCode, targetForm) {

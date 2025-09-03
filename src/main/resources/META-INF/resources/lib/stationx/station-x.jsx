@@ -508,6 +508,7 @@ export const Event = {
 	SX_AUTOCOMPLETE_SELECTED: "SX_AUTOCOMPLETE_SELECTED",
 	SX_COPY_PARAMETER: "SX_COPY_PARAMETER",
 	SX_DELETE_PARAMETER: "SX_DELETE_PARAMETER",
+	SX_DELETE_SELECTED: "SX_DELETE_SELECTED",
 	SX_DISTRACT: "SX_DISTRACT",
 	SX_DISTRACT_ALL: "SX_DISTRACT_ALL",
 	SX_ENABLE_GOTO: "SX_ENABLE_GOTO",
@@ -694,9 +695,11 @@ export const Event = {
 	},
 	*/
 	fire: (event, sourcePortletId, targetPortletId, payload) => {
+		/*
 		console.log("Event.fire: ", event, payload, {
 			dataPacket: Event.createEventDataPacket(sourcePortletId, targetPortletId, payload)
 		});
+		*/
 		Liferay.fire(event, {
 			dataPacket: Event.createEventDataPacket(sourcePortletId, targetPortletId, payload)
 		});

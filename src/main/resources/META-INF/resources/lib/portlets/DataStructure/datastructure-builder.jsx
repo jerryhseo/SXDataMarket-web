@@ -79,7 +79,6 @@ class DataStructureBuilder extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("DataStructureBuilder: ", props);
 		this.namespace = props.namespace;
 		this.baseRenderURL = props.baseRenderURL;
 		this.baseResourceURL = props.baseResourceURL;
@@ -240,7 +239,7 @@ class DataStructureBuilder extends React.Component {
 			this.availableLanguageIds,
 			ParamType.STRING,
 			{
-				paramCode: DataTypeProperty.DISPLAY_NAME,
+				paramCode: "structureDisplayName",
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "display-name"),
 				placeholder: Util.getTranslationObject(this.languageId, "display-name"),
@@ -272,7 +271,7 @@ class DataStructureBuilder extends React.Component {
 			this.availableLanguageIds,
 			ParamType.STRING,
 			{
-				paramCode: DataTypeProperty.DESCRIPTION,
+				paramCode: "structureDescription",
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "description"),
 				placeholder: Util.getTranslationObject(this.languageId, "description"),
@@ -296,7 +295,6 @@ class DataStructureBuilder extends React.Component {
 		}
 
 		const selectedParam = dataPacket.parameter;
-		console.log("SX_PARAMETER_SELECTED: ", dataPacket, selectedParam, this.workingParam);
 		if (selectedParam === this.workingParam) {
 			return;
 		}
@@ -322,7 +320,6 @@ class DataStructureBuilder extends React.Component {
 
 	parameterTypeChangedHandler = (e) => {
 		const dataPacket = e.dataPacket;
-		console.log("SX_PARAM_TYPE_CHANGED: ", dataPacket);
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
 
 		if (
@@ -365,7 +362,6 @@ class DataStructureBuilder extends React.Component {
 			descendant: true
 		});
 
-		console.log("SX_COPY_PARAMETER group: ", group, this.workingParam, copied);
 		group.insertMember(copied, this.workingParam.order);
 
 		this.workingParam = copied;
@@ -469,17 +465,6 @@ class DataStructureBuilder extends React.Component {
 		}
 	};
 
-	listenerRefreshPreview = (event) => {
-		const dataPacket = event.dataPacket;
-
-		console.log("DataStructureBuilder listenerRefreshPreview before: ", dataPacket);
-		if (!(dataPacket.targetPortlet === this.namespace && dataPacket.targetFormId === this.formIds.dsbuilderId)) {
-			return;
-		}
-
-		console.log("DataStructureBuilder listenerRefreshPreview after: ", dataPacket);
-	};
-
 	componentDidMount() {
 		this.loadDataStructure();
 
@@ -499,8 +484,8 @@ class DataStructureBuilder extends React.Component {
 	}
 
 	loadDataStructure() {
-		console.log("dataTypeId: " + this.dataTypeId);
-		console.log("dataStructureId: " + this.dataStructureId);
+		//console.log("dataTypeId: " + this.dataTypeId);
+		//console.log("dataStructureId: " + this.dataStructureId);
 
 		if (this.dataTypeId === 0 && this.dataStructureId === 0) {
 			this.dataType = new DataType(this.languageId, this.availableLanguageIds);
@@ -543,6 +528,9 @@ class DataStructureBuilder extends React.Component {
 							description: { ...this.dataType.description }
 						}
 					);
+
+					//set type-structure link info to dataStructure.
+					this.dataStructure.setTitleBarInfos(this.typeStructureLink.toJSON());
 
 					console.log("TypeStructureLink: ", JSON.stringify(this.typeStructureLink, null, 4));
 					this.structureCode.setValue({ value: this.dataStructure.dataStructureCode });
@@ -619,7 +607,7 @@ class DataStructureBuilder extends React.Component {
 		const error = this.dataStructure.checkError();
 
 		if (Util.isNotEmpty(error)) {
-			console.log("Data structure has error: ", error);
+			//console.log("Data structure has error: ", error);
 			this.setState({
 				confirmDlgState: true,
 				confirmDlgHeader: this.errorDlgHeader,
@@ -688,7 +676,7 @@ class DataStructureBuilder extends React.Component {
 			return <h3>{this.loadingFailMessage}</h3>;
 		}
 
-		console.log("DataStructureBuilder render: ", this.dataStructure, this.workingParam);
+		//console.log("DataStructureBuilder render: ", this.dataStructure, this.workingParam);
 
 		return (
 			<>
@@ -754,7 +742,7 @@ class DataStructureBuilder extends React.Component {
 									text={this.dataStructure.dataStructureId}
 									align="left"
 									viewType="FORM_FIELD"
-									className="form-field"
+									className="sx-form-field"
 								/>
 							</div>
 							<div className="autofit-col">
@@ -818,15 +806,6 @@ class DataStructureBuilder extends React.Component {
 									spritemap={this.spritemap}
 									displayType="danger"
 									size="sm"
-								/>
-								<ClayButtonWithIcon
-									aria-label={Util.translate("import")}
-									symbol="import"
-									title={Util.translate("import")}
-									spritemap={this.spritemap}
-									displayType="secondary"
-									size="sm"
-									className="float-right"
 								/>
 							</Button.Group>
 							<SXDSBuilderPropertiesPanel

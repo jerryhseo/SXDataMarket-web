@@ -80,7 +80,7 @@ export class SXManagementToolbar extends React.Component {
 	};
 
 	handleActionButtonClick = (actionId) => {
-		Event.fire(Event.SX_FILTER_MENU_CLICKED, this.namespace, this.namespace, {
+		Event.fire(Event.SX_DELETE_SELECTED, this.namespace, this.namespace, {
 			targetFormId: this.formId,
 			action: actionId
 		});
@@ -205,7 +205,7 @@ export class SXManagementToolbar extends React.Component {
 										aria-label={button.name}
 										title={button.name}
 										displayType="unstyled"
-										onClick={(e) => this.handleAactionButtonClick(button.id)}
+										onClick={(e) => this.handleActionButtonClick(button.id)}
 										spritemap={this.spritemap}
 										symbol={button.symbol}
 									/>

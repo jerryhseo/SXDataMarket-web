@@ -232,6 +232,41 @@ export class DataStructure extends GroupParameter {
 		return items;
 	}
 
+	setTitleBarInfos(infos) {
+		for (const key in infos) {
+			switch (key) {
+				case "commentable": {
+					this.setTitleBarInfo(key, infos.commentable);
+					break;
+				}
+				case "verifiable": {
+					this.setTitleBarInfo(key, infos.verifiable);
+					break;
+				}
+				case "freezable": {
+					this.setTitleBarInfo(key, infos.freezable);
+					break;
+				}
+				case "verified": {
+					this.setTitleBarInfo(key, infos.verified);
+					break;
+				}
+				case "freezed": {
+					this.setTitleBarInfo(key, infos.freezed);
+					break;
+				}
+				case "inputStatus": {
+					this.setTitleBarInfo(key, infos.inputStatus);
+					break;
+				}
+				case "jumpTo": {
+					this.jumpTo = infos.inputStatus;
+					break;
+				}
+			}
+		}
+	}
+
 	toData() {}
 
 	parse(json = {}) {

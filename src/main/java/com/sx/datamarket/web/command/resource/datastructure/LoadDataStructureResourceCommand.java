@@ -42,6 +42,7 @@ import org.osgi.service.component.annotations.Reference;
 	    immediate = true,
 	    property = {
 	        "javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
+	        "javax.portlet.name=" + WebPortletKey.SXDataTypeEditorPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_DATASTRUCTURE
 	    },
 	    service = MVCResourceCommand.class
@@ -55,7 +56,7 @@ public class LoadDataStructureResourceCommand extends BaseMVCResourceCommand{
 		long dataTypeId = ParamUtil.getLong(resourceRequest, WebKey.DATATYPE_ID, 0);
 		long dataStructureId = ParamUtil.getLong(resourceRequest, "dataStructureId", 0);
 		
-		System.out.println("LoadDataTypeResourceCommand:  " + dataTypeId + ", dataStructureId: " + dataStructureId );
+		System.out.println("LoadDataStructureResourceCommand:  " + dataTypeId + ", dataStructureId: " + dataStructureId );
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		

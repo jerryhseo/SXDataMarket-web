@@ -17,6 +17,7 @@ import com.sx.icecap.constant.MVCCommand;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.exception.DuplicatedDataTypeNameException;
 import com.sx.icecap.exception.InvalidDataTypeCodeException;
+import com.sx.icecap.exception.NoSuchTypeStructureLinkException;
 import com.sx.icecap.model.DataType;
 import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.model.TypeVisualizerLink;
@@ -73,8 +74,8 @@ public class SaveTypeStructureLinkResourceCommand extends BaseMVCResourceCommand
 		ServiceContext sc = ServiceContextFactory.getInstance(TypeStructureLink.class.getName(), resourceRequest);
 
 		TypeStructureLink link = null;
-		if( dataTypeId > 0) {
-			link = _typeStructureLinkLocalService.getTypeStructureLink(dataTypeId);
+		try {
+			_typeStructureLinkLocalService.getTypeStructureLink(dataTypeId);
 			
 			_typeStructureLinkLocalService.updateTypeDataStructureLink(
 					dataTypeId, 
@@ -87,18 +88,17 @@ public class SaveTypeStructureLinkResourceCommand extends BaseMVCResourceCommand
 					inputStatus,
 					jumpTo,
 					sc);
-		}
-		else {
-			link = _typeStructureLinkLocalService.addTypeDataStructureLink(
+		} catch(NoSuchTypeStructureLinkException e) {
+			_typeStructureLinkLocalService.addTypeDataStructureLink(
 					dataTypeId, 
 					dataStructureId, 
 					commentable, 
 					verifiable, 
 					freezable, 
 					verified, 
-					freezed, 
-					inputStatus, 
-					jumpTo, 
+					freezed,
+					inputStatus,
+					jumpTo,
 					sc);
 		}
 		

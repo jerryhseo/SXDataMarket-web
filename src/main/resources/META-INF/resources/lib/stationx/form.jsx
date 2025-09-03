@@ -40,7 +40,7 @@ import Panel from "@clayui/panel";
 import Toolbar from "@clayui/toolbar";
 import { DataStructure } from "../portlets/DataStructure/data-structure";
 import { Table, Text } from "@clayui/core";
-import { SXLinkIcon, SXQMarkIcon } from "./icon";
+import { SXFreezeIcon, SXLinkIcon, SXQMarkIcon, SXVerifyIcon } from "./icon";
 
 export const SXRequiredMark = ({ spritemap }) => {
 	return (
@@ -102,6 +102,7 @@ export class SXTitleBar extends React.Component {
 		this.formId = props.formId;
 		this.spritemap = props.spritemap;
 		this.parameter = props.parameter;
+		this.style = props.style ?? { marginBottom: "0.4rem", fontSize: "0.85rem", fontWeight: "600" };
 
 		this.title = this.parameter.label;
 		this.refLink = this.parameter.refLink ?? false;
@@ -109,11 +110,18 @@ export class SXTitleBar extends React.Component {
 		this.hasValue = this.parameter.hasValue();
 		this.required = this.parameter.required ?? false;
 		this.tooltip = this.parameter.getTooltip() ?? "";
+		/*
 		this.commentable = this.parameter.commentable ?? false;
 		this.verifiable = this.parameter.verifiable ?? false;
 		this.freezable = this.parameter.freezable ?? false;
 		this.verified = this.parameter.verified ?? true;
 		this.freezed = this.parameter.freezed ?? false;
+		*/
+		this.commentable = false;
+		this.verifiable = false;
+		this.freezable = false;
+		this.verified = true;
+		this.freezed = false;
 	}
 
 	handlerQMarkClicked = () => {
@@ -132,7 +140,10 @@ export class SXTitleBar extends React.Component {
 		const titleClass = this.inputStatus && this.hasValue ? "sx-control-label no-value" : "sx-control-label";
 
 		return (
-			<div className="autofit-row">
+			<div
+				className="autofit-row"
+				style={this.style}
+			>
 				<div
 					className={"autofit-col autofit-col-expand " + titleClass}
 					style={{ display: "inline-block" }}
@@ -150,19 +161,30 @@ export class SXTitleBar extends React.Component {
 					{this.refLink && <SXLinkIcon />}
 					{this.inputStatus}
 				</div>
-				<div className="autofit-col">
-					{this.commentable && <SXQMarkIcon onClick={this.handlerQMarkClicked} />}
+				<div
+					className="autofit-col"
+					style={{ display: "inline-block" }}
+				>
+					{this.commentable && (
+						<span style={{ marginRight: "0.4rem" }}>
+							<SXQMarkIcon onClick={this.handlerQMarkClicked} />
+						</span>
+					)}
 					{this.verifiable && (
-						<SXVerifiyIcon
-							verified={this.verified}
-							onClick={() => this.handlerVerifyClicked()}
-						/>
+						<span style={{ marginRight: "0.4rem" }}>
+							<SXVerifyIcon
+								verified={this.verified}
+								onClick={() => this.handlerVerifyClicked()}
+							/>
+						</span>
 					)}
 					{this.freezable && (
-						<SXVerifiyIcon
-							freezed={this.freezed}
-							onClick={() => this.handlerFreezeClicked()}
-						/>
+						<span style={{ marginRight: "0.4rem" }}>
+							<SXFreezeIcon
+								freezed={this.freezed}
+								onClick={() => this.handlerFreezeClicked()}
+							/>
+						</span>
 					)}
 				</div>
 			</div>
@@ -222,7 +244,13 @@ export const SXLabeledText = ({
 						spritemap={spritemap}
 					/>
 					<br></br>
-					<Text size={3}>{text}</Text>
+					<Text
+						className="form-control form-control-sm"
+						size={3}
+						style={{ paddingBottom: "0" }}
+					>
+						{text}
+					</Text>
 				</div>
 			);
 		}
@@ -362,7 +390,6 @@ export class SXDataStatusBar extends React.Component {
 	};
 
 	componentDidMount() {
-		console.log("=== SXDataStatusBar componentDidMount executed ===");
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
 	}
 
@@ -645,7 +672,6 @@ export class SXPreviewRow extends React.Component {
 			actionItems.push({ id: "moveUp", name: Util.translate("move-up"), symbol: "order-arrow-up" });
 		}
 
-		console.log("SXPreviewRow: ", this.parameter);
 		return (
 			<>
 				<div
@@ -3754,27 +3780,14 @@ export class SXGroup extends React.Component {
 	renderPanel() {
 		return (
 			<Panel
+				key={Util.randomKey()}
 				collapsable
 				displayTitle={
-					<Panel.Title>
-						<div className="autofit-row autofit-row-center">
-							<div className="autofit-col">
-								<h3>{this.parameter.label}</h3>
-							</div>
-							<div className="autofit-col">
-								{this.parameter.inputStatus && (
-									<div className="autofit-section">
-										<span>
-											{"(" +
-												this.parameter.valuedFieldsCount +
-												"/" +
-												this.parameter.totalFieldsCount +
-												")"}
-										</span>
-									</div>
-								)}
-							</div>
-						</div>
+					<Panel.Title key={Util.randomKey()}>
+						{this.parameter.renderTitle({
+							spritemap: this.spritemap,
+							style: { fontSize: "1.0rem", fontWeight: "800" }
+						})}
 						{this.parameter.showDefinition && this.state.expanded && (
 							<div
 								className="autofit-row"
@@ -3972,9 +3985,9 @@ export class SXGrid extends React.Component {
 	}
 
 	componentWillUnmount() {
-		Event.detach(Event.SX_REFRESH, this.refreshHandler);
-		Event.detach(Event.SX_FOCUS, this.focusHandler);
-		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+		Event.off(Event.SX_REFRESH, this.refreshHandler);
+		Event.off(Event.SX_FOCUS, this.focusHandler);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
 	}
 
 	handleRowActionClick(event, actionId, rowIndex) {
@@ -4037,7 +4050,8 @@ export class SXGrid extends React.Component {
 				return {
 					id: column.paramCode,
 					name: column.renderTitle({
-						spritemap: this.spritemap
+						spritemap: this.spritemap,
+						style: { marginBottom: "0" }
 					}),
 					textValue: column.label,
 					style: {

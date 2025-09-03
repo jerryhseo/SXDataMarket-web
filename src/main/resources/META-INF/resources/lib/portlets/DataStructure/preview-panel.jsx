@@ -82,8 +82,6 @@ class SXDataStructurePreviewer extends React.Component {
 	};
 
 	componentDidMount() {
-		console.log("=== SXDataStructurePreviewer componentDidMount executed ===");
-
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
 		Event.on(Event.SX_MOVE_PARAMETER_UP, this.moveParameterUpHandler);
 		Event.on(Event.SX_MOVE_PARAMETER_DOWN, this.moveParameterDownHandler);
@@ -91,10 +89,10 @@ class SXDataStructurePreviewer extends React.Component {
 	}
 
 	componentWillUnmount() {
-		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
-		Event.detach(Event.SX_MOVE_PARAMETER_UP, this.moveParameterUpHandler);
-		Event.detach(Event.SX_MOVE_PARAMETER_DOWN, this.moveParameterDownHandler);
-		Event.detach(Event.SX_REFRESH_FORM, this.refreshFormHandler);
+		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+		Event.on(Event.SX_MOVE_PARAMETER_UP, this.moveParameterUpHandler);
+		Event.on(Event.SX_MOVE_PARAMETER_DOWN, this.moveParameterDownHandler);
+		Event.on(Event.SX_REFRESH_FORM, this.refreshFormHandler);
 	}
 
 	render() {

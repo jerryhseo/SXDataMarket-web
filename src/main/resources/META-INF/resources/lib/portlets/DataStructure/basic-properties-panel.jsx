@@ -207,6 +207,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 			return;
 		}
 
+		/*
 		console.log(
 			"RECEIVED - SXDSBuilderBasicPropertiesPanel SX_FIELD_VALUE_CHANGED: ",
 			dataPacket,
@@ -214,6 +215,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 			this.workingParam,
 			dataPacket.parameter
 		);
+		*/
 
 		if (dataPacket.parameter.hasError()) {
 			this.workingParam.setError(
@@ -267,26 +269,23 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					descendant: true
 				});
 
-				gridParam.fireRefreshPreview();
+				gridParam.fireRefresh();
 			} else {
-				this.workingParam.fireRefreshPreview();
+				this.workingParam.fireRefresh();
 			}
 		}
 	};
 
 	componentDidMount() {
-		//console.log("componentDidMount: SXDSBuilderBasicPropertiesPanel");
-
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.valueChangedHandler);
-		//Event.uniqueOn(Event.SX_FIELD_VALUE_CHANGED, valueChangedHandler);
 	}
 
 	componentWillUnmount() {
-		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.valueChangedHandler);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.valueChangedHandler);
 	}
 
 	render() {
-		//console.log("SXDSBuilderBasicPropertiesPanel: ", this.workingParam);
+		//console.log("SXDSBuilderBasicPropertiesPanel: ", this.workingParam, this.formIds);
 		const fields = Object.values(this.fields);
 
 		return (

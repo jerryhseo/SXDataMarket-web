@@ -90,7 +90,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 		}
 
 		this.forceUpdate();
-		this.workingParam.fireRefreshPreview();
+		this.workingParam.fireRefresh();
 	}
 
 	checkSectionEnabled(sectionId) {
