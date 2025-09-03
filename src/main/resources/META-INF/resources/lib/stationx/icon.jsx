@@ -339,13 +339,13 @@ export const SXQMarkIcon = ({ width = "24", height = "20", onClick }) => {
 	return (
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
-			xml:space="preserve"
+			xmlSpace="preserve"
 			id="letter-q"
 			x="0"
 			y="0"
 			width={width}
 			height={height}
-			enable-background="new 0 0 75 75"
+			enableBackground="new 0 0 75 75"
 			version="1.1"
 			viewBox="0 0 75 75"
 			onClick={() => onClick()}

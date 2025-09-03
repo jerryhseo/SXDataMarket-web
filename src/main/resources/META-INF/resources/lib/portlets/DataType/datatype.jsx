@@ -384,34 +384,42 @@ export class SXDataTypeStructureLink extends React.Component {
 		switch (dataPacket.paramCode) {
 			case "commentable": {
 				this.typeStructureLink.commentable = this.commentable.getValue();
+				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.commentable.getValue());
 				break;
 			}
 			case "verifiable": {
 				this.typeStructureLink.verifiable = this.verifiable.getValue();
+				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.verifiable.getValue());
 				break;
 			}
 			case "freezable": {
 				this.typeStructureLink.freezable = this.freezable.getValue();
+				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.freezable.getValue());
 				break;
 			}
 			case "inputStatus": {
 				this.typeStructureLink.inputStatus = this.inputStatus.getValue();
+				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.inputStatus.getValue());
 				break;
 			}
 			case "jumpTo": {
 				this.typeStructureLink.jumpTo = this.jumpTo.getValue();
+				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.jumpTo.getValue());
 				break;
 			}
 			case "verified": {
 				this.typeStructureLink.verified = this.verified.getValue();
+				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.verified.getValue());
 				break;
 			}
 			case "freezed": {
 				this.typeStructureLink.freezed = this.freezed.getValue();
+				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.freezed.getValue());
 				break;
 			}
 		}
 
+		this.dataStructure.fireRefreshPreview();
 		console.log("Component value changed: ", dataPacket, this.typeStructureLink, this.dataStructure);
 	};
 

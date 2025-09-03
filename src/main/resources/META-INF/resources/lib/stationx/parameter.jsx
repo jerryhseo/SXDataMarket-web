@@ -165,13 +165,26 @@ export class Parameter {
 		return parameter;
 	}
 
-	static getLocalized(localizationObj, languageId) {
-		return localizationObj[languageId];
+	static getTranslation(localizationObj, languageId) {
+		let translation = localizationObj[languageId];
+
+		if (Util.isEmpty(translation)) {
+			for (const lanId in localizationObj) {
+				translation = localizationObj[lanId];
+
+				if (Util.isNotEmpty(translation)) {
+					break;
+				}
+			}
+		}
+
+		console.log("Parameter.getTranslation: ", localizationObj, languageId, translation);
+		return translation;
 	}
-	static addLocalized(localizationObj, languageId, translation) {
+	static addTranslation(localizationObj, languageId, translation) {
 		return (localizationObj[languageId] = translation);
 	}
-	static removeLocalized(localizationObj, languageId) {
+	static removeTranslation(localizationObj, languageId) {
 		delete localizationObj[languageId];
 
 		return localizationObj;
@@ -611,36 +624,36 @@ export class Parameter {
 		return languageId ? this.displayName[languageId] : this.displayName[this.languageId];
 	}
 	get label() {
-		return this.displayName[this.languageId];
+		return Parameter.getTranslation(this.displayName, this.languageId);
 	}
 	set label(value) {
-		this.displayName[this.languageId] = value;
+		this.displayName = Parameter.addTranslation(this.displayName, this.languageId, value);
 	}
 	addDisplayName(languageId, translation) {
-		this.displayName = Parameter.addLocalized(this.displayName, languageId, translation);
+		this.displayName = Parameter.addTranslation(this.displayName, languageId, translation);
 	}
 	removeDisplayName(languageId) {
-		this.displayName = Parameter.removeLocalized(this.displayName, languageId);
+		this.displayName = Parameter.removeTranslation(this.displayName, languageId);
 	}
 
 	getDefinition(languageId) {
 		return languageId ? this.definition[languageId] : this.definition[this.languageId];
 	}
 	addDefinition(languageId, translation) {
-		this.definition = Parameter.addLocalized(this.definition, languageId, translation);
+		this.definition = Parameter.addTranslation(this.definition, languageId, translation);
 	}
 	removeDefinition(languageId) {
-		this.definition = Parameter.removeLocalized(this.definition, languageId);
+		this.definition = Parameter.removeTranslation(this.definition, languageId);
 	}
 
 	getTooltip(languageId) {
 		return languageId ? this.tooltip[languageId] : this.tooltip[this.languageId];
 	}
 	addTooltip(languageId, translation) {
-		this.tooltip = Parameter.addLocalized(this.tooltip, languageId, translation);
+		this.tooltip = Parameter.addTranslation(this.tooltip, languageId, translation);
 	}
 	removeTooltip(languageId) {
-		this.tooltip = Parameter.removeLocalized(this.tooltip, languageId);
+		this.tooltip = Parameter.removeTranslation(this.tooltip, languageId);
 	}
 
 	equalTo(code, version) {
@@ -657,6 +670,10 @@ export class Parameter {
 
 	get isGroup() {
 		return this.paramType === ParamType.GROUP;
+	}
+
+	get isGrid() {
+		return this.paramType === ParamType.GRID;
 	}
 
 	postfixParameterCode(postfix) {
@@ -945,6 +962,41 @@ export class Parameter {
 		this.initValue(cellIndex);
 	}
 
+	setTitleBarInfo(property, value) {
+		switch (property) {
+			case "commentable": {
+				this.commentable = value;
+				break;
+			}
+			case "verifiable": {
+				this.verifiable = value;
+				break;
+			}
+			case "freezable": {
+				this.freezable = value;
+				break;
+			}
+			case "inputStatus": {
+				this.inputStatus = value;
+				break;
+			}
+			case "jumpTo": {
+				this.jumpTo = value;
+				break;
+			}
+			case "verified": {
+				this.verified = value;
+				break;
+			}
+			case "freezed": {
+				this.freezed = value;
+				break;
+			}
+		}
+
+		this.refreshKey();
+	}
+
 	fireRefresh(cellIndex) {
 		Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
 			targetFormId: this.formId,
@@ -956,8 +1008,8 @@ export class Parameter {
 	}
 
 	fireRefreshPreview(cellIndex) {
-		if (this.displayType === Parameter.DisplayTypes.GRID_CELL) {
-			Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
+		if (this.isGridCell(cellIndex)) {
+			Event.fire(Event.SX_REFRESH_FORM, this.namespace, this.namespace, {
 				targetFormId: this.formId,
 				paramCode: this.parent.code,
 				paramVersion: this.parent.version,
@@ -965,7 +1017,7 @@ export class Parameter {
 				cellIndex: cellIndex
 			});
 		} else {
-			Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
+			Event.fire(Event.SX_REFRESH_FORM, this.namespace, this.namespace, {
 				targetFormId: this.formId,
 				paramCode: this.paramCode,
 				paramVersion: this.paramVersion,
@@ -2388,11 +2440,15 @@ export class BooleanParameter extends SelectParameter {
 	}
 
 	getTrueLabel(languageId) {
-		return languageId ? this.trueLabel[languageId] : this.trueLabel[this.languageId];
+		const langId = languageId ?? this.languageId;
+
+		return Parameter.getTranslation(this.trueLabel, langId);
 	}
 
 	getFalseLabel(languageId) {
-		return languageId ? this.falseLabel[languageId] : this.falseLabel[this.languageId];
+		const langId = languageId ?? this.languageId;
+
+		return Parameter.getTranslation(this.falseLabel, langId);
 	}
 
 	initValue(cellIndex) {
@@ -3726,6 +3782,14 @@ export class GroupParameter extends Parameter {
 
 	countParameters() {
 		return this.members.length;
+	}
+
+	setTitleBarInfo(property, value) {
+		super.setTitleBarInfo(property, value);
+
+		this.members.forEach((member) => {
+			member.setTitleBarInfo(property, value);
+		});
 	}
 
 	focus(paramCode, paramVersion) {

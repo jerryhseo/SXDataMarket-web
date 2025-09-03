@@ -285,7 +285,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 						/>
 					</div>
 				</Form.Group>
-				{this.workingParam.displayType !== Parameter.DisplayTypes.GRID_CELL && (
+				{parentGroup && this.workingParam.displayType !== Parameter.DisplayTypes.GRID_CELL && (
 					<Form.Group style={{ marginBottom: "1.5rem" }}>
 						<SXLabel
 							label={Util.translate("group")}

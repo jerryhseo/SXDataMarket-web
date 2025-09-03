@@ -69,12 +69,14 @@ class SXDataStructurePreviewer extends React.Component {
 	};
 
 	refreshFormHandler = (e) => {
+		console.log("Previewer before: ", e.dataPacket);
 		if (
 			e.dataPacket.targetPortlet !== this.namespace ||
 			e.dataPacket.targetFormId !== this.formIds.previewCanvasId
 		) {
 			return;
 		}
+		console.log("Previewer after: ", e.dataPacket);
 
 		this.forceUpdate();
 	};

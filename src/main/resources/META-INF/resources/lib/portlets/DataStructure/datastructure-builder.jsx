@@ -463,7 +463,21 @@ class DataStructureBuilder extends React.Component {
 				this.dataStructure.description = this.structureDescription.getValue();
 				break;
 			}
+			default: {
+				console.log("listenerFieldValueChanged: ", dataPacket);
+			}
 		}
+	};
+
+	listenerRefreshPreview = (event) => {
+		const dataPacket = event.dataPacket;
+
+		console.log("DataStructureBuilder listenerRefreshPreview before: ", dataPacket);
+		if (!(dataPacket.targetPortlet === this.namespace && dataPacket.targetFormId === this.formIds.dsbuilderId)) {
+			return;
+		}
+
+		console.log("DataStructureBuilder listenerRefreshPreview after: ", dataPacket);
 	};
 
 	componentDidMount() {
