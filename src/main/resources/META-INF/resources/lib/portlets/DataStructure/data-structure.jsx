@@ -8,7 +8,7 @@ export class DataStructure extends GroupParameter {
 		BAREBONE: "barebone"
 	};
 
-	static GotoBasis = {
+	static JumpToBasis = {
 		PARAM_CODE: "paramCode",
 		DISPLAY_NAME: "displayName"
 	};
@@ -214,21 +214,21 @@ export class DataStructure extends GroupParameter {
 		targetGroup.addMember(srcGroup.removeMember({ paramCode: param.paramCode, paramVersion: param.paramVersion }));
 	}
 
-	getGotoAutoCompleteItems(rootGroup, basis = DataStructure.GotoBasis.PARAM_CODE) {
+	getJumpToItems(rootGroup, basis = DataStructure.JumpToBasis.DISPLAY_NAME) {
 		const members = !!rootGroup ? rootGroup.members : this.members;
 		let items = [];
 
 		members.forEach((param) => {
 			if (param.isGroup) {
-				items = items.concat(this.getGotoAutoCompleteItems(param, basis));
+				items = items.concat(this.getJumpToItems(param, basis));
 			}
 
-			basis === DataStructure.GotoBasis.PARAM_CODE
+			basis === DataStructure.JumpToBasis.DISPLAY_NAME
 				? items.push({ name: param.paramCode, version: param.paramVersion })
-				: items.push({ name: param.getDisplayName(this.languageId), version: param.paramVersion });
+				: items.push({ name: param.label, version: param.paramVersion });
 		});
 
-		console.log("getGotoAutoCompleteItems: ", rootGroup, basis, items);
+		console.log("getJumpToItems: ", rootGroup, basis, items);
 		return items;
 	}
 

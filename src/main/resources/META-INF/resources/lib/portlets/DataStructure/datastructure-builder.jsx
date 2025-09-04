@@ -872,6 +872,7 @@ class DataStructureBuilder extends React.Component {
 							<SXDataStructurePreviewer
 								formIds={this.formIds}
 								dataStructure={this.dataStructure}
+								typeStructureLink={this.typeStructureLink}
 								spritemap={this.spritemap}
 							/>
 						</div>

@@ -3555,7 +3555,6 @@ export class GroupParameter extends Parameter {
 
 		member.initValue();
 		this.members.push(member);
-		console.log("Group addMember: ", this.members);
 
 		this.setDirty();
 	}
@@ -3640,8 +3639,6 @@ export class GroupParameter extends Parameter {
 		const removed = Util.isEmpty(memOrder)
 			? this.deleteMemberByCode(paramCode, paramVersion)
 			: this.deleteMemberByIndex(memOrder);
-
-		console.log("Group Parameter removeMember: ", paramCode, paramVersion, this.members);
 
 		return removed;
 	}

@@ -117,7 +117,8 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 				TypeStructureLink typeStructureLink = _typeStructureLinkLocalService.getTypeStructureLink(dataTypeId);
 				
 				_typeStructureLinkLocalService.updateTypeDataStructureLink(
-						dataTypeId, dataStructureId, 
+						dataTypeId, 
+						dataStructureId, 
 						commentable, 
 						verifiable, 
 						freezable, 

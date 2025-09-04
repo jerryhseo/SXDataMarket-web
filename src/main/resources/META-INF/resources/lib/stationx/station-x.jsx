@@ -279,6 +279,7 @@ export const ResourceIds = {
 	LOAD_DATASTRUCTURE: "/ajax/DataStructure/load-datastructure",
 	SAVE_DATASTRUCTURE: "/ajax/DataStructure/save-datastructure",
 	DELETE_DATASTRUCTURE: "/ajax/DataStructure/delete-datastructure",
+	DELETE_TYPE_STRUCTURE_LINK: "/ajax/DataType/delete-type-structure-link",
 	DELETE_TEMP_STRUCTURED_DATA: "/ajax/StructuredData/delete-temp-file",
 	SAVE_TYPE_STRUCTURE_LINK: "/ajax/DataType/save-type-structure-link"
 };

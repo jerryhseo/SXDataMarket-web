@@ -367,7 +367,7 @@ class DataTypeEditor extends React.Component {
 			linkInfoDirty: false,
 			importDataStructureId: 0,
 			underConstruction: false,
-			showModal: false
+			addConfirmDlg: false
 		};
 
 		this.errorDlgHeader = (
@@ -786,6 +786,42 @@ class DataTypeEditor extends React.Component {
 		return found;
 	}
 
+	deleteTypeStructureInfo = (postProc) => {
+		Util.ajax({
+			namespace: this.namespace,
+			baseResourceURL: this.baseResourceURL,
+			resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK,
+			type: "post",
+			dataType: "json",
+			params: {
+				dataTypeId: this.structureLink.dataTypeId
+			},
+			successFunc: (result) => {
+				this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
+				this.dataStructure = new DataStructure(
+					this.namespace,
+					this.formId,
+					this.languageId,
+					this.availableLanguageIds
+				);
+
+				if (postProc) {
+					this.redirectToStructureBuilder();
+				} else {
+					this.dlgBody = Util.translate(
+						"datatype-structure-link-info-is-deleted",
+						this.structureLink.dataTypeId
+					);
+					this.setState({ deleteSuccessDlgStatus: true });
+				}
+			},
+			errorFunc: (err) => {
+				this.loadingFailMessage = "Error while loading visualizers: ";
+				this.setState({ loadingStatus: LoadingStatus.FAIL });
+			}
+		});
+	};
+
 	handleMoveToExplorer(e) {
 		Util.redirectTo(
 			this.workbench.url,
@@ -934,22 +970,28 @@ class DataTypeEditor extends React.Component {
 
 	handleBtnAddDataStructureClick() {
 		//console.log("redirectTo: ", this.workbench.portletId, this.state);
+		if (this.structureLink.dataTypeId > 0) {
+			this.dlgHeader = this.warningDlgHeader;
+			this.dlgBody = Util.translate("current-link-will-be-delete-and-unrecoverable-are-you-sure-to-proceed");
 
-		Util.redirectTo(
-			this.workbench.url,
-			{
-				namespace: this.workbench.namespace,
-				portletId: this.workbench.portletId,
-				windowState: WindowState.NORMAL
-			},
-			{
-				workingPortletName: PortletKeys.DATASTRUCTURE_BUILDER,
-				workingPortletParams: JSON.stringify({
-					dataTypeId: this.dataType.dataTypeId,
-					cmd: "add"
-				})
-			}
-		);
+			this.setState({ addConfirmDlg: true });
+		} else {
+			Util.redirectTo(
+				this.workbench.url,
+				{
+					namespace: this.workbench.namespace,
+					portletId: this.workbench.portletId,
+					windowState: WindowState.NORMAL
+				},
+				{
+					workingPortletName: PortletKeys.DATASTRUCTURE_BUILDER,
+					workingPortletParams: JSON.stringify({
+						dataTypeId: this.dataType.dataTypeId,
+						cmd: "add"
+					})
+				}
+			);
+		}
 	}
 
 	handleBtnDeleteClick(e) {
@@ -997,8 +1039,6 @@ class DataTypeEditor extends React.Component {
 		});
 	};
 
-	handleRemoveTypeStructureLink = () => {};
-
 	redirectToStructureBuilder = () => {
 		Util.redirectTo(
 			this.workbench.url,
@@ -1039,7 +1079,7 @@ class DataTypeEditor extends React.Component {
 			},
 			successFunc: (result) => {
 				this.clearForm();
-
+				this.dlgBody = Util.translate("datatype-is-deleted-successfully", this.dataType.dataTypeId);
 				this.setState({ deleteSuccessDlgStatus: true });
 			},
 			errorFunc: (err) => {
@@ -1311,7 +1351,7 @@ class DataTypeEditor extends React.Component {
 					{this.state.deleteSuccessDlgStatus && (
 						<SXModalDialog
 							header={this.successDlgHeader}
-							body={Util.translate("delete-success") + ": " + this.dataType.dataTypeId}
+							body={this.dlgBody}
 							buttons={[
 								{
 									label: Util.translate("ok"),
@@ -1398,6 +1438,31 @@ class DataTypeEditor extends React.Component {
 									label: Util.translate("cancel"),
 									onClick: (e) => {
 										this.setState({ linkInfoDirty: false });
+										this.redirectToStructureBuilder();
+									}
+								}
+							]}
+						/>
+					)}
+					{this.state.addConfirmDlg && (
+						<SXModalDialog
+							header={this.warningDlgHeader}
+							body={Util.translate(
+								"current-link-will-be-delete-and-unrecoverable-are-you-sure-to-proceed"
+							)}
+							buttons={[
+								{
+									label: Util.translate("save"),
+									onClick: (e) => {
+										this.deleteTypeStructureInfo("redirectToBuilder");
+										this.setState({ addConfirmDlg: false });
+									},
+									displayType: "secondary"
+								},
+								{
+									label: Util.translate("cancel"),
+									onClick: (e) => {
+										this.setState({ addConfirmDlg: false });
 										this.redirectToStructureBuilder();
 									}
 								}
