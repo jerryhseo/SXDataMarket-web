@@ -366,7 +366,8 @@ class DataTypeEditor extends React.Component {
 			linkWillDeletedWarning: false,
 			linkInfoDirty: false,
 			importDataStructureId: 0,
-			underConstruction: false
+			underConstruction: false,
+			showModal: false
 		};
 
 		this.errorDlgHeader = (
@@ -399,6 +400,11 @@ class DataTypeEditor extends React.Component {
 				{Util.translate("success")}
 			</div>
 		);
+
+		this.dlgBody = <></>;
+		this.dlgHeader = <></>;
+		this.okProc = null;
+		this.cancelProc = null;
 
 		this.dataTypeImportId = this.namespace + "dataTypeImport";
 		this.dataStructureImportId = this.namespace + "dataStructureImport";
@@ -440,6 +446,8 @@ class DataTypeEditor extends React.Component {
 		} else if (dataPacket.id === this.dataStructureImportId) {
 			console.log("Import dataStructure: ", dataPacket);
 			if (this.structureLink.dataTypeId > 0) {
+				this.dlgHeader = this.warningDlgHeader;
+				this.dlgBody = Util.translate("current-link-will-be-delete-and-unrecoverable-are-you-sure-to-proceed");
 				this.setState({
 					linkWillDeletedWarning: true,
 					importDataStructureId: dataPacket.item.dataStructureId
@@ -613,7 +621,15 @@ class DataTypeEditor extends React.Component {
 		});
 	}
 
-	importDataStructure(dataStructureId) {
+	closeModal = (doProcess) => {
+		if (doProcess) {
+			doProcess();
+		}
+
+		this.setState({ showModal: false });
+	};
+
+	importDataStructure = (dataStructureId) => {
 		this.setState({ loadingStatus: LoadingStatus.PENDING });
 		const importDataStructureId = dataStructureId ?? this.state.importDataStructureId;
 
@@ -648,7 +664,7 @@ class DataTypeEditor extends React.Component {
 				this.setState({ loadingStatus: LoadingStatus.FAIL });
 			}
 		});
-	}
+	};
 
 	setDataTypeValue = (fieldCode, value) => {
 		switch (fieldCode) {
@@ -916,7 +932,7 @@ class DataTypeEditor extends React.Component {
 		this.forceUpdate();
 	}
 
-	handleBtnEditDataStructureClick() {
+	handleBtnAddDataStructureClick() {
 		//console.log("redirectTo: ", this.workbench.portletId, this.state);
 
 		Util.redirectTo(
@@ -929,14 +945,20 @@ class DataTypeEditor extends React.Component {
 			{
 				workingPortletName: PortletKeys.DATASTRUCTURE_BUILDER,
 				workingPortletParams: JSON.stringify({
-					dataTypeId: this.dataType.dataTypeId
+					dataTypeId: this.dataType.dataTypeId,
+					cmd: "add"
 				})
 			}
 		);
 	}
 
 	handleBtnDeleteClick(e) {
-		this.setState({ deleteConfirmDlgStatus: true });
+		this.dlgHeader = this.warningDlgHeader;
+		this.dlgBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-data-type");
+		this.okProc = this.handleBtnDeleteClick;
+		this.cancelProc = this.closeModal;
+
+		this.setState({ showModal: true });
 	}
 
 	handleClearButtonClick = () => {
@@ -1219,7 +1241,7 @@ class DataTypeEditor extends React.Component {
 											)}
 										<Button
 											title={Util.translate("new-datastructure")}
-											onClick={() => this.handleRedirectToStructureBuilder(EditStatus.ADD)}
+											onClick={() => this.handleBtnAddDataStructureClick()}
 											disabled={
 												this.editStatus === EditStatus.IMPORT || this.dataType.dataTypeId < 1
 											}
@@ -1252,7 +1274,7 @@ class DataTypeEditor extends React.Component {
 					)}
 					{this.state.saveSuccessDlgStatus && (
 						<SXModalDialog
-							header={<div>{Util.translate("processing-success")}</div>}
+							header={this.successDlgHeader}
 							body={Util.translate("datatype-saved") + ": " + this.dataType.dataTypeId}
 							buttons={[
 								{
@@ -1266,7 +1288,7 @@ class DataTypeEditor extends React.Component {
 					)}
 					{this.state.deleteConfirmDlgStatus && (
 						<SXModalDialog
-							header={Util.translate("warning")}
+							header={this.warningDlgHeader}
 							body={Util.translate("this-is-not-recoverable-are-you-sure-delete-the-data-type")}
 							buttons={[
 								{
@@ -1288,7 +1310,7 @@ class DataTypeEditor extends React.Component {
 					)}
 					{this.state.deleteSuccessDlgStatus && (
 						<SXModalDialog
-							header={Util.translate("delete-success")}
+							header={this.successDlgHeader}
 							body={Util.translate("delete-success") + ": " + this.dataType.dataTypeId}
 							buttons={[
 								{
@@ -1305,7 +1327,7 @@ class DataTypeEditor extends React.Component {
 					)}
 					{this.state.dataTypeCodeDuplicated && (
 						<SXModalDialog
-							header={Util.translate("error")}
+							header={this.errorDlgHeader}
 							body={Util.translate("datatype-name-duplicated") + ": " + this.dataTypeCode.getValue()}
 							buttons={[
 								{
@@ -1321,7 +1343,7 @@ class DataTypeEditor extends React.Component {
 					)}
 					{this.state.deleteErrorDlgStatus && (
 						<SXModalDialog
-							header={Util.translate("delete-failed")}
+							header={this.errorDlgHeader}
 							body={Util.translate("delete-failed") + ": " + this.dataType.dataTypeId}
 							buttons={[
 								{
@@ -1337,7 +1359,7 @@ class DataTypeEditor extends React.Component {
 					)}
 					{this.structureLink.dataTypeId > 0 && this.state.linkWillDeletedWarning && (
 						<SXModalDialog
-							header={Util.translate("warning")}
+							header={this.warningDlgHeader}
 							body={Util.translate(
 								"current-link-will-be-delete-and-unrecoverable-are-you-sure-to-proceed"
 							)}
