@@ -127,11 +127,22 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 
 		if (dataPacket.paramCode === ParamProperty.CSS_WIDTH) {
 			this.workingParam.cssWidth = this.fieldCssWidth.getValue();
+		} else if (dataPacket.paramCode === "disabled") {
+			this.workingParam.setDisabled(this.toggleFields[dataPacket.paramCode].getValue());
 		} else {
 			this.workingParam[dataPacket.paramCode] = this.toggleFields[dataPacket.paramCode].getValue();
 		}
 
 		if (this.workingParam.isRendered()) {
+			if (this.workingParam.displayType === Parameter.DisplayTypes.GRID_CELL) {
+				console.log("Refresh Grid from cell: ", this.workingParam);
+				/*
+				Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
+
+				})
+				*/
+			}
+
 			this.workingParam.fireRefreshPreview();
 		}
 	};

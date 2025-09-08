@@ -515,6 +515,9 @@ class DataStructureBuilder extends React.Component {
 					this.dataType = new DataType(this.languageId, this.availableLanguageIds, result.dataType ?? {});
 					this.typeStructureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
 					this.typeStructureLink.parse(result.typeStructureLink ?? {});
+					if (this.dataType.dataTypeId > 0) {
+						this.typeStructureLink.dataTypeId = this.dataType.dataTypeId;
+					}
 
 					this.dataStructure = new DataStructure(
 						this.namespace,
@@ -632,6 +635,9 @@ class DataStructureBuilder extends React.Component {
 			},
 			successFunc: (result) => {
 				console.log("Saved dataStructure result: ", result);
+				this.dataStructure.dataStructureId = result.dataStructureId;
+				this.dataStructure.dirty = false;
+
 				this.setState({
 					confirmDlgState: true,
 					confirmDlgHeader: this.successDlgHeader,
@@ -645,8 +651,6 @@ class DataStructureBuilder extends React.Component {
 						</h4>
 					)
 				});
-
-				this.dataStructure.dirty = false;
 			},
 			errorFunc: (err) => {
 				this.setState({ loadingStatus: LoadingStatus.FAIL });
@@ -738,6 +742,7 @@ class DataStructureBuilder extends React.Component {
 						<div className="autofit-float autofit-padded-no-gutters-x autofit-row">
 							<div className="autofit-col">
 								<SXLabeledText
+									key={Util.randomKey()}
 									label={Util.translate("id")}
 									text={this.dataStructure.dataStructureId}
 									align="left"

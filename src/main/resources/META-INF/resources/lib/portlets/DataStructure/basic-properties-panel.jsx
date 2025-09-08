@@ -152,7 +152,11 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					viewType: BooleanParameter.ViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "show-definition"),
 					tooltip: Util.getTranslationObject(this.languageId, "show-description-tooltip"),
-					value: this.workingParam.showDefinition
+					value: this.workingParam.showDefinition,
+					disabled:
+						this.workingParam.paramType === ParamType.BOOLEAN &&
+						(this.workingParam.viewType === BooleanParameter.ViewTypes.CHECKBOX ||
+							this.workingParam.viewType === BooleanParameter.ViewTypes.TOGGLE)
 				}
 			),
 			tooltip: Parameter.createParameter(

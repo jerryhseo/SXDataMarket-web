@@ -1,5 +1,5 @@
 import React from "react";
-import { Event } from "../../stationx/station-x";
+import { Event, PortletKeys, WindowState, Workbench } from "../../stationx/station-x";
 import { DataStructure } from "./data-structure";
 import Toolbar from "@clayui/toolbar";
 import { ClayInput } from "@clayui/form";
@@ -17,15 +17,19 @@ class SXDataStructurePreviewer extends React.Component {
 		this.typeStructureLink = props.typeStructureLink;
 		this.spritemap = props.spritemap;
 
+		this.formId = this.formIds.previewCanvasId;
+
 		this.state = {
-			jumpToItems: this.dataStructure.getJumpToItems()
+			manifestSDE: false
 		};
+
+		this.sdeWindowTile = <h5>{Util.translate("structured-data-editor")}</h5>;
+		this.sde = <></>;
 	}
 
 	fieldValueChangedHandler = (e) => {
 		const dataPacket = e.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.previewCanvasId)
-			return;
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) return;
 
 		console.log(
 			"SXDataStructurePreviewer SX_FIELD_VALUE_CHANGED RECEIVED: ",
@@ -36,10 +40,7 @@ class SXDataStructurePreviewer extends React.Component {
 	};
 
 	moveParameterUpHandler = (e) => {
-		if (
-			e.dataPacket.targetPortlet !== this.namespace ||
-			e.dataPacket.targetFormId !== this.formIds.previewCanvasId
-		) {
+		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
 			return;
 		}
 
@@ -56,10 +57,7 @@ class SXDataStructurePreviewer extends React.Component {
 	};
 
 	moveParameterDownHandler = (e) => {
-		if (
-			e.dataPacket.targetPortlet !== this.namespace ||
-			e.dataPacket.targetFormId !== this.formIds.previewCanvasId
-		) {
+		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
 			return;
 		}
 
@@ -77,10 +75,7 @@ class SXDataStructurePreviewer extends React.Component {
 	};
 
 	refreshFormHandler = (e) => {
-		if (
-			e.dataPacket.targetPortlet !== this.namespace ||
-			e.dataPacket.targetFormId !== this.formIds.previewCanvasId
-		) {
+		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
 			return;
 		}
 
@@ -100,6 +95,20 @@ class SXDataStructurePreviewer extends React.Component {
 		Event.on(Event.SX_MOVE_PARAMETER_DOWN, this.moveParameterDownHandler);
 		Event.on(Event.SX_REFRESH_FORM, this.refreshFormHandler);
 	}
+
+	handleManifestSDE = async () => {
+		try {
+			this.sde = await Workbench.loadPortlet({
+				windowState: WindowState.EXCLUSIVE,
+				portletId: PortletKeys.STRUCTURED_DATA_EDITOR,
+				workbenchNamespace: this.formId
+			});
+
+			this.setState({ manifestSDE: true });
+		} catch (err) {
+			console.log("error whilw manifesting SDE: ", err);
+		}
+	};
 
 	render() {
 		return (
@@ -187,6 +196,7 @@ class SXDataStructurePreviewer extends React.Component {
 										displayType="secondary"
 										symbol="order-form-pencil"
 										spritemap={this.spritemap}
+										onClick={this.handleManifestSDE}
 									/>
 								</Button.Group>
 							</Toolbar.Section>

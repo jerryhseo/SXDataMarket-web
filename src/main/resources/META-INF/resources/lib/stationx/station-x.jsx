@@ -544,6 +544,7 @@ export const Event = {
 	SX_SELECTED_RESULTS_CHANGED: "SX_SELECTED_RESULTS_CHANGED",
 	SX_SELECT_ALL: "SX_SELECT_ALL",
 	SX_SELECT_GROUP: "SX_SELECT_GROUP",
+	SX_TYPE_STRUCTURE_LINK_INFO_CHANGED: "SX_TYPE_STRUCTURE_LINK_INFO_CHANGED",
 	SX_UPDATE_PARAMETER: "SX_UPDATE_PARAMETER",
 	SX_REMOVE_SLAVE_PARAMS: "SX_REMOVE_SLAVE_PARAMS",
 	SX_UNFOCUS: "SX_UNFOCUS",
@@ -869,16 +870,8 @@ export const Workbench = {
 				}
 			});
 		});
-	}
-};
-
-export const StationXPortal = {
-	user: {
-		userId: Liferay.ThemeDisplay.getUserId(),
-		userName: Util.unicodeToString(Liferay.ThemeDisplay.getUserName())
 	},
-	languageId: Liferay.ThemeDisplay.getLanguageId().replace(/_/g, "-"),
-	defaultLanguageId: Liferay.ThemeDisplay.getDefaultLanguageId().replace(/_/g, "-"),
-
-	availableLanguageIds: Object.keys(Liferay.Language.available).map((lang) => lang.replace(/_/g, "-"))
+	loadPortlet: async ({ windowState, portletId, workbenchNamespace }) => {
+		const url = await Util.createRenderURL({});
+	}
 };

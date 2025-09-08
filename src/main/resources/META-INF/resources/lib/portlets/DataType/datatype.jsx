@@ -1,14 +1,7 @@
 import React from "react";
 import { Util } from "../../stationx/util";
 import { BooleanParameter, GroupParameter, Parameter } from "../../stationx/parameter";
-import {
-	DataTypeProperty,
-	ErrorClass,
-	Event,
-	ParamType,
-	StationXPortal,
-	ValidationRule
-} from "../../stationx/station-x";
+import { DataTypeProperty, ErrorClass, Event, ParamType, ValidationRule } from "../../stationx/station-x";
 import { SXLabeledText } from "../../stationx/form";
 import { Body, Cell, Head, Row, Table, Text } from "@clayui/core";
 import { DataStructure } from "../DataStructure/data-structure";
@@ -406,42 +399,52 @@ export class SXDataTypeStructureLink extends React.Component {
 		switch (dataPacket.paramCode) {
 			case "commentable": {
 				this.typeStructureLink.commentable = this.commentable.getValue();
+				this.typeStructureLink.dirty = true;
 				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.commentable.getValue());
 				break;
 			}
 			case "verifiable": {
 				this.typeStructureLink.verifiable = this.verifiable.getValue();
+				this.typeStructureLink.dirty = true;
 				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.verifiable.getValue());
 				break;
 			}
 			case "freezable": {
 				this.typeStructureLink.freezable = this.freezable.getValue();
+				this.typeStructureLink.dirty = true;
 				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.freezable.getValue());
 				break;
 			}
 			case "inputStatus": {
 				this.typeStructureLink.inputStatus = this.inputStatus.getValue();
+				this.typeStructureLink.dirty = true;
 				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.inputStatus.getValue());
 				break;
 			}
 			case "jumpTo": {
 				this.typeStructureLink.jumpTo = this.jumpTo.getValue();
+				this.typeStructureLink.dirty = true;
 				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.jumpTo.getValue());
 				break;
 			}
 			case "verified": {
 				this.typeStructureLink.verified = this.verified.getValue();
+				this.typeStructureLink.dirty = true;
 				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.verified.getValue());
 				break;
 			}
 			case "freezed": {
 				this.typeStructureLink.freezed = this.freezed.getValue();
+				this.typeStructureLink.dirty = true;
 				this.dataStructure.setTitleBarInfo(dataPacket.paramCode, this.freezed.getValue());
 				break;
 			}
 		}
 
-		this.dataStructure.fireRefreshPreview();
+		Event.fire(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			typeStructureLink: this.typeStructureLink
+		});
 		console.log("Component value changed: ", dataPacket, this.typeStructureLink, this.dataStructure);
 	};
 

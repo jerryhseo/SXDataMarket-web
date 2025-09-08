@@ -422,11 +422,19 @@ class SXDSBuilderValidationPanel extends React.Component {
 	render() {
 		return (
 			<>
-				<div className="border sx-validation-section">
-					<div className="autofit-row">{this.renderToggleBar(ValidationKeys.REQUIRED)}</div>
-					{this.checkSectionEnabled(ValidationKeys.REQUIRED) &&
-						this.renderSectionBody(ValidationKeys.REQUIRED)}
-				</div>
+				{this.workingParam.paramType !== ParamType.GROUP && this.workingParam.paramType !== ParamType.GRID && (
+					<div className="border sx-validation-section">
+						<div className="autofit-row">{this.renderToggleBar(ValidationKeys.REQUIRED)}</div>
+						{this.checkSectionEnabled(ValidationKeys.REQUIRED) &&
+							this.renderSectionBody(ValidationKeys.REQUIRED)}
+					</div>
+				)}
+				{(this.workingParam.paramType === ParamType.GROUP ||
+					this.workingParam.paramType === ParamType.GRID) && (
+					<div className="border sx-validation-section">
+						<div>{Util.translate("no-validation-rule-for-group-or-grid")}</div>
+					</div>
+				)}
 				{this.hasPatternValidation(this.workingParam.paramType) && (
 					<>
 						<div className="border sx-validation-section">

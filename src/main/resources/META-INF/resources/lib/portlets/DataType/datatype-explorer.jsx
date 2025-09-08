@@ -12,13 +12,12 @@ import {
 } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
 import { Context } from "@clayui/modal";
-import { openConfirmModal, SXErrorModal, SXLoadingModal, SXModalDialog } from "../../stationx/modal";
+import { openConfirmModal, SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { Body, Cell, Head, Row, Table } from "@clayui/core";
 import { ClayCheckbox, ClayInput } from "@clayui/form";
 import { ClayDropDownWithItems } from "@clayui/drop-down";
 import Button, { ClayButtonWithIcon } from "@clayui/button";
 import { NotFound, UnderConstruction } from "../../stationx/common";
-import Icon from "@clayui/icon";
 import Toolbar from "@clayui/toolbar";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { FilterOptions } from "../../stationx/search-container";
@@ -103,7 +102,7 @@ class DataTypeExplorer extends React.Component {
 			displayStyle: this.params.displayStyle ?? this.displayStyles[0].value, //table
 			filterBy: this.params.filterBy ?? this.filterOptions[0], //groupId
 			loadingStatus: LoadingStatus.PENDING,
-			confirmDialog: false,
+			confirmDeleteDialog: false,
 			errorMessage: "",
 			progressDialog: false,
 			start: this.params.start ?? 0,
@@ -245,7 +244,7 @@ class DataTypeExplorer extends React.Component {
 		}
 		//console.log("listenerPopActionClicked: ", dataPacket);
 
-		const dataType = this.searchResults[dataPacket.data];
+		const selectedDataTypeId = this.searchResults[dataPacket.data][0].value;
 
 		switch (dataPacket.action) {
 			case "update": {
@@ -259,7 +258,7 @@ class DataTypeExplorer extends React.Component {
 					{
 						workingPortletName: PortletKeys.DATATYPE_EDITOR,
 						workingPortletParams: JSON.stringify({
-							dataTypeId: dataType[0].value
+							dataTypeId: selectedDataTypeId
 						})
 					}
 				);
@@ -277,7 +276,7 @@ class DataTypeExplorer extends React.Component {
 					{
 						workingPortletName: PortletKeys.DATASTRUCTURE_BUILDER,
 						workingPortletParams: JSON.stringify({
-							dataTypeId: dataType[0].value
+							dataTypeId: selectedDataTypeId
 						})
 					}
 				);
@@ -285,18 +284,13 @@ class DataTypeExplorer extends React.Component {
 				break;
 			}
 			case "delete": {
-				this.confirmDialogHeader = (
-					<div style={{ color: "#ad970bff" }}>
-						<Icon
-							symbol="warning"
-							spritemap={this.spritemap}
-							style={{ marginRight: "1rem" }}
-						/>
-						{Util.translate("error")}
-					</div>
+				this.confirmDialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+				this.confirmDialogBody = Util.translate(
+					"selected-datatype-will-be-delete-with-datastructure-link-info-and-unrecoverable-are-you-sure-to-proceed"
 				);
 
-				this.setState({ underConstruction: true });
+				this.selectedResults = [this.searchResults[dataPacket.data]];
+				this.setState({ confirmDeleteDialog: true });
 				break;
 			}
 		}
@@ -333,7 +327,12 @@ class DataTypeExplorer extends React.Component {
 		}
 		//console.log("listenerAddButtonClicked: ", dataPacket);
 
-		this.setState({ underConstruction: true });
+		this.confirmDialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+		this.confirmDialogBody = Util.translate(
+			"selected-datatype-will-be-delete-with-datastructure-link-info-and-unrecoverable-are-you-sure-to-proceed"
+		);
+
+		this.setState({ confirmDeleteDialog: true });
 	};
 
 	listenerSelectedResultsChanged = (event) => {
@@ -374,6 +373,8 @@ class DataTypeExplorer extends React.Component {
 	}
 
 	search() {
+		this.state.loadingStatus = LoadingStatus.PENDING;
+
 		Util.ajax({
 			namespace: this.namespace,
 			baseResourceURL: this.baseResourceURL,
@@ -486,9 +487,32 @@ class DataTypeExplorer extends React.Component {
 		this.selectedResults = [];
 	}
 
-	checkAllResultsSelected() {
+	selectedResultsToDataTypeIds = () => {
+		return this.selectedResults.map((result) => result[0].value);
+	};
+
+	checkAllResultsSelected = () => {
 		return this.searchResults.length === this.selectedResults.length;
-	}
+	};
+
+	deleteDataTypes = () => {
+		this.state.loadingStatus = LoadingStatus.PENDING;
+
+		Util.ajax({
+			namespace: this.namespace,
+			baseResourceURL: this.baseResourceURL,
+			resourceId: ResourceIds.DELETE_DATATYPES,
+			params: {
+				dataTypeIds: JSON.stringify(this.selectedResultsToDataTypeIds())
+			},
+			successFunc: (result) => {
+				this.search();
+			},
+			errorFunc: (err) => {
+				this.setState({ loadingStatus: LoadingStatus.FAIL });
+			}
+		});
+	};
 
 	render() {
 		//console.log("DataTypeExplorer render: " + this.state.loadingStatus, this.state.keywords);
@@ -530,23 +554,23 @@ class DataTypeExplorer extends React.Component {
 						selectedResults={this.selectedResults}
 						spritemap={this.spritemap}
 					/>
-					{this.state.confirmDialog && (
+					{this.state.confirmDeleteDialog && (
 						<SXModalDialog
-							header={Util.translate("warning")}
-							body={Util.translate("this-is-not-recoverable-are-you-sure-delete-the-data-type")}
+							header={this.confirmDialogHeader}
+							body={this.confirmDialogBody}
 							buttons={[
 								{
 									label: Util.translate("confirm"),
 									onClick: (e) => {
-										this.proceedDelete();
-										this.setState({ deleteConfirmDlgStatus: false });
+										this.deleteDataTypes();
+										this.setState({ confirmDeleteDialog: false });
 									},
 									displayType: "secondary"
 								},
 								{
 									label: Util.translate("cancel"),
 									onClick: (e) => {
-										this.setState({ deleteConfirmDlgStatus: false });
+										this.setState({ confirmDeleteDialog: false });
 									}
 								}
 							]}

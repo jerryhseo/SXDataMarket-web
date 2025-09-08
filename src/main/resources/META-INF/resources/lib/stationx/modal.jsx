@@ -3,6 +3,51 @@ import ClayModal, { Modal, useModal } from "@clayui/modal";
 import ClayButton from "@clayui/button";
 import ClayIcon from "@clayui/icon";
 import Button from "@clayui/button";
+import Icon from "@clayui/icon";
+import { Util } from "./util";
+
+export class SXModalUtil {
+	constructor() {}
+
+	static errorDlgHeader(spritemap) {
+		return (
+			<div style={{ color: "red" }}>
+				<Icon
+					symbol="exclamation-full"
+					spritemap={spritemap}
+					style={{ marginRight: "1rem" }}
+				/>
+				{Util.translate("error")}
+			</div>
+		);
+	}
+
+	static warningDlgHeader(spritemap) {
+		return (
+			<div style={{ color: "#a0870aff" }}>
+				<Icon
+					symbol="warning"
+					spritemap={spritemap}
+					style={{ marginRight: "1rem" }}
+				/>
+				{Util.translate("warning")}
+			</div>
+		);
+	}
+
+	static successDlgHeader(spritemap) {
+		return (
+			<div style={{ color: "green" }}>
+				<Icon
+					symbol="check-circle"
+					spritemap={spritemap}
+					style={{ marginRight: "1rem" }}
+				/>
+				{Util.translate("success")}
+			</div>
+		);
+	}
+}
 
 export const SXModalDialog = ({
 	size,

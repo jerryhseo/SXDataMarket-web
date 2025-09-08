@@ -23,7 +23,7 @@ import org.osgi.service.component.annotations.Reference;
 	    immediate = true,
 	    property = {
 	        "javax.portlet.name=" + WebPortletKey.SXDataTypeEditorPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_DELETE_DATATYPE
+	        "mvc.command.name="+MVCCommand.RESOURCE_DELETE_TYPE_STRUCTURE_LINK
 	    },
 	    service = MVCResourceCommand.class
 )
@@ -48,7 +48,7 @@ public class DeleteTypeStructureLinkResourceCommand extends BaseMVCResourceComma
 		pw.write(result.toJSONString());
 		
 		pw.flush();
-		pw.close();
+		pw.close(); 
 	}
 	
 	@Reference

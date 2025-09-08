@@ -1129,6 +1129,7 @@ export class SXNumeric extends React.Component {
 									min={this.min}
 									max={this.max}
 									ref={this.focusRef}
+									disabled={this.parameter.disabled}
 									onChange={(e) => {
 										this.handleValueChanged(e.target.value);
 									}}
@@ -1154,6 +1155,7 @@ export class SXNumeric extends React.Component {
 									defaultValue={this.state.uncertainty}
 									min={this.min}
 									max={this.max}
+									disabled={this.parameter.disabled}
 									onChange={(e) => this.handleUncertaintyChanged(e.target.value)}
 								/>
 							</ClayInput.GroupItem>
@@ -1517,7 +1519,7 @@ export class SXBoolean extends React.Component {
 						})}
 						{this.parameter.showDefinition && (
 							<div className="sx-param-definition">
-								<pre>{this.parameter.definition}</pre>
+								<pre>{this.parameter.getDefinition()}</pre>
 							</div>
 						)}
 						<div
@@ -3110,17 +3112,18 @@ export class SXPhone extends React.Component {
 	}
 
 	checkNo(val) {
-		return /^\d+$/.test(val);
+		if (Util.isNotEmpty(val)) {
+			return /^\d+$/.test(val);
+		} else {
+			return true;
+		}
 	}
 
 	handleValueChanged(section, sectionValue) {
 		this.parameter.dirty = true;
 
 		if (!this.checkNo(sectionValue)) {
-			this.parameter.error = {
-				message: Util.translate("only-numbers"),
-				errorClass: ErrorClass.ERROR
-			};
+			this.parameter.setError(ErrorClass.ERROR, Util.translate("only-numbers"));
 
 			this.forceUpdate();
 
@@ -3207,7 +3210,7 @@ export class SXPhone extends React.Component {
 				</ClayInput.Group>
 				{this.parameter.dirty && this.parameter.hasError(this.cellIndex) && (
 					<SXFormFieldFeedback
-						content={this.parameter.message}
+						content={this.parameter.errorMessage}
 						spritemap={this.spritemap}
 						symbol="exclamation-full"
 					/>
@@ -3842,17 +3845,19 @@ export class SXGrid extends React.Component {
 	}
 
 	handleColumnActionClick(e, actionId, colIndex) {
+		console.log("handleColumnActionClick: ", this.parameter.members, actionId, colIndex);
+
 		switch (actionId) {
 			case "left": {
-				this.parameter.moveColumnLeft(colIndex);
+				this.parameter.moveColumnLeft(colIndex - 1);
 				break;
 			}
 			case "right": {
-				this.parameter.moveColumnRight(colIndex);
+				this.parameter.moveColumnRight(colIndex - 1);
 				break;
 			}
 			case "delete": {
-				this.parameter.deleteColumn(colIndex);
+				this.parameter.deleteColumn(colIndex - 1);
 				break;
 			}
 		}
@@ -3913,30 +3918,33 @@ export class SXGrid extends React.Component {
 			rows.push(
 				<tr key={rowIndex}>
 					<td>
-						<DropDown
-							active={this.state.activeDropdown && this.state.selectedRow === rowIndex}
-							trigger={<div style={{ textAlign: "center" }}>{rowIndex + 1}</div>}
-							onActiveChange={(val) => {
-								this.setState({ activeDropdown: val, selectedRow: rowIndex });
-							}}
-							menuWidth="shrink"
-						>
-							<DropDown.ItemList items={actionItems}>
-								{(actionItem) => (
-									<DropDown.Item
-										key={actionItem.id}
-										onClick={(e) => this.handleRowActionClick(e, actionItem.id, rowIndex)}
-									>
-										<Icon
-											spritemap={this.spritemap}
-											symbol={actionItem.symbol}
-											style={{ marginRight: "5px" }}
-										/>
-										{actionItem.name}
-									</DropDown.Item>
-								)}
-							</DropDown.ItemList>
-						</DropDown>
+						{!this.parameter.disabled && (
+							<DropDown
+								active={this.state.activeDropdown && this.state.selectedRow === rowIndex}
+								trigger={<div style={{ textAlign: "center" }}>{rowIndex + 1}</div>}
+								onActiveChange={(val) => {
+									this.setState({ activeDropdown: val, selectedRow: rowIndex });
+								}}
+								menuWidth="shrink"
+							>
+								<DropDown.ItemList items={actionItems}>
+									{(actionItem) => (
+										<DropDown.Item
+											key={actionItem.id}
+											onClick={(e) => this.handleRowActionClick(e, actionItem.id, rowIndex)}
+										>
+											<Icon
+												spritemap={this.spritemap}
+												symbol={actionItem.symbol}
+												style={{ marginRight: "5px" }}
+											/>
+											{actionItem.name}
+										</DropDown.Item>
+									)}
+								</DropDown.ItemList>
+							</DropDown>
+						)}
+						{this.parameter.disabled && <div style={{ textAlign: "center" }}>{rowIndex + 1}</div>}
 					</td>
 					{this.parameter.columns.map((column, colIndex) => (
 						<td key={colIndex}>
@@ -3956,8 +3964,13 @@ export class SXGrid extends React.Component {
 
 	render() {
 		return (
-			<>
+			<div style={{ ...this.parameter.style }}>
 				{this.parameter.renderTitle({ spritemap: this.spritemap })}
+				{this.parameter.showDefinition && (
+					<div className="sx-param-definition">
+						<pre>{this.parameter.getDefinition()}</pre>
+					</div>
+				)}
 				<div style={{ paddingLeft: "10px", overflowX: "auto", width: "100%" }}>
 					<table
 						className="sx-table"
@@ -4027,7 +4040,7 @@ export class SXGrid extends React.Component {
 						<tbody>{this.renderBodyRows()}</tbody>
 					</table>
 				</div>
-			</>
+			</div>
 		);
 	}
 }

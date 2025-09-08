@@ -593,6 +593,11 @@ export class Parameter {
 		return this.paramCode === param.paramCode;
 	}
 
+	setDisabled(disabled) {
+		this.disabled = disabled;
+		this.refreshKey();
+	}
+
 	setDirty() {
 		if (this.dirty) {
 			return;
@@ -3744,6 +3749,12 @@ export class GroupParameter extends Parameter {
 		}
 
 		return Constant.Position.MIDDLE;
+	}
+
+	setDisabled(disabled) {
+		this.disabled = disabled;
+
+		this.members.forEach((member) => member.setDisabled(disabled));
 	}
 
 	checkError() {

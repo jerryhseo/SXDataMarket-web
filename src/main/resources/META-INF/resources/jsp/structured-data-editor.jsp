@@ -1,3 +1,7 @@
+<%@page import="com.liferay.portal.kernel.json.JSONFactoryUtil"%>
+<%@page import="com.sx.icecap.model.DataStructure"%>
+<%@page import="com.liferay.portal.kernel.util.GetterUtil"%>
+<%@page import="com.sx.icecap.model.TypeStructureLink"%>
 <%@page import="com.liferay.portal.kernel.json.JSONArray"%>
 <%@page import="com.liferay.portal.kernel.portlet.LiferayWindowState"%>
 <%@page import="com.sx.icecap.constant.WebPortletKey"%>
@@ -8,9 +12,9 @@
 <%@ include file="./init.jsp" %>
 
 <%
-	long dataTypeId = ParamUtil.getLong(renderRequest, WebKey.DATATYPE_ID, 0);
-    long structuredDataId = ParamUtil.getLong(renderRequest, WebKey.STRUCTURED_DATA_ID, 0);
-	JSONArray permissions = (JSONArray)renderRequest.getAttribute("permissions");
+	TypeStructureLink typeStructureLink = (TypeStructureLink)GetterUtil.getObject(renderRequest.getAttribute("typeStructureLink"), null);
+    DataStructure dataStructure = (DataStructure)GetterUtil.getObject(renderRequest.getAttribute("dataStructure"), null);
+	JSONArray permissions = (JSONArray)GetterUtil.getObject(renderRequest.getAttribute("permissions"), JSONFactoryUtil.createJSONArray());
 
 	String workbenchNamespace = ParamUtil.getString(renderRequest, StationXWebKeys.WORKBENCH_NAMESPACE, StringPool.BLANK);
 	

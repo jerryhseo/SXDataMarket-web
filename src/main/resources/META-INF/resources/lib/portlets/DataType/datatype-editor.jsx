@@ -24,7 +24,7 @@ import {
 	Parameter,
 	StringParameter
 } from "../../stationx/parameter";
-import { SXModalDialog } from "../../stationx/modal";
+import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { ClaySelect } from "@clayui/form";
 import { DataType, DataTypeStructureLink, SXDataTypeStructureLink } from "./datatype";
 import { Autocomplete } from "@clayui/autocomplete";
@@ -125,7 +125,7 @@ class DataTypeEditor extends React.Component {
 		this.dirty = false;
 
 		this.dataType = new DataType(this.languageId, this.availableLanguageIds);
-		this.dataType.dataTypeId = this.params.dataTypeId;
+		this.dataType.dataTypeId = this.params.dataTypeId ?? 0;
 		this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
 		this.dataStructure = new DataStructure(this.namespace, this.formId, this.languageId, this.availableLanguageIds);
 
@@ -357,55 +357,20 @@ class DataTypeEditor extends React.Component {
 		this.state = {
 			loadingStatus: LoadingStatus.PENDING,
 			autoCompleteField: "label",
-			deleteConfirmDlgStatus: false,
-			deleteErrorDlgStatus: false,
 			deleteSuccessDlgStatus: false,
-			saveSuccessDlgStatus: false,
+			dlgProcResult: false,
 			dataTypeCodeDuplicated: false,
 			dataTypeDuplicated: false,
-			linkWillDeletedWarning: false,
-			linkInfoDirty: false,
-			importDataStructureId: 0,
-			underConstruction: false,
-			addConfirmDlg: false
+			dlgWarningDeleteDataType: false,
+			dlgDeleteLinkInfoAndImportDataStructure: false,
+			dlgSaveLinkInfoAndRedirectToBuilder: false,
+			dlgWarningRemoveLinkInfo: false,
+			dlgWarningRemoveLinkInfoAndRedirectToBuilder: false,
+			underConstruction: false
 		};
-
-		this.errorDlgHeader = (
-			<div style={{ color: "red" }}>
-				<Icon
-					symbol="exclamation-full"
-					spritemap={this.spritemap}
-					style={{ marginRight: "1rem" }}
-				/>
-				{Util.translate("error")}
-			</div>
-		);
-		this.warningDlgHeader = (
-			<div style={{ color: "#a0870aff" }}>
-				<Icon
-					symbol="warning"
-					spritemap={this.spritemap}
-					style={{ marginRight: "1rem" }}
-				/>
-				{Util.translate("warning")}
-			</div>
-		);
-		this.successDlgHeader = (
-			<div style={{ color: "green" }}>
-				<Icon
-					symbol="check-circle"
-					spritemap={this.spritemap}
-					style={{ marginRight: "1rem" }}
-				/>
-				{Util.translate("success")}
-			</div>
-		);
 
 		this.dlgBody = <></>;
 		this.dlgHeader = <></>;
-		this.okProc = null;
-		this.cancelProc = null;
-
 		this.dataTypeImportId = this.namespace + "dataTypeImport";
 		this.dataStructureImportId = this.namespace + "dataStructureImport";
 		this.editStatus = props.params.dataTypeId > 0 ? EditStatus.UPDATE : EditStatus.ADD;
@@ -414,7 +379,7 @@ class DataTypeEditor extends React.Component {
 	/**********************
 	 *  Event Listers from other components.
 	 ***********************/
-	listernerFieldValueChanged = (event) => {
+	listenerFieldValueChanged = (event) => {
 		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
 		//console.log("SX_FIELD_VALUE_CHANGED Before: ", dataPacket);
 
@@ -427,7 +392,7 @@ class DataTypeEditor extends React.Component {
 		this.setDataTypeValue(dataPacket.paramCode);
 	};
 
-	listernerAutocompleteSelected = (event) => {
+	listenerAutocompleteSelected = (event) => {
 		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
 		//console.log("SX_AUTOCOMPLETE_SELECTED: ", event.dataPacket);
 
@@ -438,38 +403,48 @@ class DataTypeEditor extends React.Component {
 		//console.log("SX_AUTOCOMPLETE_SELECTED: ", dataPacket);
 
 		if (dataPacket.id === this.dataTypeImportId) {
-			this.setState({ loadingStatus: LoadingStatus.PENDING });
-			this.dataType.dataTypeId = dataPacket.item.dataTypeId;
-
-			this.editStatus = EditStatus.IMPORT;
-			this.loadDataType();
+			this.importDataType(dataPacket.item.dataTypeId);
 		} else if (dataPacket.id === this.dataStructureImportId) {
 			console.log("Import dataStructure: ", dataPacket);
+			this.importDataStructureId = dataPacket.item.dataStructureId;
+
 			if (this.structureLink.dataTypeId > 0) {
-				this.dlgHeader = this.warningDlgHeader;
+				this.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 				this.dlgBody = Util.translate("current-link-will-be-delete-and-unrecoverable-are-you-sure-to-proceed");
+
 				this.setState({
-					linkWillDeletedWarning: true,
-					importDataStructureId: dataPacket.item.dataStructureId
+					dlgDeleteLinkInfoAndImportDataStructure: true
 				});
 			} else {
-				this.importDataStructure(dataPacket.item.dataStructureId);
+				this.importDataStructure();
 			}
 		}
+	};
+
+	listenerTypeStructureLinkInfoChanged = (event) => {
+		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
+		//console.log("SX_AUTOCOMPLETE_SELECTED: ", event.dataPacket);
+
+		if (!dataPacket) {
+			return;
+		}
+
+		this.forceUpdate();
 	};
 
 	componentDidMount() {
 		//Loading dataType
 		this.loadDataType();
-		//if (this.dataType.dataTypeId > 0) {
 
-		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listernerFieldValueChanged);
-		Event.on(Event.SX_AUTOCOMPLETE_SELECTED, this.listernerAutocompleteSelected);
+		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+		Event.on(Event.SX_AUTOCOMPLETE_SELECTED, this.listenerAutocompleteSelected);
+		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerTypeStructureLinkInfoChanged);
 	}
 
 	componentWillUnmount() {
-		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listernerFieldValueChanged);
-		Event.off(Event.SX_AUTOCOMPLETE_SELECTED, this.listernerAutocompleteSelected);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+		Event.off(Event.SX_AUTOCOMPLETE_SELECTED, this.listenerAutocompleteSelected);
+		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerTypeStructureLinkInfoChanged);
 	}
 
 	constructTypeStructureLink({ typeVisualizerLinkId = 0, dataTypeId = 0, dataStructureId = 0 }) {
@@ -492,7 +467,7 @@ class DataTypeEditor extends React.Component {
 		});
 	}
 
-	loadDataType() {
+	loadDataType = (dataTypeId) => {
 		//console.log("loadDataType: ", this.dataType, this.dataType.dataTypeId);
 		Util.ajax({
 			namespace: this.namespace,
@@ -514,58 +489,7 @@ class DataTypeEditor extends React.Component {
 				this.dataType.parse(result.dataType ?? {});
 
 				// Set dataType values to fields and initialize fields
-				for (const prop in this.dataType) {
-					switch (prop) {
-						case "dataTypeCode": {
-							this.dataTypeCode.setValue({ value: this.dataType.dataTypeCode });
-							this.dataTypeCode.dirty = false;
-							if (this.editStatus === EditStatus.IMPORT) {
-								this.dataTypeCode.disabled = true;
-							}
-							break;
-						}
-						case "dataTypeVersion": {
-							this.dataTypeVersion.setValue({ value: this.dataType.dataTypeVersion });
-							this.dataTypeVersion.dirty = false;
-							if (this.editStatus === EditStatus.IMPORT) {
-								this.dataTypeVersion.disabled = true;
-							}
-							break;
-						}
-						case "extension": {
-							this.extension.setValue({ value: this.dataType.extension });
-							this.extension.dirty = false;
-							if (this.editStatus === EditStatus.IMPORT) {
-								this.extension.disabled = true;
-							}
-							break;
-						}
-						case "displayName": {
-							this.displayName.setValue({ value: this.dataType.displayName });
-							this.displayName.dirty = false;
-							if (this.editStatus === EditStatus.IMPORT) {
-								this.displayName.disabled = true;
-							}
-							break;
-						}
-						case "description": {
-							this.description.setValue({ value: this.dataType.description });
-							this.description.dirty = false;
-							if (this.editStatus === EditStatus.IMPORT) {
-								this.description.disabled = true;
-							}
-							break;
-						}
-						case "tooltip": {
-							this.tooltip.setValue({ value: this.dataType.tooltip });
-							this.tooltip.dirty = false;
-							if (this.editStatus === EditStatus.IMPORT) {
-								this.tooltip.disabled = true;
-							}
-							break;
-						}
-					}
-				}
+				this.setFormValues();
 
 				this.structureLink.parse(result.structureLink ?? {});
 				this.dataStructure.parse(result.dataStructure ?? {});
@@ -593,7 +517,7 @@ class DataTypeEditor extends React.Component {
 					});
 					this.visualizers.dirty = false;
 				}
-				this.visualizers.disabled = !this.dataType.validate();
+				//this.visualizers.disabled = !this.dataType.validate();
 
 				this.dataTypeAutoCompleteItems = result.dataTypeAutoCompleteItems;
 				this.dataStructureAutoCompleteItems = result.dataStructureAutoCompleteItems;
@@ -619,19 +543,170 @@ class DataTypeEditor extends React.Component {
 				this.setState({ loadingStatus: LoadingStatus.FAIL });
 			}
 		});
-	}
-
-	closeModal = (doProcess) => {
-		if (doProcess) {
-			doProcess();
-		}
-
-		this.setState({ showModal: false });
 	};
 
-	importDataStructure = (dataStructureId) => {
+	importDataType = (dataTypeId) => {
+		//console.log("loadDataType: ", this.dataType, this.dataType.dataTypeId);
 		this.setState({ loadingStatus: LoadingStatus.PENDING });
-		const importDataStructureId = dataStructureId ?? this.state.importDataStructureId;
+
+		Util.ajax({
+			namespace: this.namespace,
+			baseResourceURL: this.baseResourceURL,
+			resourceId: ResourceIds.LOAD_DATATYPE,
+			type: "post",
+			dataType: "json",
+			params: {
+				dataTypeId: dataTypeId,
+				loadStructure: true,
+				loadVisualizers: true,
+				loadAvailableVisualizers: false,
+				loadDataTypeAutoCompleteItems: true,
+				loadDataStructureAutoCompleteItems: true
+			},
+			successFunc: (result) => {
+				console.log("data type loaded: ", result, this.dataType);
+
+				this.dataType.parse(result.dataType ?? {});
+				this.dataType.dataTypeId = 0;
+				this.dataType.dataTypeCode = "";
+				this.dataType.dataTypeVersion = "1.0.0";
+				this.dataType.dirty = true;
+
+				// Set dataType values to fields and initialize fields
+				this.setFormValues();
+
+				this.structureLink.parse(result.structureLink ?? {});
+				this.structureLink.dataTypeId = 0;
+				this.structureLink.dirty = true;
+
+				this.dataStructure.parse(result.dataStructure ?? {});
+				console.log(
+					"In Loading: ",
+					JSON.stringify(this.structureLink, null, 4),
+					this.structureLink,
+					this.dataStructure
+				);
+
+				if (Util.isNotEmpty(result.visualizers)) {
+					//console.log("result.visualizers: ", result.visualizers);
+					this.visualizers.setValue({
+						value: result.visualizers.map((v) => ({
+							value: v.id,
+							label: v.displayName,
+							typeVisualizerLinkId: v.typeVisualizerLinkId
+						}))
+					});
+					this.visualizers.dirty = false;
+					//this.visualizers.disabled = false;
+				}
+
+				this.dataTypeAutoCompleteItems = result.dataTypeAutoCompleteItems;
+				this.dataStructureAutoCompleteItems = result.dataStructureAutoCompleteItems;
+
+				console.log("AutoCompleItes: ", this.dataTypeAutoCompleteItems, this.dataStructureAutoCompleteItems);
+
+				//Change edit status
+				//this.editStatus = EditStatus.UPDATE;
+
+				// Change loding state
+				this.setState({
+					loadingStatus: LoadingStatus.COMPLETE
+				});
+			},
+			errorFunc: (err) => {
+				this.loadingFailMessage = "Error while loading data type: " + this.dataType.dataTypeId;
+				this.setState({ loadingStatus: LoadingStatus.FAIL });
+			}
+		});
+	};
+
+	setFormValues = () => {
+		for (const prop in this.dataType) {
+			switch (prop) {
+				case "dataTypeCode": {
+					this.dataTypeCode.setValue({ value: this.dataType.dataTypeCode });
+					this.dataTypeCode.dirty = false;
+					break;
+				}
+				case "dataTypeVersion": {
+					this.dataTypeVersion.setValue({ value: this.dataType.dataTypeVersion });
+					this.dataTypeVersion.dirty = false;
+					break;
+				}
+				case "extension": {
+					this.extension.setValue({ value: this.dataType.extension });
+					this.extension.dirty = false;
+					break;
+				}
+				case "displayName": {
+					this.displayName.setValue({ value: this.dataType.displayName });
+					this.displayName.dirty = false;
+					break;
+				}
+				case "description": {
+					this.description.setValue({ value: this.dataType.description });
+					this.description.dirty = false;
+					break;
+				}
+				case "tooltip": {
+					this.tooltip.setValue({ value: this.dataType.tooltip });
+					this.tooltip.dirty = false;
+					break;
+				}
+			}
+		}
+	};
+
+	clearForm = (forceUpdate = true) => {
+		this.dataTypeCode.clearValue();
+		this.dataTypeVersion.clearValue();
+		this.extension.clearValue();
+		this.displayName.clearValue();
+		this.description.clearValue();
+		this.tooltip.clearValue();
+
+		this.visualizers.clearValue();
+
+		if (forceUpdate) {
+			this.forceUpdate();
+		}
+	};
+
+	deleteDataType = () => {
+		Util.ajax({
+			namespace: this.namespace,
+			baseResourceURL: this.baseResourceURL,
+			resourceId: ResourceIds.DELETE_DATATYPE,
+			params: {
+				dataTypeId: this.dataType.dataTypeId
+			},
+			successFunc: (result) => {
+				this.dataType = new DataType(this.languageId, this.availableLanguageIds);
+				this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
+				this.dataStructure = new DataStructure(
+					this.namespace,
+					this.formId,
+					this.languageId,
+					this.availableLanguageIds
+				);
+
+				this.clearForm(false);
+				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dlgBody = Util.translate("datatype-is-deleted-successfully", this.dataType.dataTypeId);
+				this.setState({ dlgProcResult: true });
+			},
+			errorFunc: (err) => {
+				console.log("error: ", err);
+				this.dlgHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+				this.dlgBody = Util.translate("error-is-occured-while-delete-datatype", this.dataType.dataTypeId);
+
+				this.setState({ dlgProcResult: true });
+			}
+		});
+	};
+
+	importDataStructure = () => {
+		this.setState({ loadingStatus: LoadingStatus.PENDING });
 
 		Util.ajax({
 			namespace: this.namespace,
@@ -640,7 +715,7 @@ class DataTypeEditor extends React.Component {
 			type: "post",
 			dataType: "json",
 			params: {
-				dataStructureId: importDataStructureId
+				dataStructureId: this.importDataStructureId
 			},
 			successFunc: (result) => {
 				this.dataStructure.parse(result.dataStructure);
@@ -673,9 +748,9 @@ class DataTypeEditor extends React.Component {
 
 				if (Util.isNotEmpty(dataTypeCode)) {
 					this.checkDataTypeUnique(dataTypeCode, this.dataTypeVersion.getValue(), "code");
+				} else {
+					this.forceUpdate();
 				}
-
-				this.forceUpdate();
 
 				break;
 			}
@@ -684,9 +759,9 @@ class DataTypeEditor extends React.Component {
 
 				if (Util.isNotEmpty(version)) {
 					this.checkDataTypeUnique(this.dataTypeCode.getValue(), version, "type");
+				} else {
+					this.forceUpdate();
 				}
-
-				this.forceUpdate();
 
 				break;
 			}
@@ -724,9 +799,6 @@ class DataTypeEditor extends React.Component {
 			}
 		}
 
-		if (this.visualizers.disabled === this.dataType.validate()) {
-			this.visualizers.disabled = !this.dataType.validate();
-		}
 		//console.log("Changed data type: ", this.dataType, this.dataType.validate());
 	};
 
@@ -756,6 +828,8 @@ class DataTypeEditor extends React.Component {
 				} else {
 					this.dataType.dataTypeCode = dataTypeCode;
 					this.dataType.dataTypeVersion = dataTypeVersion;
+
+					this.forceUpdate();
 				}
 			},
 			errorFunc: (err) => {
@@ -786,43 +860,48 @@ class DataTypeEditor extends React.Component {
 		return found;
 	}
 
-	deleteTypeStructureInfo = (postProc) => {
+	removeLinkInfo = () => {
 		Util.ajax({
 			namespace: this.namespace,
 			baseResourceURL: this.baseResourceURL,
 			resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK,
 			type: "post",
 			dataType: "json",
-			params: {
-				dataTypeId: this.structureLink.dataTypeId
-			},
+			params: this.structureLink.toJSON(),
 			successFunc: (result) => {
-				this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
-				this.dataStructure = new DataStructure(
-					this.namespace,
-					this.formId,
-					this.languageId,
-					this.availableLanguageIds
-				);
+				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
+				this.structureLink.dirty = false;
 
-				if (postProc) {
-					this.redirectToStructureBuilder();
-				} else {
-					this.dlgBody = Util.translate(
-						"datatype-structure-link-info-is-deleted",
-						this.structureLink.dataTypeId
-					);
-					this.setState({ deleteSuccessDlgStatus: true });
-				}
+				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dlgBody =
+					Util.translate("datatype-structure-link-info-deleted") + ": " + this.structureLink.dataTypeId;
+				this.setState({ dlgProcResult: true });
 			},
-			errorFunc: (err) => {
-				this.loadingFailMessage = "Error while loading visualizers: ";
-				this.setState({ loadingStatus: LoadingStatus.FAIL });
+			errorFunc: (a, b, c, d) => {
+				console.log("ERROR: ", a, b, c, d);
 			}
 		});
 	};
 
-	handleMoveToExplorer(e) {
+	removeLinkInfoAndRedirectToBuilder = () => {
+		Util.ajax({
+			namespace: this.namespace,
+			baseResourceURL: this.baseResourceURL,
+			resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK,
+			type: "post",
+			dataType: "json",
+			params: this.structureLink.toJSON(),
+			successFunc: (result) => {
+				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
+				this.redirectToStructureBuilder();
+			},
+			errorFunc: (a, b, c, d) => {
+				console.log("ERROR: ", a, b, c, d);
+			}
+		});
+	};
+
+	redirectToStructureBuilder = () => {
 		Util.redirectTo(
 			this.workbench.url,
 			{
@@ -831,10 +910,13 @@ class DataTypeEditor extends React.Component {
 				windowState: WindowState.NORMAL
 			},
 			{
-				workingPortletName: PortletKeys.DATATYPE_EXPLORER
+				workingPortletName: PortletKeys.DATASTRUCTURE_BUILDER,
+				workingPortletParams: JSON.stringify({
+					dataTypeId: this.dataType.dataTypeId
+				})
 			}
 		);
-	}
+	};
 
 	collectFormValues() {
 		let formValues = {};
@@ -877,6 +959,82 @@ class DataTypeEditor extends React.Component {
 		});
 
 		return errorParam;
+	}
+
+	deleteLinkInfoAndImportDataStructure = () => {
+		this.setState({ LoadingStatus: LoadingStatus.PENDING });
+
+		Util.ajax({
+			namespace: this.namespace,
+			baseResourceURL: this.baseResourceURL,
+			resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK,
+			type: "post",
+			dataType: "json",
+			params: {
+				dataTypeId: this.structureLink.dataTypeId
+			},
+			successFunc: (result) => {
+				this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
+				this.dataStructure = new DataStructure(
+					this.namespace,
+					this.formId,
+					this.languageId,
+					this.availableLanguageIds
+				);
+
+				this.importDataStructure();
+			},
+			errorFunc: (err) => {
+				this.loadingFailMessage = "Error while loading visualizers: ";
+				this.setState({ loadingStatus: LoadingStatus.FAIL });
+			}
+		});
+	};
+
+	handleDeleteLinkInfo = () => {
+		this.setState({ LoadingStatus: LoadingStatus.PENDING });
+
+		Util.ajax({
+			namespace: this.namespace,
+			baseResourceURL: this.baseResourceURL,
+			resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK,
+			type: "post",
+			dataType: "json",
+			params: {
+				dataTypeId: this.structureLink.dataTypeId
+			},
+			successFunc: (result) => {
+				this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
+				this.dataStructure = new DataStructure(
+					this.namespace,
+					this.formId,
+					this.languageId,
+					this.availableLanguageIds
+				);
+
+				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dlgBody = Util.translate("datatype-structure-link-info-is-deleted", result.dataTypeId);
+				this.setState({ loadingStatus: LoadingStatus.COMPLETE });
+			},
+			errorFunc: (err) => {
+				this.loadingFailMessage = "Error while loading visualizers: ";
+				this.setState({ loadingStatus: LoadingStatus.FAIL });
+			}
+		});
+	};
+
+	handleMoveToExplorer(e) {
+		Util.redirectTo(
+			this.workbench.url,
+			{
+				namespace: this.workbench.namespace,
+				portletId: this.workbench.portletId,
+				windowState: WindowState.NORMAL
+			},
+			{
+				workingPortletName: PortletKeys.DATATYPE_EXPLORER
+			}
+		);
 	}
 
 	handleBtnSaveClick(e) {
@@ -924,8 +1082,10 @@ class DataTypeEditor extends React.Component {
 					this.dataType.dataTypeId = result.dataTypeId;
 				}
 
+				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dlgBody = Util.translate("datatype-is-saved-successfully-as", this.dataType.dataTypeId);
 				this.setState({
-					saveSuccessDlgStatus: true
+					dlgProcResult: true
 				});
 				this.editStatus = EditStatus.UPDATE;
 			},
@@ -968,39 +1128,23 @@ class DataTypeEditor extends React.Component {
 		this.forceUpdate();
 	}
 
-	handleBtnAddDataStructureClick() {
+	handleNewDataStructureBtnClick = () => {
 		//console.log("redirectTo: ", this.workbench.portletId, this.state);
 		if (this.structureLink.dataTypeId > 0) {
-			this.dlgHeader = this.warningDlgHeader;
+			this.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 			this.dlgBody = Util.translate("current-link-will-be-delete-and-unrecoverable-are-you-sure-to-proceed");
 
-			this.setState({ addConfirmDlg: true });
+			this.setState({ dlgWarningRemoveLinkInfoAndRedirectToBuilder: true });
 		} else {
-			Util.redirectTo(
-				this.workbench.url,
-				{
-					namespace: this.workbench.namespace,
-					portletId: this.workbench.portletId,
-					windowState: WindowState.NORMAL
-				},
-				{
-					workingPortletName: PortletKeys.DATASTRUCTURE_BUILDER,
-					workingPortletParams: JSON.stringify({
-						dataTypeId: this.dataType.dataTypeId,
-						cmd: "add"
-					})
-				}
-			);
+			this.redirectToStructureBuilder();
 		}
-	}
+	};
 
-	handleBtnDeleteClick(e) {
-		this.dlgHeader = this.warningDlgHeader;
+	handleDeleteDataTypeBtnClick(e) {
+		this.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.dlgBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-data-type");
-		this.okProc = this.handleBtnDeleteClick;
-		this.cancelProc = this.closeModal;
 
-		this.setState({ showModal: true });
+		this.setState({ dlgWarningDeleteDataType: true });
 	}
 
 	handleClearButtonClick = () => {
@@ -1010,13 +1154,36 @@ class DataTypeEditor extends React.Component {
 
 	handleUpdateStructure = () => {
 		if (this.structureLink.dirty) {
-			this.setState({ linkInfoDirty: true });
+			this.setState({ dlgSaveLinkInfoAndRedirectToBuilder: true });
 		} else {
 			this.redirectToStructureBuilder();
 		}
 	};
 
-	handleSaveLinkInfo = (postProc) => {
+	handleSaveLinkInfoBtnClick = () => {
+		Util.ajax({
+			namespace: this.namespace,
+			baseResourceURL: this.baseResourceURL,
+			resourceId: ResourceIds.SAVE_TYPE_STRUCTURE_LINK,
+			type: "post",
+			dataType: "json",
+			params: this.structureLink.toJSON(),
+			successFunc: (result) => {
+				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
+				this.structureLink.dirty = false;
+
+				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dlgBody =
+					Util.translate("datatype-structure-link-info-saved") + ": " + this.structureLink.dataTypeId;
+				this.setState({ dlgProcResult: true });
+			},
+			errorFunc: (a, b, c, d) => {
+				console.log("ERROR: ", a, b, c, d);
+			}
+		});
+	};
+
+	handleSaveLinkInfoAndRedirectToBuilder = () => {
 		console.log("handleSaveLinkInfo: ", this.structureLink.toJSON());
 
 		Util.ajax({
@@ -1030,8 +1197,7 @@ class DataTypeEditor extends React.Component {
 				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
 				this.structureLink.dirty = false;
 
-				this.setState({ saveSuccessDlgStatus: true });
-				//this.redirectToStructureBuilder();
+				this.redirectToStructureBuilder();
 			},
 			errorFunc: (a, b, c, d) => {
 				console.log("ERROR: ", a, b, c, d);
@@ -1039,55 +1205,12 @@ class DataTypeEditor extends React.Component {
 		});
 	};
 
-	redirectToStructureBuilder = () => {
-		Util.redirectTo(
-			this.workbench.url,
-			{
-				namespace: this.workbench.namespace,
-				portletId: this.workbench.portletId,
-				windowState: WindowState.NORMAL
-			},
-			{
-				workingPortletName: PortletKeys.DATASTRUCTURE_BUILDER,
-				workingPortletParams: JSON.stringify({
-					dataTypeId: this.dataType.dataTypeId
-				})
-			}
-		);
+	handleRemoveLinkInfoBtnClick = () => {
+		this.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+		this.digBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-link-info");
+
+		this.setState({ dlgWarningRemoveLinkInfo: true });
 	};
-
-	clearForm() {
-		this.dataTypeCode.clearValue();
-		this.dataTypeVersion.clearValue();
-		this.extension.clearValue();
-		this.displayName.clearValue();
-		this.description.clearValue();
-		this.tooltip.clearValue();
-
-		this.visualizers.clearValue();
-
-		this.forceUpdate();
-	}
-
-	proceedDelete() {
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.DELETE_DATATYPE,
-			params: {
-				dataTypeId: this.dataType.dataTypeId
-			},
-			successFunc: (result) => {
-				this.clearForm();
-				this.dlgBody = Util.translate("datatype-is-deleted-successfully", this.dataType.dataTypeId);
-				this.setState({ deleteSuccessDlgStatus: true });
-			},
-			errorFunc: (err) => {
-				console.log("error: ", err);
-				this.setState({ deleteErrorDlgStatus: true });
-			}
-		});
-	}
 
 	render() {
 		if (this.state.loadingStatus === LoadingStatus.PENDING) {
@@ -1160,7 +1283,7 @@ class DataTypeEditor extends React.Component {
 												label={Util.translate("delete")}
 												symbol={"trash"}
 												displayType={"warning"}
-												onClick={(e) => this.handleBtnDeleteClick(e)}
+												onClick={(e) => this.handleDeleteDataTypeBtnClick(e)}
 												spritemap={this.spritemap}
 											/>
 										)}
@@ -1239,7 +1362,7 @@ class DataTypeEditor extends React.Component {
 											<>
 												<Button
 													title={Util.translate("save-link-info")}
-													onClick={this.handleSaveLinkInfo}
+													onClick={this.handleSaveLinkInfoBtnClick}
 													disabled={!this.structureLink.dirty}
 													displayType="secondary"
 												>
@@ -1254,7 +1377,8 @@ class DataTypeEditor extends React.Component {
 												<Button
 													title={Util.translate("remove-link-info")}
 													displayType={"warning"}
-													onClick={this.handleRemoveTypeStructureLink}
+													onClick={this.handleRemoveLinkInfoBtnClick}
+													disabled={this.structureLink.dataTypeId}
 												>
 													<span className="inline-item inline-item-before">
 														<Icon
@@ -1281,7 +1405,7 @@ class DataTypeEditor extends React.Component {
 											)}
 										<Button
 											title={Util.translate("new-datastructure")}
-											onClick={() => this.handleBtnAddDataStructureClick()}
+											onClick={this.handleNewDataStructureBtnClick}
 											disabled={
 												this.editStatus === EditStatus.IMPORT || this.dataType.dataTypeId < 1
 											}
@@ -1312,54 +1436,37 @@ class DataTypeEditor extends React.Component {
 							)}
 						</>
 					)}
-					{this.state.saveSuccessDlgStatus && (
+					{this.state.dlgProcResult && (
 						<SXModalDialog
-							header={this.successDlgHeader}
-							body={Util.translate("datatype-saved") + ": " + this.dataType.dataTypeId}
+							header={this.dlgHeader}
+							body={this.dlgBody}
 							buttons={[
 								{
 									label: Util.translate("ok"),
 									onClick: () => {
-										this.setState({ saveSuccessDlgStatus: false });
+										this.setState({ dlgProcResult: false });
 									}
 								}
 							]}
 						/>
 					)}
-					{this.state.deleteConfirmDlgStatus && (
+					{this.state.dlgWarningDeleteDataType && (
 						<SXModalDialog
-							header={this.warningDlgHeader}
-							body={Util.translate("this-is-not-recoverable-are-you-sure-delete-the-data-type")}
+							header={this.dlgHeader}
+							body={this.dlgBody}
 							buttons={[
 								{
 									label: Util.translate("confirm"),
 									onClick: (e) => {
-										this.proceedDelete();
-										this.setState({ deleteConfirmDlgStatus: false });
+										this.deleteDataType();
+										this.setState({ dlgWarningDeleteDataType: false });
 									},
 									displayType: "secondary"
 								},
 								{
 									label: Util.translate("cancel"),
 									onClick: (e) => {
-										this.setState({ deleteConfirmDlgStatus: false });
-									}
-								}
-							]}
-						/>
-					)}
-					{this.state.deleteSuccessDlgStatus && (
-						<SXModalDialog
-							header={this.successDlgHeader}
-							body={this.dlgBody}
-							buttons={[
-								{
-									label: Util.translate("ok"),
-									onClick: (e) => {
-										this.dataType.dataTypeId = 0;
-										this.setState({
-											deleteSuccessDlgStatus: false
-										});
+										this.setState({ dlgWarningDeleteDataType: false });
 									}
 								}
 							]}
@@ -1367,7 +1474,7 @@ class DataTypeEditor extends React.Component {
 					)}
 					{this.state.dataTypeCodeDuplicated && (
 						<SXModalDialog
-							header={this.errorDlgHeader}
+							header={SXModalUtil.errorDlgHeader(this.spritemap)}
 							body={Util.translate("datatype-name-duplicated") + ": " + this.dataTypeCode.getValue()}
 							buttons={[
 								{
@@ -1381,89 +1488,91 @@ class DataTypeEditor extends React.Component {
 							]}
 						/>
 					)}
-					{this.state.deleteErrorDlgStatus && (
+					{this.structureLink.dataTypeId > 0 && this.state.dlgDeleteLinkInfoAndImportDataStructure && (
 						<SXModalDialog
-							header={this.errorDlgHeader}
-							body={Util.translate("delete-failed") + ": " + this.dataType.dataTypeId}
-							buttons={[
-								{
-									label: Util.translate("ok"),
-									onClick: (e) => {
-										this.setState({
-											deleteErrorDlgStatus: false
-										});
-									}
-								}
-							]}
-						/>
-					)}
-					{this.structureLink.dataTypeId > 0 && this.state.linkWillDeletedWarning && (
-						<SXModalDialog
-							header={this.warningDlgHeader}
-							body={Util.translate(
-								"current-link-will-be-delete-and-unrecoverable-are-you-sure-to-proceed"
-							)}
+							header={this.dlgHeader}
+							body={this.dlgBody}
 							buttons={[
 								{
 									label: Util.translate("confirm"),
 									onClick: (e) => {
-										this.importDataStructure();
-										this.setState({ linkWillDeletedWarning: false });
+										this.deleteLinkInfoAndImportDataStructure();
+										this.setState({ dlgDeleteLinkInfoAndImportDataStructure: false });
 									},
 									displayType: "secondary"
 								},
 								{
 									label: Util.translate("cancel"),
 									onClick: (e) => {
-										this.setState({ linkWillDeletedWarning: false });
+										this.setState({ dlgDeleteLinkInfoAndImportDataStructure: false });
 									}
 								}
 							]}
 						/>
 					)}
-					{this.state.linkInfoDirty && (
+					{this.state.dlgSaveLinkInfoAndRedirectToBuilder && (
 						<SXModalDialog
-							header={this.warningDlgHeader}
+							header={this.dlgHeader}
 							body={Util.translate("link-info-is-not-saved-do-you-save-the-info")}
 							buttons={[
 								{
 									label: Util.translate("save"),
 									onClick: (e) => {
-										this.handleSaveLinkInfo();
-										this.setState({ linkInfoDirty: false });
+										this.handleSaveLinkInfoAndRedirectToBuilder();
+										this.setState({ dlgSaveLinkInfoAndRedirectToBuilder: false });
 									},
 									displayType: "secondary"
 								},
 								{
 									label: Util.translate("cancel"),
 									onClick: (e) => {
-										this.setState({ linkInfoDirty: false });
+										this.setState({ dlgSaveLinkInfoAndRedirectToBuilder: false });
 										this.redirectToStructureBuilder();
 									}
 								}
 							]}
 						/>
 					)}
-					{this.state.addConfirmDlg && (
+					{this.state.dlgWarningRemoveLinkInfo && (
 						<SXModalDialog
-							header={this.warningDlgHeader}
-							body={Util.translate(
-								"current-link-will-be-delete-and-unrecoverable-are-you-sure-to-proceed"
-							)}
+							header={SXModalUtil.warningDlgHeader(this.spritemap)}
+							body={this.dlgBody}
 							buttons={[
 								{
 									label: Util.translate("save"),
 									onClick: (e) => {
-										this.deleteTypeStructureInfo("redirectToBuilder");
-										this.setState({ addConfirmDlg: false });
+										this.removeLinkInfo();
+										this.setState({ dlgWarningRemoveLinkInfo: false });
 									},
 									displayType: "secondary"
 								},
 								{
 									label: Util.translate("cancel"),
 									onClick: (e) => {
-										this.setState({ addConfirmDlg: false });
-										this.redirectToStructureBuilder();
+										this.setState({ dlgWarningRemoveLinkInfo: false });
+									}
+								}
+							]}
+						/>
+					)}
+					{this.state.dlgWarningRemoveLinkInfoAndRedirectToBuilder && (
+						<SXModalDialog
+							header={SXModalUtil.warningDlgHeader(this.spritemap)}
+							body={Util.translate(
+								"current-link-will-be-delete-and-unrecoverable-are-you-sure-to-proceed"
+							)}
+							buttons={[
+								{
+									label: Util.translate("just-do-it"),
+									onClick: (e) => {
+										this.removeLinkInfoAndRedirectToBuilder();
+									},
+									displayType: "secondary"
+								},
+								{
+									label: Util.translate("cancel"),
+									onClick: (e) => {
+										this.setState({ dlgWarningRemoveLinkInfoAndRedirectToBuilder: false });
 									}
 								}
 							]}

@@ -1,3 +1,4 @@
+<%@page import="com.liferay.portal.kernel.portlet.PortletIdCodec"%>
 <%@page import="com.liferay.portal.kernel.json.JSONArray"%>
 <%@page import="com.liferay.portal.kernel.portlet.LiferayWindowState"%>
 <%@page import="com.sx.icecap.constant.WebPortletKey"%>
@@ -17,8 +18,11 @@
 	
 	String portalURL = PortalUtil.getPortalURL(renderRequest);
 	
+	String sdePortletId = PortletIdCodec.encode(WebPortletKey.SXStructuredDataEditorPortlet);
+	
 	System.out.println("workbenchNamespace: " + workbenchNamespace);
 	System.out.println("workbenchId: " + workbenchId);
+	System.out.println("sdePortletId: " + sdePortletId);
 %>
 
 
@@ -32,6 +36,9 @@
 </portlet:resourceURL>
 
 <liferay-portlet:renderURL portletName="<%=workbenchId%>"  var="workbenchURL"  windowState="<%=LiferayWindowState.NORMAL.toString()%>">
+</liferay-portlet:renderURL>
+
+<liferay-portlet:renderURL portletName="<%=sdePortletId%>"  var="sdeManifestURL" >
 </liferay-portlet:renderURL>
 
 <div id="<portlet:namespace />dataStructureBuilderRoot"></div>
@@ -57,6 +64,7 @@
 			redirectURLs:{
 				workbenchURL: '<%= workbenchURL %>',
 				dataTypeEditorURL:"",
+				sdeManifestURL:"<%= sdeManifestURL %>",
 				backURL:'<%= currentURL %>',
 			},
 			permissions: JSON.parse('<%= permissions.toJSONString() %>'),
