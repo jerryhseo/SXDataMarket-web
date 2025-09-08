@@ -150,6 +150,7 @@ export class DataTypeStructureLink {
 	jumpTo = false;
 
 	dirty = false;
+	fromDB = false;
 
 	constructor(languageId, availableLanguageIds, json) {
 		this.languageId = languageId;

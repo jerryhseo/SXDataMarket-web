@@ -87,7 +87,6 @@ export const ValidationSectionProperty = {
 export const ErrorClass = {
 	ERROR: "has-error",
 	WARNING: "has-warning",
-	CRITICAL: "has-critical",
 	SUCCESS: "has-success"
 };
 

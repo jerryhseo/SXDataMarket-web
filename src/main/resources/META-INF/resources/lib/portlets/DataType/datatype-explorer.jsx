@@ -329,7 +329,7 @@ class DataTypeExplorer extends React.Component {
 
 		this.confirmDialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.confirmDialogBody = Util.translate(
-			"selected-datatype-will-be-delete-with-datastructure-link-info-and-unrecoverable-are-you-sure-to-proceed"
+			"selected-datatypes-will-be-delete-with-datastructure-link-info-and-unrecoverable-are-you-sure-to-proceed"
 		);
 
 		this.setState({ confirmDeleteDialog: true });

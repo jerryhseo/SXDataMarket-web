@@ -492,6 +492,10 @@ class DataTypeEditor extends React.Component {
 				this.setFormValues();
 
 				this.structureLink.parse(result.structureLink ?? {});
+				if (this.structureLink.dataTypeId > 0) {
+					this.structureLink.fromDB = true;
+				}
+
 				this.dataStructure.parse(result.dataStructure ?? {});
 				console.log(
 					"In Loading: ",
@@ -578,6 +582,7 @@ class DataTypeEditor extends React.Component {
 				this.structureLink.parse(result.structureLink ?? {});
 				this.structureLink.dataTypeId = 0;
 				this.structureLink.dirty = true;
+				this.structureLink.fromDB = true;
 
 				this.dataStructure.parse(result.dataStructure ?? {});
 				console.log(
@@ -690,10 +695,14 @@ class DataTypeEditor extends React.Component {
 					this.availableLanguageIds
 				);
 
+				/*
 				this.clearForm(false);
 				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
 				this.dlgBody = Util.translate("datatype-is-deleted-successfully", this.dataType.dataTypeId);
 				this.setState({ dlgProcResult: true });
+				*/
+
+				this.handleMoveToExplorer();
 			},
 			errorFunc: (err) => {
 				console.log("error: ", err);
@@ -722,6 +731,7 @@ class DataTypeEditor extends React.Component {
 				this.structureLink.dataTypeId = this.dataType.dataTypeId;
 				this.structureLink.dataStructureId = this.dataStructure.dataStructureId;
 				this.structureLink.dirty = true;
+				this.structureLink.fromDB = false;
 				this.dataStructure.setTitleBarInfos(this.structureLink.toJSON());
 
 				console.log(
@@ -1142,7 +1152,7 @@ class DataTypeEditor extends React.Component {
 
 	handleDeleteDataTypeBtnClick(e) {
 		this.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-		this.dlgBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-data-type");
+		this.dlgBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-datatype");
 
 		this.setState({ dlgWarningDeleteDataType: true });
 	}
@@ -1171,10 +1181,14 @@ class DataTypeEditor extends React.Component {
 			successFunc: (result) => {
 				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
 				this.structureLink.dirty = false;
+				this.structureLink.fromDB = true;
 
 				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dlgBody =
-					Util.translate("datatype-structure-link-info-saved") + ": " + this.structureLink.dataTypeId;
+				this.dlgBody = Util.translate(
+					"datatype-structure-link-info-saved",
+					this.structureLink.dataTypeId,
+					this.structureLink.dataStructureId
+				);
 				this.setState({ dlgProcResult: true });
 			},
 			errorFunc: (a, b, c, d) => {
@@ -1207,9 +1221,22 @@ class DataTypeEditor extends React.Component {
 
 	handleRemoveLinkInfoBtnClick = () => {
 		this.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-		this.digBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-link-info");
+		this.dlgBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-link-info");
 
-		this.setState({ dlgWarningRemoveLinkInfo: true });
+		console.log("handleRemoveLinkInfoBtnClick: ", this.structureLink);
+		if (this.structureLink.fromDB) {
+			this.setState({ dlgWarningRemoveLinkInfo: true });
+		} else {
+			this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
+			this.dataStructure = new DataStructure(
+				this.namespace,
+				this.formId,
+				this.languageId,
+				this.availableLanguageIds
+			);
+
+			this.forceUpdate();
+		}
 	};
 
 	render() {
@@ -1378,7 +1405,7 @@ class DataTypeEditor extends React.Component {
 													title={Util.translate("remove-link-info")}
 													displayType={"warning"}
 													onClick={this.handleRemoveLinkInfoBtnClick}
-													disabled={this.structureLink.dataTypeId}
+													disabled={this.structureLink.dataTypeId === 0}
 												>
 													<span className="inline-item inline-item-before">
 														<Icon
@@ -1539,7 +1566,7 @@ class DataTypeEditor extends React.Component {
 							body={this.dlgBody}
 							buttons={[
 								{
-									label: Util.translate("save"),
+									label: Util.translate("delete"),
 									onClick: (e) => {
 										this.removeLinkInfo();
 										this.setState({ dlgWarningRemoveLinkInfo: false });

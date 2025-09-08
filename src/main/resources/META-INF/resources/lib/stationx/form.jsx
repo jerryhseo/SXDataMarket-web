@@ -1061,9 +1061,16 @@ export class SXNumeric extends React.Component {
 			return;
 		}
 
-		const value = this.parameter.uncertainty
-			? { value: this.toNumber(newValue), uncertainty: this.toNumber(this.state.uncertainty) }
-			: this.toNumber(newValue);
+		let value;
+		if (Util.isNotEmpty(newValue)) {
+			value = this.parameter.uncertainty
+				? { value: this.toNumber(newValue), uncertainty: this.toNumber(this.state.uncertainty) }
+				: this.toNumber(newValue);
+		} else {
+			value = this.parameter.uncertainty
+				? { value: undefined, uncertainty: this.toNumber(this.state.uncertainty) }
+				: undefined;
+		}
 
 		this.setState({ value: newValue });
 		this.parameter.setValue({ value: value, cellIndex: this.cellIndex, validate: true });

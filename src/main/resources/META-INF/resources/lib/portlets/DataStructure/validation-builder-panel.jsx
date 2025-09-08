@@ -4,7 +4,7 @@ import { ErrorClass, Event, ParamType, ValidationKeys } from "../../stationx/sta
 import { ClayCheckbox, ClayInput, ClaySelectWithOption, ClayToggle } from "@clayui/form";
 import LocalizedInput from "@clayui/localized-input";
 import { Context } from "@clayui/modal";
-import { openConfirmModal } from "../../stationx/modal";
+import { openConfirmModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
 
 class SXDSBuilderValidationPanel extends React.Component {
 	constructor(props) {
@@ -30,20 +30,20 @@ class SXDSBuilderValidationPanel extends React.Component {
 				value: ErrorClass[errorClass]
 			}));
 
-		(this.validation = this.workingParam.validation ?? {}),
-			(this.state = {
-				selectedLang: {
-					required: { label: this.languageId, symbol: this.languageId.toLowerCase() },
-					pattern: { label: this.languageId, symbol: this.languageId.toLowerCase() },
-					minLength: { label: this.languageId, symbol: this.languageId.toLowerCase() },
-					maxLength: { label: this.languageId, symbol: this.languageId.toLowerCase() },
-					min: { label: this.languageId, symbol: this.languageId.toLowerCase() },
-					max: { label: this.languageId, symbol: this.languageId.toLowerCase() },
-					normalMin: { label: this.languageId, symbol: this.languageId.toLowerCase() },
-					normalMax: { label: this.languageId, symbol: this.languageId.toLowerCase() }
-				},
-				waringDlg: false
-			});
+		this.validation = this.workingParam.validation ?? {};
+		this.state = {
+			selectedLang: {
+				required: { label: this.languageId, symbol: this.languageId.toLowerCase() },
+				pattern: { label: this.languageId, symbol: this.languageId.toLowerCase() },
+				minLength: { label: this.languageId, symbol: this.languageId.toLowerCase() },
+				maxLength: { label: this.languageId, symbol: this.languageId.toLowerCase() },
+				min: { label: this.languageId, symbol: this.languageId.toLowerCase() },
+				max: { label: this.languageId, symbol: this.languageId.toLowerCase() },
+				normalMin: { label: this.languageId, symbol: this.languageId.toLowerCase() },
+				normalMax: { label: this.languageId, symbol: this.languageId.toLowerCase() }
+			},
+			noticeDialog: false
+		};
 	}
 
 	getSection(sectionId) {
@@ -99,7 +99,8 @@ class SXDSBuilderValidationPanel extends React.Component {
 
 	getSectionValue(sectionId) {
 		const section = this.getSection(sectionId);
-		return section ? section.value ?? "" : "";
+
+		return Util.isNotEmpty(section) ? section.value ?? "" : "";
 	}
 
 	getSectionBoundary(sectionId) {
@@ -147,8 +148,10 @@ class SXDSBuilderValidationPanel extends React.Component {
 
 		this.workingParam.validation = this.validation;
 
+		this.workingParam.validate();
+		this.workingParam.fireRefresh();
+
 		this.forceUpdate();
-		this.workingParam.fireRefreshPreview();
 	}
 
 	setSectionMessage(sectionid, message) {
@@ -159,7 +162,9 @@ class SXDSBuilderValidationPanel extends React.Component {
 		this.workingParam.validation = this.validation;
 
 		this.forceUpdate();
-		this.workingParam.fireRefreshPreview();
+
+		this.workingParam.validate();
+		this.workingParam.fireRefresh();
 	}
 
 	setSectionMessageTranslation(sectionid, translation, languageId) {
@@ -171,6 +176,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 		this.validation[sectionid] = prevSection;
 
 		this.forceUpdate();
+		this.workingParam.validate();
 		this.workingParam.fireRefreshPreview();
 	}
 
@@ -181,6 +187,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 		this.validation[sectionid] = prevSection;
 		this.workingParam.validation = this.validation;
 		this.forceUpdate();
+		this.workingParam.validate();
 		this.workingParam.fireRefreshPreview();
 	}
 
@@ -195,38 +202,145 @@ class SXDSBuilderValidationPanel extends React.Component {
 
 		this.validation[sectionId] = prevSection;
 		this.workingParam.validation = this.validation;
+
 		this.forceUpdate();
-		this.workingParam.fireRefreshPreview();
+		this.workingParam.validate();
+		this.workingParam.fireRefresh();
 	}
 
 	handleValueChanged(sectionId, value) {
 		switch (sectionId) {
 			case ValidationKeys.PATTERN:
-			case ValidationKeys.CUSTOM:
+			case ValidationKeys.CUSTOM: {
 				//console.log("setSectionValue: ", sectionId, value);
 				this.setSectionValue(sectionId, value);
 				break;
-			case ValidationKeys.MIN_LENGTH:
-			case ValidationKeys.MAX_LENGTH:
-				if (isNaN(value)) {
+			}
+			case ValidationKeys.MIN_LENGTH: {
+				if (isNaN(value) || Util.isEmpty(value)) {
 					this.setSectionValue(sectionId, "");
 				} else {
-					this.setSectionValue(sectionId, Util.isNotEmpty(value) ? Math.floor(Number(value)) : "");
-				}
-				break;
-			case "min":
-			case ValidationKeys.MIN:
-			case ValidationKeys.MAX:
-			case ValidationKeys.NORMAL_MIN:
-			case ValidationKeys.NORMAL_MAX:
-				if (isNaN(value)) {
-					this.setSectionValue(sectionId, "");
-				} else {
-					this.setSectionValue(sectionId, Util.isNotEmpty(value) ? Number(value) : "");
+					const maxLength = this.getSectionValue(ValidationKeys.MAX_LENGTH);
+
+					if (Util.isNotEmpty(maxLength)) {
+						if (Number(value) > Number(maxLength)) {
+							this.dlgHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+							this.dlgBody = Util.translate("min-length-is-larger-than-max-length");
+							this.setState({ noticeDialog: true });
+
+							return;
+						}
+					}
+
+					this.setSectionValue(sectionId, Math.floor(Number(value)));
 				}
 
 				break;
+			}
+			case ValidationKeys.MAX_LENGTH: {
+				if (isNaN(value) || Util.isEmpty(value)) {
+					this.setSectionValue(sectionId, "");
+				} else {
+					const minLength = this.getSectionValue(ValidationKeys.MIN_LENGTH);
+
+					if (Util.isNotEmpty(minLength)) {
+						if (Number(value) < Number(minLength)) {
+							this.dlgHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+							this.dlgBody = Util.translate("max-length-is-smaller-than-min-length");
+							this.setState({ noticeDialog: true });
+
+							return;
+						}
+
+						this.setSectionValue(sectionId, Math.floor(Number(value)));
+					}
+				}
+				break;
+			}
+			case ValidationKeys.MIN: {
+				if (isNaN(value) || Util.isEmpty(value)) {
+					this.setSectionValue(sectionId, "");
+				} else {
+					const max = this.getSectionValue(ValidationKeys.MAX);
+
+					if (Util.isNotEmpty(max)) {
+						if (Number(value) > Number(max)) {
+							this.dlgHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+							this.dlgBody = Util.translate("min-value-is-larger-than-max-value");
+							this.setState({ noticeDialog: true });
+
+							return;
+						}
+					}
+
+					this.setSectionValue(sectionId, Math.floor(Number(value)));
+				}
+
+				break;
+			}
+			case ValidationKeys.MAX: {
+				if (isNaN(value) || Util.isEmpty(value)) {
+					this.setSectionValue(sectionId, "");
+				} else {
+					const min = this.getSectionValue(ValidationKeys.MIN);
+
+					if (Util.isNotEmpty(min)) {
+						if (Number(value) < Number(min)) {
+							this.dlgHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+							this.dlgBody = Util.translate("max-value-is-smaller-than-min-value");
+							this.setState({ noticeDialog: true });
+
+							return;
+						}
+
+						this.setSectionValue(sectionId, Math.floor(Number(value)));
+					}
+				}
+				break;
+			}
+			case ValidationKeys.NORMAL_MIN: {
+				if (isNaN(value) || Util.isEmpty(value)) {
+					this.setSectionValue(sectionId, "");
+				} else {
+					const normalMax = this.getSectionValue(ValidationKeys.NORMAL_MAX);
+
+					if (Util.isNotEmpty(normalMax)) {
+						if (Number(value) > Number(normalMax)) {
+							this.dlgHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+							this.dlgBody = Util.translate("normal-min-value-is-larger-than-normal-max-value");
+							this.setState({ noticeDialog: true });
+
+							return;
+						}
+
+						this.setSectionValue(sectionId, Math.floor(Number(value)));
+					}
+				}
+				break;
+			}
+			case ValidationKeys.NORMAL_MAX: {
+				if (isNaN(value) || Util.isEmpty(value)) {
+					this.setSectionValue(sectionId, "");
+				} else {
+					const normalMin = this.getSectionValue(ValidationKeys.NORMAL_MIN);
+
+					if (Util.isNotEmpty(normalMin)) {
+						if (Number(value) < Number(normalMin)) {
+							this.dlgHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+							this.dlgBody = Util.translate("normal-max-value-is-smaller-than-normal-min-value");
+							this.setState({ noticeDialog: true });
+
+							return;
+						}
+
+						this.setSectionValue(sectionId, Math.floor(Number(value)));
+					}
+				}
+				break;
+			}
 		}
+
+		this.workingParam.fireRefresh();
 	}
 
 	handleMessageChanged(sectionId, translations) {
@@ -487,6 +601,20 @@ class SXDSBuilderValidationPanel extends React.Component {
 						{this.checkSectionEnabled(ValidationKeys.CUSTOM) &&
 							this.renderSectionBody(ValidationKeys.CUSTOM)}
 					</div>
+				)}
+				{this.state.noticeDialog && (
+					<SXModalDialog
+						header={this.dlgHeader}
+						body={this.dlgBody}
+						buttons={[
+							{
+								label: Util.translate("ok"),
+								onClick: () => {
+									this.setState({ noticeDialog: false });
+								}
+							}
+						]}
+					/>
 				)}
 			</>
 		);

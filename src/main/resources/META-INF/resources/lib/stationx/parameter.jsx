@@ -1129,21 +1129,24 @@ export class Parameter {
 								return;
 							}
 						}
-					} else {
-						if (!regExpr.test(value)) {
-							this.error = {
-								message: validationMessage,
-								errorClass: validationErrorClass
-							};
+					} else if (!regExpr.test(value)) {
+						this.error = {
+							message: validationMessage,
+							errorClass: validationErrorClass
+						};
 
-							return;
-						}
+						return;
 					}
 
 					break;
 				}
 				case ValidationKeys.MIN_LENGTH: {
 					const minLength = validationValue;
+					if (Util.isEmpty(minLength)) {
+						this.error = {};
+						return;
+					}
+
 					if (this.localized) {
 						for (const locale in value) {
 							if (value[locale].length < minLength) {
@@ -1170,6 +1173,10 @@ export class Parameter {
 				}
 				case ValidationKeys.MAX_LENGTH: {
 					const maxLength = validationValue;
+					if (Util.isEmpty(maxLength)) {
+						this.error = {};
+						return;
+					}
 
 					if (this.localized) {
 						for (const locale in value) {
@@ -1196,77 +1203,114 @@ export class Parameter {
 					break;
 				}
 				case ValidationKeys.NORMAL_MIN: {
-					if (validationBoundary && numValue - numUncertainty <= validationValue) {
-						this.error = {
-							message: validationMessage,
-							errorClass: validationErrorClass
-						};
-					} else if (numValue - numUncertainty < validationValue) {
-						this.error = {
-							message: validationMessage,
-							errorClass: validationErrorClass
-						};
-
+					if (Util.isEmpty(value)) {
+						this.error = {};
 						return;
+					}
+
+					if (validationBoundary) {
+						if (numValue - numUncertainty < validationValue) {
+							this.error = {
+								message: validationMessage,
+								errorClass: validationErrorClass
+							};
+
+							return;
+						}
+					} else {
+						if (numValue - numUncertainty <= validationValue) {
+							this.error = {
+								message: validationMessage,
+								errorClass: validationErrorClass
+							};
+
+							return;
+						}
 					}
 
 					break;
 				}
 				case ValidationKeys.NORMAL_MAX: {
-					if (validationBoundary && numValue + numUncertainty >= validationValue) {
-						this.error = {
-							message: validationMessage,
-							errorClass: validationErrorClass
-						};
-
+					if (Util.isEmpty(value)) {
+						this.error = {};
 						return;
-					} else if (numValue + numUncertainty > validationValue) {
-						this.error = {
-							message: validationMessage,
-							errorClass: validationErrorClass
-						};
+					}
 
-						return;
+					if (validationBoundary) {
+						if (numValue + numUncertainty >= validationValue) {
+							this.error = {
+								message: validationMessage,
+								errorClass: validationErrorClass
+							};
+
+							return;
+						}
+					} else {
+						if (numValue + numUncertainty > validationValue) {
+							this.error = {
+								message: validationMessage,
+								errorClass: validationErrorClass
+							};
+
+							return;
+						}
 					}
 
 					break;
 				}
 				case ValidationKeys.MIN: {
-					if (validationBoundary && numValue - numUncertainty <= validationValue) {
-						this.error = {
-							message: validationMessage,
-							errorClass: validationErrorClass
-						};
-
+					if (Util.isEmpty(value)) {
+						this.error = {};
 						return;
-					} else if (numValue - numUncertainty < validationValue) {
-						this.error = {
-							message: validationMessage,
-							errorClass: validationErrorClass
-						};
+					}
 
-						return;
+					if (validationBoundary) {
+						if (numValue - numUncertainty < validationValue) {
+							this.error = {
+								message: validationMessage,
+								errorClass: validationErrorClass
+							};
+
+							return;
+						}
+					} else {
+						if (numValue - numUncertainty <= validationValue) {
+							this.error = {
+								message: validationMessage,
+								errorClass: validationErrorClass
+							};
+
+							return;
+						}
 					}
 
 					break;
 				}
 				case ValidationKeys.MAX: {
-					if (validationBoundary && numValue + numUncertainty > validationValue) {
-						this.error = {
-							message: validationMessage,
-							errorClass: validationErrorClass
-						};
-
-						return;
-					} else if (numValue + numUncertainty >= this.validation.max.value) {
-						this.error = {
-							message: validationMessage,
-							errorClass: validationErrorClass
-						};
-
+					if (Util.isEmpty(value)) {
+						this.error = {};
 						return;
 					}
 
+					if (validationBoundary) {
+						if (numValue + numUncertainty > validationValue) {
+							this.error = {
+								message: validationMessage,
+								errorClass: validationErrorClass
+							};
+
+							return;
+						}
+					} else {
+						if (numValue + numUncertainty >= this.validation.max.value) {
+							this.error = {
+								message: validationMessage,
+								errorClass: validationErrorClass
+							};
+
+							return;
+						}
+					}
 					break;
 				}
 				case ValidationKeys.CUSTOM: {
