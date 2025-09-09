@@ -983,11 +983,6 @@ export class SXNumeric extends React.Component {
 		this.spritemap = props.spritemap ?? "";
 		this.cellIndex = props.cellIndex;
 
-		if (props.parameter.isInteger) {
-			this.min = props.parameter.min;
-			this.max = props.parameter.max;
-		}
-
 		const value = this.parameter.getValue(this.cellIndex) ?? "";
 		this.state = {
 			value: (this.parameter.uncertainty ? value.value ?? "" : value).toString(),
@@ -1053,7 +1048,11 @@ export class SXNumeric extends React.Component {
 	}
 
 	toNumber(val) {
-		return this.parameter.isInteger ? Math.trunc(Number(val)) : Number(val).toFixed(this.parameter.decimalPlaces);
+		if (Util.isEmpty(val)) {
+			return "";
+		}
+
+		return Number(val).toFixed(this.parameter.decimalPlaces);
 	}
 
 	handleValueChanged(newValue) {
@@ -1072,10 +1071,10 @@ export class SXNumeric extends React.Component {
 				: undefined;
 		}
 
-		this.setState({ value: newValue });
 		this.parameter.setValue({ value: value, cellIndex: this.cellIndex, validate: true });
-
 		this.parameter.fireValueChanged(this.cellIndex);
+
+		this.setState({ value: this.toNumber(newValue) });
 	}
 
 	handleUncertaintyChanged(newUncertainty) {
@@ -1092,6 +1091,16 @@ export class SXNumeric extends React.Component {
 	}
 
 	renderClayUI() {
+		let min = this.parameter.getValidationValue("min", "boundary")
+			? this.parameter.getValidationValue("min", "value")
+			: this.parameter.getValidationValue("min", "value") + 1;
+		if (isNaN(min)) min = "";
+
+		let max = this.parameter.getValidationValue("max", "boundary")
+			? this.parameter.getValidationValue("max", "value")
+			: this.parameter.getValidationValue("max", "value") - 1;
+		if (isNaN(max)) max = "";
+
 		return (
 			<>
 				<ClayInput.Group
@@ -1132,9 +1141,9 @@ export class SXNumeric extends React.Component {
 							<ClayInput.GroupItem>
 								<ClayInput
 									type={this.parameter.isInteger ? "number" : "text"}
-									defaultValue={this.state.value}
-									min={this.min}
-									max={this.max}
+									value={this.state.value}
+									min={min}
+									max={max}
 									ref={this.focusRef}
 									disabled={this.parameter.disabled}
 									onChange={(e) => {
@@ -1159,9 +1168,9 @@ export class SXNumeric extends React.Component {
 							>
 								<ClayInput
 									type={this.parameter.isInteger ? "number" : "text"}
-									defaultValue={this.state.uncertainty}
-									min={this.min}
-									max={this.max}
+									value={this.state.uncertainty}
+									min={min}
+									max={max}
 									disabled={this.parameter.disabled}
 									onChange={(e) => this.handleUncertaintyChanged(e.target.value)}
 								/>

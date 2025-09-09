@@ -1302,7 +1302,8 @@ export class Parameter {
 							return;
 						}
 					} else {
-						if (numValue + numUncertainty >= this.validation.max.value) {
+						console.log("Max validation: ", numValue, numUncertainty, validationValue);
+						if (numValue + numUncertainty >= validationValue) {
 							this.error = {
 								message: validationMessage,
 								errorClass: validationErrorClass

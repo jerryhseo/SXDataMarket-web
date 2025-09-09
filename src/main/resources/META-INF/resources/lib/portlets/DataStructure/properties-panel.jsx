@@ -58,16 +58,18 @@ class GroupSelectorBody extends React.Component {
 	}
 
 	handleGroupSelected(option) {
-		const srcGroup = this.dataStructure.findParameter({
-			paramCode: this.workingParam.parentCode,
-			paramVersion: this.workingParam.parentVersion,
-			descendant: true
-		});
-		const targetGroup = this.dataStructure.findParameter({
-			paramCode: option.paramCode,
-			paramVersion: option.paramVersion,
-			descendant: true
-		});
+		const srcGroup =
+			this.dataStructure.findParameter({
+				paramCode: this.workingParam.parentCode,
+				paramVersion: this.workingParam.parentVersion,
+				descendant: true
+			}) ?? this.dataStructure;
+		const targetGroup =
+			this.dataStructure.findParameter({
+				paramCode: option.paramCode,
+				paramVersion: option.paramVersion,
+				descendant: true
+			}) ?? this.dataStructure;
 
 		this.dataStructure.moveParameterGroup(this.workingParam, srcGroup, targetGroup);
 
@@ -256,7 +258,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 					paramCode: this.workingParam.parent.code,
 					paramVersion: this.workingParam.parent.version
 			  })
-			: null;
+			: this.dataStructure;
 		//console.log("Group selector parentGroup: ", parentGroup);
 
 		return (

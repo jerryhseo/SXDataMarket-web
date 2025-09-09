@@ -1085,6 +1085,7 @@ class SXNumericTypeOptionForm extends React.Component {
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
 		if (dataPacket.paramCode === ParamProperty.IS_INTEGER) {
+			this.workingParam.decimalPlaces = this.workingParam.isInteger ? 0 : 1;
 			this.setState({ isInteger: this.workingParam.isInteger });
 		}
 
