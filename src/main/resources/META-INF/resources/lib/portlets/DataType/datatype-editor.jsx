@@ -34,7 +34,7 @@ import { SXBroomIcon, SXEditIcon, SXUpgradeIcon } from "../../stationx/icon";
 export const DataTypeInfo = ({ title, abstract, items, colsPerRow = 1 }) => {
 	let sectionContent;
 
-	if (colsPerRow === 1) {
+	if (colsPerRow == 1) {
 		sectionContent = items.map((item, index) => (
 			<div
 				class="form-group-item"
@@ -402,9 +402,9 @@ class DataTypeEditor extends React.Component {
 
 		//console.log("SX_AUTOCOMPLETE_SELECTED: ", dataPacket);
 
-		if (dataPacket.id === this.dataTypeImportId) {
+		if (dataPacket.id == this.dataTypeImportId) {
 			this.importDataType(dataPacket.item.dataTypeId);
-		} else if (dataPacket.id === this.dataStructureImportId) {
+		} else if (dataPacket.id == this.dataStructureImportId) {
 			console.log("Import dataStructure: ", dataPacket);
 			this.importDataStructureId = dataPacket.item.dataStructureId;
 
@@ -528,12 +528,12 @@ class DataTypeEditor extends React.Component {
 
 				console.log("AutoCompleItes: ", this.dataTypeAutoCompleteItems, this.dataStructureAutoCompleteItems);
 
-				if (this.editStatus === EditStatus.IMPORT) {
+				if (this.editStatus == EditStatus.IMPORT) {
 					this.dataTypeCode.setError(ErrorClass.ERROR, Util.translate("change-datatype-code-or-version"));
 				}
 
 				//Change edit status
-				if (this.editStatus === EditStatus.ADD) {
+				if (this.editStatus == EditStatus.ADD) {
 					this.editStatus = Util.isEmpty(result.dataType) ? EditStatus.ADD : EditStatus.UPDATE;
 				}
 
@@ -828,7 +828,7 @@ class DataTypeEditor extends React.Component {
 			successFunc: (result) => {
 				if (!result) {
 					const errorMessage =
-						validationCode === "code"
+						validationCode == "code"
 							? Util.translate("datatype-code-duplicated")
 							: Util.translate("datatype-duplicated");
 
@@ -859,7 +859,7 @@ class DataTypeEditor extends React.Component {
 				if (found) {
 					return Constant.STOP_EVERY;
 				}
-			} else if (field.paramCode === fieldCode) {
+			} else if (field.paramCode == fieldCode) {
 				found = field;
 				return Constant.STOP_EVERY;
 			}
@@ -1057,7 +1057,7 @@ class DataTypeEditor extends React.Component {
 		}
 
 		const saveResourceId =
-			this.editStatus === EditStatus.UPDATE ? ResourceIds.UPDATE_DATATYPE : ResourceIds.ADD_DATATYPE;
+			this.editStatus == EditStatus.UPDATE ? ResourceIds.UPDATE_DATATYPE : ResourceIds.ADD_DATATYPE;
 
 		const formValues = {
 			dataType: this.dataType.toJSON()
@@ -1240,11 +1240,11 @@ class DataTypeEditor extends React.Component {
 	};
 
 	render() {
-		if (this.state.loadingStatus === LoadingStatus.PENDING) {
+		if (this.state.loadingStatus == LoadingStatus.PENDING) {
 			return <h1>Loading......</h1>;
-		} else if (this.state.loadingStatus === LoadingStatus.FAIL) {
+		} else if (this.state.loadingStatus == LoadingStatus.FAIL) {
 			return <h1>Data Loading Failed......</h1>;
-		} else if (this.state.loadingStatus === LoadingStatus.COMPLETE) {
+		} else if (this.state.loadingStatus == LoadingStatus.COMPLETE) {
 			//console.log("Render: ", this.dataType, this.dataType.validate());
 			return (
 				<>
@@ -1257,12 +1257,12 @@ class DataTypeEditor extends React.Component {
 								size={6}
 								weight="bold"
 							>
-								{this.editStatus === EditStatus.UPDATE
+								{this.editStatus == EditStatus.UPDATE
 									? Util.translate("edit-datatype")
 									: Util.translate("add-datatype")}
 							</Text>
 						</div>
-						{this.editStatus === EditStatus.ADD && (
+						{this.editStatus == EditStatus.ADD && (
 							<div className="autofit-col">
 								<SXAutoComplete
 									id={this.dataTypeImportId}
@@ -1289,7 +1289,7 @@ class DataTypeEditor extends React.Component {
 										spritemap={this.spritemap}
 									/>
 								)}
-								{(this.editStatus === EditStatus.UPDATE || this.editStatus === EditStatus.IMPORT) && (
+								{(this.editStatus == EditStatus.UPDATE || this.editStatus == EditStatus.IMPORT) && (
 									<>
 										<SXButtonWithIcon
 											label={Util.translate("upgrade")}
@@ -1305,7 +1305,7 @@ class DataTypeEditor extends React.Component {
 											onClick={() => this.handleBtnCopyDataTypeClick()}
 											spritemap={this.spritemap}
 										/>
-										{this.editStatus === EditStatus.UPDATE && (
+										{this.editStatus == EditStatus.UPDATE && (
 											<SXButtonWithIcon
 												label={Util.translate("delete")}
 												symbol={"trash"}
@@ -1314,7 +1314,7 @@ class DataTypeEditor extends React.Component {
 												spritemap={this.spritemap}
 											/>
 										)}
-										{this.editStatus === EditStatus.IMPORT && (
+										{this.editStatus == EditStatus.IMPORT && (
 											<Button
 												title={Util.translate("clear")}
 												displayType="secondary"
@@ -1405,7 +1405,7 @@ class DataTypeEditor extends React.Component {
 													title={Util.translate("remove-link-info")}
 													displayType={"warning"}
 													onClick={this.handleRemoveLinkInfoBtnClick}
-													disabled={this.structureLink.dataTypeId === 0}
+													disabled={this.structureLink.dataTypeId == 0}
 												>
 													<span className="inline-item inline-item-before">
 														<Icon
@@ -1434,7 +1434,7 @@ class DataTypeEditor extends React.Component {
 											title={Util.translate("new-datastructure")}
 											onClick={this.handleNewDataStructureBtnClick}
 											disabled={
-												this.editStatus === EditStatus.IMPORT || this.dataType.dataTypeId < 1
+												this.editStatus == EditStatus.IMPORT || this.dataType.dataTypeId < 1
 											}
 										>
 											<span className="inline-item inline-item-before">

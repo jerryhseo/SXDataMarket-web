@@ -10,7 +10,7 @@ import { Event, ParamProperty, ParamType } from "../../stationx/station-x";
 import { SXLabel, SXSelect } from "../../stationx/form";
 import { GroupParameter, Parameter, SelectParameter } from "../../stationx/parameter";
 import Button from "@clayui/button";
-import { SXModalDialog } from "../../stationx/modal";
+import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 
 class GroupSelectorBody extends React.Component {
 	constructor(props) {
@@ -54,7 +54,7 @@ class GroupSelectorBody extends React.Component {
 	}
 
 	getOption(paramCode) {
-		return this.options.filter((option) => option.paramCode === paramCode)[0];
+		return this.options.filter((option) => option.paramCode == paramCode)[0];
 	}
 
 	handleGroupSelected(option) {
@@ -77,7 +77,7 @@ class GroupSelectorBody extends React.Component {
 	}
 
 	render() {
-		if (this.optionType === "radio") {
+		if (this.optionType == "radio") {
 			return (
 				<div style={{ width: "100%" }}>
 					{Util.convertArrayToRows(this.options, 2).map((row, index) => (
@@ -95,7 +95,7 @@ class GroupSelectorBody extends React.Component {
 										value={option.paramCode}
 										defaultChecked={
 											Util.isNotEmpty(this.state.selected) &&
-											option.paramCode === this.state.selected.paramCode
+											option.paramCode == this.state.selected.paramCode
 										}
 										onChange={(e) => {
 											e.stopPropagation();
@@ -142,7 +142,10 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 		this.state = {
 			panelStep: 0,
 			paramType: this.workingParam.paramType,
-			openSelectGroupModal: false
+			openSelectGroupModal: false,
+			confirmDlgState: false,
+			confirmDlgBody: <></>,
+			confirmDlgHeader: <></>
 		};
 
 		this.formId = this.formIds.propertyPanelId;
@@ -179,6 +182,16 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 	}
 
 	handlePanelStepChange(step) {
+		if (this.workingParam.hasError()) {
+			this.setState({
+				confirmDlgState: true,
+				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
+			});
+
+			return;
+		}
+
 		this.setState({ panelStep: step });
 	}
 
@@ -362,7 +375,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 
 						return (
 							<ClayMultiStepNav.Item
-								active={panelStep === i}
+								active={panelStep == i}
 								expand={i + 1 !== this.panelSteps.length}
 								key={i}
 								state={complete ? "complete" : undefined}
@@ -383,6 +396,23 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 				<div style={{ maxHeight: "700px", overflowY: "auto", overflowX: "hidden" }}>
 					{this.renderPanelContent()}
 				</div>
+				{this.state.confirmDlgState && (
+					<SXModalDialog
+						header={this.state.confirmDlgHeader}
+						body={this.state.confirmDlgBody}
+						buttons={[
+							{
+								onClick: () => {
+									this.setState({ confirmDlgState: false });
+								},
+								label: Util.translate("ok"),
+								displayType: "primary"
+							}
+						]}
+						status="info"
+						spritemap={this.spritemap}
+					/>
+				)}
 			</>
 		);
 	}

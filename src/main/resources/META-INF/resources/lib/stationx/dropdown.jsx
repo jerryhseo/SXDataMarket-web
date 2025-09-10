@@ -52,7 +52,7 @@ class SXActionDropdown extends React.Component {
 			<DropDown
 				active={this.state.activeDropdown}
 				trigger={
-					this.triggerType === "icon" ? (
+					this.triggerType == "icon" ? (
 						<Icon
 							aria-label={this.triggerTitle}
 							symbol={this.symbol ?? "ellipsis-v"}

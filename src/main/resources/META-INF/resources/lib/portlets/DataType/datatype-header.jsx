@@ -83,7 +83,7 @@ export const SXDataTypeHeader = ({ id, name, displayName, version, spritemap }) 
 
 const SXHeader = ({ type, ...props }) => {
 	const { id, name, displayName, version, spritemap } = props;
-	if (type === "dataType") {
+	if (type == "dataType") {
 		return (
 			<SXDataTypeHeader
 				id={id}

@@ -383,7 +383,7 @@ export class SXPreviewRow extends React.Component {
 			this.parameter.paramVersion
 		);
 
-		if (!dataPacket && this.parameter.paramType === ParamType.GRID) {
+		if (!dataPacket && this.parameter.paramType == ParamType.GRID) {
 			dataPacket = Event.pickUpDataPacket(
 				e,
 				this.namespace,
@@ -404,7 +404,7 @@ export class SXPreviewRow extends React.Component {
 
 	componentDidMount() {
 		/*
-		console.log("=== SXPreviewRow componentDidMount executed ===");
+		console.log("== SXPreviewRow componentDidMount executed ==");
 		console.log("* ", this.parameter);
 		console.log("\n");
 		*/
@@ -420,11 +420,7 @@ export class SXPreviewRow extends React.Component {
 		e.stopPropagation();
 
 		if (!this.parameter.focused) {
-			this.parameter.focused = true;
-
 			this.parameter.fireParameterSelected(this.dsbuilderId);
-
-			this.forceUpdate();
 		}
 	}
 
@@ -457,7 +453,6 @@ export class SXPreviewRow extends React.Component {
 
 	handleActiveChange(val) {
 		if (!this.parameter.focused) {
-			this.parameter.focused = true;
 			this.parameter.fireParameterSelected(this.dsbuilderId);
 		}
 
@@ -469,9 +464,9 @@ export class SXPreviewRow extends React.Component {
 
 		let style = {};
 		if (
-			this.parameter.paramType === ParamType.BOOLEAN &&
-			(this.parameter.viewType === BooleanParameter.ViewTypes.CHECKBOX ||
-				this.parameter.viewType === BooleanParameter.ViewTypes.TOGGLE)
+			this.parameter.paramType == ParamType.BOOLEAN &&
+			(this.parameter.viewType == BooleanParameter.ViewTypes.CHECKBOX ||
+				this.parameter.viewType == BooleanParameter.ViewTypes.TOGGLE)
 		) {
 			style = {
 				marginTop: "0.5rem",
@@ -485,9 +480,9 @@ export class SXPreviewRow extends React.Component {
 			{ id: "delete", name: Util.translate("delete"), symbol: "times" }
 		];
 
-		if (this.parameter.position === Constant.Position.START) {
+		if (this.parameter.position == Constant.Position.START) {
 			actionItems.push({ id: "moveDown", name: Util.translate("move-down"), symbol: "order-arrow-down" });
-		} else if (this.parameter.position === Constant.Position.END) {
+		} else if (this.parameter.position == Constant.Position.END) {
 			actionItems.push({ id: "moveUp", name: Util.translate("move-up"), symbol: "order-arrow-up" });
 		} else if (this.parameter.position !== Constant.Position.DEAD_END) {
 			actionItems.push({ id: "moveDown", name: Util.translate("move-down"), symbol: "order-arrow-down" });
@@ -498,7 +493,7 @@ export class SXPreviewRow extends React.Component {
 			<>
 				<div
 					className={
-						className + (this.parameter.position === "end" ? " sx-preview-row-end" : " sx-preview-row")
+						className + (this.parameter.position == "end" ? " sx-preview-row-end" : " sx-preview-row")
 					}
 					onClick={(e) => {
 						e.stopPropagation();
@@ -631,7 +626,7 @@ class BaseParameterComponent extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
 			}
@@ -653,7 +648,7 @@ class BaseParameterComponent extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
 			}
@@ -693,7 +688,7 @@ export class SXInput extends BaseParameterComponent {
 	}
 
 	handleChange(value) {
-		if (value === this.state.value) {
+		if (value == this.state.value) {
 			return;
 		}
 
@@ -776,14 +771,21 @@ export class SXInput extends BaseParameterComponent {
 						symbol="exclamation-full"
 					/>
 				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
+					/>
+				)}
 			</div>
 		);
 	}
 
 	render() {
-		if (this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD) {
+		if (this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD) {
 			return this.renderFormField();
-		} else if (this.parameter.displayType === Parameter.DisplayTypes.GRID_CELL) {
+		} else if (this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			return this.renderGridCell();
 		}
 	}
@@ -806,7 +808,7 @@ export class SXLocalizedInput extends BaseParameterComponent {
 	}
 
 	handleChange(value) {
-		if (this.state.translation === value) {
+		if (this.state.translation == value) {
 			return;
 		}
 
@@ -818,7 +820,6 @@ export class SXLocalizedInput extends BaseParameterComponent {
 		});
 
 		//this.parameter.validate(this.cellIndex);
-		console.log("SXLocalized handleValue: ", this.parameter);
 	}
 
 	fireValueChanged() {
@@ -895,7 +896,7 @@ export class SXLocalizedInput extends BaseParameterComponent {
 													)
 												});
 											}}
-											active={this.state.selectedLang === flag.name}
+											active={this.state.selectedLang == flag.name}
 										>
 											<Icon
 												spritemap={this.spritemap}
@@ -926,6 +927,13 @@ export class SXLocalizedInput extends BaseParameterComponent {
 						content={this.parameter.errorMessage}
 						spritemap={this.spritemap}
 						symbol="exclamation-full"
+					/>
+				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
 					/>
 				)}
 			</div>
@@ -960,9 +968,9 @@ export class SXLocalizedInput extends BaseParameterComponent {
 	}
 
 	render() {
-		if (this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD) {
+		if (this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD) {
 			return this.renderFormField();
-		} else if (this.parameter.displayType === Parameter.DisplayTypes.GRID_CELL) {
+		} else if (this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			return this.renderGridCell();
 		}
 	}
@@ -1006,7 +1014,7 @@ export class SXNumeric extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
 			}
@@ -1028,7 +1036,7 @@ export class SXNumeric extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
 			}
@@ -1052,12 +1060,23 @@ export class SXNumeric extends React.Component {
 			return "";
 		}
 
-		return Number(val).toFixed(this.parameter.decimalPlaces);
+		return Number(Number(val).toFixed(this.parameter.decimalPlaces));
 	}
 
 	handleValueChanged(newValue) {
-		if (this.state.value === newValue) {
+		if (Util.isEmpty(this.state.value) && Util.isEmpty(newValue)) {
 			return;
+		} else if (Util.isNotEmpty(this.state.value) && Util.isEmpty(newValue)) {
+			this.parameter.setValue({ value: "", cellIndex: this.cellIndex, validate: true });
+			this.parameter.fireValueChanged(this.cellIndex);
+
+			this.setState({ value: "" });
+
+			return;
+		} else if (Util.isNotEmpty(this.state.value) && Util.isNotEmpty(newValue)) {
+			if (this.state.value == Number(newValue)) {
+				return;
+			}
 		}
 
 		let value;
@@ -1066,25 +1085,36 @@ export class SXNumeric extends React.Component {
 				? { value: this.toNumber(newValue), uncertainty: this.toNumber(this.state.uncertainty) }
 				: this.toNumber(newValue);
 		} else {
-			value = this.parameter.uncertainty
-				? { value: undefined, uncertainty: this.toNumber(this.state.uncertainty) }
-				: undefined;
+			value = this.parameter.uncertainty ? { value: "", uncertainty: this.toNumber(this.state.uncertainty) } : "";
 		}
 
 		this.parameter.setValue({ value: value, cellIndex: this.cellIndex, validate: true });
 		this.parameter.fireValueChanged(this.cellIndex);
 
-		this.setState({ value: this.toNumber(newValue) });
+		this.setState({ value: Util.isEmpty(newValue) ? "" : this.toNumber(newValue) });
 	}
 
 	handleUncertaintyChanged(newUncertainty) {
-		if (newUncertainty === this.state.uncertainty) {
+		if (Util.isEmpty(this.state.uncertainty) && Util.isEmpty(newUncertainty)) {
 			return;
+		} else if (Util.isNotEmpty(this.state.uncertainty) && Util.isEmpty(newUncertainty)) {
+			const value = { value: this.state.value, uncertainty: "" };
+
+			this.parameter.setValue({ value: value, cellIndex: this.cellIndex, validate: true });
+			this.parameter.fireValueChanged(this.cellIndex);
+
+			this.setState({ uncertainty: "" });
+
+			return;
+		} else if (Util.isNotEmpty(this.state.uncertainty) && Util.isNotEmpty(newUncertainty)) {
+			if (this.state.uncertainty == Number(newUncertainty)) {
+				return;
+			}
 		}
 
-		const value = { value: this.toNumber(this.state.value), uncertainty: this.toNumber(newUncertainty) };
+		const value = { value: this.state.value, uncertainty: this.toNumber(newUncertainty) };
 
-		this.setState({ uncertainty: newUncertainty });
+		this.setState({ uncertainty: this.toNumber(newUncertainty) });
 		this.parameter.setValue({ value: value, cellIndex: this.cellIndex, validate: true });
 
 		this.parameter.fireValueChanged(this.cellIndex);
@@ -1215,15 +1245,20 @@ export class SXNumeric extends React.Component {
 						</>
 					)}
 				</ClayInput.Group>
-				{this.parameter.dirty &&
-					(this.parameter.errorClass === ErrorClass.ERROR ||
-						this.parameter.errorClass === ErrorClass.WARNING) && (
-						<SXFormFieldFeedback
-							content={this.parameter.errorMessage}
-							spritemap={this.spritemap}
-							symbol="exclamation-full"
-						/>
-					)}
+				{this.parameter.dirty && this.parameter.hasError() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="exclamation-full"
+					/>
+				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
+					/>
+				)}
 			</>
 		);
 	}
@@ -1259,7 +1294,7 @@ export class SXNumeric extends React.Component {
 	}
 
 	render() {
-		if (this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD) {
+		if (this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD) {
 			return this.renderFormField();
 		} else {
 			return this.renderGridCell();
@@ -1304,7 +1339,7 @@ export class SXBoolean extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
 			}
@@ -1326,7 +1361,7 @@ export class SXBoolean extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
 			}
@@ -1353,7 +1388,7 @@ export class SXBoolean extends React.Component {
 	}
 
 	handleRadioClick(val) {
-		if (this.state.value === val) {
+		if (this.state.value == val) {
 			this.setValue(null);
 		}
 	}
@@ -1374,7 +1409,7 @@ export class SXBoolean extends React.Component {
 				style={{ ...this.style, ...this.parameter.style, justifyItems: "center" }}
 				ref={this.focusRef}
 			>
-				{this.parameter.viewType === BooleanParameter.ViewTypes.CHECKBOX && (
+				{this.parameter.viewType == BooleanParameter.ViewTypes.CHECKBOX && (
 					<ClayCheckbox
 						id={tagId}
 						name={tagName}
@@ -1388,7 +1423,7 @@ export class SXBoolean extends React.Component {
 						disabled={this.parameter.disabled}
 					/>
 				)}
-				{this.parameter.viewType === BooleanParameter.ViewTypes.DROPDOWN && (
+				{this.parameter.viewType == BooleanParameter.ViewTypes.DROPDOWN && (
 					<ClaySelect
 						id={tagId}
 						name={tagName}
@@ -1409,7 +1444,7 @@ export class SXBoolean extends React.Component {
 						/>
 					</ClaySelect>
 				)}
-				{this.parameter.viewType === BooleanParameter.ViewTypes.RADIO && (
+				{this.parameter.viewType == BooleanParameter.ViewTypes.RADIO && (
 					<div
 						className="form-group"
 						style={{ display: "flex", marginBottom: "5px", paddingLeft: "10px" }}
@@ -1418,7 +1453,7 @@ export class SXBoolean extends React.Component {
 							<ClayRadio
 								label={this.parameter.getTrueLabel()}
 								value={true}
-								checked={this.state.value === true}
+								checked={this.state.value == true}
 								disabled={this.parameter.disabled}
 								onClick={(e) => this.handleRadioClick(true)}
 								onChange={(e) => {
@@ -1431,7 +1466,7 @@ export class SXBoolean extends React.Component {
 							<ClayRadio
 								label={this.parameter.getFalseLabel()}
 								value={false}
-								checked={this.state.value === false}
+								checked={this.state.value == false}
 								disabled={this.parameter.disabled}
 								onClick={(e) => this.handleRadioClick(false)}
 								onChange={(e) => {
@@ -1442,7 +1477,7 @@ export class SXBoolean extends React.Component {
 						</div>
 					</div>
 				)}
-				{this.parameter.viewType === BooleanParameter.ViewTypes.TOGGLE && (
+				{this.parameter.viewType == BooleanParameter.ViewTypes.TOGGLE && (
 					<ClayToggle
 						id={tagId}
 						name={tagName}
@@ -1458,15 +1493,20 @@ export class SXBoolean extends React.Component {
 						sizing="md"
 					/>
 				)}
-				{this.parameter.dirty &&
-					(this.parameter.errorClass === ErrorClass.ERROR ||
-						this.parameter.errorClass === ErrorClass.WARNING) && (
-						<SXFormFieldFeedback
-							content={this.parameter.errorMessage}
-							spritemap={this.spritemap}
-							symbol="exclamation-full"
-						/>
-					)}
+				{this.parameter.dirty && this.parameter.hasError() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="exclamation-full"
+					/>
+				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
+					/>
+				)}
 			</div>
 		);
 	}
@@ -1482,7 +1522,7 @@ export class SXBoolean extends React.Component {
 				className={className}
 				style={{ ...this.style, ...this.parameter.style }}
 			>
-				{this.parameter.viewType === BooleanParameter.ViewTypes.CHECKBOX && (
+				{this.parameter.viewType == BooleanParameter.ViewTypes.CHECKBOX && (
 					<ClayCheckbox
 						id={tagId}
 						name={tagName}
@@ -1500,7 +1540,7 @@ export class SXBoolean extends React.Component {
 						ref={this.focusRef}
 					/>
 				)}
-				{this.parameter.viewType === BooleanParameter.ViewTypes.DROPDOWN && (
+				{this.parameter.viewType == BooleanParameter.ViewTypes.DROPDOWN && (
 					<div ref={this.focusRef}>
 						{this.parameter.renderTitle({
 							spritemap: this.spritemap
@@ -1528,7 +1568,7 @@ export class SXBoolean extends React.Component {
 						</ClaySelect>
 					</div>
 				)}
-				{this.parameter.viewType === BooleanParameter.ViewTypes.RADIO && (
+				{this.parameter.viewType == BooleanParameter.ViewTypes.RADIO && (
 					<div ref={this.focusRef}>
 						{this.parameter.renderTitle({
 							spritemap: this.spritemap
@@ -1546,7 +1586,7 @@ export class SXBoolean extends React.Component {
 								<ClayRadio
 									label={this.parameter.getTrueLabel()}
 									value={true}
-									checked={this.state.value === true}
+									checked={this.state.value == true}
 									disabled={this.parameter.disabled}
 									onClick={(e) => this.handleRadioClick(true)}
 									onChange={(e) => {
@@ -1559,7 +1599,7 @@ export class SXBoolean extends React.Component {
 								<ClayRadio
 									label={this.parameter.getFalseLabel()}
 									value={false}
-									checked={this.state.value === false}
+									checked={this.state.value == false}
 									disabled={this.parameter.disabled}
 									onClick={(e) => this.handleRadioClick(false)}
 									onChange={(e) => {
@@ -1571,7 +1611,7 @@ export class SXBoolean extends React.Component {
 						</div>
 					</div>
 				)}
-				{this.parameter.viewType === BooleanParameter.ViewTypes.TOGGLE && (
+				{this.parameter.viewType == BooleanParameter.ViewTypes.TOGGLE && (
 					<ClayToggle
 						id={tagId}
 						name={tagName}
@@ -1590,21 +1630,26 @@ export class SXBoolean extends React.Component {
 						ref={this.focusRef}
 					/>
 				)}
-				{this.parameter.dirty &&
-					(this.parameter.errorClass === ErrorClass.ERROR ||
-						this.parameter.errorClass === ErrorClass.WARNING) && (
-						<SXFormFieldFeedback
-							content={this.parameter.errorMessage}
-							spritemap={this.spritemap}
-							symbol="exclamation-full"
-						/>
-					)}
+				{this.parameter.dirty && this.parameter.hasError() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="exclamation-full"
+					/>
+				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
+					/>
+				)}
 			</div>
 		);
 	}
 
 	render() {
-		if (this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD) {
+		if (this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD) {
 			return this.renderFormField();
 		} else {
 			return this.renderGridCell();
@@ -1652,7 +1697,7 @@ export class SXSelect extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
 			}
@@ -1674,7 +1719,7 @@ export class SXSelect extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
 			}
@@ -1701,7 +1746,7 @@ export class SXSelect extends React.Component {
 	}
 
 	handleRadioClick(val) {
-		if (this.state.value === val) {
+		if (this.state.value == val) {
 			this.setValue("");
 		}
 	}
@@ -1727,7 +1772,11 @@ export class SXSelect extends React.Component {
 				value={this.state.value ? this.state.value : []}
 				items={this.parameter.options.map((option) => ({
 					key: option.value,
-					label: option.label[this.parameter.languageId],
+					label: Util.getTranslation(
+						option.label,
+						this.parameter.languageId,
+						SXSystem.getDefaultLanguageId()
+					),
 					value: option.value
 				}))}
 				multiple
@@ -1757,7 +1806,7 @@ export class SXSelect extends React.Component {
 				name={tagName}
 				style={{ paddingLeft: "10px" }}
 			>
-				{this.parameter.optionsPerRow === 0 && (
+				{this.parameter.optionsPerRow == 0 && (
 					<div style={{ display: "flex", overflowX: "auto" }}>
 						{optionRows.map((option) => (
 							<div
@@ -1771,7 +1820,11 @@ export class SXSelect extends React.Component {
 							>
 								<ClayCheckbox
 									key={option.value}
-									label={option.label[this.parameter.languageId]}
+									label={Util.getTranslation(
+										option.label,
+										this.parameter.languageId,
+										SXSystem.getDefaultLanguageId()
+									)}
 									checked={this.state.value.includes(option.value)}
 									onChange={(e) => {
 										e.stopPropagation();
@@ -1783,12 +1836,15 @@ export class SXSelect extends React.Component {
 						))}
 					</div>
 				)}
-
-				{this.parameter.optionsPerRow === 1 &&
+				{this.parameter.optionsPerRow == 1 &&
 					optionRows.map((option) => (
 						<ClayCheckbox
 							key={option.value}
-							label={option.label[this.parameter.languageId]}
+							label={Util.getTranslation(
+								option.label,
+								this.parameter.languageId,
+								SXSystem.getDefaultLanguageId()
+							)}
 							checked={this.state.value.includes(option.value)}
 							onChange={(e) => {
 								e.stopPropagation();
@@ -1813,7 +1869,11 @@ export class SXSelect extends React.Component {
 										}}
 									>
 										<ClayCheckbox
-											label={option.label[this.parameter.languageId]}
+											label={Util.getTranslation(
+												option.label,
+												this.parameter.languageId,
+												SXSystem.getDefaultLanguageId()
+											)}
 											checked={this.state.value.includes(option.value)}
 											onChange={(e) => {
 												e.stopPropagation();
@@ -1832,15 +1892,10 @@ export class SXSelect extends React.Component {
 
 	renderRadioGroup(tagId, tagName) {
 		const optionRows = Util.convertArrayToRows(this.parameter.options, this.parameter.optionsPerRow);
-		console.log(
-			"SXSelect.renderRadioGroup: ",
-			optionRows,
-			this.parameter.optionsPerRow,
-			typeof this.parameter.optionsPerRow
-		);
+
 		return (
 			<>
-				{this.parameter.optionsPerRow === 0 && (
+				{this.parameter.optionsPerRow == 0 && (
 					<div style={{ display: "inline-flex", overflowX: "auto", width: "100%" }}>
 						{optionRows.map((option) => (
 							<div
@@ -1854,9 +1909,13 @@ export class SXSelect extends React.Component {
 								}}
 							>
 								<ClayRadio
-									label={option.label[this.parameter.languageId]}
+									label={Util.getTranslation(
+										option.label,
+										this.parameter.languageId,
+										SXSystem.getDefaultLanguageId()
+									)}
 									value={option.value}
-									checked={this.state.value === option.value}
+									checked={this.state.value == option.value}
 									onClick={(e) => this.handleRadioClick(e.target.value)}
 									onChange={(e) => {
 										e.stopPropagation();
@@ -1869,13 +1928,17 @@ export class SXSelect extends React.Component {
 					</div>
 				)}
 
-				{this.parameter.optionsPerRow === 1 &&
+				{this.parameter.optionsPerRow == 1 &&
 					optionRows.map((option) => (
 						<ClayRadio
 							key={option.value}
-							label={option.label[this.parameter.languageId]}
+							label={Util.getTranslation(
+								option.label,
+								this.parameter.languageId,
+								SXSystem.getDefaultLanguageId()
+							)}
 							value={option.value}
-							checked={this.state.value === option.value}
+							checked={this.state.value == option.value}
 							onClick={(e) => this.handleRadioClick(e.target.value)}
 							onChange={(e) => {
 								e.stopPropagation();
@@ -1899,9 +1962,13 @@ export class SXSelect extends React.Component {
 									}}
 								>
 									<ClayRadio
-										label={option.label[this.parameter.languageId]}
+										label={Util.getTranslation(
+											option.label,
+											this.parameter.languageId,
+											SXSystem.getDefaultLanguageId()
+										)}
 										value={option.value}
-										checked={this.state.value === option.value}
+										checked={this.state.value == option.value}
 										onClick={(e) => this.handleRadioClick(e.target.value)}
 										onChange={(e) => {
 											e.stopPropagation();
@@ -1933,7 +2000,11 @@ export class SXSelect extends React.Component {
 					return (
 						<ClaySelect.Option
 							key={index}
-							label={option.label[this.parameter.languageId]}
+							label={Util.getTranslation(
+								option.label,
+								this.parameter.languageId,
+								SXSystem.getDefaultLanguageId()
+							)}
 							value={option.value}
 						/>
 					);
@@ -1952,23 +2023,28 @@ export class SXSelect extends React.Component {
 				style={{ ...this.style, ...this.parameter.style }}
 				className="input-group-sm"
 			>
-				{this.parameter.viewType === SelectParameter.ViewTypes.DROPDOWN && this.renderDropDown(tagId, tagName)}
-				{this.parameter.viewType === SelectParameter.ViewTypes.RADIO && (
+				{this.parameter.viewType == SelectParameter.ViewTypes.DROPDOWN && this.renderDropDown(tagId, tagName)}
+				{this.parameter.viewType == SelectParameter.ViewTypes.RADIO && (
 					<div style={{ width: "max-content" }}>{this.renderRadioGroup(tagId, tagName)}</div>
 				)}
-				{(this.parameter.viewType === SelectParameter.ViewTypes.CHECKBOX ||
-					this.parameter.viewType === SelectParameter.ViewTypes.LISTBOX) && (
+				{(this.parameter.viewType == SelectParameter.ViewTypes.CHECKBOX ||
+					this.parameter.viewType == SelectParameter.ViewTypes.LISTBOX) && (
 					<div style={{ width: "max-content" }}>{this.renderCheckBoxGroup(tagId, tagName)}</div>
 				)}
-				{this.parameter.dirty &&
-					(this.parameter.errorClass === ErrorClass.ERROR ||
-						this.parameter.errorClass === ErrorClass.WARNING) && (
-						<SXFormFieldFeedback
-							content={this.parameter.errorMessage}
-							spritemap={this.spritemap}
-							symbol="exclamation-full"
-						/>
-					)}
+				{this.parameter.dirty && this.parameter.hasError() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="exclamation-full"
+					/>
+				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
+					/>
+				)}
 			</div>
 		);
 	}
@@ -1997,32 +2073,36 @@ export class SXSelect extends React.Component {
 					name={tagName}
 					style={{ paddingLeft: "10px" }}
 				>
-					{this.parameter.viewType === SelectParameter.ViewTypes.DROPDOWN &&
+					{this.parameter.viewType == SelectParameter.ViewTypes.DROPDOWN &&
 						this.renderDropDown(tagId, tagName)}
-					{this.parameter.viewType === SelectParameter.ViewTypes.RADIO &&
+					{this.parameter.viewType == SelectParameter.ViewTypes.RADIO &&
 						this.renderRadioGroup(tagId, tagName)}
-					{this.parameter.viewType === SelectParameter.ViewTypes.CHECKBOX &&
+					{this.parameter.viewType == SelectParameter.ViewTypes.CHECKBOX &&
 						this.renderCheckBoxGroup(tagId, tagName)}
-					{this.parameter.viewType === SelectParameter.ViewTypes.LISTBOX &&
-						this.renderListBox(tagId, tagName)}
-					{this.parameter.dirty &&
-						(this.parameter.errorClass === ErrorClass.ERROR ||
-							this.parameter.errorClass === ErrorClass.WARNING) && (
-							<SXFormFieldFeedback
-								content={this.parameter.errorMessage}
-								spritemap={this.spritemap}
-								symbol="exclamation-full"
-							/>
-						)}
+					{this.parameter.viewType == SelectParameter.ViewTypes.LISTBOX && this.renderListBox(tagId, tagName)}
+					{this.parameter.dirty && this.parameter.hasError() && (
+						<SXFormFieldFeedback
+							content={this.parameter.errorMessage}
+							spritemap={this.spritemap}
+							symbol="exclamation-full"
+						/>
+					)}
+					{this.parameter.dirty && this.parameter.hasWarning() && (
+						<SXFormFieldFeedback
+							content={this.parameter.errorMessage}
+							spritemap={this.spritemap}
+							symbol="warning"
+						/>
+					)}
 				</div>
 			</div>
 		);
 	}
 
 	render() {
-		if (this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD) {
+		if (this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD) {
 			return this.renderFormField();
-		} else if (this.parameter.displayType === Parameter.DisplayTypes.GRID_CELL) {
+		} else if (this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			return this.renderGridCell();
 		} else {
 			return <></>;
@@ -2069,7 +2149,7 @@ export class SXDualListBox extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
 			}
@@ -2091,7 +2171,7 @@ export class SXDualListBox extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
 			}
@@ -2191,15 +2271,18 @@ export class SXDualListBox extends React.Component {
 							style={{ marginBottom: "5px" }}
 						/>
 						{this.parameter.dirty && this.parameter.hasError() && (
-							<ClayForm.FeedbackGroup>
-								<ClayForm.FeedbackItem>
-									<ClayForm.FeedbackIndicator
-										spritemap={this.spritemap}
-										symbol="exclamation-full"
-									/>
-									{this.parameter.errorMessage}
-								</ClayForm.FeedbackItem>
-							</ClayForm.FeedbackGroup>
+							<SXFormFieldFeedback
+								content={this.parameter.errorMessage}
+								spritemap={this.spritemap}
+								symbol="exclamation-full"
+							/>
+						)}
+						{this.parameter.dirty && this.parameter.hasWarning() && (
+							<SXFormFieldFeedback
+								content={this.parameter.errorMessage}
+								spritemap={this.spritemap}
+								symbol="warning"
+							/>
 						)}
 					</div>
 					<div className="btn-group-vertical sx-dual-listbox-actions sx-dual-listbox-item">
@@ -2241,9 +2324,9 @@ export class SXDualListBox extends React.Component {
 	}
 
 	render() {
-		if (this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD) {
+		if (this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD) {
 			return this.renderFormField();
-		} else if (this.parameter.displayType === Parameter.DisplayTypes.GRID_CELL) {
+		} else if (this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			return this.renderGridCell();
 		} else {
 			return <></>;
@@ -2294,7 +2377,7 @@ export class SXFile extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
 			}
@@ -2316,7 +2399,7 @@ export class SXFile extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
 			}
@@ -2359,7 +2442,7 @@ export class SXFile extends React.Component {
 
 		let files = this.state.value
 			.filter((fileItem) => {
-				return fileItem.fileId === 0 && fileItem.name !== fileInfo.name;
+				return fileItem.fileId == 0 && fileItem.name !== fileInfo.name;
 			})
 			.map((fileItem) => fileItem.file);
 
@@ -2381,7 +2464,7 @@ export class SXFile extends React.Component {
 
 				let files = this.state.value
 					.filter((fileItem) => {
-						return fileItem.fileId === 0 && fileItem.name !== fileInfo.name;
+						return fileItem.fileId == 0 && fileItem.name !== fileInfo.name;
 					})
 					.map((fileItem) => fileItem.file);
 
@@ -2510,6 +2593,20 @@ export class SXFile extends React.Component {
 					</div>
 				)}
 				{this.renderFileManager()}
+				{this.parameter.dirty && this.parameter.hasError() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="exclamation-full"
+					/>
+				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
+					/>
+				)}
 			</div>
 		);
 	}
@@ -2541,14 +2638,14 @@ export class SXFile extends React.Component {
 		const tagId = this.parameter.tagId;
 		const tagName = tagId;
 
-		if (this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD) {
+		if (this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD) {
 			return (
 				<>
 					{this.renderFormField()}
 					{this.renderUnderConstruction()}
 				</>
 			);
-		} else if (this.parameter.displayType === Parameter.DisplayTypes.GRID_CELL) {
+		} else if (this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			return (
 				<>
 					{this.renderGridCell()}
@@ -2581,7 +2678,7 @@ export class SXAddress extends React.Component {
 			street: value.street ?? "",
 			address: value.address ?? "",
 			searched: false,
-			underConstruction: this.parameter.viewType === AddressParameter.ViewTypes.ONE_LINE ? true : false
+			underConstruction: this.parameter.viewType == AddressParameter.ViewTypes.ONE_LINE ? true : false
 		};
 	}
 
@@ -2609,7 +2706,7 @@ export class SXAddress extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
 			}
@@ -2631,7 +2728,7 @@ export class SXAddress extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
 			}
@@ -2656,11 +2753,11 @@ export class SXAddress extends React.Component {
 			height: 600,
 			oncomplete: (data) => {
 				const street =
-					data.userSelectionType === "R"
-						? this.languageId === "ko-KR"
+					data.userSelectionType == "R"
+						? this.languageId == "ko-KR"
 							? data.address
 							: data.addressEnglish
-						: this.languageId === "ko-KR"
+						: this.languageId == "ko-KR"
 						? data.roadAddres
 						: data.roadAddressEnglish;
 
@@ -2772,8 +2869,8 @@ export class SXAddress extends React.Component {
 						<pre>{this.parameter.getDefinition()}</pre>
 					</div>
 				)}
-				{this.parameter.viewType === AddressParameter.ViewTypes.ONE_LINE && this.renderOneLineUI()}
-				{this.parameter.viewType === AddressParameter.ViewTypes.INLINE && (
+				{this.parameter.viewType == AddressParameter.ViewTypes.ONE_LINE && this.renderOneLineUI()}
+				{this.parameter.viewType == AddressParameter.ViewTypes.INLINE && (
 					<ClayInput.Group
 						small
 						style={{ marginLeft: "10px" }}
@@ -2840,7 +2937,7 @@ export class SXAddress extends React.Component {
 						</ClayInput.GroupItem>
 					</ClayInput.Group>
 				)}
-				{this.parameter.viewType === AddressParameter.ViewTypes.BLOCK && (
+				{this.parameter.viewType == AddressParameter.ViewTypes.BLOCK && (
 					<div style={{ marginLeft: "10px" }}>
 						<div style={{ display: "block" }}>
 							<span>{this.state.zipcode}</span>
@@ -2868,15 +2965,20 @@ export class SXAddress extends React.Component {
 						/>
 					</div>
 				)}
-				{this.parameter.dirty &&
-					(this.parameter.errorClass === ErrorClass.ERROR ||
-						this.parameter.errorClass === ErrorClass.WARNING) && (
-						<SXFormFieldFeedback
-							content={this.parameter.errorMessage}
-							spritemap={this.spritemap}
-							symbol="exclamation-full"
-						/>
-					)}
+				{this.parameter.dirty && this.parameter.hasError() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="exclamation-full"
+					/>
+				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
+					/>
+				)}
 			</div>
 		);
 	}
@@ -2884,8 +2986,8 @@ export class SXAddress extends React.Component {
 	render() {
 		return (
 			<>
-				{this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD && this.renderFormField()}
-				{this.parameter.displayType === Parameter.DisplayTypes.GRID_CELL && this.renderGridCell()}
+				{this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD && this.renderFormField()}
+				{this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL && this.renderGridCell()}
 				{this.state.underConstruction && (
 					<SXModalDialog
 						header={Util.translate("sorry")}
@@ -2934,7 +3036,7 @@ export class SXDate extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
 			}
@@ -2956,7 +3058,7 @@ export class SXDate extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
 			}
@@ -3031,14 +3133,28 @@ export class SXDate extends React.Component {
 					)}
 					<div style={{ paddingLeft: "10px" }}>{this.renderDatePicker()}</div>
 				</ClayForm.Group>
+				{this.parameter.dirty && this.parameter.hasError() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="exclamation-full"
+					/>
+				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
+					/>
+				)}
 			</div>
 		);
 	}
 
 	render() {
-		if (this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD) {
+		if (this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD) {
 			return this.renderFormField();
-		} else if (this.parameter.displayType === Parameter.DisplayTypes.GRID_CELL) {
+		} else if (this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			return this.renderGridCell();
 		} else {
 			return <></>;
@@ -3082,7 +3198,7 @@ export class SXPhone extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
 			}
@@ -3104,7 +3220,7 @@ export class SXPhone extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
 			}
@@ -3224,11 +3340,18 @@ export class SXPhone extends React.Component {
 						/>
 					</ClayInput.GroupItem>
 				</ClayInput.Group>
-				{this.parameter.dirty && this.parameter.hasError(this.cellIndex) && (
+				{this.parameter.dirty && this.parameter.hasError() && (
 					<SXFormFieldFeedback
 						content={this.parameter.errorMessage}
 						spritemap={this.spritemap}
 						symbol="exclamation-full"
+					/>
+				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
 					/>
 				)}
 			</>
@@ -3257,7 +3380,7 @@ export class SXPhone extends React.Component {
 	}
 
 	render() {
-		if (this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD) {
+		if (this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD) {
 			return this.renderFormField();
 		} else {
 			return <></>;
@@ -3299,7 +3422,7 @@ export class SXEMail extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
 			}
@@ -3321,7 +3444,7 @@ export class SXEMail extends React.Component {
 		}
 
 		if (this.parameter.isGridCell(this.cellIndex)) {
-			if (dataPacket.cellIndex === this.cellIndex) {
+			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
 			}
@@ -3424,6 +3547,13 @@ export class SXEMail extends React.Component {
 						symbol="exclamation-full"
 					/>
 				)}
+				{this.parameter.dirty && this.parameter.hasWarning() && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
+					/>
+				)}
 			</div>
 		);
 	}
@@ -3457,9 +3587,9 @@ export class SXEMail extends React.Component {
 	}
 
 	render() {
-		if (this.parameter.displayType === Parameter.DisplayTypes.FORM_FIELD) {
+		if (this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD) {
 			return this.renderFormField();
-		} else if (this.parameter.displayType === Parameter.DisplayTypes.GRID_CELL) {
+		} else if (this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			return this.renderGridCell();
 		} else {
 			return <></>;
@@ -3575,7 +3705,7 @@ export class SXGroup extends React.Component {
 				style={this.style}
 				ref={this.focusRef}
 			>
-				{this.parameter.membersPerRow === 0 && (
+				{this.parameter.membersPerRow == 0 && (
 					<div
 						className=""
 						style={{ display: "flex", overflowX: "auto" }}
@@ -3595,7 +3725,7 @@ export class SXGroup extends React.Component {
 						))}
 					</div>
 				)}
-				{this.parameter.membersPerRow === 1 && rows.map((field) => this.renderMember(field))}
+				{this.parameter.membersPerRow == 1 && rows.map((field) => this.renderMember(field))}
 				{this.parameter.membersPerRow > 1 &&
 					rows.map((row, rowIndex) => (
 						<div
@@ -3936,7 +4066,7 @@ export class SXGrid extends React.Component {
 					<td>
 						{!this.parameter.disabled && (
 							<DropDown
-								active={this.state.activeDropdown && this.state.selectedRow === rowIndex}
+								active={this.state.activeDropdown && this.state.selectedRow == rowIndex}
 								trigger={<div style={{ textAlign: "center" }}>{rowIndex + 1}</div>}
 								onActiveChange={(val) => {
 									this.setState({ activeDropdown: val, selectedRow: rowIndex });

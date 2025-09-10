@@ -4,7 +4,7 @@ import { ErrorClass, Event, ParamProperty, ParamType, ValidationRule } from "../
 import { SXBoolean, SXInput, SXLocalizedInput } from "../../stationx/form";
 import LocalizedInput from "@clayui/localized-input";
 import { BooleanParameter, Parameter, StringParameter } from "../../stationx/parameter";
-import { SXModalDialog } from "../../stationx/modal";
+import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 
 class SXDSBuilderBasicPropertiesPanel extends React.Component {
 	constructor(props) {
@@ -19,7 +19,9 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		this.spritemap = props.spritemap;
 
 		this.state = {
-			paramCodeDuplicatedErrorDlg: false
+			confirmDlgState: false,
+			confirmDlgBody: <></>,
+			confirmDlgHeader: <></>
 		};
 
 		this.fields = {
@@ -154,9 +156,9 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					tooltip: Util.getTranslationObject(this.languageId, "show-description-tooltip"),
 					value: this.workingParam.showDefinition,
 					disabled:
-						this.workingParam.paramType === ParamType.BOOLEAN &&
-						(this.workingParam.viewType === BooleanParameter.ViewTypes.CHECKBOX ||
-							this.workingParam.viewType === BooleanParameter.ViewTypes.TOGGLE)
+						this.workingParam.paramType == ParamType.BOOLEAN &&
+						(this.workingParam.viewType == BooleanParameter.ViewTypes.CHECKBOX ||
+							this.workingParam.viewType == BooleanParameter.ViewTypes.TOGGLE)
 				}
 			),
 			tooltip: Parameter.createParameter(
@@ -228,21 +230,22 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 				dataPacket.parameter.paramCode
 			);
 		} else {
-			this.workingParam[dataPacket.paramCode] = dataPacket.parameter.getValue();
 			this.workingParam.clearError(dataPacket.parameter.paramCode);
 		}
 
+		this.workingParam[dataPacket.paramCode] = dataPacket.parameter.getValue();
+
 		/*
 			if (
-				(this.workingParam.paramType === paramType.GROUP || this.workingParam.paramType === paramType.GRID) &&
-				(dataPacket.paramCode === ParamProperty.PARAM_CODE ||
-					dataPacket.paramCode === ParamProperty.PARAM_VERSION)
+				(this.workingParam.paramType == paramType.GROUP || this.workingParam.paramType == paramType.GRID) &&
+				(dataPacket.paramCode == ParamProperty.PARAM_CODE ||
+					dataPacket.paramCode == ParamProperty.PARAM_VERSION)
 			) {
 				this.workingParam.updateMemberParents();
 			}
 				*/
 
-		if (dataPacket.paramCode === ParamProperty.PARAM_CODE) {
+		if (dataPacket.paramCode == ParamProperty.PARAM_CODE && !this.workingParam.hasError()) {
 			if (this.dataStructure.checkDuplicateParam(this.workingParam)) {
 				this.fields.paramCode.setError(
 					ErrorClass.ERROR,
@@ -258,15 +261,17 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					"paramCode"
 				);
 
-				this.setState({ paramCodeDuplicatedErrorDlg: true });
+				this.setState({
+					confirmDlgState: true,
+					confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+					confirmDlgBody: Util.translate("parameter-code-must-be-unique")
+				});
 				return;
-			} else {
-				this.workingParam.clearError(ParamProperty.PARAM_CODE);
 			}
 		}
 
 		if (this.workingParam.isRendered()) {
-			if (this.workingParam.displayType === Parameter.DisplayTypes.GRID_CELL) {
+			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
 				const gridParam = this.dataStructure.findParameter({
 					paramCode: this.workingParam.parent.code,
 					paramVersion: this.workingParam.parent.version,
@@ -299,14 +304,14 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 						spritemap: this.spritemap
 					})
 				)}
-				{this.state.paramCodeDuplicatedErrorDlg && (
+				{this.state.confirmDlgState && (
 					<SXModalDialog
-						header="Error"
-						body={Util.translate("parameter-code-must-be-unique")}
+						header={this.state.confirmDlgHeader}
+						body={this.state.confirmDlgBody}
 						buttons={[
 							{
 								onClick: () => {
-									this.setState({ paramCodeDuplicatedErrorDlg: false });
+									this.setState({ confirmDlgState: false });
 								},
 								label: Util.translate("ok"),
 								displayType: "primary"

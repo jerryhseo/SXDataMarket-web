@@ -19,7 +19,7 @@ import { Button, Icon } from "@clayui/core";
 import { ClayButtonWithIcon } from "@clayui/button";
 import SXDSBuilderPropertiesPanel from "./properties-panel";
 import SXDataStructurePreviewer from "./preview-panel";
-import { SXModalDialog } from "../../stationx/modal";
+import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { UnderConstruction } from "../../stationx/common";
 import { DataType, DataTypeStructureLink, SXDataTypeStructureLink } from "../DataType/datatype";
 import { SXAutoComplete, SXLabeledText } from "../../stationx/form";
@@ -295,7 +295,17 @@ class DataStructureBuilder extends React.Component {
 		}
 
 		const selectedParam = dataPacket.parameter;
-		if (selectedParam === this.workingParam) {
+		if (selectedParam == this.workingParam) {
+			return;
+		}
+
+		if (this.workingParam.hasError()) {
+			this.setState({
+				confirmDlgState: true,
+				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
+			});
+
 			return;
 		}
 
@@ -305,7 +315,7 @@ class DataStructureBuilder extends React.Component {
 
 		this.workingParam = selectedParam;
 
-		if (selectedParam.displayType === Parameter.DisplayTypes.GRID_CELL) {
+		if (selectedParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			const gridParam = this.dataStructure.findParameter({
 				paramCode: this.workingParam.parent.code,
 				paramVersion: this.workingParam.parent.version,
@@ -323,13 +333,13 @@ class DataStructureBuilder extends React.Component {
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
 
 		if (
-			dataPacket.paramType === ParamType.MATRIX ||
-			dataPacket.paramType === ParamType.DUALLIST ||
-			dataPacket.paramType === ParamType.TABLE ||
-			dataPacket.paramType === ParamType.CALCULATOR ||
-			dataPacket.paramType === ParamType.IMAGE ||
-			dataPacket.paramType === ParamType.LINKER ||
-			dataPacket.paramType === ParamType.REFERENCE
+			dataPacket.paramType == ParamType.MATRIX ||
+			dataPacket.paramType == ParamType.DUALLIST ||
+			dataPacket.paramType == ParamType.TABLE ||
+			dataPacket.paramType == ParamType.CALCULATOR ||
+			dataPacket.paramType == ParamType.IMAGE ||
+			dataPacket.paramType == ParamType.LINKER ||
+			dataPacket.paramType == ParamType.REFERENCE
 		) {
 			this.setState({ underConstruction: true });
 			return;
@@ -350,17 +360,28 @@ class DataStructureBuilder extends React.Component {
 		const dataPacket = e.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
 
+		if (this.workingParam.hasError()) {
+			this.setState({
+				confirmDlgState: true,
+				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
+			});
+
+			return;
+		}
+
 		const copied = this.workingParam.copy();
 		this.workingParam.focused = false;
 		this.workingParam.refreshKey();
 		copied.focused = true;
 		copied.refreshKey();
 
-		const group = this.dataStructure.findParameter({
-			paramCode: copied.parentCode,
-			paramVersion: copied.paramVersion,
-			descendant: true
-		});
+		const group =
+			this.dataStructure.findParameter({
+				paramCode: copied.parentCode,
+				paramVersion: copied.paramVersion,
+				descendant: true
+			}) ?? this.dataStructure;
 
 		group.insertMember(copied, this.workingParam.order);
 
@@ -374,6 +395,16 @@ class DataStructureBuilder extends React.Component {
 		const dataPacket = e.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
 
+		if (this.workingParam.hasError()) {
+			this.setState({
+				confirmDlgState: true,
+				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
+			});
+
+			return;
+		}
+
 		this.setState({
 			confirmParamDeleteDlg: true,
 			confirmDlgBody: <div>{Util.translate("are-you-sure-delete", this.workingParam.label)}</div>
@@ -383,7 +414,7 @@ class DataStructureBuilder extends React.Component {
 	listenerFieldValueChanged = (event) => {
 		const dataPacket = event.dataPacket;
 
-		if (!(dataPacket.targetPortlet === this.namespace && dataPacket.targetFormId === this.formIds.dsbuilderId)) {
+		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.formIds.dsbuilderId)) {
 			return;
 		}
 
@@ -403,7 +434,7 @@ class DataStructureBuilder extends React.Component {
 						dataStructureVersion: this.dataStructure.paramVersion
 					},
 					successFunc: (result) => {
-						if (Util.isEmpty(result) || this.dataStructure.dataStructureId === result.dataStructureId) {
+						if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
 							this.dataStructure.paramCode = newCode;
 							this.dataStructure.updateMemberParents();
 							//this.structureCode.clearError();
@@ -435,7 +466,7 @@ class DataStructureBuilder extends React.Component {
 						dataStructureVersion: this.dataStructure.paramVersion
 					},
 					successFunc: (result) => {
-						if (Util.isEmpty(result) || this.dataStructure.dataStructureId === result.dataStructureId) {
+						if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
 							this.dataStructure.updateMemberParents();
 							this.structureVersion.clearError();
 						} else {
@@ -487,7 +518,7 @@ class DataStructureBuilder extends React.Component {
 		//console.log("dataTypeId: " + this.dataTypeId);
 		//console.log("dataStructureId: " + this.dataStructureId);
 
-		if (this.dataTypeId === 0 && this.dataStructureId === 0) {
+		if (this.dataTypeId == 0 && this.dataStructureId == 0) {
 			this.dataType = new DataType(this.languageId, this.availableLanguageIds);
 			this.typeStructureLink = new DataTypeStructureLink(
 				this.languageId,
@@ -674,9 +705,9 @@ class DataStructureBuilder extends React.Component {
 	}
 
 	render() {
-		if (this.state.loadingStatus === LoadingStatus.PENDING) {
+		if (this.state.loadingStatus == LoadingStatus.PENDING) {
 			return <h3>Loading....</h3>;
-		} else if (this.state.loadingStatus === LoadingStatus.FAIL) {
+		} else if (this.state.loadingStatus == LoadingStatus.FAIL) {
 			return <h3>{this.loadingFailMessage}</h3>;
 		}
 
@@ -719,7 +750,7 @@ class DataStructureBuilder extends React.Component {
 								/>
 								{Util.translate("save")}
 							</Button>
-							{this.editPhase === "update" && (
+							{this.editPhase == "update" && (
 								<Button
 									displayType="warning"
 									onClick={() => {}}
@@ -895,7 +926,7 @@ class DataStructureBuilder extends React.Component {
 							/>
 							{Util.translate("save")}
 						</Button>
-						{this.editPhase === "update" && (
+						{this.editPhase == "update" && (
 							<Button
 								displayType="warning"
 								onClick={() => {}}
@@ -947,7 +978,7 @@ class DataStructureBuilder extends React.Component {
 
 										const workingParam =
 											group.firstMember ??
-											(group.paramCode === GroupParameter.ROOT_GROUP
+											(group.paramCode == GroupParameter.ROOT_GROUP
 												? Parameter.createParameter(
 														this.namespace,
 														this.formIds.dsbuilderId,

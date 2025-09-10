@@ -403,7 +403,7 @@ export class SXSearchResultConainer extends React.Component {
 			>
 				<Head items={this.columns}>
 					{(column) => {
-						if (column.id === "actions") {
+						if (column.id == "actions") {
 							return (
 								<Cell
 									key={column.id}
@@ -435,7 +435,7 @@ export class SXSearchResultConainer extends React.Component {
 						return (
 							<Row key={index}>
 								{row.map((column) => {
-									if (column.id === "actions") {
+									if (column.id == "actions") {
 										return (
 											<Cell
 												key={column.id}
@@ -474,11 +474,11 @@ export class SXSearchResultConainer extends React.Component {
 	render() {
 		if (this.searchResults.length < 1) {
 			return <NotFound message={Util.translate("no-datatype-found")} />;
-		} else if (this.displayStyle === DisplayStyles.TABLE) {
+		} else if (this.displayStyle == DisplayStyles.TABLE) {
 			return this.renderTable();
-		} else if (this.displayStyle === DisplayStyles.LIST) {
+		} else if (this.displayStyle == DisplayStyles.LIST) {
 			return <></>;
-		} else if (this.displayStyle === DisplayStyles.CARD) {
+		} else if (this.displayStyle == DisplayStyles.CARD) {
 			return <></>;
 		}
 	}

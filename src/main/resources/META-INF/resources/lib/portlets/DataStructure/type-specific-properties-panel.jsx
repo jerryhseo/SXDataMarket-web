@@ -125,7 +125,7 @@ class SXGroupBuilder extends React.Component {
 		if (dataPacket.targetPortlet !== this.namespace) {
 			return;
 		} else {
-			if (dataPacket.targetFormId === this.formId) {
+			if (dataPacket.targetFormId == this.formId) {
 				console.log(
 					"SXGroupBuilder SX_FIELD_VALUE_CHANGED: ",
 					dataPacket,
@@ -257,7 +257,7 @@ class SXGroupBuilder extends React.Component {
 	}
 
 	handleMemberSelected = (member) => {
-		if (member === this.state.selectedMember) {
+		if (member == this.state.selectedMember) {
 			return;
 		}
 
@@ -358,7 +358,7 @@ class SXGroupBuilder extends React.Component {
 						]}
 					>
 						{(column) => {
-							if (column.id === "actions") {
+							if (column.id == "actions") {
 								return (
 									<Cell
 										key={column.id}
@@ -410,7 +410,7 @@ class SXGroupBuilder extends React.Component {
 								});
 							}
 
-							const selected = member === this.state.selectedMember;
+							const selected = member == this.state.selectedMember;
 							const selectedColor = "#fae6ecff";
 
 							return (
@@ -530,7 +530,7 @@ class SXSelectOptionBuilder extends React.Component {
 			dataPacket.parameter.getValue()
 		);
 
-		if (dataPacket.paramCode === "optionLabel") {
+		if (dataPacket.paramCode == "optionLabel") {
 			this.selectedOption.label = this.fieldOptionLabel.getValue();
 		} else {
 			this.selectedOption.value = this.fieldOptionValue.getValue();
@@ -592,7 +592,7 @@ class SXSelectOptionBuilder extends React.Component {
 	handleAddOption() {
 		console.log("handleAddOption: ", this.selectedOption);
 		const optionLength = this.workingParam.addOption(this.selectedOption);
-		if (optionLength.length === 0) {
+		if (optionLength.length == 0) {
 			return;
 		}
 
@@ -679,7 +679,7 @@ class SXSelectOptionBuilder extends React.Component {
 						]}
 					>
 						{(column) => {
-							if (column.id === "actions") {
+							if (column.id == "actions") {
 								return (
 									<Cell
 										key={column.id}
@@ -739,7 +739,7 @@ class SXSelectOptionBuilder extends React.Component {
 								});
 							}
 
-							const selected = option === this.selectedOption;
+							const selected = option == this.selectedOption;
 							const selectedColor = "#fae6ecff";
 							return (
 								<Row
@@ -1084,7 +1084,7 @@ class SXNumericTypeOptionForm extends React.Component {
 
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
-		if (dataPacket.paramCode === ParamProperty.IS_INTEGER) {
+		if (dataPacket.paramCode == ParamProperty.IS_INTEGER) {
 			this.workingParam.decimalPlaces = this.workingParam.isInteger ? 0 : 1;
 			this.setState({ isInteger: this.workingParam.isInteger });
 		}
@@ -1108,7 +1108,7 @@ class SXNumericTypeOptionForm extends React.Component {
 		return (
 			<>
 				{fields.map((field) => {
-					if (field.paramCode === ParamProperty.DECIMAL_PLACES && !this.state.isInteger) {
+					if (field.paramCode == ParamProperty.DECIMAL_PLACES && !this.state.isInteger) {
 						return field.renderField({ spritemap: this.spritemap });
 					} else if (field.paramCode !== ParamProperty.DECIMAL_PLACES) {
 						return field.renderField({ spritemap: this.spritemap });
@@ -1189,9 +1189,27 @@ class SXSelectTypeOptionForm extends React.Component {
 					displayName: Util.getTranslationObject(this.languageId, "options-per-row"),
 					tooltip: Util.getTranslationObject(this.languageId, "options-per-row-tooltip"),
 					defaultValue: 0,
-					value: this.workingParam.optionsPerRow,
-					min: "0",
-					max: this.workingParam.optionCount.toString()
+					validation: {
+						min: {
+							value: 0,
+							message: Util.getTranslationObject(
+								this.languageId,
+								"options-per-row-must-be-larger-than-or-equal-to",
+								0
+							),
+							errorClass: ErrorClass.ERROR
+						},
+						max: {
+							value: 10,
+							message: Util.getTranslationObject(
+								this.languageId,
+								"options-per-row-must-be-smaller-than-or-equal-to",
+								10
+							),
+							errorClass: ErrorClass.ERROR
+						}
+					},
+					value: this.workingParam.optionsPerRow
 				}
 			)
 		};
@@ -1199,8 +1217,8 @@ class SXSelectTypeOptionForm extends React.Component {
 
 	displayOptionsPerRow() {
 		return (
-			this.workingParam.viewType === BooleanParameter.ViewTypes.CHECKBOX ||
-			this.workingParam.viewType === BooleanParameter.ViewTypes.RADIO
+			this.workingParam.viewType == BooleanParameter.ViewTypes.CHECKBOX ||
+			this.workingParam.viewType == BooleanParameter.ViewTypes.RADIO
 		);
 	}
 
@@ -1600,14 +1618,61 @@ class SXDateTypeOptionForm extends React.Component {
 			return;
 		}
 
-		/*
 		console.log(
-			"SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ",
+			"SXDateTypeOptionForm SX_FIELD_VALUE_CHANGED: ",
 			dataPacket,
 			this.workingParam,
 			this.fields[dataPacket.paramCode].getValue()
 		);
-		*/
+
+		switch (dataPacket.paramCode) {
+			case "startYear": {
+				const endYear = Number(this.fields.endYear.getValue());
+				const startYear = Number(this.fields.startYear.getValue());
+
+				if (endYear && endYear < startYear) {
+					dataPacket.parameter.setError(
+						ErrorClass.ERROR,
+						Util.translate("start-year-must-be-smaller-than-end-year")
+					);
+
+					Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
+						targetFormId: this.formId,
+						paramCode: dataPacket.paramCode,
+						paramVersion: dataPacket.paramVersion
+					});
+
+					this.workingParam.setError(
+						ErrorClass.ERROR,
+						Util.translate("start-year-must-be-smaller-than-end-year")
+					);
+				}
+				break;
+			}
+			case "endYear": {
+				const endYear = Number(this.fields.endYear.getValue());
+				const startYear = Number(this.fields.startYear.getValue());
+
+				if (startYear && endYear < startYear) {
+					dataPacket.parameter.setError(
+						ErrorClass.ERROR,
+						Util.translate("end-year-must-be-larger-than-start-year")
+					);
+
+					Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
+						targetFormId: this.formId,
+						paramCode: dataPacket.paramCode,
+						paramVersion: dataPacket.paramVersion
+					});
+
+					this.workingParam.setError(
+						ErrorClass.ERROR,
+						Util.translate("end-year-must-be-larger-than-start-year")
+					);
+				}
+				break;
+			}
+		}
 
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
@@ -1699,6 +1764,26 @@ class SXGroupTypeOptionForm extends React.Component {
 				displayName: Util.getTranslationObject(this.languageId, "members-per-row"),
 				tooltip: Util.getTranslationObject(this.languageId, "members-per-row-tooltip"),
 				defaultValue: 1,
+				validation: {
+					min: {
+						value: 0,
+						message: Util.getTranslationObject(
+							this.languageId,
+							"members-per-row-must-be-larger-than-or-equal-to",
+							0
+						),
+						errorClass: ErrorClass.ERROR
+					},
+					max: {
+						value: 10,
+						message: Util.getTranslationObject(
+							this.languageId,
+							"members-per-row-must-be-smaller-than-or-equal-to",
+							10
+						),
+						errorClass: ErrorClass.ERROR
+					}
+				},
 				value: this.workingParam.membersPerRow
 			}
 		);
@@ -1765,7 +1850,7 @@ class SXGroupTypeOptionForm extends React.Component {
 	render() {
 		let memberDisplayType = Parameter.DisplayTypes.FORM_FIELD;
 
-		if (this.workingParam.viewType === GroupParameter.ViewTypes.TABLE) {
+		if (this.workingParam.viewType == GroupParameter.ViewTypes.TABLE) {
 			memberDisplayType = Parameter.DisplayTypes.TABLE_ROW;
 		}
 

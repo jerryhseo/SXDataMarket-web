@@ -123,8 +123,6 @@ export class DataStructure extends GroupParameter {
 
 	addMember(member) {
 		super.addMember(member);
-
-		member.parent = {};
 	}
 
 	getSiblingParameters({ groupCode = "", groupVersion = "", paramCode, paramVersion }) {
@@ -137,7 +135,7 @@ export class DataStructure extends GroupParameter {
 			siblings = group.members;
 		}
 
-		return siblings.filter((param) => !(param.paramCode === paramCode && param.paramVersion === paramVersion));
+		return siblings.filter((param) => !(param.paramCode == paramCode && param.paramVersion == paramVersion));
 	}
 
 	getSiblingGroups({ groupCode = "", groupVersion = "", paramCode, paramVersion }) {
@@ -223,7 +221,7 @@ export class DataStructure extends GroupParameter {
 				items = items.concat(this.getJumpToItems(param, basis));
 			}
 
-			basis === DataStructure.JumpToBasis.DISPLAY_NAME
+			basis == DataStructure.JumpToBasis.DISPLAY_NAME
 				? items.push({ name: param.paramCode, version: param.paramVersion })
 				: items.push({ name: param.label, version: param.paramVersion });
 		});

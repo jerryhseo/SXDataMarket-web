@@ -310,7 +310,7 @@ export class Parameter {
 		}
 	}
 	get disabled() {
-		return this.state === Constant.State.DISABLED;
+		return this.state == Constant.State.DISABLED;
 	}
 	get definition() {
 		return this.#definition;
@@ -379,7 +379,7 @@ export class Parameter {
 		return !!this.validation.custom;
 	}
 	get active() {
-		return this.state === Constant.State.ACTIVE || this.state === Constant.State.DISABLED;
+		return this.state == Constant.State.ACTIVE || this.state == Constant.State.DISABLED;
 	}
 	get value() {
 		return this.#value;
@@ -590,7 +590,7 @@ export class Parameter {
 	}
 
 	checkDuplicateParam(param) {
-		return this.paramCode === param.paramCode;
+		return this.paramCode == param.paramCode;
 	}
 
 	setDisabled(disabled) {
@@ -608,7 +608,7 @@ export class Parameter {
 	}
 
 	isGridCell(cellIndex) {
-		return this.displayType === Parameter.DisplayTypes.GRID_CELL && cellIndex >= 0;
+		return this.displayType == Parameter.DisplayTypes.GRID_CELL && cellIndex >= 0;
 	}
 
 	setRequiredMessage(msg) {
@@ -660,22 +660,22 @@ export class Parameter {
 
 	equalTo(code, version) {
 		if (version) {
-			return code === this.paramCode && version === this.paramVersion;
+			return code == this.paramCode && version == this.paramVersion;
 		} else {
-			return code === this.paramCode;
+			return code == this.paramCode;
 		}
 	}
 
 	isMemberOf(assembly) {
-		return assembly.code === this.parentCode && assembly.version === this.parentVersion;
+		return assembly.code == this.parentCode && assembly.version == this.parentVersion;
 	}
 
 	get isGroup() {
-		return this.paramType === ParamType.GROUP;
+		return this.paramType == ParamType.GROUP;
 	}
 
 	get isGrid() {
-		return this.paramType === ParamType.GRID;
+		return this.paramType == ParamType.GRID;
 	}
 
 	postfixParameterCode(postfix) {
@@ -749,7 +749,11 @@ export class Parameter {
 	}
 
 	hasError() {
-		return this.error.errorClass === ErrorClass.ERROR || this.error.errorClass === ErrorClass.WARNING;
+		return this.error.errorClass == ErrorClass.ERROR;
+	}
+
+	hasWarning() {
+		return this.error.errorClass == ErrorClass.WARNING;
 	}
 
 	checkError() {
@@ -767,7 +771,7 @@ export class Parameter {
 	}
 
 	clearError(errorProperty = "value") {
-		if (errorProperty === this.errorProperty) {
+		if (errorProperty == this.errorProperty) {
 			this.error = {};
 		}
 	}
@@ -842,15 +846,17 @@ export class Parameter {
 			switch (valueProp) {
 				case "message": {
 					if (locale) {
-						return this.validation[section].message ? this.validation[section].message[locale] : "";
+						return this.validation[section].message ? this.validation[section].message[locale] ?? "" : "";
 					} else {
 						return this.validation[section].message ?? {};
 					}
 				}
 				case "value":
-				case "errorClass":
-				case "boundary": {
+				case "errorClass": {
 					return this.validation[section][valueProp];
+				}
+				case "boundary": {
+					return this.validation[section][valueProp] ?? false;
 				}
 				default: {
 					return this.validation[section];
@@ -1093,8 +1099,13 @@ export class Parameter {
 
 	validate(cellIndex) {
 		let value = this.getValue(cellIndex);
-		let numValue = this.uncertainty ? value.value : value;
-		let numUncertainty = this.uncertainty ? value.uncertainty : 0;
+		let numValue = Number(this.uncertainty ? value.value : value);
+		let numUncertainty = this.uncertainty ? value.uncertainty ?? 0 : 0;
+
+		this.error = {
+			message: "",
+			errorClass: ErrorClass.SUCCESS
+		};
 
 		for (const validationType in this.validation) {
 			const validationValue = this.getValidationValue(validationType, "value");
@@ -1102,6 +1113,7 @@ export class Parameter {
 			const validationMessage = this.getValidationValue(validationType, "message", this.languageId);
 			const validationErrorClass = this.getValidationValue(validationType, "errorClass");
 
+			console.log("validate: ", this.validation, validationType, value, validationValue);
 			switch (validationType) {
 				case ValidationKeys.REQUIRED: {
 					if (!this.hasValue(cellIndex)) {
@@ -1110,7 +1122,7 @@ export class Parameter {
 							errorClass: validationErrorClass
 						};
 
-						return;
+						break;
 					}
 
 					break;
@@ -1126,7 +1138,7 @@ export class Parameter {
 									errorClass: validationErrorClass
 								};
 
-								return;
+								break;
 							}
 						}
 					} else if (!regExpr.test(value)) {
@@ -1135,16 +1147,16 @@ export class Parameter {
 							errorClass: validationErrorClass
 						};
 
-						return;
+						break;
 					}
 
 					break;
 				}
 				case ValidationKeys.MIN_LENGTH: {
 					const minLength = validationValue;
-					if (Util.isEmpty(minLength)) {
+					if (Util.isEmpty(value) || Util.isEmpty(minLength)) {
 						this.error = {};
-						return;
+						break;
 					}
 
 					if (this.localized) {
@@ -1155,7 +1167,7 @@ export class Parameter {
 									errorClass: validationErrorClass
 								};
 
-								return;
+								break;
 							}
 						}
 					} else {
@@ -1165,7 +1177,7 @@ export class Parameter {
 								errorClass: validationErrorClass
 							};
 
-							return;
+							break;
 						}
 					}
 
@@ -1175,7 +1187,7 @@ export class Parameter {
 					const maxLength = validationValue;
 					if (Util.isEmpty(maxLength)) {
 						this.error = {};
-						return;
+						break;
 					}
 
 					if (this.localized) {
@@ -1186,7 +1198,7 @@ export class Parameter {
 									errorClass: validationErrorClass
 								};
 
-								return;
+								break;
 							}
 						}
 					} else {
@@ -1196,7 +1208,7 @@ export class Parameter {
 								errorClass: validationErrorClass
 							};
 
-							return;
+							break;
 						}
 					}
 
@@ -1205,7 +1217,7 @@ export class Parameter {
 				case ValidationKeys.NORMAL_MIN: {
 					if (Util.isEmpty(value)) {
 						this.error = {};
-						return;
+						break;
 					}
 
 					if (validationBoundary) {
@@ -1215,7 +1227,7 @@ export class Parameter {
 								errorClass: validationErrorClass
 							};
 
-							return;
+							break;
 						}
 					} else {
 						if (numValue - numUncertainty <= validationValue) {
@@ -1224,7 +1236,7 @@ export class Parameter {
 								errorClass: validationErrorClass
 							};
 
-							return;
+							break;
 						}
 					}
 
@@ -1233,26 +1245,33 @@ export class Parameter {
 				case ValidationKeys.NORMAL_MAX: {
 					if (Util.isEmpty(value)) {
 						this.error = {};
-						return;
+						break;
 					}
 
+					console.log(
+						"validate NORMAL_MAX: ",
+						numValue,
+						numUncertainty,
+						validationValue,
+						numValue + numUncertainty
+					);
 					if (validationBoundary) {
-						if (numValue + numUncertainty >= validationValue) {
-							this.error = {
-								message: validationMessage,
-								errorClass: validationErrorClass
-							};
-
-							return;
-						}
-					} else {
 						if (numValue + numUncertainty > validationValue) {
 							this.error = {
 								message: validationMessage,
 								errorClass: validationErrorClass
 							};
 
-							return;
+							break;
+						}
+					} else {
+						if (numValue + numUncertainty >= validationValue) {
+							this.error = {
+								message: validationMessage,
+								errorClass: validationErrorClass
+							};
+
+							break;
 						}
 					}
 
@@ -1261,7 +1280,7 @@ export class Parameter {
 				case ValidationKeys.MIN: {
 					if (Util.isEmpty(value)) {
 						this.error = {};
-						return;
+						break;
 					}
 
 					if (validationBoundary) {
@@ -1271,7 +1290,7 @@ export class Parameter {
 								errorClass: validationErrorClass
 							};
 
-							return;
+							break;
 						}
 					} else {
 						if (numValue - numUncertainty <= validationValue) {
@@ -1280,7 +1299,7 @@ export class Parameter {
 								errorClass: validationErrorClass
 							};
 
-							return;
+							break;
 						}
 					}
 
@@ -1289,7 +1308,7 @@ export class Parameter {
 				case ValidationKeys.MAX: {
 					if (Util.isEmpty(value)) {
 						this.error = {};
-						return;
+						break;
 					}
 
 					if (validationBoundary) {
@@ -1299,17 +1318,16 @@ export class Parameter {
 								errorClass: validationErrorClass
 							};
 
-							return;
+							break;
 						}
 					} else {
-						console.log("Max validation: ", numValue, numUncertainty, validationValue);
 						if (numValue + numUncertainty >= validationValue) {
 							this.error = {
 								message: validationMessage,
 								errorClass: validationErrorClass
 							};
 
-							return;
+							break;
 						}
 					}
 					break;
@@ -1325,16 +1343,15 @@ export class Parameter {
 							errorClass: validationErrorClass
 						};
 
-						return;
+						break;
 					}
 				}
 			}
-		}
 
-		this.error = {
-			message: "",
-			errorClass: ErrorClass.SUCCESS
-		};
+			if (this.hasError() || this.hasWarning()) {
+				return;
+			}
+		}
 	}
 
 	parse(json) {
@@ -1680,8 +1697,8 @@ export class StringParameter extends Parameter {
 
 		if (this.minLength > 1) json.minLength = this.minLength;
 		if (this.maxLength !== 72) json.maxLength = this.maxLength;
-		if (this.multipleLine === true) json.multipleLine = this.multipleLine;
-		if (this.localized === true) json.localized = this.localized;
+		if (this.multipleLine == true) json.multipleLine = this.multipleLine;
+		if (this.localized == true) json.localized = this.localized;
 		if (Util.isNotEmpty(this.placeholder)) json.placeholder = this.placeholder;
 		if (Util.isNotEmpty(this.prefix)) json.prefix = this.prefix;
 		if (Util.isNotEmpty(this.postfix)) json.postfix = this.postfix;
@@ -1942,7 +1959,7 @@ export class NumericParameter extends Parameter {
 			return;
 		}
 
-		if (this.displayType === Parameter.DisplayTypes.GRID_CELL) {
+		if (this.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			return this.uncertainty
 				? this.value.map((val) => ({ value: Number(val.value), uncertainty: Number(val.uncertainty) }))
 				: this.value.map((val) => Number(val));
@@ -1958,7 +1975,7 @@ export class NumericParameter extends Parameter {
 
 		this.uncertainty = json.uncertainty ?? false;
 		this.isInteger = json.isInteger ?? false;
-		this.decimalPlaces = json.decimalPlaces ?? 1;
+		this.decimalPlaces = json.decimalPlaces ?? (this.isInteger ? 0 : 1);
 		this.unit = json.unit ?? "";
 		this.prefix = json.prefix ?? {};
 		this.postfix = json.postfix ?? {};
@@ -1969,8 +1986,8 @@ export class NumericParameter extends Parameter {
 	toJSON() {
 		let json = super.toJSON();
 
-		if (this.uncertainty === true) json.uncertainty = this.uncertainty;
-		if (this.isInteger === true) json.isInteger = this.isInteger;
+		if (this.uncertainty == true) json.uncertainty = this.uncertainty;
+		if (this.isInteger == true) json.isInteger = this.isInteger;
 		if (this.decimalPlaces !== 2) json.decimalPlaces = this.decimalPlaces;
 		if (this.unit) json.unit = this.unit;
 		if (Util.isNotEmpty(this.prefix)) json.prefix = this.prefix;
@@ -2075,14 +2092,14 @@ export class SelectParameter extends Parameter {
 
 	isMultiple() {
 		return (
-			this.viewType === SelectParameter.ViewTypes.CHECKBOX || this.viewType === SelectParameter.ViewTypes.LISTBOX
+			this.viewType == SelectParameter.ViewTypes.CHECKBOX || this.viewType == SelectParameter.ViewTypes.LISTBOX
 		);
 	}
 
 	checkDuplicatedOptionValue(optionValue) {
 		let duplicated = false;
 		this.options.every((option) => {
-			duplicated = option.value === optionValue;
+			duplicated = option.value == optionValue;
 
 			return duplicated ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
 		});
@@ -2128,7 +2145,7 @@ export class SelectParameter extends Parameter {
 	}
 
 	moveOptionUp(index) {
-		if (index === 0) {
+		if (index == 0) {
 			return 0;
 		}
 
@@ -2201,7 +2218,7 @@ export class SelectParameter extends Parameter {
 		json.viewType = this.viewType;
 		if (Util.isNotEmpty(this.options)) json.options = this.options;
 
-		if (this.viewType === SelectParameter.ViewTypes.RADIO || this.viewType === SelectParameter.ViewTypes.CHECKBOX) {
+		if (this.viewType == SelectParameter.ViewTypes.RADIO || this.viewType == SelectParameter.ViewTypes.CHECKBOX) {
 			if (this.optionsPerRow > 0) {
 				json.optionsPerRow = this.optionsPerRow;
 			}
@@ -2333,7 +2350,7 @@ export class DualListParameter extends Parameter {
 	includedInValues(value, cellIndex) {
 		const values = this.getValue(cellIndex);
 
-		const result = values.filter((val) => val.value === value);
+		const result = values.filter((val) => val.value == value);
 		return result.length > 0;
 	}
 
@@ -2463,7 +2480,7 @@ export class BooleanParameter extends SelectParameter {
 	}
 	get allowUnsetValue() {
 		return (
-			this.viewType === BooleanParameter.ViewTypes.RADIO || this.viewType === BooleanParameter.ViewTypes.DROPDOWN
+			this.viewType == BooleanParameter.ViewTypes.RADIO || this.viewType == BooleanParameter.ViewTypes.DROPDOWN
 		);
 	}
 
@@ -2503,8 +2520,8 @@ export class BooleanParameter extends SelectParameter {
 	initValue(cellIndex) {
 		let defaultValue = this.defaultValue;
 		if (
-			this.viewType === BooleanParameter.ViewTypes.CHECKBOX ||
-			this.viewType === BooleanParameter.ViewTypes.TOGGLE
+			this.viewType == BooleanParameter.ViewTypes.CHECKBOX ||
+			this.viewType == BooleanParameter.ViewTypes.TOGGLE
 		) {
 			defaultValue = this.defaultValue ?? false;
 		}
@@ -3527,9 +3544,7 @@ export class GroupParameter extends Parameter {
 	}
 
 	get showMembersPerRow() {
-		return (
-			this.viewType === GroupParameter.ViewTypes.ARRANGEMENT || this.viewType === GroupParameter.ViewTypes.PANEL
-		);
+		return this.viewType == GroupParameter.ViewTypes.ARRANGEMENT || this.viewType == GroupParameter.ViewTypes.PANEL;
 	}
 
 	set members(val) {
@@ -3573,7 +3588,7 @@ export class GroupParameter extends Parameter {
 	}
 
 	checkDuplicateParam(param) {
-		let duplicated = this.paramCode === param.paramCode;
+		let duplicated = this.paramCode == param.paramCode;
 
 		if (!duplicated) {
 			this.members.every((member) => {
@@ -3628,9 +3643,9 @@ export class GroupParameter extends Parameter {
 	}
 
 	insertMember(param, memOrder) {
-		if (this.members.length === 0 || memOrder === this.members.length) {
+		if (this.members.length == 0 || memOrder == this.members.length) {
 			this.members.push(param);
-		} else if (memOrder === 0) {
+		} else if (memOrder == 0) {
 			this.#members.unshift(param);
 		} else {
 			this.members.splice(memOrder, 0, param);
@@ -3671,9 +3686,9 @@ export class GroupParameter extends Parameter {
 		let order = -1;
 
 		this.members.every((member, index) => {
-			if (!memVersion && member.paramCode === memCode) {
+			if (!memVersion && member.paramCode == memCode) {
 				order = index;
-			} else if (member.paramVersion === memVersion && member.paramCode === memCode) {
+			} else if (member.paramVersion == memVersion && member.paramCode == memCode) {
 				order = index;
 			}
 
@@ -3707,9 +3722,9 @@ export class GroupParameter extends Parameter {
 		let order = -1;
 
 		this.members.every((member, index) => {
-			if (!memVersion && member.paramCode === memCode) {
+			if (!memVersion && member.paramCode == memCode) {
 				order = index;
-			} else if (member.paramVersion === memVersion && member.paramCode === memCode) {
+			} else if (member.paramVersion == memVersion && member.paramCode == memCode) {
 				order = index;
 			}
 
@@ -3785,11 +3800,11 @@ export class GroupParameter extends Parameter {
 	}
 
 	getMemberPosition(member) {
-		if (this.members.length === 1 && member.order === 1) {
+		if (this.members.length == 1 && member.order == 1) {
 			return Constant.Position.DEAD_END;
-		} else if (member.order === 1) {
+		} else if (member.order == 1) {
 			return Constant.Position.START;
-		} else if (member.order === this.members.length) {
+		} else if (member.order == this.members.length) {
 			return Constant.Position.END;
 		}
 
@@ -3919,7 +3934,7 @@ export class GroupParameter extends Parameter {
 			return memberOutputs;
 		}
 
-		if (this.viewType === GroupParameter.ViewTypes.ARRANGEMENT) {
+		if (this.viewType == GroupParameter.ViewTypes.ARRANGEMENT) {
 			return memberOutputs;
 		} else {
 			let groupOutput = {};
@@ -4232,7 +4247,7 @@ export class GridParameter extends GroupParameter {
 		let colFound;
 
 		this.columns.every((column) => {
-			if (column.paramCode === colCode) {
+			if (column.paramCode == colCode) {
 				colFound = column;
 
 				return Constant.STOP_EVERY;

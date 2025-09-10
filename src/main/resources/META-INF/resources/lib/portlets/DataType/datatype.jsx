@@ -391,7 +391,7 @@ export class SXDataTypeStructureLink extends React.Component {
 	listenerValueChanged = (event) => {
 		const dataPacket = event.dataPacket;
 
-		if (!(dataPacket.targetPortlet === this.namespace && dataPacket.targetFormId === this.componentId)) {
+		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.componentId)) {
 			return;
 		}
 
@@ -502,7 +502,7 @@ export class SXDataTypeStructureLink extends React.Component {
 					</>
 				)}
 
-				{this.typeStructureLinkViewMode === DataTypeStructureLink.ViewTypes.VIEW && (
+				{this.typeStructureLinkViewMode == DataTypeStructureLink.ViewTypes.VIEW && (
 					<div className="form-group sx-fieldset">
 						<div className="sx-legend">{Util.translate("type-structure-link-info")}</div>
 						<div className="autofit-float autofit-padded-no-gutters-x autofit-row">
@@ -551,7 +551,7 @@ export class SXDataTypeStructureLink extends React.Component {
 						</div>
 					</div>
 				)}
-				{this.typeStructureLinkViewMode === DataTypeStructureLink.ViewTypes.EDIT && (
+				{this.typeStructureLinkViewMode == DataTypeStructureLink.ViewTypes.EDIT && (
 					<div
 						className="autofit-float autofit-padded-no-gutters-x autofit-row"
 						style={{ alignItems: "start" }}
@@ -656,7 +656,7 @@ export class SXDataTypeStructureLink extends React.Component {
 												<Cell textAlign="center">
 													{this.typeStructureLink.verifiedUserId > 0 &&
 														this.typeStructureLink.verifiedUserId}
-													{this.typeStructureLink.verifiedUserId === 0 && "-"}
+													{this.typeStructureLink.verifiedUserId == 0 && "-"}
 												</Cell>
 												<Cell textAlign="center">
 													{Util.isNotEmpty(this.typeStructureLink.verifiedDate) &&
@@ -679,7 +679,7 @@ export class SXDataTypeStructureLink extends React.Component {
 												<Cell textAlign="center">
 													{this.typeStructureLink.freezedUserId > 0 &&
 														this.typeStructureLink.freezedUserId}
-													{this.typeStructureLink.freezedUserId === 0 && "-"}
+													{this.typeStructureLink.freezedUserId == 0 && "-"}
 												</Cell>
 												<Cell textAlign="center">
 													{Util.isNotEmpty(this.typeStructureLink.freezedDate) &&
@@ -692,7 +692,7 @@ export class SXDataTypeStructureLink extends React.Component {
 					</div>
 				)}
 
-				{this.dataStructureViewMode === DataTypeStructureLink.ViewTypes.VIEW && (
+				{this.dataStructureViewMode == DataTypeStructureLink.ViewTypes.VIEW && (
 					<div className="form-group sx-fieldset">
 						<div className="sx-legend">{Util.translate("datastructure-info")}</div>
 						<div className="autofit-float autofit-padded-no-gutters-x autofit-row">

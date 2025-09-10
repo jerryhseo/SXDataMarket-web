@@ -2,10 +2,10 @@ import React from "react";
 
 export const Util = {
 	deepEqual: (obj1, obj2) => {
-		if (obj1 === obj2) {
+		if (obj1 == obj2) {
 			return true;
 		}
-		if (typeof obj1 !== "object" || typeof obj2 !== "object" || obj1 === null || obj2 === null) {
+		if (typeof obj1 !== "object" || typeof obj2 !== "object" || obj1 == null || obj2 == null) {
 			return false;
 		}
 		const keys1 = Object.keys(obj1);
@@ -45,7 +45,7 @@ export const Util = {
 	},
 
 	deepCopy: (obj) => {
-		if (obj === null || typeof obj !== "object") {
+		if (obj == null || typeof obj !== "object") {
 			return obj;
 		}
 		if (Array.isArray(obj)) {
@@ -70,11 +70,11 @@ export const Util = {
 	},
 
 	isEmptyObject: function (obj) {
-		if (obj === null || obj === undefined) {
+		if (obj == null || obj == undefined) {
 			return true;
 		}
 
-		if (typeof obj === "boolean" || typeof obj === "number" || (typeof obj === "string" && obj)) {
+		if (typeof obj == "boolean" || typeof obj == "number" || (typeof obj == "string" && obj)) {
 			return false;
 		}
 
@@ -82,7 +82,7 @@ export const Util = {
 			return obj.every(Util.isEmpty);
 		}
 
-		if (typeof obj === "object" && Object.keys(obj).length > 0) {
+		if (typeof obj == "object" && Object.keys(obj).length > 0) {
 			return Object.values(obj).every(Util.isEmpty);
 		}
 
@@ -222,6 +222,28 @@ export const Util = {
 		});
 
 		return message;
+	},
+
+	getTranslation: (json, langugeId, defaultLanguageId) => {
+		let translation = json[langugeId];
+
+		if (Util.isEmpty(translation)) {
+			if (Util.isNotEmpty(defaultLanguageId)) {
+				translation = json[defaultLanguageId];
+			}
+
+			if (Util.isEmpty(translation)) {
+				for (const lang in json) {
+					translation = json[lang];
+
+					if (Util.isNotEmpty(translation)) {
+						break;
+					}
+				}
+			}
+		}
+
+		return translation;
 	},
 
 	getTranslationObject(languageId, key, ...args) {
