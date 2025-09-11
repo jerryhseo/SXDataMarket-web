@@ -496,6 +496,19 @@ class DataStructureBuilder extends React.Component {
 		}
 	};
 
+	listenerLinkInfoChanged = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.formIds.dsbuilderId)) {
+			return;
+		}
+
+		console.log("listenerLinkInfoChanged: ", dataPacket);
+		this.dataStructure.setTitleBarInfos(this.typeStructureLink.inputStatus);
+
+		this.forceUpdate();
+	};
+
 	componentDidMount() {
 		this.loadDataStructure();
 
@@ -504,6 +517,7 @@ class DataStructureBuilder extends React.Component {
 		Event.on(Event.SX_COPY_PARAMETER, this.copyParameterHandler);
 		Event.on(Event.SX_DELETE_PARAMETER, this.deleteParameterHandler);
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
 	}
 
 	componentWillUnmount() {
@@ -512,6 +526,7 @@ class DataStructureBuilder extends React.Component {
 		Event.off(Event.SX_COPY_PARAMETER, this.copyParameterHandler);
 		Event.off(Event.SX_DELETE_PARAMETER, this.deleteParameterHandler);
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
 	}
 
 	loadDataStructure() {

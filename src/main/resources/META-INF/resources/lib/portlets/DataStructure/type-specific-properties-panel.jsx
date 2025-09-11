@@ -480,6 +480,7 @@ class SXSelectOptionBuilder extends React.Component {
 		this.spritemap = props.spritemap;
 
 		this.selectedOption = this.workingParam.getOption(0) ?? {};
+		this.workingOption = this.selectedOption;
 		this.state = {
 			optionValueDuplicated: false
 		};
@@ -517,7 +518,6 @@ class SXSelectOptionBuilder extends React.Component {
 	}
 
 	listenerFieldValueChanged = (event) => {
-		console.log("Before SXSelectOptionBuilder SX_FIELD_VALUE_CHANGED: ", event);
 		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
 
 		if (!dataPacket) {
@@ -531,9 +531,9 @@ class SXSelectOptionBuilder extends React.Component {
 		);
 
 		if (dataPacket.paramCode == "optionLabel") {
-			this.selectedOption.label = this.fieldOptionLabel.getValue();
+			this.workingOption.label = this.fieldOptionLabel.getValue();
 		} else {
-			this.selectedOption.value = this.fieldOptionValue.getValue();
+			this.workingOption.value = this.fieldOptionValue.getValue();
 		}
 
 		this.forceUpdate();
@@ -582,21 +582,26 @@ class SXSelectOptionBuilder extends React.Component {
 	}
 
 	handleNewOption() {
+		this.workingOption = {};
+		this.selectedOption = {};
+
 		this.fieldOptionLabel.setValue({ value: {} });
 		this.fieldOptionLabel.refreshKey();
+		this.fieldOptionValue.setValue({ value: "" });
+		this.fieldOptionValue.refreshKey();
 
-		this.selectedOption = {};
 		this.forceUpdate();
 	}
 
 	handleAddOption() {
-		console.log("handleAddOption: ", this.selectedOption);
-		const optionLength = this.workingParam.addOption(this.selectedOption);
+		console.log("handleAddOption: ", this.workingOption);
+		const optionLength = this.workingParam.addOption(this.workingOption);
+		this.selectedOption = this.workingOption;
 		if (optionLength.length == 0) {
 			return;
 		}
 
-		this.workingParam.fireRefreshPreview();
+		this.workingParam.fireRefresh();
 
 		this.forceUpdate();
 	}
@@ -625,9 +630,9 @@ class SXSelectOptionBuilder extends React.Component {
 	};
 
 	removeOption = (index) => {
-		this.selectedOption = this.workingParam.removeOption(index);
-		this.fieldOptionLabel.setValue({ value: this.selectedOption.label });
-		this.fieldOptionValue.setValue({ value: this.selectedOption.value });
+		this.workingParam.removeOption(index);
+		this.fieldOptionLabel.setValue({ value: {} });
+		this.fieldOptionValue.setValue({ value: "" });
 		this.fieldOptionLabel.refreshKey();
 		this.fieldOptionValue.refreshKey();
 
@@ -642,7 +647,7 @@ class SXSelectOptionBuilder extends React.Component {
 		this.fieldOptionValue.setValue({ value: option.value });
 		this.fieldOptionValue.refreshKey();
 
-		this.selectedOption = option;
+		this.workingOption = this.selectedOption = option;
 
 		this.forceUpdate();
 	}
@@ -789,7 +794,10 @@ class SXSelectOptionBuilder extends React.Component {
 									this.handleAddOption();
 								}}
 								title={Util.translate("add-option")}
-								disabled={Util.isEmpty(this.selectedOption)}
+								disabled={
+									Util.isNotEmpty(this.selectedOption) ||
+									!(this.fieldOptionLabel.hasValue() && this.fieldOptionValue.hasValue())
+								}
 							>
 								<Icon
 									symbol="caret-top"
@@ -1211,6 +1219,72 @@ class SXSelectTypeOptionForm extends React.Component {
 					},
 					value: this.workingParam.optionsPerRow
 				}
+			),
+			listboxSize: Parameter.createParameter(
+				this.namespace,
+				this.formId,
+				this.languageId,
+				this.availableLanguageIds,
+				ParamType.NUMERIC,
+				{
+					paramCode: ParamProperty.LISTBOX_SIZE,
+					isInteger: true,
+					displayName: Util.getTranslationObject(this.languageId, "listbox-size"),
+					tooltip: Util.getTranslationObject(this.languageId, "listbox-size-tooltip"),
+					validation: {
+						min: {
+							value: 2,
+							boundary: true,
+							message: Util.getTranslationObject(
+								this.languageId,
+								"listbox-size-must-be-larger-than-or-equal-to",
+								2
+							),
+							errorClass: ErrorClass.ERROR
+						},
+						max: {
+							value: 10,
+							boundary: true,
+							message: Util.getTranslationObject(
+								this.languageId,
+								"listbox-size-must-be-smaller-than-or-equal-to",
+								10
+							),
+							errorClass: ErrorClass.ERROR
+						}
+					},
+					value: this.workingParam.listboxSize
+				}
+			),
+			placeholder: Parameter.createParameter(
+				this.namespace,
+				this.formId,
+				this.languageId,
+				this.availableLanguageIds,
+				ParamType.STRING,
+				{
+					paramCode: ParamProperty.PLACEHOLDER,
+					displayName: Util.getTranslationObject(this.languageId, "placeholder"),
+					localized: true,
+					tooltip: Util.getTranslationObject(this.languageId, "placeholder-tooltip"),
+					validation: {
+						minLength: {
+							value: 5,
+							message: Util.getTranslationObject(this.languageId, "placeholder-should-be-longer-than", 4),
+							errorClass: ErrorClass.ERROR
+						},
+						maxLength: {
+							value: 16,
+							message: Util.getTranslationObject(
+								this.languageId,
+								"placeholder-should-be-shorter-than",
+								16
+							),
+							errorClass: ErrorClass.ERROR
+						}
+					},
+					value: this.workingParam.placeholder
+				}
 			)
 		};
 	}
@@ -1244,6 +1318,14 @@ class SXSelectTypeOptionForm extends React.Component {
 		this.forceUpdate();
 
 		if (this.workingParam.isRendered()) {
+			if (dataPacket.paramCode == "viewType") {
+				if (SelectParameter.ViewTypes.DROPDOWN || SelectParameter.ViewTypes.RADIO) {
+					this.workingParam.setValue({ value: "" });
+				} else {
+					this.workingParam.setValue({ value: [] });
+				}
+			}
+
 			this.workingParam.fireRefreshPreview();
 		}
 	};
@@ -1264,6 +1346,11 @@ class SXSelectTypeOptionForm extends React.Component {
 					this.fields.optionsPerRow.renderField({
 						spritemap: this.spritemap
 					})}
+				{(this.workingParam.viewType == SelectParameter.ViewTypes.DROPDOWN ||
+					this.workingParam.viewType == SelectParameter.ViewTypes.LISTBOX) &&
+					this.fields.placeholder.renderField({ spritemap: this.spritemap })}
+				{this.workingParam.viewType == SelectParameter.ViewTypes.LISTBOX &&
+					this.fields.listboxSize.renderField({ spritemap: this.spritemap })}
 				<SXSelectOptionBuilder
 					namespace={this.namespace}
 					formIds={this.formIds}

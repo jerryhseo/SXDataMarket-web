@@ -137,11 +137,15 @@ export class SXTitleBar extends React.Component {
 	};
 
 	render() {
-		const titleClass = this.inputStatus && this.hasValue ? "sx-control-label no-value" : "sx-control-label";
+		let titleClass = this.inputStatus
+			? this.hasValue
+				? "sx-control-label"
+				: "sx-control-label no-value"
+			: "sx-control-label";
 
 		return (
 			<div
-				className="autofit-row"
+				className="autofit-row autofit-padding"
 				style={this.style}
 			>
 				<div
@@ -159,8 +163,24 @@ export class SXTitleBar extends React.Component {
 						)}
 					</span>
 					{this.refLink && <SXLinkIcon />}
-					{this.inputStatus}
 				</div>
+				{this.inputStatus && this.parameter.isGroup && (
+					<div
+						className={"autofit-col"}
+						style={{ display: "inline-block", color: "#f18585", marginRight: "0.5rem" }}
+					>
+						<span>
+							{this.parameter.valuedFieldsCount +
+								"/" +
+								this.parameter.totalFieldsCount +
+								"(" +
+								((this.parameter.valuedFieldsCount / this.parameter.totalFieldsCount) * 100).toFixed(
+									1
+								) +
+								"%)"}
+						</span>
+					</div>
+				)}
 				<div
 					className="autofit-col"
 					style={{ display: "inline-block" }}
@@ -1751,6 +1771,11 @@ export class SXSelect extends React.Component {
 		}
 	}
 
+	handleLiastboxSelectChanged = (values) => {
+		console.log("handleLiastboxSelectChanged: ", values);
+		this.setValue(values.filter((value) => Util.isNotEmpty(value)));
+	};
+
 	handleValueChange(val) {
 		let newValue = val;
 		if (this.parameter.isMultiple()) {
@@ -1765,33 +1790,44 @@ export class SXSelect extends React.Component {
 	}
 
 	renderListBox(tagId, tagName) {
+		let optionItems = Util.isEmpty(this.parameter.placeholder)
+			? []
+			: [
+					{
+						key: "",
+						label: this.parameter.getPlaceholder(),
+						value: ""
+					}
+			  ];
+
+		optionItems = [
+			...optionItems,
+			...this.parameter.options.map((option) => ({
+				key: option.value,
+				label: Util.getTranslation(option.label, this.parameter.languageId, SXSystem.getDefaultLanguageId()),
+				value: option.value
+			}))
+		];
+
 		return (
 			<ClaySelectBox
 				id={tagId}
 				name={tagName}
-				value={this.state.value ? this.state.value : []}
-				items={this.parameter.options.map((option) => ({
-					key: option.value,
-					label: Util.getTranslation(
-						option.label,
-						this.parameter.languageId,
-						SXSystem.getDefaultLanguageId()
-					),
-					value: option.value
-				}))}
+				value={Util.isNotEmpty(this.state.value) ? this.state.value : []}
+				items={optionItems}
 				multiple
 				disabled={this.parameter.disabled}
+				size={this.parameter.listboxSize}
 				onClick={(e) => {
+					/*
 					if (this.selectedOptionChanged) {
 						this.selectedOptionChanged = false;
 					} else if (this.state.value.includes(e.target.value)) {
 						this.setValue(this.state.value.filter((value) => value !== e.target.value));
 					}
+					*/
 				}}
-				onSelectChange={(val) => {
-					this.selectedOptionChanged = true;
-					this.setValue(val);
-				}}
+				onSelectChange={this.handleLiastboxSelectChanged}
 				style={{ paddingLeft: "10px", marginBottom: "0px" }}
 			/>
 		);
@@ -1985,6 +2021,25 @@ export class SXSelect extends React.Component {
 	}
 
 	renderDropDown(tagId, tagName) {
+		let optionItems = Util.isEmpty(this.parameter.placeholder)
+			? []
+			: [
+					{
+						key: "",
+						label: this.parameter.getPlaceholder(),
+						value: ""
+					}
+			  ];
+
+		optionItems = [
+			...optionItems,
+			...this.parameter.options.map((option) => ({
+				key: option.value,
+				label: Util.getTranslation(option.label, this.parameter.languageId, SXSystem.getDefaultLanguageId()),
+				value: option.value
+			}))
+		];
+
 		return (
 			<ClaySelect
 				key={this.parameter.key}
@@ -1996,15 +2051,11 @@ export class SXSelect extends React.Component {
 					this.handleValueChange(e.target.value);
 				}}
 			>
-				{this.parameter.options.map((option, index) => {
+				{optionItems.map((option, index) => {
 					return (
 						<ClaySelect.Option
-							key={index}
-							label={Util.getTranslation(
-								option.label,
-								this.parameter.languageId,
-								SXSystem.getDefaultLanguageId()
-							)}
+							key={option.key}
+							label={option.label}
 							value={option.value}
 						/>
 					);

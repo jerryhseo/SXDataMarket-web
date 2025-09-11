@@ -37,6 +37,10 @@ class SXDataStructurePreviewer extends React.Component {
 			this.dataStructure,
 			this.dataStructure.members
 		);
+
+		if (this.typeStructureLink.inputStatus) {
+			this.forceUpdate();
+		}
 	};
 
 	moveParameterUpHandler = (e) => {
@@ -165,7 +169,9 @@ class SXDataStructurePreviewer extends React.Component {
 								<Toolbar.Section>
 									<ClayInput.Group>
 										<ClayInput.GroupItem shrink>
-											<ClayInput.GroupText>
+											<ClayInput.GroupText
+												style={{ backgroundColor: "#f3ded7", borderRadius: "1.0rem" }}
+											>
 												{this.dataStructure.valuedFieldsCount +
 													"/" +
 													this.dataStructure.totalFieldsCount +

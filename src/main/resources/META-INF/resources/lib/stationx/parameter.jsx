@@ -1113,7 +1113,6 @@ export class Parameter {
 			const validationMessage = this.getValidationValue(validationType, "message", this.languageId);
 			const validationErrorClass = this.getValidationValue(validationType, "errorClass");
 
-			console.log("validate: ", this.validation, validationType, value, validationValue);
 			switch (validationType) {
 				case ValidationKeys.REQUIRED: {
 					if (!this.hasValue(cellIndex)) {
@@ -1248,13 +1247,6 @@ export class Parameter {
 						break;
 					}
 
-					console.log(
-						"validate NORMAL_MAX: ",
-						numValue,
-						numUncertainty,
-						validationValue,
-						numValue + numUncertainty
-					);
 					if (validationBoundary) {
 						if (numValue + numUncertainty > validationValue) {
 							this.error = {
@@ -1428,7 +1420,6 @@ export class Parameter {
 			languageId: this.languageId,
 			availableLanguageIds: this.availableLanguageIds,
 			focused: this.focused,
-			inputStatus: this.inputStatus,
 			position: this.position
 		};
 	}
@@ -2059,6 +2050,8 @@ export class SelectParameter extends Parameter {
 
 	#options = [];
 	#optionsPerRow = 0;
+	#listboxSize = 3;
+	#placeholder = "";
 
 	constructor(namespace, formId, languageId, availableLanguageIds, paramType = ParamType.SELECT) {
 		super(namespace, formId, languageId, availableLanguageIds, paramType);
@@ -2070,6 +2063,12 @@ export class SelectParameter extends Parameter {
 	get optionsPerRow() {
 		return this.#optionsPerRow;
 	}
+	get listboxSize() {
+		return this.#listboxSize;
+	}
+	get placeholder() {
+		return this.#placeholder;
+	}
 
 	get optionCount() {
 		return this.#options.length;
@@ -2080,6 +2079,12 @@ export class SelectParameter extends Parameter {
 	}
 	set optionsPerRow(val) {
 		this.#optionsPerRow = val;
+	}
+	set listboxSize(val) {
+		this.#listboxSize = val;
+	}
+	set placeholder(val) {
+		this.#placeholder = val;
 	}
 
 	initProperties(json = {}) {
@@ -2094,6 +2099,10 @@ export class SelectParameter extends Parameter {
 		return (
 			this.viewType == SelectParameter.ViewTypes.CHECKBOX || this.viewType == SelectParameter.ViewTypes.LISTBOX
 		);
+	}
+
+	getPlaceholder() {
+		return Util.getTranslation(this.placeholder, this.languageId);
 	}
 
 	checkDuplicatedOptionValue(optionValue) {
@@ -2173,43 +2182,14 @@ export class SelectParameter extends Parameter {
 		super.setValue({ value: value, cellIndex: cellIndex });
 	}
 
-	validate(cellIndex) {
-		for (const validationType in this.validation) {
-			switch (validationType) {
-				case ValidationKeys.REQUIRED: {
-					if (this.validation.required.value && !this.hasValue(cellIndex)) {
-						this.error = {
-							message: this.getValidationValue(validationType, "message", this.languageId),
-							errorClass: ErrorClass.ERROR
-						};
-
-						return;
-					}
-
-					break;
-				}
-				case ValidationKeys.CUSTOM: {
-					this.error = this.validation.custom(this.getValue(cellIndex));
-
-					if (this.hasError()) {
-						return;
-					}
-				}
-			}
-		}
-
-		this.error = {
-			message: "",
-			errorClass: ErrorClass.SUCCESS
-		};
-	}
-
 	parse(json) {
 		super.parse(json);
 
 		this.options = json.options ?? [];
 		this.viewType = json.viewType ?? SelectParameter.ViewTypes.DROPDOWN;
 		this.optionsPerRow = json.optionsPerRow ?? 0;
+		this.listboxSize = json.listboxSize ?? this.#listboxSize;
+		this.placeholder = json.placeholder;
 	}
 
 	toJSON() {
@@ -2218,10 +2198,16 @@ export class SelectParameter extends Parameter {
 		json.viewType = this.viewType;
 		if (Util.isNotEmpty(this.options)) json.options = this.options;
 
-		if (this.viewType == SelectParameter.ViewTypes.RADIO || this.viewType == SelectParameter.ViewTypes.CHECKBOX) {
-			if (this.optionsPerRow > 0) {
-				json.optionsPerRow = this.optionsPerRow;
-			}
+		if (this.optionsPerRow > 0) {
+			json.optionsPerRow = this.optionsPerRow;
+		}
+
+		if (this.listboxSize != 5) {
+			json.listboxSize = this.listboxSize;
+		}
+
+		if (Util.isNotEmpty(this.placeholder)) {
+			json.placeholder = this.placeholder;
 		}
 
 		return json;
@@ -2233,6 +2219,8 @@ export class SelectParameter extends Parameter {
 		json.viewType = this.viewType;
 		json.options = this.options.map((option) => ({ label: option.label[this.languageId], value: option.value }));
 		json.optionsPerRow = this.optionsPerRow;
+		json.listboxSize = this.listboxSize;
+		json.placeholder = this.placeholder;
 
 		if (tagId) properties.tagId = tagId;
 		if (tagName) properties.tagName = tagName;
@@ -2527,37 +2515,6 @@ export class BooleanParameter extends SelectParameter {
 		}
 
 		super.setValue({ value: defaultValue, cellIndex: cellIndex });
-	}
-
-	validate(cellIndex) {
-		for (const validationType in this.validation) {
-			switch (validationType) {
-				case ValidationKeys.REQUIRED: {
-					if (this.validation.required.value && !this.hasValue(cellIndex)) {
-						this.error = {
-							message: this.getValidationValue(validationType, "message", this.languageId),
-							errorClass: ErrorClass.ERROR
-						};
-
-						return;
-					}
-
-					break;
-				}
-				case ValidationKeys.CUSTOM: {
-					this.error = this.validation.custom(this.getValue(cellIndex));
-
-					if (this.hasError()) {
-						return;
-					}
-				}
-			}
-		}
-
-		this.error = {
-			message: "",
-			errorClass: ErrorClass.SUCCESS
-		};
 	}
 
 	parse(json) {

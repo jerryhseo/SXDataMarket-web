@@ -182,6 +182,7 @@ export const ParamProperty = {
 	LABEL_POSITION: "labelPosition",
 	LABEL_WIDTH: "labelWidth",
 	LINE_BREAK: "lineBreak",
+	LISTBOX_SIZE: "listboxSize",
 	LIST_ITEM: "listItem",
 	LIST_ITEM_VALUE: "listItemValue",
 	LIST_ITEMS: "listItems",

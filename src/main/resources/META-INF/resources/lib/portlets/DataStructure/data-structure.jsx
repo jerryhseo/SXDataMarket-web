@@ -16,8 +16,6 @@ export class DataStructure extends GroupParameter {
 	#paramDelimiter = ";";
 	#paramDelimiterPosition = "end";
 	#paramValueDelimiter = "=";
-	#enableInputStatus = false;
-	#enableGoTo = false;
 	#hierarchicalData = false;
 
 	constructor(namespace, formId, languageId, availableLanguageIds, json = {}) {
@@ -34,12 +32,6 @@ export class DataStructure extends GroupParameter {
 	}
 	get paramValueDelimiter() {
 		return this.#paramValueDelimiter;
-	}
-	get enableInputStatus() {
-		return this.#enableInputStatus;
-	}
-	get enableGoTo() {
-		return this.#enableGoTo;
 	}
 	get hierarchicalData() {
 		return this.#hierarchicalData;
@@ -65,12 +57,6 @@ export class DataStructure extends GroupParameter {
 	}
 	set paramValueDelimiter(val) {
 		this.#paramValueDelimiter = val;
-	}
-	set enableInputStatus(val) {
-		this.#enableInputStatus = val;
-	}
-	set enableGoTo(val) {
-		this.#enableGoTo = val;
 	}
 	set hierarchicalData(val) {
 		this.#hierarchicalData = val;
@@ -278,8 +264,6 @@ export class DataStructure extends GroupParameter {
 		this.paramValueDelimiter = json.paramValueDelimiter ?? "=";
 
 		this.dataStructureId = json.paramId ?? json.dataStructureId;
-		this.enableInputStatus = json.enableInputStatus ?? false;
-		this.enableGoTo = json.enableGoTo ?? false;
 	}
 
 	toJSON() {
@@ -290,8 +274,6 @@ export class DataStructure extends GroupParameter {
 		if (this.paramValueDelimiter !== "=") json.paramValueDelimiter = this.paramValueDelimiter;
 
 		json.dataStructureId = this.dataStructureId;
-		if (this.enableInputStatus) json.enableInputStatus = this.enableInputStatus;
-		if (this.enableGoTo) json.enableGoTo = this.enableGoTo;
 
 		return json;
 	}
@@ -300,7 +282,6 @@ export class DataStructure extends GroupParameter {
 		return (
 			<>
 				{this.members.map((parameter) => {
-					parameter.inputStatus = this.enableInputStatus;
 					parameter.position = this.getMemberPosition(parameter);
 
 					return parameter.renderPreview({
@@ -324,8 +305,7 @@ export class DataStructure extends GroupParameter {
 						events: events,
 						className: className,
 						style: style,
-						spritemap: spritemap,
-						inputStatus: this.enableInputStatus
+						spritemap: spritemap
 					})
 				)}
 			</div>
