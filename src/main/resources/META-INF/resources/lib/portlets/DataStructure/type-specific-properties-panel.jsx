@@ -1102,6 +1102,29 @@ class SXNumericTypeOptionForm extends React.Component {
 					isInteger: true,
 					displayName: Util.getTranslationObject(this.languageId, "decimal-places"),
 					tooltip: Util.getTranslationObject(this.languageId, "decimal-places-tooltip"),
+					defaultValue: this.workingParam.isInteger ? 0 : 1,
+					validation: {
+						min: {
+							value: 0,
+							boundary: true,
+							message: Util.getTranslationObject(
+								this.languageId,
+								"options-per-row-must-be-larger-than-or-equal-to",
+								0
+							),
+							errorClass: ErrorClass.ERROR
+						},
+						max: {
+							value: 10,
+							boundary: true,
+							message: Util.getTranslationObject(
+								this.languageId,
+								"options-per-row-must-be-smaller-than-or-equal-to",
+								10
+							),
+							errorClass: ErrorClass.ERROR
+						}
+					},
 					value: this.workingParam.decimalPlaces
 				}
 			),

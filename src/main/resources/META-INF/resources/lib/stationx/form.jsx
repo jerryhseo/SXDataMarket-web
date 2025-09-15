@@ -3485,9 +3485,11 @@ export class SXEMail extends React.Component {
 
 		this.focusRef = createRef();
 
+		this.initEmailId = this.parameter.getEmailId(this.cellIndex) ?? "";
+		this.initServerName = this.parameter.getServerName(this.cellIndex) ?? "";
 		this.state = {
-			emailId: this.parameter.getEmailId(this.cellIndex) ?? "",
-			serverName: this.parameter.getServerName(this.cellIndex) ?? ""
+			emailId: this.initEmailId,
+			serverName: this.initServerName
 		};
 	}
 
@@ -3552,8 +3554,12 @@ export class SXEMail extends React.Component {
 
 	fireValueChanged() {
 		if (this.state.emailId && this.state.serverName) {
+			if (this.initEmailId == this.state.emailId && this.initServerName == this.state.serverName) {
+				return;
+			}
+
 			this.parameter.setValue({
-				value: { emailId: emailId, serverName: this.state.serverName },
+				value: { emailId: this.state.emailId, serverName: this.state.serverName },
 				cellIndex: this.cellIndex,
 				validate: true
 			});
@@ -3564,24 +3570,26 @@ export class SXEMail extends React.Component {
 	handleEMailIdChanged(emailId) {
 		this.setState({ emailId: emailId });
 
-		if (!/^[A-Za-z]+[A-Za-z0-9_.]+$/.test(value)) {
+		const regExpr = new RegExp(ValidationRule.EMAIL_ID);
+		if (!regExpr.test(emailId)) {
 			this.parameter.error = {
 				message: Util.translate("invalid-email"),
 				errorClass: ErrorClass.ERROR
 			};
-
-			return;
+			this.parameter.dirty = true;
 		}
 	}
 
-	handleServerChanged(server) {
-		this.setState({ serverName: server });
+	handleServerChanged(serverName) {
+		this.setState({ serverName: serverName });
 
-		if (!/[a-z]+[.][a-z]+$/.test(value)) {
+		const regExpr = new RegExp(ValidationRule.SERVER_NAME);
+		if (!regExpr.test(serverName)) {
 			this.parameter.error = {
 				message: Util.translate("invalid-server-name"),
 				errorClass: ErrorClass.ERROR
 			};
+			this.parameter.dirty = true;
 		}
 	}
 
@@ -4045,7 +4053,7 @@ export class SXGrid extends React.Component {
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
 	}
 
-	handleRowActionClick(event, actionId, rowIndex) {
+	handleRowActionClick(actionId) {
 		switch (actionId) {
 			case "insert": {
 				this.parameter.insertRow(this.state.selectedRow + 1);
@@ -4124,9 +4132,9 @@ export class SXGrid extends React.Component {
 		let rows = [];
 		let rowCount = this.parameter.rowCount;
 
-		console.log("SXGrid renderBodyRows: ", this.parameter.rowCount);
+		console.log("SXGrid renderBodyRows: ", this.parameter);
 
-		for (let rowIndex = 0; rowIndex <= rowCount; rowIndex++) {
+		for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
 			const actionItems = [
 				{ id: "insert", name: Util.translate("insert"), symbol: "add-row" },
 				{ id: "copy", name: Util.translate("copy"), symbol: "copy" },
@@ -4139,7 +4147,9 @@ export class SXGrid extends React.Component {
 					name: Util.translate("move-up"),
 					symbol: "caret-top"
 				});
-			} else if (rowIndex < rowCount) {
+			}
+
+			if (rowIndex < rowCount - 1) {
 				actionItems.push({
 					id: "down",
 					name: Util.translate("move-down"),
@@ -4163,7 +4173,7 @@ export class SXGrid extends React.Component {
 									{(actionItem) => (
 										<DropDown.Item
 											key={actionItem.id}
-											onClick={(e) => this.handleRowActionClick(e, actionItem.id, rowIndex)}
+											onClick={(e) => this.handleRowActionClick(actionItem.id)}
 										>
 											<Icon
 												spritemap={this.spritemap}

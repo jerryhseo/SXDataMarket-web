@@ -63,6 +63,8 @@ export const ValidationRule = {
 	INTEGER: "^[+-]?\\d*$",
 	INT_POSITIVE: "^[+-]?\\d*$",
 	INT_NEGATIVE: "^-\\d*$",
+	EMAIL_ID: "^(?!\\d)(?!.*_.*_)(?!.*\\..*\\.)(?!.*(_\\.|\\._))(?!^[_.])(?!.*[_.]$)[a-zA-Z0-9_.]+$",
+	SERVER_NAME: "^(?!\\d)[a-zA-Z0-9]+(\\.com|\\.net)$",
 	NO_SPECIAL_CHARACTERS: "[^!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]+"
 };
 

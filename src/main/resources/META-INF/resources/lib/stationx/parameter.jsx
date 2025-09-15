@@ -3864,7 +3864,23 @@ export class GridParameter extends GroupParameter {
 
 		if (!this.hasValue()) {
 			this.initValue(0);
+			this.rowCount++;
 		}
+	}
+
+	initValue(cellIndex) {
+		this.columns.forEach((column) => column.initValue(cellIndex));
+	}
+
+	hasValue(cellIndex) {
+		let hasValue = false;
+		this.columns.every((column) => {
+			hasValue = column.hasValue(cellIndex);
+
+			return !hasValue;
+		});
+
+		return hasValue;
 	}
 
 	addMember(column) {
@@ -3925,6 +3941,7 @@ export class GridParameter extends GroupParameter {
 	insertRow(rowIndex) {
 		this.columns.forEach((column) => {
 			column.value.splice(rowIndex, 0, null);
+			column.initValue(rowIndex);
 
 			column.refreshKey();
 		});
@@ -3952,12 +3969,17 @@ export class GridParameter extends GroupParameter {
 	}
 
 	deleteRow(rowIndex) {
+		if (this.rowCount == 1) {
+			this.columns.forEach((column) => column.initValue(0));
+			return;
+		}
+
 		this.columns.forEach((column) => {
 			column.value.splice(rowIndex, 1);
 			column.refreshKey();
 		});
 
-		if (this.rowCount > 1) {
+		if (this.rowCount >= 1) {
 			this.rowCount--;
 		}
 
@@ -4052,6 +4074,11 @@ export class GridParameter extends GroupParameter {
 					column
 				);
 			});
+		}
+
+		if (this.rowCount == 0) {
+			this.initValue(0);
+			this.rowCount++;
 		}
 	}
 
