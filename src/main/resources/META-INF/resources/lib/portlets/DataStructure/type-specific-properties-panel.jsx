@@ -12,7 +12,7 @@ import {
 import Button, { ClayButtonWithIcon } from "@clayui/button";
 import { Table, Head, Body, Cell, Icon, Row } from "@clayui/core";
 import Form, { ClayInput, ClaySelectWithOption } from "@clayui/form";
-import { SXModalDialog } from "../../stationx/modal";
+import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXActionDropdown from "../../stationx/dropdown";
 
 class SXGroupBuilder extends React.Component {
@@ -34,7 +34,9 @@ class SXGroupBuilder extends React.Component {
 
 		this.state = {
 			selectedMember: this.groupParam.getMember(0),
-			showErrorDlg: false
+			confirmDlgState: false,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: <></>
 		};
 
 		this.memberReadyTypes = [
@@ -134,28 +136,24 @@ class SXGroupBuilder extends React.Component {
 					this.fieldMemberDisplayName
 				);
 
-				let duplicated = false;
 				switch (dataPacket.paramCode) {
 					case "memberCode": {
+						let duplicated = false;
+
 						this.state.selectedMember.paramCode = this.fieldMemberCode.getValue();
 						duplicated = this.dataStructure.checkDuplicateParam(this.state.selectedMember);
 
 						if (duplicated) {
 							this.fieldMemberCode.setError(
 								ErrorClass.ERROR,
-								Util.translate("parameter-code-must-be-unique"),
-								"value"
+								Util.translate("parameter-code-must-be-unique")
 							);
 							this.fieldMemberCode.refreshKey();
 
-							this.groupParam.setError(
-								ErrorClass.ERROR,
-								Util.translate("parameter-code-must-be-unique"),
-								"paramCode"
-							);
+							this.groupParam.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
 						} else {
 							this.fieldMemberCode.clearError();
-							this.groupParam.clearError("paramCode");
+							this.groupParam.clearError();
 						}
 						this.state.selectedMember.refreshKey();
 
@@ -256,22 +254,47 @@ class SXGroupBuilder extends React.Component {
 		this.setState({ selectedMember: copied });
 	}
 
+	setMemberPropertyFields(member) {
+		this.fieldMemberCode.setValue({ value: member.paramCode });
+		this.fieldMemberCode.refreshKey();
+		this.fieldMemberDisplayName.setValue({ value: member.displayName });
+		this.fieldMemberDisplayName.refreshKey();
+	}
+
 	handleMemberSelected = (member) => {
 		if (member == this.state.selectedMember) {
 			return;
 		}
 
-		console.log("handleMemberSelected: ", member);
+		if (this.groupParam.hasError()) {
+			this.setState({
+				confirmDlgState: true,
+				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				confirmDlgBody: Util.translate("fix-the-error-first", this.groupParam.errorMessage)
+			});
+
+			return;
+		}
+
+		this.setMemberPropertyFields(member);
+		/*
 		this.fieldMemberCode.setValue({ value: member.paramCode });
 		this.fieldMemberCode.refreshKey();
 		this.fieldMemberDisplayName.setValue({ value: member.displayName });
 		this.fieldMemberDisplayName.refreshKey();
+		*/
 
 		this.setState({ selectedMember: member });
 	};
 
 	handleMemberTypeSelect(memberType) {
-		if (!memberType) {
+		if (this.groupParam.hasError()) {
+			this.setState({
+				confirmDlgState: true,
+				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
+			});
+
 			return;
 		}
 
@@ -288,11 +311,12 @@ class SXGroupBuilder extends React.Component {
 		);
 
 		this.groupParam.addMember(member);
-
 		member.displayName = Util.getTranslationObject(
 			this.languageId,
 			"member_" + member.order.toString().padStart(2, "0")
 		);
+
+		this.setMemberPropertyFields(member);
 
 		this.groupParam.fireRefreshPreview();
 
@@ -462,6 +486,23 @@ class SXGroupBuilder extends React.Component {
 						}}
 					</Body>
 				</Table>
+				{this.state.confirmDlgState && (
+					<SXModalDialog
+						header={this.state.confirmDlgHeader}
+						body={this.state.confirmDlgBody}
+						buttons={[
+							{
+								onClick: () => {
+									this.setState({ confirmDlgState: false });
+								},
+								label: Util.translate("ok"),
+								displayType: "primary"
+							}
+						]}
+						status="info"
+						spritemap={this.spritemap}
+					/>
+				)}
 			</>
 		);
 	}
@@ -480,7 +521,8 @@ class SXSelectOptionBuilder extends React.Component {
 		this.spritemap = props.spritemap;
 
 		this.selectedOption = this.workingParam.getOption(0) ?? {};
-		this.workingOption = this.selectedOption;
+		this.setWorkingOption();
+
 		this.state = {
 			optionValueDuplicated: false
 		};
@@ -527,13 +569,27 @@ class SXSelectOptionBuilder extends React.Component {
 		console.log(
 			"SXSelectOptionBuilder SX_FIELD_VALUE_CHANGED: ",
 			dataPacket.parameter,
-			dataPacket.parameter.getValue()
+			dataPacket.parameter.getValue(),
+			this.selectedOption
 		);
 
 		if (dataPacket.paramCode == "optionLabel") {
 			this.workingOption.label = this.fieldOptionLabel.getValue();
 		} else {
-			this.workingOption.value = this.fieldOptionValue.getValue();
+			const value = this.fieldOptionValue.getValue();
+
+			const duplicated = this.workingParam.checkDuplicatedOptionValue(value);
+			if (duplicated) {
+				this.fieldOptionValue.setError(
+					ErrorClass.ERROR,
+					Util.translate("the-option-value-exists-already-try-another-value")
+				);
+				this.setState({
+					optionValueDuplicated: true
+				});
+			} else {
+				this.workingOption.value = this.fieldOptionValue.getValue();
+			}
 		}
 
 		this.forceUpdate();
@@ -581,6 +637,10 @@ class SXSelectOptionBuilder extends React.Component {
 		Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 	}
 
+	setWorkingOption = () => {
+		this.workingOption = Util.isEmpty(this.selectedOption) ? {} : this.selectedOption;
+	};
+
 	handleNewOption() {
 		this.workingOption = {};
 		this.selectedOption = {};
@@ -607,7 +667,7 @@ class SXSelectOptionBuilder extends React.Component {
 	}
 
 	copyOption = (index) => {
-		this.selectedOption = this.workingParam.copyOption(index);
+		this.workingOption = this.selectedOption = this.workingParam.copyOption(index);
 
 		this.workingParam.fireRefreshPreview();
 		this.forceUpdate();
@@ -638,6 +698,9 @@ class SXSelectOptionBuilder extends React.Component {
 
 		this.workingParam.fireRefreshPreview();
 
+		this.selectedOption = {};
+		this.workingOption = {};
+
 		this.forceUpdate();
 	};
 
@@ -653,6 +716,13 @@ class SXSelectOptionBuilder extends React.Component {
 	}
 
 	render() {
+		console.log(
+			"SXSelectOptionBuilder render: ",
+			this.selectedOption,
+			Util.isNotEmpty(this.selectedOption),
+			!(this.fieldOptionLabel.hasValue() && this.fieldOptionValue.hasValue())
+		);
+
 		return (
 			<>
 				<div className="sx-option-builder-title">{Util.translate("option-builder")}</div>
@@ -1682,7 +1752,23 @@ class SXDateTypeOptionForm extends React.Component {
 					isInteger: true,
 					tooltip: Util.getTranslationObject(this.languageId, "start-year-tooltip"),
 					defaultValue: "1970",
-					value: this.workingParam.startYear
+					value: this.workingParam.startYear,
+					validation: {
+						min: {
+							value: 1900,
+							message: Util.getTranslationObject(this.languageId, "start-year-must-be-larger-than", 1900),
+							errorClass: ErrorClass.ERROR
+						},
+						max: {
+							value: new Date().getFullYear(),
+							message: Util.getTranslationObject(
+								this.languageId,
+								"start-year-must-be-smaller-than",
+								new Date().getFullYear()
+							),
+							errorClass: ErrorClass.ERROR
+						}
+					}
 				}
 			),
 			endYear: Parameter.createParameter(
@@ -1696,7 +1782,23 @@ class SXDateTypeOptionForm extends React.Component {
 					displayName: Util.getTranslationObject(this.languageId, "end-year"),
 					isInteger: true,
 					tooltip: Util.getTranslationObject(this.languageId, "end-year-tooltip"),
-					value: this.workingParam.endYear
+					value: this.workingParam.endYear,
+					validation: {
+						min: {
+							value: 1900,
+							message: Util.getTranslationObject(this.languageId, "end-year-must-be-larger-than", 1900),
+							errorClass: ErrorClass.ERROR
+						},
+						max: {
+							value: new Date().getFullYear() + 100,
+							message: Util.getTranslationObject(
+								this.languageId,
+								"end-year-must-be-smaller-than",
+								new Date().getFullYear() + 100
+							),
+							errorClass: ErrorClass.ERROR
+						}
+					}
 				}
 			)
 		};

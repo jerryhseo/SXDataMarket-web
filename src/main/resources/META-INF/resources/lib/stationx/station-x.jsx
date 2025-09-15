@@ -59,9 +59,10 @@ export const ValidationRule = {
 	VARIABLE: "^[a-zA-Z_][a-zA-Z0-9_]*$",
 	VERSION: "^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$",
 	EXTENSION: "^[a-zA-Z0-9]{1,12}$",
-	INTEGER: "^-?d+$",
-	INT_POSITIVE: "^[+]?d+$",
-	INT_NEGATIVE: "^-d+$",
+	NUMERIC: "^[+-]?\\d*[\\.]?\\d+([e]+\\d+)?$",
+	INTEGER: "^[+-]?\\d*$",
+	INT_POSITIVE: "^[+-]?\\d*$",
+	INT_NEGATIVE: "^-\\d*$",
 	NO_SPECIAL_CHARACTERS: "[^!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]+"
 };
 

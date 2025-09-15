@@ -213,7 +213,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			case 0: {
 				return (
 					<SXDSBuilderBasicPropertiesPanel
-						key={this.workingParam.key}
+						key={this.workingParam.paramCode}
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -224,7 +224,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			case 1: {
 				return (
 					<SXDSBuilderTypeSpecificPanel
-						key={this.workingParam.key}
+						key={this.workingParam.paramCode}
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -235,7 +235,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			case 2: {
 				return (
 					<SXDSBuilderOptionPropertiesPanel
-						key={this.workingParam.key}
+						key={this.workingParam.paramCode}
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -246,7 +246,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			case 3: {
 				return (
 					<SXDSBuilderValidationPanel
-						key={this.workingParam.key}
+						key={this.workingParam.paramCode}
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}

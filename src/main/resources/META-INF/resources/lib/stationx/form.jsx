@@ -23,7 +23,8 @@ import {
 	ValidationKeys,
 	ValidationSectionProperty,
 	Constant,
-	DisplayType
+	DisplayType,
+	ValidationRule
 } from "./station-x";
 import {
 	AddressParameter,
@@ -700,8 +701,10 @@ export class SXInput extends BaseParameterComponent {
 	constructor(props) {
 		super(props);
 
+		this.initValue = this.parameter.getValue(this.cellIndex);
+
 		this.state = {
-			value: this.parameter.getValue(this.cellIndex)
+			value: this.initValue
 		};
 
 		this.focusRef = createRef();
@@ -717,6 +720,10 @@ export class SXInput extends BaseParameterComponent {
 	}
 
 	fireValueChanged(value) {
+		if (value == this.initValue) {
+			return;
+		}
+
 		this.parameter.fireValueChanged(this.cellIndex);
 	}
 
@@ -842,7 +849,11 @@ export class SXLocalizedInput extends BaseParameterComponent {
 		//this.parameter.validate(this.cellIndex);
 	}
 
-	fireValueChanged() {
+	fireValueChanged(value) {
+		if (value == this.state.translation) {
+			return;
+		}
+
 		this.parameter.fireValueChanged(this.cellIndex);
 	}
 
@@ -861,7 +872,7 @@ export class SXLocalizedInput extends BaseParameterComponent {
 							placeholder={this.parameter.getPlaceholder(this.state.selectedLang)}
 							disabled={this.parameter.disabled}
 							onChange={(e) => this.handleChange(e.target.value)}
-							onBlur={(e) => this.fireValueChanged()}
+							onBlur={(e) => this.fireValueChanged(e.target.value)}
 							ref={this.focusRef}
 							sizing="sm"
 						/>
@@ -1083,7 +1094,7 @@ export class SXNumeric extends React.Component {
 		return Number(Number(val).toFixed(this.parameter.decimalPlaces));
 	}
 
-	handleValueChanged(newValue) {
+	handleValueChanged = (newValue) => {
 		if (Util.isEmpty(this.state.value) && Util.isEmpty(newValue)) {
 			return;
 		} else if (Util.isNotEmpty(this.state.value) && Util.isEmpty(newValue)) {
@@ -1093,9 +1104,19 @@ export class SXNumeric extends React.Component {
 			this.setState({ value: "" });
 
 			return;
-		} else if (Util.isNotEmpty(this.state.value) && Util.isNotEmpty(newValue)) {
+		} else if (Util.isNotEmpty(newValue)) {
 			if (this.state.value == Number(newValue)) {
 				return;
+			} else {
+				const regExpr = new RegExp(ValidationRule.NUMERIC);
+				console.log("SXNumeric newValue: " + newValue, regExpr.test(newValue));
+				if (!regExpr.test(newValue)) {
+					this.parameter.setError(ErrorClass.ERROR, Util.translate("only-numbers-allowed-for-this-field"));
+					this.parameter.dirty = true;
+
+					this.setState({ value: newValue });
+					return;
+				}
 			}
 		}
 
@@ -1112,7 +1133,7 @@ export class SXNumeric extends React.Component {
 		this.parameter.fireValueChanged(this.cellIndex);
 
 		this.setState({ value: Util.isEmpty(newValue) ? "" : this.toNumber(newValue) });
-	}
+	};
 
 	handleUncertaintyChanged(newUncertainty) {
 		if (Util.isEmpty(this.state.uncertainty) && Util.isEmpty(newUncertainty)) {
@@ -1126,9 +1147,19 @@ export class SXNumeric extends React.Component {
 			this.setState({ uncertainty: "" });
 
 			return;
-		} else if (Util.isNotEmpty(this.state.uncertainty) && Util.isNotEmpty(newUncertainty)) {
+		} else if (Util.isNotEmpty(newUncertainty)) {
 			if (this.state.uncertainty == Number(newUncertainty)) {
 				return;
+			} else {
+				const regExpr = new RegExp(ValidationRule.NUMERIC);
+				console.log("SXNumeric newValue: " + newUncertainty, regExpr.test(newUncertainty));
+				if (!regExpr.test(newUncertainty)) {
+					this.parameter.setError(ErrorClass.ERROR, Util.translate("only-numbers-allowed-for-this-field"));
+					this.parameter.dirty = true;
+
+					this.setState({ uncertainty: newUncertainty });
+					return;
+				}
 			}
 		}
 
@@ -1141,6 +1172,7 @@ export class SXNumeric extends React.Component {
 	}
 
 	renderClayUI() {
+		//min and max are for Integer
 		let min = this.parameter.getValidationValue("min", "boundary")
 			? this.parameter.getValidationValue("min", "value")
 			: this.parameter.getValidationValue("min", "value") + 1;
@@ -4092,6 +4124,8 @@ export class SXGrid extends React.Component {
 		let rows = [];
 		let rowCount = this.parameter.rowCount;
 
+		console.log("SXGrid renderBodyRows: ", this.parameter.rowCount);
+
 		for (let rowIndex = 0; rowIndex <= rowCount; rowIndex++) {
 			const actionItems = [
 				{ id: "insert", name: Util.translate("insert"), symbol: "add-row" },
@@ -4161,6 +4195,7 @@ export class SXGrid extends React.Component {
 	}
 
 	render() {
+		console.log("SXGrid.render: ", this.parameter.rowCount);
 		return (
 			<div style={{ ...this.parameter.style }}>
 				{this.parameter.renderTitle({ spritemap: this.spritemap })}
@@ -4239,7 +4274,7 @@ export class SXGrid extends React.Component {
 								))}
 							</tr>
 						</thead>
-						<tbody>{this.renderBodyRows()}</tbody>
+						<tbody key={this.parameter.rowCount}>{this.renderBodyRows()}</tbody>
 					</table>
 				</div>
 			</div>

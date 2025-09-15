@@ -642,7 +642,17 @@ class DataStructureBuilder extends React.Component {
 		this.forceUpdate();
 	}
 
-	handleNewParameter() {
+	handleNewParameter = () => {
+		if (this.workingParam.hasError()) {
+			this.setState({
+				confirmDlgState: true,
+				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
+			});
+
+			return;
+		}
+
 		this.workingParam = Parameter.createParameter(
 			this.namespace,
 			this.formIds.previewCanvasId,
@@ -654,7 +664,7 @@ class DataStructureBuilder extends React.Component {
 		this.dataStructure.focus();
 
 		this.forceUpdate();
-	}
+	};
 
 	handleSaveDataStructure = () => {
 		console.log(JSON.stringify(this.dataStructure.toJSON(), null, 4));

@@ -224,13 +224,9 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		*/
 
 		if (dataPacket.parameter.hasError()) {
-			this.workingParam.setError(
-				dataPacket.parameter.errorClass,
-				dataPacket.parameter.errorMessage,
-				dataPacket.parameter.paramCode
-			);
+			this.workingParam.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
 		} else {
-			this.workingParam.clearError(dataPacket.parameter.paramCode);
+			this.workingParam.clearError();
 		}
 
 		this.workingParam[dataPacket.paramCode] = dataPacket.parameter.getValue();

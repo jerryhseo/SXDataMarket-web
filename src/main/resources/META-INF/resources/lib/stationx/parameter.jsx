@@ -770,10 +770,8 @@ export class Parameter {
 		this.errorProperty = errorProperty;
 	}
 
-	clearError(errorProperty = "value") {
-		if (errorProperty == this.errorProperty) {
-			this.error = {};
-		}
+	clearError() {
+		this.error = {};
 	}
 
 	checkIntegrity() {
@@ -1934,6 +1932,7 @@ export class NumericParameter extends Parameter {
 		return value.uncertainty ? Util.isNotEmpty(value.value) : Util.isNotEmpty(value);
 	}
 
+	/*
 	validate(cellIndex) {
 		const valueObj = this.getValue(cellIndex);
 		const value = this.uncertainty ? valueObj.value : valueObj;
@@ -1950,6 +1949,7 @@ export class NumericParameter extends Parameter {
 
 		super.validate(cellIndex);
 	}
+		*/
 
 	toNumber() {
 		if (!this.hasValue()) {
@@ -2360,39 +2360,6 @@ export class DualListParameter extends Parameter {
 		this.value = this.value.filter((elem) => elem.value !== val);
 	}
 
-	/*
-	validate(cellIndex) {
-		for (const validationType in this.validation) {
-			switch (validationType) {
-				case ValidationKeys.REQUIRED: {
-					if (this.validation.required.value && !this.hasValue(cellIndex)) {
-						this.error = {
-							message: this.getValidationValue(validationType, "message", this.languageId),
-							errorClass: ErrorClass.ERROR
-						};
-
-						return;
-					}
-
-					break;
-				}
-				case ValidationKeys.CUSTOM: {
-					this.error = this.validation.custom(this.getValue(cellIndex));
-
-					if (this.hasError()) {
-						return;
-					}
-				}
-			}
-		}
-
-		this.error = {
-			message: "",
-			errorClass: ErrorClass.SUCCESS
-		};
-	}
-		*/
-
 	parse(json) {
 		super.parse(json);
 
@@ -2759,37 +2726,6 @@ export class FileParameter extends Parameter {
 		this.setValue(val, cellIndex);
 	}
 
-	validate(cellIndex) {
-		for (const validationType in this.validation) {
-			switch (validationType) {
-				case ValidationKeys.REQUIRED: {
-					if (this.validation.required.value && !this.hasValue(cellIndex)) {
-						this.error = {
-							message: this.getValidationValue(validationType, "message", this.languageId),
-							errorClass: ErrorClass.ERROR
-						};
-
-						return;
-					}
-
-					break;
-				}
-				case ValidationKeys.CUSTOM: {
-					this.error = this.validation.custom(this.getValue(cellIndex));
-
-					if (this.hasError()) {
-						return;
-					}
-				}
-			}
-		}
-
-		this.error = {
-			message: "",
-			errorClass: ErrorClass.SUCCESS
-		};
-	}
-
 	parse(json = {}) {
 		super.parse(json);
 	}
@@ -2919,37 +2855,6 @@ export class AddressParameter extends Parameter {
 		super.setValue({ value: this.defaultValue ?? {}, cellIndex: cellIndex });
 	}
 
-	validate(cellIndex) {
-		for (const validationType in this.validation) {
-			switch (validationType) {
-				case ValidationKeys.REQUIRED: {
-					if (this.validation.required.value && !this.hasValue(cellIndex)) {
-						this.error = {
-							message: this.getValidationValue(validationType, "message", this.languageId),
-							errorClass: ErrorClass.ERROR
-						};
-
-						return;
-					}
-
-					break;
-				}
-				case ValidationKeys.CUSTOM: {
-					this.error = this.validation.custom(this.getValue(cellIndex));
-
-					if (this.hasError()) {
-						return;
-					}
-				}
-			}
-		}
-
-		this.error = {
-			message: "",
-			errorClass: ErrorClass.SUCCESS
-		};
-	}
-
 	parse(json = {}) {
 		super.parse(json);
 
@@ -3042,37 +2947,6 @@ export class DateParameter extends Parameter {
 
 	initValue(cellIndex) {
 		super.setValue({ value: this.defaultValue ?? "", cellIndex: cellIndex });
-	}
-
-	validate(cellIndex) {
-		for (const validationType in this.validation) {
-			switch (validationType) {
-				case ValidationKeys.REQUIRED: {
-					if (this.validation.required.value && !this.hasValue(cellIndex)) {
-						this.error = {
-							message: this.getValidationValue(validationType, "message", this.languageId),
-							errorClass: ErrorClass.ERROR
-						};
-
-						return;
-					}
-
-					break;
-				}
-				case ValidationKeys.CUSTOM: {
-					this.error = this.validation.custom(this.getValue(cellIndex));
-
-					if (this.hasError()) {
-						return;
-					}
-				}
-			}
-		}
-
-		this.error = {
-			message: "",
-			errorClass: ErrorClass.SUCCESS
-		};
 	}
 
 	parse(json = {}) {
@@ -3204,37 +3078,6 @@ export class PhoneParameter extends Parameter {
 		super.setValue({ value: this.defaultValue ?? {}, cellIndex: cellIndex });
 	}
 
-	validate(cellIndex) {
-		for (const validationType in this.validation) {
-			switch (validationType) {
-				case ValidationKeys.REQUIRED: {
-					if (this.validation.required.value && !this.hasValue(cellIndex)) {
-						this.error = {
-							message: this.getValidationValue(validationType, "message", this.languageId),
-							errorClass: ErrorClass.ERROR
-						};
-
-						return;
-					}
-
-					break;
-				}
-				case ValidationKeys.CUSTOM: {
-					this.error = this.validation.custom(this.getValue(cellIndex));
-
-					if (this.hasError()) {
-						return;
-					}
-				}
-			}
-		}
-
-		this.error = {
-			message: "",
-			errorClass: ErrorClass.SUCCESS
-		};
-	}
-
 	parse(json = {}) {
 		super.parse(json);
 
@@ -3363,37 +3206,6 @@ export class EMailParameter extends Parameter {
 
 	initValue(cellIndex) {
 		super.setValue({ value: this.defaultValue ?? {}, cellIndex: cellIndex });
-	}
-
-	validate(cellIndex) {
-		for (const validationType in this.validation) {
-			switch (validationType) {
-				case ValidationKeys.REQUIRED: {
-					if (this.validation.required.value && !this.hasValue(cellIndex)) {
-						this.error = {
-							message: this.getValidationValue(validationType, "message", this.languageId),
-							errorClass: ErrorClass.ERROR
-						};
-
-						return;
-					}
-
-					break;
-				}
-				case ValidationKeys.CUSTOM: {
-					this.error = this.validation.custom(this.getValue(cellIndex));
-
-					if (this.hasError()) {
-						return;
-					}
-				}
-			}
-		}
-
-		this.error = {
-			message: "",
-			errorClass: ErrorClass.SUCCESS
-		};
 	}
 
 	parse(json = {}) {
