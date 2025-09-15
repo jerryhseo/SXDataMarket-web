@@ -3958,6 +3958,7 @@ export class SXGrid extends React.Component {
 			this.parameter.paramVersion
 		);
 
+		console.log("SXGrid : ", "refreshHandler: ", dataPacket, event);
 		if (Util.isEmpty(dataPacket)) {
 			return;
 		}
@@ -4178,7 +4179,6 @@ export class SXGrid extends React.Component {
 								{this.getHeadItems().map((column, index) => (
 									<th
 										key={column.id}
-										style={column.style}
 										onClick={(e) => {
 											e.stopPropagation();
 											console.log("head clicked: ", column);
@@ -4187,7 +4187,12 @@ export class SXGrid extends React.Component {
 									>
 										<div
 											className={column.focus ? "sx-focused" : ""}
-											style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+											style={{
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "center",
+												...column.style
+											}}
 										>
 											{this.preview && index > 1 && (
 												<ClayButtonWithIcon

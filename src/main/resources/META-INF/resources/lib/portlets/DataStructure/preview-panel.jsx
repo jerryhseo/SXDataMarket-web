@@ -1,6 +1,5 @@
 import React from "react";
-import { Event, PortletKeys, WindowState, Workbench } from "../../stationx/station-x";
-import { DataStructure } from "./data-structure";
+import { Event, PortletKeys } from "../../stationx/station-x";
 import Toolbar from "@clayui/toolbar";
 import { ClayInput } from "@clayui/form";
 import Button, { ClayButtonWithIcon } from "@clayui/button";
@@ -10,6 +9,7 @@ import { Util } from "../../stationx/util";
 class SXDataStructurePreviewer extends React.Component {
 	constructor(props) {
 		super(props);
+		console.log("Previewer props: ", props);
 
 		this.namespace = props.dataStructure.namespace;
 		this.formIds = props.formIds;
@@ -18,13 +18,6 @@ class SXDataStructurePreviewer extends React.Component {
 		this.spritemap = props.spritemap;
 
 		this.formId = this.formIds.previewCanvasId;
-
-		this.state = {
-			manifestSDE: false
-		};
-
-		this.sdeWindowTile = <h5>{Util.translate("structured-data-editor")}</h5>;
-		this.sde = <></>;
 	}
 
 	fieldValueChangedHandler = (e) => {
@@ -103,6 +96,12 @@ class SXDataStructurePreviewer extends React.Component {
 	}
 
 	handleManifestSDE = async () => {
+		Event.fire(Event.SX_LOAD_PORTLET, this.namespace, this.namespace, {
+			targetFormId: this.formIds.dsbuilderId,
+			portletName: PortletKeys.STRUCTURED_DATA_EDITOR
+		});
+
+		/*
 		try {
 			this.sde = await Workbench.loadPortlet({
 				windowState: WindowState.EXCLUSIVE,
@@ -114,6 +113,7 @@ class SXDataStructurePreviewer extends React.Component {
 		} catch (err) {
 			console.log("error whilw manifesting SDE: ", err);
 		}
+			*/
 	};
 
 	render() {

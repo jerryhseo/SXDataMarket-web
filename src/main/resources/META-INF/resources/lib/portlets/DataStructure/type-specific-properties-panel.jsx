@@ -601,7 +601,7 @@ class SXSelectOptionBuilder extends React.Component {
 			return;
 		}
 
-		this.workingParam.fireRefresh();
+		this.workingParam.fireRefreshPreview();
 
 		this.forceUpdate();
 	}
@@ -1324,6 +1324,9 @@ class SXSelectTypeOptionForm extends React.Component {
 				} else {
 					this.workingParam.setValue({ value: [] });
 				}
+			}
+
+			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			}
 
 			this.workingParam.fireRefreshPreview();

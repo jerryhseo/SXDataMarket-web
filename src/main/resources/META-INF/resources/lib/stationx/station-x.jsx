@@ -265,7 +265,7 @@ export const DisplayType = {
 };
 
 export const ResourceIds = {
-	CREATE_PORTLET_INSTANCE: "/ajax/Workflow/create-portlet-instance",
+	CREATE_PORTLET_INSTANCE: "/ajax/workbench/create-portlet-instance",
 	LOAD_DATATYPES: "/ajax/DataType/load-datatypes",
 	LOAD_DATATYPE: "/ajax/DataType/load-datatype",
 	ADD_DATATYPE: "/ajax/DataType/add-datatype",
@@ -520,6 +520,7 @@ export const Event = {
 	SX_FORM_FIELD_FAILED: "SX_FORM_FIELD_FAILED",
 	SX_FORM_UI_SHOW_PARAMS: "SX_FORM_UI_SHOW_PARAMS",
 	SX_FORM_UI_CHECKBOX_CHANGED: "SX_FORM_UI_CHECKBOX_CHANGED",
+	SX_LOAD_PORTLET: "SX_LOAD_PORTLET",
 	SX_MOVE_PARAMETER_DOWN: "SX_MOVE_PARAMETER_DOWN",
 	SX_MOVE_PARAMETER_UP: "SX_MOVE_PARAMETER_UP",
 	SX_PARAMETER_CHANGED: "SX_PARAMETER_CHANGED",
@@ -814,64 +815,4 @@ export const IconNames = {
 	VERIFIED: "<%= contextPath %>/asset/images/verified.svg",
 	COMMENTS: "<%= contextPath %>/asset/images/comments.svg",
 	Q_MARK: "<%= contextPath %>/asset/images/q-mark.svg"
-};
-
-export const Workbench = {
-	loadWorkingPortlet: ({ portletSectionId, windowState, workingPortlet, workbench }) => {
-		/*
-		Util.createRenderURL({
-			baseRenderURL: workingPortlet.url,
-			portletParams: {
-				windowState: windowState ?? WindowState.EXCLUSIVE
-			},
-			dataParams: {
-				workbenchId: workbench.portletId,
-				workbenchNamespace: workbench.namespace,
-				...workingPortlet.params
-			}
-		})
-			.then((url) => {
-				$.ajax({
-					url: url,
-					type: "post",
-					dataType: "text",
-					success: (html) => {
-						$("#" + portletSectionId).html(html);
-					},
-					error: (a) => {
-						console.log(a);
-					}
-				});
-			})
-			.catch((err) => {
-				console.log(err);
-			});
-*/
-		AUI().use("aui-base, portlet-url", function (A) {
-			let portletURL = Liferay.PortletURL.createURL(workingPortlet.url);
-
-			portletURL.setWindowState(windowState ?? WindowState.EXCLUSIVE);
-
-			portletURL.setParameter("workbenchId", workbench.portletId);
-
-			for (const paramKey in workingPortlet.params) {
-				portletURL.setParameter(paramKey, workingPortlet.params[paramKey]);
-			}
-
-			$.ajax({
-				url: portletURL.toString(),
-				type: "get",
-				dataType: "html",
-				success: (html) => {
-					$("#" + portletSectionId).html(html);
-				},
-				error: (a) => {
-					console.log(a);
-				}
-			});
-		});
-	},
-	loadPortlet: async ({ windowState, portletId, workbenchNamespace }) => {
-		const url = await Util.createRenderURL({});
-	}
 };

@@ -1102,10 +1102,7 @@ export class Parameter {
 		let numValue = Number(this.uncertainty ? value.value : value);
 		let numUncertainty = this.uncertainty ? value.uncertainty ?? 0 : 0;
 
-		this.error = {
-			message: "",
-			errorClass: ErrorClass.SUCCESS
-		};
+		this.error = {};
 
 		for (const validationType in this.validation) {
 			const validationValue = this.getValidationValue(validationType, "value");
@@ -1340,9 +1337,18 @@ export class Parameter {
 				}
 			}
 
-			if (this.hasError() || this.hasWarning()) {
+			if (this.hasError()) {
 				return;
 			}
+		}
+
+		if (this.hasWarning()) {
+			return;
+		} else {
+			this.error = {
+				message: "",
+				errorClass: ErrorClass.SUCCESS
+			};
 		}
 	}
 

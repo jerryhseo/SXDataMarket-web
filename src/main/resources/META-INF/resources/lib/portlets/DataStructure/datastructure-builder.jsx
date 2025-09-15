@@ -1,7 +1,5 @@
 import React from "react";
-import { ClayToggle } from "@clayui/form";
 import {
-	DataTypeProperty,
 	EditStatus,
 	ErrorClass,
 	Event,
@@ -13,8 +11,7 @@ import {
 } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
 import { DataStructure } from "./data-structure";
-import { DataTypeInfo } from "../DataType/datatype-editor";
-import { BooleanParameter, GroupParameter, Parameter } from "../../stationx/parameter";
+import { GroupParameter, Parameter } from "../../stationx/parameter";
 import { Button, Icon } from "@clayui/core";
 import { ClayButtonWithIcon } from "@clayui/button";
 import SXDSBuilderPropertiesPanel from "./properties-panel";
@@ -22,7 +19,8 @@ import SXDataStructurePreviewer from "./preview-panel";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { UnderConstruction } from "../../stationx/common";
 import { DataType, DataTypeStructureLink, SXDataTypeStructureLink } from "../DataType/datatype";
-import { SXAutoComplete, SXLabeledText } from "../../stationx/form";
+import { SXLabeledText } from "../../stationx/form";
+import { SXPortletWindow, Workbench } from "../DataWorkbench/workbench";
 
 class DataStructureBuilder extends React.Component {
 	rerenderProperties = [
@@ -79,6 +77,7 @@ class DataStructureBuilder extends React.Component {
 	constructor(props) {
 		super(props);
 
+		console.log("DataStructureBuilder props: ", props);
 		this.namespace = props.namespace;
 		this.baseRenderURL = props.baseRenderURL;
 		this.baseResourceURL = props.baseResourceURL;
@@ -90,7 +89,7 @@ class DataStructureBuilder extends React.Component {
 		this.permissions = props.permissions;
 
 		this.redirectURLs = props.redirectURLs;
-		this.workbench = props.workbench;
+		//this.workbench = props.workbench;
 		this.params = props.params;
 
 		this.typeStructureLink = null;
@@ -124,39 +123,18 @@ class DataStructureBuilder extends React.Component {
 			confirmParamDeleteDlg: false,
 			confirmDlgBody: <></>,
 			confirmDlgHeader: <></>,
+			manifestSDE: false,
 			underConstruction: false
 		};
 
-		this.errorDlgHeader = (
-			<div style={{ color: "red" }}>
-				<Icon
-					symbol="exclamation-full"
-					spritemap={this.spritemap}
-					style={{ marginRight: "1rem" }}
-				/>
-				{Util.translate("error")}
-			</div>
-		);
-		this.warningDlgHeader = (
-			<div style={{ color: "#a0870aff" }}>
-				<Icon
-					symbol="warning"
-					spritemap={this.spritemap}
-					style={{ marginRight: "1rem" }}
-				/>
-				{Util.translate("warning")}
-			</div>
-		);
-		this.successDlgHeader = (
-			<div style={{ color: "green" }}>
-				<Icon
-					symbol="check-circle"
-					spritemap={this.spritemap}
-					style={{ marginRight: "1rem" }}
-				/>
-				{Util.translate("success")}
-			</div>
-		);
+		this.workbench = new Workbench({
+			namespace: this.namespace,
+			workbenchId: this.props.portletId,
+			baseRenderUrl: this.baseRenderUrl,
+			baseResourceURL: this.baseResourceURL
+		});
+
+		this.sdeContent = null;
 
 		this.structureCode = Parameter.createParameter(
 			this.namespace,
@@ -310,20 +288,27 @@ class DataStructureBuilder extends React.Component {
 		}
 
 		selectedParam.focused = true;
+		console.log("SelectedParam: ", selectedParam);
+
 		this.workingParam.focused = false;
-		this.workingParam.fireRefreshPreview();
-
-		this.workingParam = selectedParam;
-
+		/*
+		if( selectedParam.paramType == ParamType.GRID && this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL){
+			selectedParam.fireRefreshPreview();
+		}
+		
+		*/
 		if (selectedParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			const gridParam = this.dataStructure.findParameter({
-				paramCode: this.workingParam.parent.code,
-				paramVersion: this.workingParam.parent.version,
+				paramCode: selectedParam.parent.code,
+				paramVersion: selectedParam.parent.version,
 				descendant: true
 			});
 
 			gridParam.fireRefreshPreview();
 		}
+
+		this.workingParam = selectedParam;
+		this.workingParam.fireRefreshPreview();
 
 		this.fireRefreshPropertyPanel();
 	};
@@ -509,6 +494,26 @@ class DataStructureBuilder extends React.Component {
 		this.forceUpdate();
 	};
 
+	listenerLoadPortlet = async (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.formIds.dsbuilderId)) {
+			return;
+		}
+
+		//console.log("listenerLoadPortlet: ", dataPacket, this.props.workbench);
+
+		this.sdeContent = await this.workbench.loadPortletWindow({
+			portletName: dataPacket.portletName,
+			params: {
+				dataTypeId: this.dataTypeId,
+				dataStructureId: this.dataStructure.dataStructureId
+			}
+		});
+
+		this.setState({ manifestSDE: true });
+	};
+
 	componentDidMount() {
 		this.loadDataStructure();
 
@@ -518,6 +523,7 @@ class DataStructureBuilder extends React.Component {
 		Event.on(Event.SX_DELETE_PARAMETER, this.deleteParameterHandler);
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
+		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
 	}
 
 	componentWillUnmount() {
@@ -527,6 +533,7 @@ class DataStructureBuilder extends React.Component {
 		Event.off(Event.SX_DELETE_PARAMETER, this.deleteParameterHandler);
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
+		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
 	}
 
 	loadDataStructure() {
@@ -659,7 +666,7 @@ class DataStructureBuilder extends React.Component {
 			//console.log("Data structure has error: ", error);
 			this.setState({
 				confirmDlgState: true,
-				confirmDlgHeader: this.errorDlgHeader,
+				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
 				confirmDlgBody: Util.translate(error.message)
 			});
 
@@ -686,7 +693,7 @@ class DataStructureBuilder extends React.Component {
 
 				this.setState({
 					confirmDlgState: true,
-					confirmDlgHeader: this.successDlgHeader,
+					confirmDlgHeader: SXModalUtil.successDlgHeader(this.spritemap),
 					confirmDlgBody: (
 						<h4>
 							{Util.translate(
@@ -713,7 +720,7 @@ class DataStructureBuilder extends React.Component {
 			console.log("checkIntegrity fail: ", this.workingParam);
 			this.setState({
 				confirmDlgState: true,
-				confirmDlgHeader: this.errorDlgHeader,
+				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
 				confirmDlgBody: <h4>{Util.translate(this.workingParam.errorMessage)}</h4>
 			});
 		}
@@ -975,7 +982,7 @@ class DataStructureBuilder extends React.Component {
 					)}
 					{this.state.confirmParamDeleteDlg && (
 						<SXModalDialog
-							header={this.warningDlgHeader}
+							header={SXModalUtil.warningDlgHeader(this.spritemap)}
 							body={this.state.confirmDlgBody}
 							buttons={[
 								{
@@ -1022,6 +1029,17 @@ class DataStructureBuilder extends React.Component {
 							spritemap={this.spritemap}
 						/>
 					)}
+					{this.state.manifestSDE && (
+						<SXPortletWindow
+							namespace={this.sdeContent.portletNamespace}
+							formId={this.formIds.dsbuilderId}
+							title={Util.translate("structured-data-editor")}
+							content={this.sdeContent.portletContent}
+							windowId={this.workbench.zIndex}
+							spritemap={this.spritemap}
+						/>
+					)}
+
 					{this.state.underConstruction && (
 						<SXModalDialog
 							header={Util.translate("sorry")}

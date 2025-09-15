@@ -45,7 +45,7 @@ import org.osgi.service.component.annotations.Reference;
 	},
 	service = Portlet.class
 )
-public class DataTypeEditorPortlet extends MVCPortlet {
+public class SXDataTypeEditorPortlet extends MVCPortlet {
 
 	@Override
 	public void doView(

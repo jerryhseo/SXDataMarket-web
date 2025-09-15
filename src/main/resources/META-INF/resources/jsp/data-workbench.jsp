@@ -20,11 +20,13 @@
 	
 	String portalURL = PortalUtil.getPortalURL(renderRequest);
 	
+	/*
 	System.out.println("workingPortletId: " + workingPortletId );
 	System.out.println("workingPortletNamespace: " + workingPortletNamespace );
 	System.out.println("workbenchId: " + portletDisplay.getId() );
 	
 	System.out.println("workingPortletParams: " + workingPortletParams );
+	*/
 %>
 
 

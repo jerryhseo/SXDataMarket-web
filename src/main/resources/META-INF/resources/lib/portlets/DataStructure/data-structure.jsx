@@ -181,9 +181,8 @@ export class DataStructure extends GroupParameter {
 				if (param.isGroup) {
 					if (!param.equalTo(paramCode, paramVersion)) {
 						groups.push(param);
+						pickUpGroup(param.members);
 					}
-
-					pickUpGroup(param.members);
 				}
 			});
 		};

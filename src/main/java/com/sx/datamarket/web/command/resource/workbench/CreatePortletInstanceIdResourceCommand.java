@@ -4,6 +4,7 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.LiferayPortletMode;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -25,6 +26,7 @@ import org.osgi.service.component.annotations.Component;
 	    immediate = true,
 	    property = {
 	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
+	        "javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_CREATE_PORTLET_INSTANCE
 	    },
 	    service = MVCResourceCommand.class
@@ -36,23 +38,26 @@ public class CreatePortletInstanceIdResourceCommand extends BaseMVCResourceComma
 			throws Exception {
 		
 		String portletName = ParamUtil.getString(resourceRequest, "portletName");
-		final String instance = "_INSTANCE_";
-
-		String portletInstanceId = SXPortalUtil.generatePortletInstanceId();
+		String portletId = PortletIdCodec.encode(portletName);
+		System.out.println("CreatePortletInstanceIdResourceCommand portletId: " + portletId);
+		
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		System.out.println(themeDisplay.getPpid());
 		
 		String portletURL = SXPortletURLUtil.createURL(
 				resourceRequest, 
 				themeDisplay, 
-				portletName+instance+portletInstanceId,
+				portletId,
 				null,
 				LiferayPortletMode.VIEW,
 				LiferayWindowState.EXCLUSIVE );
 		 
 		JSONObject portletInstance = JSONFactoryUtil.createJSONObject();
 		portletInstance.put( "url" , portletURL );
-		portletInstance.put( "portletId", portletName+instance+portletInstanceId);
-		portletInstance.put( "namespace", "_"+portletName+instance+portletInstanceId+"_" );
+		portletInstance.put( "portletId", portletId);
+		portletInstance.put( "namespace", "_"+portletId+"_" );
+		
+		System.out.println("CreatePortletInstanceIdResourceCommand PortletInstance: " + portletInstance.toString(4));
 		
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(portletInstance.toString());

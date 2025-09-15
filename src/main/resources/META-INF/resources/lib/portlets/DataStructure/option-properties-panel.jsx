@@ -133,16 +133,17 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 			this.workingParam[dataPacket.paramCode] = this.toggleFields[dataPacket.paramCode].getValue();
 		}
 
-		if (this.workingParam.isRendered()) {
-			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
-				console.log("Refresh Grid from cell: ", this.workingParam);
-				/*
-				Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
+		if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			console.log("Refresh Grid from cell: ", this.workingParam);
 
-				})
-				*/
-			}
+			const gridParam = this.dataStructure.findParameter({
+				paramCode: this.workingParam.parent.code,
+				paramVersion: this.workingParam.parent.version,
+				descendant: true
+			});
 
+			gridParam.fireRefreshPreview();
+		} else {
 			this.workingParam.fireRefreshPreview();
 		}
 	};

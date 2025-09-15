@@ -149,19 +149,38 @@ export const Util = {
 			.catch((err) => errorFunc(err));
 	},
 
-	createResourceURL: async function ({ baseResourceURL, resourceId }) {
+	createResourceURL: async function ({ portletId, baseResourceURL, resourceId }) {
 		let url = "";
 
-		await AUI().use("aui-base, portlet-url", function (A) {
+		await AUI().use("aui-base, portlet-url", (A) => {
 			let resourceURL = Liferay.PortletURL.createURL(baseResourceURL);
 			resourceURL.setResourceId(resourceId);
+			resourceURL.setPortletId(portletId);
 
 			url = resourceURL.toString();
 		});
-		console.log("createURL: ", url);
+
+		console.log("Util.createResourceURL: ", url);
 
 		return url;
 	},
+
+	createPortletURL: async function ({ workbenchId, baseResourceURL, resourceId, portletName }) {
+		let url = await Util.createResourceURL({
+			portletId: workbenchId,
+			baseResourceURL: baseResourceURL,
+			resourceId: resourceId
+		});
+
+		console.log("Util.createPortletURL: ", url);
+
+		return url;
+	},
+
+	html: function (domElement, html) {
+		$(domElement).html(html);
+	},
+
 	ajax: function ({
 		namespace, //namespace of the portlet
 		baseResourceURL,

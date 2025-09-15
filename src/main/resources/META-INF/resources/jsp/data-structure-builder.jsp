@@ -23,6 +23,8 @@
 	System.out.println("workbenchNamespace: " + workbenchNamespace);
 	System.out.println("workbenchId: " + workbenchId);
 	System.out.println("sdePortletId: " + sdePortletId);
+	System.out.println("DataStructureBuilder portletId: " + portletDisplay.getId() + "." +  portletDisplay.getInstanceId());
+
 %>
 
 
@@ -70,7 +72,7 @@
 			permissions: JSON.parse('<%= permissions.toJSONString() %>'),
 			workbench:{
 				url: '<%= workbenchURL %>',
-			 	namespace: '<%= workbenchNamespace %>',
+			 	namespace: '<%= "_"+workbenchId+"_" %>',
 				portletId: '<%= workbenchId %>',
 			},
 			params: { // initial parameters

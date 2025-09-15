@@ -79,7 +79,7 @@ public class LoadDataStructureResourceCommand extends BaseMVCResourceCommand{
 			result.put("dataStructure", dataStructure.toJSON());
 		}
 		
-		System.out.println("Result: " + result.toString(4));
+		//System.out.println("Result: " + result.toString(4));
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(result.toJSONString());
 		pw.flush();

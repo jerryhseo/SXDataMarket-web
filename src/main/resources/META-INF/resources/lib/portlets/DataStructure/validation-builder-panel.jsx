@@ -709,7 +709,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 		}
 
 		this.forceUpdate();
-		this.workingParam.fireRefresh();
+		this.workingParam.fireRefreshPreview();
 	}
 
 	checkSectionEnabled(sectionId) {
@@ -768,7 +768,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 		this.workingParam.validation = this.validation;
 
 		this.workingParam.validate();
-		this.workingParam.fireRefresh();
+		this.workingParam.fireRefreshPreview();
 
 		this.forceUpdate();
 	}
@@ -783,7 +783,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 		this.forceUpdate();
 
 		this.workingParam.validate();
-		this.workingParam.fireRefresh();
+		this.workingParam.fireRefreshPreview();
 	}
 
 	setSectionMessageTranslation(sectionid, translation, languageId) {
@@ -824,7 +824,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 
 		this.forceUpdate();
 		this.workingParam.validate();
-		this.workingParam.fireRefresh();
+		this.workingParam.fireRefreshPreview();
 	}
 
 	handleMessageChanged(sectionId, translations) {
