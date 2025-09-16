@@ -607,8 +607,8 @@ export class Parameter {
 		this.refreshKey();
 	}
 
-	isGridCell(cellIndex) {
-		return this.displayType == Parameter.DisplayTypes.GRID_CELL && cellIndex >= 0;
+	isGridCell() {
+		return this.displayType == Parameter.DisplayTypes.GRID_CELL;
 	}
 
 	setRequiredMessage(msg) {
@@ -737,7 +737,7 @@ export class Parameter {
 	}
 
 	getTagId(cellIndex) {
-		return this.isGridCell(cellIndex) ? this.tagId + "_" + cellIndex : this.tagId;
+		return this.isGridCell() ? this.tagId + "_" + cellIndex : this.tagId;
 	}
 
 	addStyle(style) {
@@ -924,7 +924,7 @@ export class Parameter {
 	 *     so that the function returns indexed cell value.
 	 */
 	getValue(cellIndex) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			if (!this.value) {
 				this.value = [];
 			}
@@ -936,7 +936,7 @@ export class Parameter {
 	}
 
 	setValue({ value, cellIndex = null, validate = false }) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			if (!this.value) {
 				this.value = [];
 			}
@@ -957,7 +957,7 @@ export class Parameter {
 	}
 
 	initValue(cellIndex) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			this.setValue({ value: this.defaultValue ?? null, cellIndex: cellIndex });
 		} else {
 			this.setValue({ value: this.defaultValue ?? null });
@@ -1014,7 +1014,7 @@ export class Parameter {
 	}
 
 	fireRefreshPreview(cellIndex) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			Event.fire(Event.SX_REFRESH_FORM, this.namespace, this.namespace, {
 				targetFormId: this.formId,
 				paramCode: this.parent.code,
@@ -1094,6 +1094,8 @@ export class Parameter {
 			parameter: this
 		});
 	}
+
+	fireGridCellSelected(cellIndex) {}
 
 	validate(cellIndex) {
 		let value = this.getValue(cellIndex);
@@ -1599,8 +1601,20 @@ export class StringParameter extends Parameter {
 	initProperties(json) {
 		this.parse(json);
 
-		if (!this.hasValue()) {
-			this.initValue();
+		if (this.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			if (!this.value) {
+				this.value = [];
+			}
+
+			this.value.forEach((val, cellIndex) => {
+				if (!this.hasValue(cellIndex)) {
+					this.initValue(cellIndex);
+				}
+			});
+		} else {
+			if (!this.hasValue()) {
+				this.initValue();
+			}
 		}
 	}
 
@@ -1842,11 +1856,23 @@ export class NumericParameter extends Parameter {
 		this.#max = val;
 	}
 
-	initProperties(json = {}) {
+	initProperties(json) {
 		this.parse(json);
 
-		if (!this.hasValue()) {
-			this.initValue();
+		if (this.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			if (!this.value) {
+				this.value = [];
+			}
+
+			this.value.forEach((val, cellIndex) => {
+				if (!this.hasValue(cellIndex)) {
+					this.initValue(cellIndex);
+				}
+			});
+		} else {
+			if (!this.hasValue()) {
+				this.initValue();
+			}
 		}
 	}
 
@@ -1871,15 +1897,15 @@ export class NumericParameter extends Parameter {
 	getValueUncertainty(cellIndex) {
 		const value = this.getValue(cellIndex);
 
-		return this.isGridCell(cellIndex) ? this.value[cellIndex].uncertainty : this.value.uncertainty;
+		return this.isGridCell() ? this.value[cellIndex].uncertainty : this.value.uncertainty;
 	}
 
 	getValueValue(cellIndex) {
-		return this.isGridCell(cellIndex) ? this.value[cellIndex].value : this.value.value;
+		return this.isGridCell() ? this.value[cellIndex].value : this.value.value;
 	}
 
 	setValueUncertainty(value, cellIndex) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			if (!this.value) {
 				this.value = [];
 			}
@@ -1899,7 +1925,7 @@ export class NumericParameter extends Parameter {
 	}
 
 	setValueValue(value, cellIndex) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			if (!this.value) {
 				this.value = [];
 			}
@@ -1924,7 +1950,7 @@ export class NumericParameter extends Parameter {
 			return false;
 		}
 
-		let value = this.isGridCell(cellIndex) ? this.value[cellIndex] : this.value;
+		let value = this.isGridCell() ? this.value[cellIndex] : this.value;
 		if (Util.isEmpty(value)) {
 			return false;
 		}
@@ -2093,11 +2119,23 @@ export class SelectParameter extends Parameter {
 		this.#placeholder = val;
 	}
 
-	initProperties(json = {}) {
+	initProperties(json) {
 		this.parse(json);
 
-		if (!this.hasValue()) {
-			this.initValue();
+		if (this.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			if (!this.value) {
+				this.value = [];
+			}
+
+			this.value.forEach((val, cellIndex) => {
+				if (!this.hasValue(cellIndex)) {
+					this.initValue(cellIndex);
+				}
+			});
+		} else {
+			if (!this.hasValue()) {
+				this.initValue();
+			}
 		}
 	}
 
@@ -2458,11 +2496,23 @@ export class BooleanParameter extends SelectParameter {
 		this.falseOption.label = label;
 	}
 
-	initProperties(json = {}) {
+	initProperties(json) {
 		this.parse(json);
 
-		if (!this.hasValue()) {
-			this.initValue();
+		if (this.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			if (!this.value) {
+				this.value = [];
+			}
+
+			this.value.forEach((val, cellIndex) => {
+				if (!this.hasValue(cellIndex)) {
+					this.initValue(cellIndex);
+				}
+			});
+		} else {
+			if (!this.hasValue()) {
+				this.initValue();
+			}
 		}
 	}
 
@@ -2709,8 +2759,20 @@ export class FileParameter extends Parameter {
 	initProperties(json) {
 		this.parse(json);
 
-		if (!this.hasValue()) {
-			this.initValue();
+		if (this.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			if (!this.value) {
+				this.value = [];
+			}
+
+			this.value.forEach((val, cellIndex) => {
+				if (!this.hasValue(cellIndex)) {
+					this.initValue(cellIndex);
+				}
+			});
+		} else {
+			if (!this.hasValue()) {
+				this.initValue();
+			}
 		}
 	}
 
@@ -2786,8 +2848,20 @@ export class AddressParameter extends Parameter {
 	initProperties(json) {
 		this.parse(json);
 
-		if (!this.hasValue()) {
-			this.initValue();
+		if (this.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			if (!this.value) {
+				this.value = [];
+			}
+
+			this.value.forEach((val, cellIndex) => {
+				if (!this.hasValue(cellIndex)) {
+					this.initValue(cellIndex);
+				}
+			});
+		} else {
+			if (!this.hasValue()) {
+				this.initValue();
+			}
 		}
 	}
 
@@ -2934,8 +3008,20 @@ export class DateParameter extends Parameter {
 	initProperties(json) {
 		this.parse(json);
 
-		if (!this.hasValue()) {
-			this.initValue();
+		if (this.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			if (!this.value) {
+				this.value = [];
+			}
+
+			this.value.forEach((val, cellIndex) => {
+				if (!this.hasValue(cellIndex)) {
+					this.initValue(cellIndex);
+				}
+			});
+		} else {
+			if (!this.hasValue()) {
+				this.initValue();
+			}
 		}
 	}
 
@@ -3021,50 +3107,62 @@ export class PhoneParameter extends Parameter {
 	initProperties(json) {
 		this.parse(json);
 
-		if (!this.hasValue()) {
-			this.initValue();
+		if (this.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			if (!this.value) {
+				this.value = [];
+			}
+
+			this.value.forEach((val, cellIndex) => {
+				if (!this.hasValue(cellIndex)) {
+					this.initValue(cellIndex);
+				}
+			});
+		} else {
+			if (!this.hasValue()) {
+				this.initValue();
+			}
 		}
 	}
 
 	getCountryNo(cellIndex) {
-		return this.isGridCell(cellIndex) ? this.value[cellIndex].countryNo : this.value.countryNo;
+		return this.isGridCell() ? this.value[cellIndex].countryNo : this.value.countryNo;
 	}
 	getAreaNo(cellIndex) {
-		return this.isGridCell(cellIndex) ? this.value[cellIndex].areaNo : this.value.areaNo;
+		return this.isGridCell() ? this.value[cellIndex].areaNo : this.value.areaNo;
 	}
 	getStationNo(cellIndex) {
-		return this.isGridCell(cellIndex) ? this.value[cellIndex].stationNo : this.value.stationNo;
+		return this.isGridCell() ? this.value[cellIndex].stationNo : this.value.stationNo;
 	}
 	getPersonalNo(cellIndex) {
-		return this.isGridCell(cellIndex) ? this.value[cellIndex].personal : this.value.personal;
+		return this.isGridCell() ? this.value[cellIndex].personal : this.value.personal;
 	}
 	get enableCountryNo() {
 		return this.#enableCountryNo;
 	}
 
 	setCountryNo(val, cellIndex) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			this.value[cellIndex].countryNo;
 		} else {
 			this.value.countryNo = val;
 		}
 	}
 	setAreaNo(val, cellIndex) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			this.value[cellIndex].areaNo;
 		} else {
 			this.value.areaNo = val;
 		}
 	}
 	setStationNo(val, cellIndex) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			this.value[cellIndex].stationNo;
 		} else {
 			this.value.stationNo = val;
 		}
 	}
 	setPersonalNo(val, cellIndex) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			this.value[cellIndex].personalNo;
 		} else {
 			this.value.personalNo = val;
@@ -3150,8 +3248,20 @@ export class EMailParameter extends Parameter {
 	initProperties(json) {
 		this.parse(json);
 
-		if (!this.hasValue()) {
-			this.initValue();
+		if (this.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			if (!this.value) {
+				this.value = [];
+			}
+
+			this.value.forEach((val, cellIndex) => {
+				if (!this.hasValue(cellIndex)) {
+					this.initValue(cellIndex);
+				}
+			});
+		} else {
+			if (!this.hasValue()) {
+				this.initValue();
+			}
 		}
 	}
 
@@ -3182,7 +3292,7 @@ export class EMailParameter extends Parameter {
 		this.setDirty();
 	}
 	setServerName(value, cellIndex) {
-		if (this.isGridCell(cellIndex)) {
+		if (this.isGridCell()) {
 			this.value[cellIndex].serverName = value;
 		} else {
 			this.value.serverName = value;
@@ -3201,7 +3311,7 @@ export class EMailParameter extends Parameter {
 	}
 
 	checkValidEmail(cellIndex) {
-		const value = this.isGridCell(cellIndex) ? this.value[cellIndex] : this.value;
+		const value = this.isGridCell() ? this.value[cellIndex] : this.value;
 	}
 
 	initValue(cellIndex) {
@@ -3864,7 +3974,6 @@ export class GridParameter extends GroupParameter {
 
 		if (!this.hasValue()) {
 			this.initValue(0);
-			this.rowCount++;
 		}
 	}
 

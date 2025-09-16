@@ -560,6 +560,13 @@ class SXSelectOptionBuilder extends React.Component {
 	}
 
 	listenerFieldValueChanged = (event) => {
+		console.log(
+			"SXSelectOptionBuilder SX_FIELD_VALUE_CHANGED before: ",
+			event.dataPacket.parameter,
+			event.dataPacket.parameter.getValue(),
+			this.selectedOption
+		);
+
 		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
 
 		if (!dataPacket) {
@@ -1019,12 +1026,20 @@ class SXStringTypeOptionForm extends React.Component {
 			return;
 		}
 
-		//("SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ", dataPacket, this.workingParam);
+		console.log("SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ", dataPacket, this.workingParam);
 
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
 		if (this.workingParam.isRendered()) {
-			this.workingParam.fireRefreshPreview();
+			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
+				Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
+					targetFormId: this.workingParam.formId,
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version
+				});
+			} else {
+				this.workingParam.fireRefreshPreview();
+			}
 		}
 	};
 
@@ -1191,7 +1206,15 @@ class SXNumericTypeOptionForm extends React.Component {
 		}
 
 		if (this.workingParam.isRendered()) {
-			this.workingParam.fireRefreshPreview();
+			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
+				Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
+					targetFormId: this.workingParam.formId,
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version
+				});
+			} else {
+				this.workingParam.fireRefreshPreview();
+			}
 		}
 	};
 
@@ -1420,9 +1443,14 @@ class SXSelectTypeOptionForm extends React.Component {
 			}
 
 			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
+				Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
+					targetFormId: this.workingParam.formId,
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version
+				});
+			} else {
+				this.workingParam.fireRefreshPreview();
 			}
-
-			this.workingParam.fireRefreshPreview();
 		}
 	};
 
@@ -1563,6 +1591,14 @@ class SXBooleanTypeOptionForm extends React.Component {
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
 		if (this.workingParam.isRendered()) {
+			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
+				Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
+					targetFormId: this.workingParam.formId,
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version
+				});
+			}
+
 			this.workingParam.fireRefreshPreview();
 		}
 	};

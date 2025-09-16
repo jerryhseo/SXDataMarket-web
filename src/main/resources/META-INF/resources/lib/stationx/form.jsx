@@ -395,7 +395,7 @@ export class SXPreviewRow extends React.Component {
 		this.events = {};
 	}
 
-	refreshPreviewHandler = (e) => {
+	listenerRefreshPreview = (e) => {
 		let dataPacket = Event.pickUpDataPacket(
 			e,
 			this.namespace,
@@ -419,7 +419,9 @@ export class SXPreviewRow extends React.Component {
 			return;
 		}
 
-		//console.log("SXPreviewRow SX_REFRESH_PREVIEW: ", dataPacket, this.parameter);
+		console.log("SXPreviewRow SX_REFRESH_PREVIEW: ", dataPacket, this.parameter);
+
+		this.parameter.refreshKey();
 		this.forceUpdate();
 	};
 
@@ -430,11 +432,11 @@ export class SXPreviewRow extends React.Component {
 		console.log("\n");
 		*/
 
-		Event.on(Event.SX_REFRESH_PREVIEW, this.refreshPreviewHandler);
+		Event.on(Event.SX_REFRESH_PREVIEW, this.listenerRefreshPreview);
 	}
 
 	componentWillUnmount() {
-		Event.detach(Event.SX_REFRESH_PREVIEW, this.refreshPreviewHandler);
+		Event.detach(Event.SX_REFRESH_PREVIEW, this.listenerRefreshPreview);
 	}
 
 	handleClick(e) {
@@ -646,7 +648,7 @@ class BaseParameterComponent extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
@@ -668,7 +670,7 @@ class BaseParameterComponent extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
@@ -739,6 +741,11 @@ export class SXInput extends BaseParameterComponent {
 					value={this.state.value}
 					disabled={this.parameter.disabled}
 					onChange={(e) => this.handleChange(e.target.value)}
+					onClick={(e) => {
+						e.stopPropagation();
+
+						this.parameter.fireGridCellSelected(this.cellIndex);
+					}}
 					onBlur={(e) => this.fireValueChanged(e.target.value)}
 					sizing="sm"
 					style={{ border: "none" }}
@@ -826,6 +833,7 @@ export class SXLocalizedInput extends BaseParameterComponent {
 	constructor(props) {
 		super(props);
 
+		this.initValue = { ...this.parameter.getValue(this.cellIndex) };
 		this.state = {
 			selectedLang: props.parameter.languageId,
 			translation: this.parameter.getTranslation(this.parameter.languageId, this.cellIndex)
@@ -849,8 +857,8 @@ export class SXLocalizedInput extends BaseParameterComponent {
 		//this.parameter.validate(this.cellIndex);
 	}
 
-	fireValueChanged(value) {
-		if (value == this.state.translation) {
+	fireValueChanged() {
+		if (Util.isEqual(this.initValue, this.parameter.getValue(this.cellIndex))) {
 			return;
 		}
 
@@ -1044,7 +1052,7 @@ export class SXNumeric extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
@@ -1066,7 +1074,7 @@ export class SXNumeric extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
@@ -1390,7 +1398,7 @@ export class SXBoolean extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
@@ -1412,7 +1420,7 @@ export class SXBoolean extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
@@ -1467,7 +1475,7 @@ export class SXBoolean extends React.Component {
 						name={tagName}
 						label={this.parameter.getTrueLabel()}
 						aria-label={this.parameter.label}
-						value={this.state.value ?? false}
+						value={this.parameter.getValue(this.cellIndex) ?? false}
 						onChange={(e) => {
 							console.log("checkbox changed: ", e);
 							this.handleValueChange(!this.state.value);
@@ -1748,7 +1756,7 @@ export class SXSelect extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
@@ -1770,7 +1778,7 @@ export class SXSelect extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
@@ -1867,6 +1875,7 @@ export class SXSelect extends React.Component {
 
 	renderCheckBoxGroup(tagId, tagName) {
 		const optionRows = Util.convertArrayToRows(this.parameter.options, this.parameter.optionsPerRow);
+		console.log("SXSelect renderCheckBoxGroup: ", this.parameter, typeof this.parameter.optionsPerRow);
 
 		return (
 			<div
@@ -2231,7 +2240,7 @@ export class SXDualListBox extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
@@ -2253,7 +2262,7 @@ export class SXDualListBox extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
@@ -2459,7 +2468,7 @@ export class SXFile extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
@@ -2481,7 +2490,7 @@ export class SXFile extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
@@ -2788,7 +2797,7 @@ export class SXAddress extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
@@ -2810,7 +2819,7 @@ export class SXAddress extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
@@ -3118,7 +3127,7 @@ export class SXDate extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
@@ -3140,7 +3149,7 @@ export class SXDate extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
@@ -3280,7 +3289,7 @@ export class SXPhone extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
@@ -3302,7 +3311,7 @@ export class SXPhone extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
@@ -3506,7 +3515,7 @@ export class SXEMail extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.forceUpdate();
 				return;
@@ -3528,7 +3537,7 @@ export class SXEMail extends React.Component {
 			return;
 		}
 
-		if (this.parameter.isGridCell(this.cellIndex)) {
+		if (this.parameter.isGridCell()) {
 			if (dataPacket.cellIndex == this.cellIndex) {
 				this.focusRef.current.focus();
 				return;
@@ -4038,7 +4047,7 @@ export class SXGrid extends React.Component {
 		console.log("SXGrid value: ", this.parameter.hasValue());
 
 		this.parameter.fireValueChanged();
-		this.forceUpdate();
+		//this.forceUpdate();
 	};
 
 	componentDidMount() {
