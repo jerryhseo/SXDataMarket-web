@@ -197,19 +197,11 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 
 	valueChangedHandler = (e) => {
 		const dataPacket = e.dataPacket;
+
 		if (
 			dataPacket.targetPortlet !== this.namespace ||
 			dataPacket.targetFormId !== this.formIds.basicPropertiesFormId
 		) {
-			/*
-			console.log(
-				"REJECTED - SXDSBuilderBasicPropertiesPanel SX_FIELD_VALUE_CHANGED: ",
-				dataPacket,
-				this.dataStructure,
-				this.workingParam,
-				dataPacket.parameter
-			);
-			*/
 			return;
 		}
 
@@ -219,7 +211,8 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 			dataPacket,
 			this.dataStructure,
 			this.workingParam,
-			dataPacket.parameter
+			dataPacket.parameter,
+			dataPacket.parameter.getValue()
 		);
 		*/
 
@@ -230,16 +223,6 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		}
 
 		this.workingParam[dataPacket.paramCode] = dataPacket.parameter.getValue();
-
-		/*
-			if (
-				(this.workingParam.paramType == paramType.GROUP || this.workingParam.paramType == paramType.GRID) &&
-				(dataPacket.paramCode == ParamProperty.PARAM_CODE ||
-					dataPacket.paramCode == ParamProperty.PARAM_VERSION)
-			) {
-				this.workingParam.updateMemberParents();
-			}
-				*/
 
 		if (dataPacket.paramCode == ParamProperty.PARAM_CODE && !this.workingParam.hasError()) {
 			if (this.dataStructure.checkDuplicateParam(this.workingParam)) {
@@ -267,7 +250,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		}
 
 		if (this.workingParam.isRendered()) {
-			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			if (this.workingParam.isGridCell()) {
 				const gridParam = this.dataStructure.findParameter({
 					paramCode: this.workingParam.parent.code,
 					paramVersion: this.workingParam.parent.version,

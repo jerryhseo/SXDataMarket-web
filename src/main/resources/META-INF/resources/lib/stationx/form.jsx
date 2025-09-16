@@ -35,7 +35,7 @@ import {
 	SelectParameter
 } from "./parameter";
 import { UnderConstruction } from "./common";
-import { SXModalDialog } from "./modal";
+import { SXModalDialog, SXModalUtil } from "./modal";
 import Autocomplete from "@clayui/autocomplete";
 import Panel from "@clayui/panel";
 import Toolbar from "@clayui/toolbar";
@@ -1119,7 +1119,11 @@ export class SXNumeric extends React.Component {
 				const regExpr = new RegExp(ValidationRule.NUMERIC);
 				console.log("SXNumeric newValue: " + newValue, regExpr.test(newValue));
 				if (!regExpr.test(newValue)) {
-					this.parameter.setError(ErrorClass.ERROR, Util.translate("only-numbers-allowed-for-this-field"));
+					this.parameter.setError(
+						ErrorClass.ERROR,
+						Util.translate("only-numbers-allowed-for-this-field"),
+						this.cellIndex
+					);
 					this.parameter.dirty = true;
 
 					this.setState({ value: newValue });
@@ -1162,7 +1166,11 @@ export class SXNumeric extends React.Component {
 				const regExpr = new RegExp(ValidationRule.NUMERIC);
 				console.log("SXNumeric newValue: " + newUncertainty, regExpr.test(newUncertainty));
 				if (!regExpr.test(newUncertainty)) {
-					this.parameter.setError(ErrorClass.ERROR, Util.translate("only-numbers-allowed-for-this-field"));
+					this.parameter.setError(
+						ErrorClass.ERROR,
+						Util.translate("only-numbers-allowed-for-this-field"),
+						this.cellIndex
+					);
 					this.parameter.dirty = true;
 
 					this.setState({ uncertainty: newUncertainty });
@@ -1236,6 +1244,9 @@ export class SXNumeric extends React.Component {
 									max={max}
 									ref={this.focusRef}
 									disabled={this.parameter.disabled}
+									onClick={(e) => {
+										e.stopPropagation();
+									}}
 									onChange={(e) => {
 										this.handleValueChanged(e.target.value);
 									}}
@@ -1262,6 +1273,9 @@ export class SXNumeric extends React.Component {
 									min={min}
 									max={max}
 									disabled={this.parameter.disabled}
+									onClick={(e) => {
+										e.stopPropagation();
+									}}
 									onChange={(e) => this.handleUncertaintyChanged(e.target.value)}
 								/>
 							</ClayInput.GroupItem>
@@ -1476,6 +1490,9 @@ export class SXBoolean extends React.Component {
 						label={this.parameter.getTrueLabel()}
 						aria-label={this.parameter.label}
 						value={this.parameter.getValue(this.cellIndex) ?? false}
+						onClick={(e) => {
+							e.stopPropagation();
+						}}
 						onChange={(e) => {
 							console.log("checkbox changed: ", e);
 							this.handleValueChange(!this.state.value);
@@ -1859,6 +1876,7 @@ export class SXSelect extends React.Component {
 				disabled={this.parameter.disabled}
 				size={this.parameter.listboxSize}
 				onClick={(e) => {
+					e.stopPropagation();
 					/*
 					if (this.selectedOptionChanged) {
 						this.selectedOptionChanged = false;
@@ -2844,15 +2862,30 @@ export class SXAddress extends React.Component {
 			width: 500,
 			height: 600,
 			oncomplete: (data) => {
-				const street =
-					data.userSelectionType == "R"
-						? this.languageId == "ko-KR"
-							? data.address
-							: data.addressEnglish
-						: this.languageId == "ko-KR"
-						? data.roadAddres
-						: data.roadAddressEnglish;
+				let street;
+				if (this.parameter.languageId == "ko-KR") {
+					street = data.address;
 
+					if (data.buildingName) {
+						street += " " + data.buildingName;
+					}
+				} else {
+					street = data.addressEnglish;
+				}
+				console.log("SXAddress: ", data, this.parameter);
+
+				this.parameter.setValue({
+					value: {
+						zipcode: data.zonecode,
+						street: street
+					},
+					cellIndex: this.cellIndex
+				});
+				this.parameter.dirty = true;
+
+				this.parameter.setError(ErrorClass.ERROR, Util.translate("input-detailed-address"), this.cellIndex);
+				this.focusRef.current.disabled = false;
+				this.focusRef.current.focus();
 				this.setState({ zipcode: data.zonecode, street: street, address: "", searched: true });
 			}
 		}).open();
@@ -2861,6 +2894,12 @@ export class SXAddress extends React.Component {
 	handleAddressChanged(address) {
 		this.setState({ address: address });
 
+		let validate = true;
+		if (!address) {
+			this.parameter.setError(ErrorClass.ERROR, Util.translate("detailed-address-is-required"), this.cellIndex);
+			validate = false;
+		}
+
 		this.parameter.setValue({
 			value: {
 				zipcode: this.state.zipcode,
@@ -2868,7 +2907,7 @@ export class SXAddress extends React.Component {
 				address: address
 			},
 			cellIndex: this.cellIndex,
-			validate: true
+			validate: validate
 		});
 
 		this.parameter.fireValueChanged(this.cellIndex);
@@ -2879,10 +2918,7 @@ export class SXAddress extends React.Component {
 			<>
 				{this.state.searched ? (
 					<ClayInput.Group small>
-						<ClayInput.GroupItem
-							prepend
-							expand
-						>
+						<ClayInput.GroupItem prepend>
 							<ClayInput
 								style={{ minWidth: "5rem", width: "100%" }}
 								value={this.state.zipcode + ", " + this.state.street + ", " + this.state.address}
@@ -2920,7 +2956,9 @@ export class SXAddress extends React.Component {
 					<ClayInput.Group style={{ justifyContent: "center" }}>
 						<ClayInput.GroupItem shrink>
 							<Button
-								onClick={(e) => this.handleAddressSearch()}
+								onClick={(e) => {
+									this.handleAddressSearch();
+								}}
 								size="sm"
 							>
 								<span className="inline-item inline-item-before">
@@ -2938,21 +2976,66 @@ export class SXAddress extends React.Component {
 		);
 	}
 
+	renderInlineUI() {
+		return (
+			<ClayInput.Group
+				small
+				style={{ paddingLeft: "10px" }}
+			>
+				<ClayInput.GroupItem
+					shrink
+					prepend
+					style={{ alignSelf: "center" }}
+				>
+					<ClayButtonWithIcon
+						aria-label={Util.translate("search-address")}
+						symbol="search"
+						onClick={(e) => this.handleAddressSearch()}
+						size="sm"
+						spritemap={this.spritemap}
+						disabled={this.parameter.disabled}
+					/>
+				</ClayInput.GroupItem>
+				<ClayInput.GroupItem
+					append
+					style={{ minWidth: "15rem" }}
+				>
+					<ClayInput
+						key={this.state.zipcode + " " + this.state.street}
+						defaultValue={this.state.zipcode + " " + this.state.street}
+						disabled={true}
+					/>
+				</ClayInput.GroupItem>
+				<ClayInput.GroupItem
+					append
+					style={{ minWidth: "6rem" }}
+				>
+					<ClayInput
+						aria-label={Util.translate("address")}
+						value={this.state.address}
+						placeholder={Util.translate("detail-address")}
+						disabled={this.parameter.disabled || !this.state.searched}
+						onClick={(e) => {
+							e.stopPropagation();
+						}}
+						onChange={(e) => this.handleAddressChanged(e.target.value)}
+						ref={this.focusRef}
+					/>
+				</ClayInput.GroupItem>
+			</ClayInput.Group>
+		);
+	}
+
 	renderGridCell() {
-		return <div style={{ ...this.style, ...this.parameter.style }}>{this.renderOneLineUI()}</div>;
+		return this.renderInlineUI();
 	}
 
 	renderFormField() {
 		const tagId = this.parameter.tagId;
 		const tagName = tagId;
 
-		const className = this.className + (this.parameter.dirty ? " " + this.parameter.errorClass : "");
-
 		return (
-			<div
-				className={className}
-				style={{ ...this.style, ...this.parameter.style }}
-			>
+			<>
 				{this.parameter.renderTitle({
 					spritemap: this.spritemap
 				})}
@@ -2962,75 +3045,9 @@ export class SXAddress extends React.Component {
 					</div>
 				)}
 				{this.parameter.viewType == AddressParameter.ViewTypes.ONE_LINE && this.renderOneLineUI()}
-				{this.parameter.viewType == AddressParameter.ViewTypes.INLINE && (
-					<ClayInput.Group
-						small
-						style={{ marginLeft: "10px" }}
-					>
-						<ClayInput.GroupItem
-							shrink
-							style={{ alignSelf: "center" }}
-						>
-							<ClayButtonWithIcon
-								aria-label={Util.translate("search-address")}
-								symbol="search"
-								onClick={(e) => this.handleAddressSearch()}
-								size="sm"
-								spritemap={this.spritemap}
-								disabled={this.parameter.disabled}
-							/>
-						</ClayInput.GroupItem>
-						<ClayInput.GroupItem
-							prepend
-							shrink
-							style={{ width: "min-content" }}
-						>
-							<ClayInput
-								style={{ minWidth: "5rem" }}
-								defaultValue={this.state.zipcode}
-								disabled={true}
-							/>
-						</ClayInput.GroupItem>
-						<ClayInput.GroupItem
-							append
-							shrink
-						>
-							<span style={{ alignContent: "end" }}>,</span>
-						</ClayInput.GroupItem>
-						<ClayInput.GroupItem
-							prepend
-							shrink
-							style={{ width: "min-content" }}
-						>
-							<ClayInput
-								defaultValue={this.state.street}
-								disabled={true}
-								style={{
-									minWidth: "15rem",
-									width: "70%"
-								}}
-							/>
-						</ClayInput.GroupItem>
-						<ClayInput.GroupItem
-							append
-							shrink
-						>
-							<span style={{ alignContent: "end" }}>,</span>
-						</ClayInput.GroupItem>
-						<ClayInput.GroupItem prepend>
-							<ClayInput
-								aria-label={Util.translate("address")}
-								value={this.state.address}
-								placeholder={Util.translate("detail-address")}
-								disabled={!this.state.searched}
-								onChange={(e) => this.handleAddressChanged(e.target.value)}
-								ref={this.focusRef}
-							/>
-						</ClayInput.GroupItem>
-					</ClayInput.Group>
-				)}
+				{this.parameter.viewType == AddressParameter.ViewTypes.INLINE && this.renderInlineUI()}
 				{this.parameter.viewType == AddressParameter.ViewTypes.BLOCK && (
-					<div style={{ marginLeft: "10px" }}>
+					<div style={{ paddingLeft: "10px" }}>
 						<div style={{ display: "block" }}>
 							<span>{this.state.zipcode}</span>
 							<ClayButtonWithIcon
@@ -3057,6 +3074,34 @@ export class SXAddress extends React.Component {
 						/>
 					</div>
 				)}
+				{this.parameter.dirty && this.parameter.hasError(this.cellIndex) && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="exclamation-full"
+					/>
+				)}
+				{this.parameter.dirty && this.parameter.hasWarning(this.cellIndex) && (
+					<SXFormFieldFeedback
+						content={this.parameter.errorMessage}
+						spritemap={this.spritemap}
+						symbol="warning"
+					/>
+				)}
+			</>
+		);
+	}
+
+	render() {
+		const className = this.className + (this.parameter.dirty ? " " + this.parameter.errorClass : "");
+
+		return (
+			<div
+				className={className}
+				style={{ ...this.style, ...this.parameter.style }}
+			>
+				{this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD && this.renderFormField()}
+				{this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL && this.renderGridCell()}
 				{this.parameter.dirty && this.parameter.hasError() && (
 					<SXFormFieldFeedback
 						content={this.parameter.errorMessage}
@@ -3071,15 +3116,6 @@ export class SXAddress extends React.Component {
 						symbol="warning"
 					/>
 				)}
-			</div>
-		);
-	}
-
-	render() {
-		return (
-			<>
-				{this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD && this.renderFormField()}
-				{this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL && this.renderGridCell()}
 				{this.state.underConstruction && (
 					<SXModalDialog
 						header={Util.translate("sorry")}
@@ -3094,7 +3130,7 @@ export class SXAddress extends React.Component {
 						]}
 					/>
 				)}
-			</>
+			</div>
 		);
 	}
 }
@@ -3347,7 +3383,7 @@ export class SXPhone extends React.Component {
 		this.parameter.dirty = true;
 
 		if (!this.checkNo(sectionValue)) {
-			this.parameter.setError(ErrorClass.ERROR, Util.translate("only-numbers"));
+			this.parameter.setError(ErrorClass.ERROR, Util.translate("only-numbers"), this.cellIndex);
 
 			this.forceUpdate();
 
@@ -3375,7 +3411,7 @@ export class SXPhone extends React.Component {
 				<ClayInput.Group
 					id={tagId}
 					small
-					style={{ marginLeft: "10px" }}
+					style={{ paddingLeft: "10px" }}
 				>
 					{this.parameter.enableCountryNo && (
 						<>
@@ -3439,13 +3475,15 @@ export class SXPhone extends React.Component {
 						symbol="exclamation-full"
 					/>
 				)}
-				{this.parameter.dirty && this.parameter.hasWarning() && (
-					<SXFormFieldFeedback
-						content={this.parameter.errorMessage}
-						spritemap={this.spritemap}
-						symbol="warning"
-					/>
-				)}
+				{this.parameter.dirty &&
+					this.parameter.hasWarning() &&
+					this.cellIndex == this.parameter.errorCellIndex && (
+						<SXFormFieldFeedback
+							content={this.parameter.errorMessage}
+							spritemap={this.spritemap}
+							symbol="warning"
+						/>
+					)}
 			</>
 		);
 	}
@@ -3992,7 +4030,9 @@ export class SXGrid extends React.Component {
 		this.state = {
 			activeDropdown: false,
 			selectedRow: 0,
-			selectedColumn: null
+			selectedColumn: null,
+			errorAlert: false,
+			errorMessage: ""
 		};
 
 		this.focusRef = createRef();
@@ -4063,6 +4103,16 @@ export class SXGrid extends React.Component {
 	}
 
 	handleRowActionClick(actionId) {
+		const error = this.parameter.hasError();
+		if (Util.isNotEmpty(error)) {
+			this.setState({
+				activeDropdown: false,
+				errorAlert: true,
+				errorMessage: Util.translate("fix-the-error-first", error.message)
+			});
+			return;
+		}
+
 		switch (actionId) {
 			case "insert": {
 				this.parameter.insertRow(this.state.selectedRow + 1);
@@ -4296,6 +4346,23 @@ export class SXGrid extends React.Component {
 						<tbody key={this.parameter.rowCount}>{this.renderBodyRows()}</tbody>
 					</table>
 				</div>
+				{this.state.errorAlert && (
+					<SXModalDialog
+						header={SXModalUtil.errorDlgHeader(this.spritemap)}
+						body={this.state.errorMessage}
+						buttons={[
+							{
+								onClick: () => {
+									this.setState({ errorAlert: false });
+								},
+								label: Util.translate("ok"),
+								displayType: "primary"
+							}
+						]}
+						status="info"
+						spritemap={this.spritemap}
+					/>
+				)}
 			</div>
 		);
 	}

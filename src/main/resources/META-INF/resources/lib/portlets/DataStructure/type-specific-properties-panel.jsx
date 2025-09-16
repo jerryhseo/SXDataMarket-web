@@ -668,7 +668,11 @@ class SXSelectOptionBuilder extends React.Component {
 			return;
 		}
 
-		this.workingParam.fireRefreshPreview();
+		if (this.workingParam.isGridCell()) {
+			this.workingParam.fireParentRefreshPreview();
+		} else {
+			this.workingParam.fireRefreshPreview();
+		}
 
 		this.forceUpdate();
 	}
@@ -1721,10 +1725,6 @@ class SXAddressTypeOptionForm extends React.Component {
 						{
 							label: Util.getTranslationObject(this.languageId, "In Line"),
 							value: AddressParameter.ViewTypes.INLINE
-						},
-						{
-							label: Util.getTranslationObject(this.languageId, "One Line"),
-							value: AddressParameter.ViewTypes.ONE_LINE
 						}
 					],
 					tooltip: Util.getTranslationObject(this.languageId, "view-type-tooltip"),

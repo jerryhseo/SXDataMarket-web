@@ -338,7 +338,7 @@ class DataStructureBuilder extends React.Component {
 			dataPacket.paramType
 		);
 
-		this.fireRefreshPropertyPanel();
+		this.forceUpdate();
 	};
 
 	copyParameterHandler = (e) => {
@@ -372,7 +372,6 @@ class DataStructureBuilder extends React.Component {
 
 		this.workingParam = copied;
 
-		this.fireRefreshPropertyPanel();
 		this.forceUpdate();
 	};
 
@@ -721,7 +720,7 @@ class DataStructureBuilder extends React.Component {
 		});
 	};
 
-	handleAddParameter() {
+	handleAddParameter = () => {
 		if (this.workingParam.checkIntegrity()) {
 			this.dataStructure.addMember(this.workingParam);
 			this.dataStructure.focus(this.workingParam.paramCode, this.workingParam.paramVersion);
@@ -734,7 +733,7 @@ class DataStructureBuilder extends React.Component {
 				confirmDlgBody: <h4>{Util.translate(this.workingParam.errorMessage)}</h4>
 			});
 		}
-	}
+	};
 
 	render() {
 		if (this.state.loadingStatus == LoadingStatus.PENDING) {

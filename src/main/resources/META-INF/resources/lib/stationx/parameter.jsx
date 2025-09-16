@@ -390,8 +390,8 @@ export class Parameter {
 	get error() {
 		return this.#error;
 	}
-	get errorProperty() {
-		return this.error.property ?? "value";
+	get errorCellIndex() {
+		return this.error.cellIndex;
 	}
 	get errorMessage() {
 		return this.error.message ?? "";
@@ -550,8 +550,8 @@ export class Parameter {
 	set error(val) {
 		this.#error = val;
 	}
-	set errorProperty(prop) {
-		this.#error.property = prop;
+	set errorCellIndex(index) {
+		this.#error.cellIndex = index;
 	}
 	set errorMessage(message) {
 		this.error.message = message;
@@ -693,7 +693,7 @@ export class Parameter {
 			JSON.parse(JSON.stringify(this))
 		);
 
-		copied.paramCode = "_copied_" + Util.randomKey(8);
+		copied.paramCode = copied.paramcode + "_" + Util.randomKey(8);
 		copied.paramVersion = Parameter.DEFAULT_VERSION;
 
 		return copied;
@@ -748,12 +748,16 @@ export class Parameter {
 		delete this.#style[property];
 	}
 
-	hasError() {
-		return this.error.errorClass == ErrorClass.ERROR;
+	hasError(cellIndex) {
+		return Util.isNotEmpty(cellIndex)
+			? this.error.errorClass == ErrorClass.ERROR && cellIndex == this.errorCellIndex
+			: this.error.errorClass == ErrorClass.ERROR;
 	}
 
-	hasWarning() {
-		return this.error.errorClass == ErrorClass.WARNING;
+	hasWarning(cellIndex) {
+		return Util.isNotEmpty(cellIndex)
+			? this.error.errorClass == ErrorClass.WARNING && cellIndex == this.errorCellIndex
+			: this.error.errorClass == ErrorClass.WARNING;
 	}
 
 	checkError() {
@@ -764,10 +768,10 @@ export class Parameter {
 		return null;
 	}
 
-	setError(errorClass, errorMessage, errorProperty = "value") {
+	setError(errorClass, errorMessage, cellIndex) {
 		this.errorClass = errorClass;
 		this.errorMessage = errorMessage;
-		this.errorProperty = errorProperty;
+		this.errorIndex = cellIndex;
 	}
 
 	clearError() {
@@ -1095,6 +1099,23 @@ export class Parameter {
 		});
 	}
 
+	fireParentRefreshPreview() {
+		console.log("fireParentRefreshPreview: ", this);
+		Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			paramCode: this.parent.code,
+			paramVersion: this.parent.version
+		});
+	}
+
+	fireParentRefresh() {
+		Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			paramCode: this.parent.code,
+			paramVersion: this.parent.version
+		});
+	}
+
 	fireGridCellSelected(cellIndex) {}
 
 	validate(cellIndex) {
@@ -1389,6 +1410,7 @@ export class Parameter {
 		if (Util.isNotEmpty(this.validation)) json.validation = this.validation;
 		if (Util.isNotEmpty(this.defaultValue)) json.defaultValue = this.defaultValue;
 		if (Util.isNotEmpty(this.referenceFile)) json.referenceFile = this.referenceFile;
+		if (Util.isNotEmpty(this.style)) json.style = this.style;
 		if (this.showDefinition) json.showDefinition = this.showDefinition;
 		if (this.abstractKey) json.abstractKey = this.abstractKey;
 		if (this.standard) json.standard = this.standard;
@@ -3942,6 +3964,8 @@ export class GroupParameter extends Parameter {
 export class GridParameter extends GroupParameter {
 	#rowCount = 0;
 
+	error = {};
+
 	constructor(namespace, formId, languageId, availableLanguageIds, paramType = ParamType.GRID) {
 		super(namespace, formId, languageId, availableLanguageIds, paramType);
 	}
@@ -4130,16 +4154,18 @@ export class GridParameter extends GroupParameter {
 		this.refreshKey();
 	}
 
-	checkError() {
-		if (this.hasError()) {
-			return this.error;
+	hasError() {
+		if (this.errorClass == ErrorClass.ERROR) {
+			return true;
 		}
 
 		let error = null;
 		this.members.every((member) => {
-			error = member.checkError();
+			if (member.hasError()) {
+				error = member.error;
+			}
 
-			return Util.isEmpty(error) ? Constant.CONTINUE_EVERY : Constant.STOP_EVERY;
+			return Util.isNotEmpty(error) ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
 		});
 
 		return error;
