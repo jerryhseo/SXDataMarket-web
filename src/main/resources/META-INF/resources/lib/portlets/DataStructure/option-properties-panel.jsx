@@ -76,7 +76,7 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 					viewType: BooleanParameter.ViewTypes.TOGGLE,
 					displayName: Util.getTranslationObject(this.languageId, "disabled"),
 					tooltip: Util.getTranslationObject(this.languageId, "disabled-tooltip"),
-					value: this.workingParam.disabled
+					value: this.workingParam.getDisabled()
 				}
 			)
 		};

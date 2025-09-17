@@ -231,8 +231,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					Util.translate("parameter-code-must-be-unique"),
 					"value"
 				);
-				this.fields.paramCode.dirty = true;
-				this.fields.paramCode.refreshKey();
+				this.fields.paramCode.setDirty(true);
 
 				this.workingParam.setError(
 					ErrorClass.ERROR,

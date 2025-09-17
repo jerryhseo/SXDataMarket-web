@@ -9,7 +9,7 @@ import { Util } from "../../stationx/util";
 class SXDataStructurePreviewer extends React.Component {
 	constructor(props) {
 		super(props);
-		console.log("Previewer props: ", props);
+		//console.log("Previewer props: ", props);
 
 		this.namespace = props.dataStructure.namespace;
 		this.formIds = props.formIds;
@@ -81,11 +81,26 @@ class SXDataStructurePreviewer extends React.Component {
 		this.forceUpdate();
 	};
 
+	listenerParameterSelected = (e) => {
+		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
+			//console.log("[REJECTED] DataStructurePreviewer SX_PARAMETER_SELECTED: ", e.dataPacket);
+			return;
+		}
+
+		//console.log("DataStructurePreviewer SX_PARAMETER_SELECTED: ", e.dataPacket);
+
+		Event.fire(Event.SX_PARAMETER_SELECTED, this.namespace, this.namespace, {
+			targetFormId: this.formIds.dsbuilderId,
+			parameter: e.dataPacket.parameter
+		});
+	};
+
 	componentDidMount() {
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
 		Event.on(Event.SX_MOVE_PARAMETER_UP, this.moveParameterUpHandler);
 		Event.on(Event.SX_MOVE_PARAMETER_DOWN, this.moveParameterDownHandler);
 		Event.on(Event.SX_REFRESH_FORM, this.refreshFormHandler);
+		Event.on(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 	}
 
 	componentWillUnmount() {
@@ -93,6 +108,7 @@ class SXDataStructurePreviewer extends React.Component {
 		Event.on(Event.SX_MOVE_PARAMETER_UP, this.moveParameterUpHandler);
 		Event.on(Event.SX_MOVE_PARAMETER_DOWN, this.moveParameterDownHandler);
 		Event.on(Event.SX_REFRESH_FORM, this.refreshFormHandler);
+		Event.off(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 	}
 
 	handleManifestSDE = async () => {

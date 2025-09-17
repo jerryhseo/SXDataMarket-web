@@ -684,6 +684,9 @@ class SXDSBuilderValidationPanel extends React.Component {
 
 					this.requiredProps.message.setValue({ value: message });
 
+					console.log("Requied enabled: ", this.workingParam);
+					this.workingParam.fireRefreshPreview();
+
 					break;
 				}
 				case ValidationKeys.CUSTOM: {

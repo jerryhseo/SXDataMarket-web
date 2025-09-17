@@ -668,11 +668,7 @@ class SXSelectOptionBuilder extends React.Component {
 			return;
 		}
 
-		if (this.workingParam.isGridCell()) {
-			this.workingParam.fireParentRefreshPreview();
-		} else {
-			this.workingParam.fireRefreshPreview();
-		}
+		this.workingParam.fireRefreshPreview();
 
 		this.forceUpdate();
 	}
@@ -1596,14 +1592,14 @@ class SXBooleanTypeOptionForm extends React.Component {
 
 		if (this.workingParam.isRendered()) {
 			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
-				Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
+				Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
 					targetFormId: this.workingParam.formId,
 					paramCode: this.workingParam.parent.code,
 					paramVersion: this.workingParam.parent.version
 				});
+			} else {
+				this.workingParam.fireRefreshPreview();
 			}
-
-			this.workingParam.fireRefreshPreview();
 		}
 	};
 

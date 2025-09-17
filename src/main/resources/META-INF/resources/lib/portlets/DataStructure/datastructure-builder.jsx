@@ -268,7 +268,7 @@ class DataStructureBuilder extends React.Component {
 	parameterSelectedHandler = (e) => {
 		const dataPacket = e.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) {
-			console.log("SX_PARAMETER_SELECTED rejected: ", dataPacket);
+			//console.log("SX_PARAMETER_SELECTED rejected: ", dataPacket);
 			return;
 		}
 
@@ -288,15 +288,21 @@ class DataStructureBuilder extends React.Component {
 		}
 
 		selectedParam.focused = true;
-		console.log("SelectedParam: ", selectedParam);
 
 		this.workingParam.focused = false;
-		/*
-		if( selectedParam.paramType == ParamType.GRID && this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL){
-			selectedParam.fireRefreshPreview();
+
+		if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
+			const gridParam = this.dataStructure.findParameter({
+				paramCode: this.workingParam.parent.code,
+				paramVersion: this.workingParam.parent.version,
+				descendant: true
+			});
+
+			gridParam.fireRefreshPreview();
+		} else {
+			this.workingParam.fireRefreshPreview();
 		}
-		
-		*/
+
 		if (selectedParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
 			const gridParam = this.dataStructure.findParameter({
 				paramCode: selectedParam.parent.code,
@@ -305,11 +311,11 @@ class DataStructureBuilder extends React.Component {
 			});
 
 			gridParam.fireRefreshPreview();
+		} else {
+			selectedParam.fireRefreshPreview();
 		}
 
 		this.workingParam = selectedParam;
-		this.workingParam.fireRefreshPreview();
-
 		this.fireRefreshPropertyPanel();
 	};
 
@@ -698,7 +704,7 @@ class DataStructureBuilder extends React.Component {
 			successFunc: (result) => {
 				console.log("Saved dataStructure result: ", result);
 				this.dataStructure.dataStructureId = result.dataStructureId;
-				this.dataStructure.dirty = false;
+				this.dataStructure.setDirty(false);
 
 				this.setState({
 					confirmDlgState: true,

@@ -8,6 +8,7 @@ import SXFormField, {
 	SXDualListBox,
 	SXEMail,
 	SXFile,
+	SXFormFieldFeedback,
 	SXGrid,
 	SXGroup,
 	SXInput,
@@ -203,6 +204,7 @@ export class Parameter {
 	#paramVersion = Parameter.DEFAULT_VERSION;
 	#displayName = {};
 	#displayType = Parameter.DisplayTypes.FORM_FIELD;
+	#disabled = false;
 	#viewType;
 	#abstractKey = false;
 	#searchable = true;
@@ -310,7 +312,7 @@ export class Parameter {
 		}
 	}
 	get disabled() {
-		return this.state == Constant.State.DISABLED;
+		return this.#disabled;
 	}
 	get definition() {
 		return this.#definition;
@@ -491,7 +493,7 @@ export class Parameter {
 	}
 
 	set disabled(val) {
-		this.#state = val ? Constant.State.DISABLED : Constant.State.ACTIVE;
+		this.#disabled = val;
 	}
 	set definition(val) {
 		this.#definition = val;
@@ -593,18 +595,63 @@ export class Parameter {
 		return this.paramCode == param.paramCode;
 	}
 
-	setDisabled(disabled) {
-		this.disabled = disabled;
+	setDisabled(disabled, cellIndex) {
+		if (this.isGridCell()) {
+			if (!(this.disabled instanceof Array)) {
+				this.disabled = [];
+			}
+
+			if (Util.isNotEmpty(cellIndex)) {
+				this.disabled[cellIndex] = disabled;
+			} else {
+				this.disabled = this.value.map((elem) => disabled);
+			}
+		} else {
+			this.disabled = disabled;
+		}
+
 		this.refreshKey();
 	}
 
-	setDirty() {
-		if (this.dirty) {
-			return;
+	getDisabled(cellIndex) {
+		if (this.isGridCell() && Util.isNotEmpty(cellIndex)) {
+			if (!(this.disabled instanceof Array)) {
+				return false;
+			}
+			return this.disabled[cellIndex];
+		} else {
+			return this.disabled;
+		}
+	}
+
+	setDirty(dirty, cellIndex) {
+		if (this.isGridCell()) {
+			if (!(this.dirty instanceof Array)) {
+				this.dirty = [];
+			}
+
+			if (Util.isNotEmpty(cellIndex)) {
+				this.dirty[cellIndex] = dirty;
+			} else {
+				this.dirty = this.dirty.map((elem) => dirty);
+			}
+		} else {
+			this.dirty = true;
 		}
 
-		this.dirty = true;
 		this.refreshKey();
+	}
+
+	getDirty(cellIndex) {
+		if (this.isGridCell() && Util.isNotEmpty(cellIndex)) {
+			if (!(this.dirty instanceof Array)) {
+				return false;
+			}
+
+			return this.dirty[cellIndex];
+		} else {
+			return this.dirty;
+		}
 	}
 
 	isGridCell() {
@@ -771,11 +818,27 @@ export class Parameter {
 	setError(errorClass, errorMessage, cellIndex) {
 		this.errorClass = errorClass;
 		this.errorMessage = errorMessage;
-		this.errorIndex = cellIndex;
+		this.errorCellIndex = cellIndex;
 	}
 
 	clearError() {
 		this.error = {};
+	}
+
+	getClassName(baseClassName, cellIndex) {
+		let className = baseClassName;
+
+		if (this.getDirty(cellIndex)) {
+			if (this.hasError(cellIndex)) {
+				className += " input-group-sm " + ErrorClass.ERROR;
+			} else if (this.hasWarning(cellIndex)) {
+				className += " input-group-sm " + ErrorClass.WARNING;
+			} else {
+				className += " input-group-sm " + ErrorClass.SUCCESS;
+			}
+		}
+
+		return className;
 	}
 
 	checkIntegrity() {
@@ -784,27 +847,23 @@ export class Parameter {
 		}
 
 		if (Util.isEmpty(this.paramCode)) {
-			this.setError(ErrorClass.ERROR, Util.translate("parameter-code-is-missing"), "paramCode");
+			this.setError(ErrorClass.ERROR, Util.translate("parameter-code-is-missing"));
 
-			this.dirty = true;
-			//this.refreshKey();
-
+			this.setDirty(true);
 			return false;
 		}
 
 		if (Util.isEmpty(this.paramVersion)) {
-			this.setError(ErrorClass.ERROR, Util.translate("parameter-version-is-missing"), "paramVersion");
+			this.setError(ErrorClass.ERROR, Util.translate("parameter-version-is-missing"));
 
-			this.dirty = true;
-			//this.refreshKey();
+			this.setDirty(true);
 			return false;
 		}
 
 		if (Util.isEmpty(this.displayName)) {
-			this.setError(ErrorClass.ERROR, Util.translate("display-name-is-missing"), "displayName");
+			this.setError(ErrorClass.ERROR, Util.translate("display-name-is-missing"));
 
-			this.dirty = true;
-			//this.refreshKey();
+			this.setDirty(true);
 			return false;
 		}
 
@@ -951,7 +1010,7 @@ export class Parameter {
 		}
 
 		if (validate) {
-			this.setDirty();
+			this.setDirty(true, cellIndex);
 			this.validate(cellIndex);
 		}
 	}
@@ -1008,18 +1067,8 @@ export class Parameter {
 	}
 
 	fireRefresh(cellIndex) {
-		Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
-			targetFormId: this.formId,
-			paramCode: this.paramCode,
-			paramVersion: this.paramVersion,
-			parameter: this,
-			cellIndex: cellIndex
-		});
-	}
-
-	fireRefreshPreview(cellIndex) {
 		if (this.isGridCell()) {
-			Event.fire(Event.SX_REFRESH_FORM, this.namespace, this.namespace, {
+			Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
 				targetFormId: this.formId,
 				paramCode: this.parent.code,
 				paramVersion: this.parent.version,
@@ -1027,7 +1076,7 @@ export class Parameter {
 				cellIndex: cellIndex
 			});
 		} else {
-			Event.fire(Event.SX_REFRESH_FORM, this.namespace, this.namespace, {
+			Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
 				targetFormId: this.formId,
 				paramCode: this.paramCode,
 				paramVersion: this.paramVersion,
@@ -1035,6 +1084,32 @@ export class Parameter {
 				cellIndex: cellIndex
 			});
 		}
+	}
+
+	fireRefreshPreview(cellIndex) {
+		if (this.isGridCell()) {
+			Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
+				targetFormId: this.formId,
+				paramCode: this.parent.code,
+				paramVersion: this.parent.version,
+				parameter: this,
+				cellIndex: cellIndex
+			});
+		} else {
+			Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
+				targetFormId: this.formId,
+				paramCode: this.paramCode,
+				paramVersion: this.paramVersion,
+				parameter: this,
+				cellIndex: cellIndex
+			});
+		}
+	}
+
+	fireRefreshForm() {
+		Event.fire(Event.SX_REFRESH_FORM, this.namespace, this.namespace, {
+			targetFormId: this.formId
+		});
 	}
 
 	fireFocus(cellIndex) {
@@ -1059,42 +1134,42 @@ export class Parameter {
 
 	fireSelectGroup(targetForm) {
 		Event.fire(Event.SX_SELECT_GROUP, this.namespace, this.namespace, {
-			targetFormId: targetForm,
+			targetFormId: targetForm ?? this.formId,
 			parameter: this
 		});
 	}
 
 	fireCopy(targetForm) {
 		Event.fire(Event.SX_COPY_PARAMETER, this.namespace, this.namespace, {
-			targetFormId: targetForm,
+			targetFormId: targetForm ?? this.formId,
 			parameter: this
 		});
 	}
 
 	fireDelete(targetForm) {
 		Event.fire(Event.SX_DELETE_PARAMETER, this.namespace, this.namespace, {
-			targetFormId: targetForm,
+			targetFormId: targetForm ?? this.formId,
 			parameter: this
 		});
 	}
 
 	fireMoveUp(targetForm) {
 		Event.fire(Event.SX_MOVE_PARAMETER_UP, this.namespace, this.namespace, {
-			targetFormId: targetForm,
+			targetFormId: targetForm ?? this.formId,
 			parameter: this
 		});
 	}
 
 	fireMoveDown(targetForm) {
 		Event.fire(Event.SX_MOVE_PARAMETER_DOWN, this.namespace, this.namespace, {
-			targetFormId: targetForm,
+			targetFormId: targetForm ?? this.formId,
 			parameter: this
 		});
 	}
 
 	fireParameterSelected(targetForm) {
 		Event.fire(Event.SX_PARAMETER_SELECTED, this.namespace, this.namespace, {
-			targetFormId: targetForm,
+			targetFormId: targetForm ?? this.formId,
 			parameter: this
 		});
 	}
@@ -1485,6 +1560,27 @@ export class Parameter {
 				spritemap={spritemap}
 				style={style}
 			/>
+		);
+	}
+
+	renderFormFieldFeedback(spritemap, cellIndex) {
+		return (
+			<>
+				{this.getDirty(cellIndex) && this.hasError(cellIndex) && (
+					<SXFormFieldFeedback
+						content={this.errorMessage}
+						spritemap={spritemap}
+						symbol="exclamation-full"
+					/>
+				)}
+				{this.getDirty(cellIndex) && this.hasWarning(cellIndex) && (
+					<SXFormFieldFeedback
+						content={this.errorMessage}
+						spritemap={spritemap}
+						symbol="warning"
+					/>
+				)}
+			</>
 		);
 	}
 
@@ -2863,6 +2959,8 @@ export class AddressParameter extends Parameter {
 		ONE_LINE: "oneLine"
 	};
 
+	searched = [];
+
 	constructor(namespace, formId, languageId, availableLanguageIds, paramType = ParamType.ADDRESS) {
 		super(namespace, formId, languageId, availableLanguageIds, paramType);
 	}
@@ -3293,7 +3391,7 @@ export class EMailParameter extends Parameter {
 		if (Util.isEmpty(value)) {
 			return "";
 		} else {
-			return this.value.emailId;
+			return value.emailId;
 		}
 	}
 
@@ -3303,24 +3401,17 @@ export class EMailParameter extends Parameter {
 		if (Util.isEmpty(value)) {
 			return "";
 		} else {
-			return this.value.serverName;
+			return value.serverName;
 		}
 	}
 
 	setEmailId(value, cellIndex) {
 		const serverName = this.getServerName(cellIndex);
-		super.setValue({ emailId: value, serverName: serverName }, cellIndex);
-
-		this.setDirty();
+		super.setValue({ value: { emailId: value, serverName: serverName }, cellIndex: cellIndex, validate: true });
 	}
 	setServerName(value, cellIndex) {
-		if (this.isGridCell()) {
-			this.value[cellIndex].serverName = value;
-		} else {
-			this.value.serverName = value;
-		}
-
-		this.setDirty();
+		const emailId = this.getEmailId(cellIndex);
+		super.setValue({ value: { emailId: emailId, serverName: value }, cellIndex: cellIndex, validate: true });
 	}
 
 	getEmailAddress(cellIndex) {
@@ -3330,10 +3421,6 @@ export class EMailParameter extends Parameter {
 		} else {
 			return value.emailId + "@" + value.serverName;
 		}
-	}
-
-	checkValidEmail(cellIndex) {
-		const value = this.isGridCell() ? this.value[cellIndex] : this.value;
 	}
 
 	initValue(cellIndex) {
@@ -3528,7 +3615,7 @@ export class GroupParameter extends Parameter {
 		member.initValue();
 		this.members.push(member);
 
-		this.setDirty();
+		this.setDirty(true);
 	}
 
 	setMemberDisplayType(member) {
@@ -3559,7 +3646,7 @@ export class GroupParameter extends Parameter {
 		}
 
 		this.setMemberOrders();
-		this.setDirty();
+		this.setDirty(true);
 	}
 
 	isMember(paramCode, paramVersion) {
@@ -3584,7 +3671,7 @@ export class GroupParameter extends Parameter {
 		this.members.splice(index, 1);
 
 		this.setMemberOrders();
-		this.setDirty();
+		this.setDirty(true);
 
 		return removed;
 	}
@@ -3620,7 +3707,7 @@ export class GroupParameter extends Parameter {
 
 		this.insertMember(copied, index + 1);
 
-		this.setDirty();
+		this.setDirty(true);
 
 		return copied;
 	}
@@ -4025,7 +4112,7 @@ export class GridParameter extends GroupParameter {
 
 		this.columns.push(column);
 
-		this.setDirty();
+		this.setDirty(true);
 	}
 
 	insertColumn(column, colOrder) {
@@ -4081,8 +4168,7 @@ export class GridParameter extends GroupParameter {
 
 		this.rowCount++;
 
-		this.dirty = true;
-		this.refreshKey();
+		this.setDirty(true);
 	}
 
 	copyRow(rowIndex) {
@@ -4097,8 +4183,7 @@ export class GridParameter extends GroupParameter {
 
 		this.rowCount++;
 
-		this.dirty = true;
-		this.refreshKey();
+		this.setDirty(true);
 	}
 
 	deleteRow(rowIndex) {
@@ -4116,8 +4201,7 @@ export class GridParameter extends GroupParameter {
 			this.rowCount--;
 		}
 
-		this.dirty = true;
-		this.refreshKey();
+		this.setDirty(true);
 	}
 
 	moveUpRow(rowIndex) {
@@ -4133,8 +4217,7 @@ export class GridParameter extends GroupParameter {
 			column.refreshKey();
 		});
 
-		this.dirty = true;
-		this.refreshKey();
+		this.setDirty(true);
 	}
 
 	moveDownRow(rowIndex) {
@@ -4150,8 +4233,7 @@ export class GridParameter extends GroupParameter {
 			column.refreshKey();
 		});
 
-		this.dirty = true;
-		this.refreshKey();
+		this.setDirty(true);
 	}
 
 	hasError() {
@@ -4175,7 +4257,7 @@ export class GridParameter extends GroupParameter {
 		super.setTitleBarInfo(property, value, false);
 	}
 
-	fireColumnSelected(colCode, targetForm) {
+	fireColumnSelected(colCode) {
 		let colFound;
 
 		this.columns.every((column) => {
@@ -4189,7 +4271,7 @@ export class GridParameter extends GroupParameter {
 		});
 
 		if (colFound) {
-			colFound.fireParameterSelected(targetForm);
+			colFound.fireParameterSelected();
 		}
 	}
 
@@ -4251,9 +4333,6 @@ export class GridParameter extends GroupParameter {
 		displayType = this.displayType,
 		viewType = this.viewType,
 		preview = false,
-		dsbuilderId,
-		propertyPanelId,
-		previewCanvasId,
 		cellIndex
 	}) {
 		return (
@@ -4269,9 +4348,6 @@ export class GridParameter extends GroupParameter {
 				viewType={viewType}
 				cellIndex={cellIndex}
 				preview={preview}
-				dsbuilderId={dsbuilderId}
-				propertyPanelId={propertyPanelId}
-				previewCanvasId={previewCanvasId}
 			/>
 		);
 	}
