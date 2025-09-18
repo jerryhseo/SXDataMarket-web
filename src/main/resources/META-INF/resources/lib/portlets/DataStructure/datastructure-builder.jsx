@@ -129,12 +129,14 @@ class DataStructureBuilder extends React.Component {
 
 		this.workbench = new Workbench({
 			namespace: this.namespace,
-			workbenchId: this.props.portletId,
+			workbenchPortletId: props.portletId,
+			workbenchId: this.formIds.dsbuilderId,
 			baseRenderUrl: this.baseRenderUrl,
-			baseResourceURL: this.baseResourceURL
+			baseResourceURL: this.baseResourceURL,
+			spritemap: this.spritemap
 		});
 
-		this.sdeContent = null;
+		this.portletWindow = null;
 
 		this.structureCode = Parameter.createParameter(
 			this.namespace,
@@ -277,11 +279,11 @@ class DataStructureBuilder extends React.Component {
 			return;
 		}
 
-		if (this.workingParam.hasError()) {
+		if (this.dataStructure.hasError()) {
 			this.setState({
 				confirmDlgState: true,
 				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
+				confirmDlgBody: Util.translate("fix-the-error-first", this.dataStructure.errorMessage)
 			});
 
 			return;
@@ -351,11 +353,11 @@ class DataStructureBuilder extends React.Component {
 		const dataPacket = e.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
 
-		if (this.workingParam.hasError()) {
+		if (this.dataStructure.hasError()) {
 			this.setState({
 				confirmDlgState: true,
 				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
+				confirmDlgBody: Util.translate("fix-the-error-first", this.dataStructure.errorMessage)
 			});
 
 			return;
@@ -385,11 +387,11 @@ class DataStructureBuilder extends React.Component {
 		const dataPacket = e.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
 
-		if (this.workingParam.hasError()) {
+		if (this.dataStructure.hasError()) {
 			this.setState({
 				confirmDlgState: true,
 				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
+				confirmDlgBody: Util.translate("fix-the-error-first", this.dataStructure.errorMessage)
 			});
 
 			return;
@@ -412,7 +414,10 @@ class DataStructureBuilder extends React.Component {
 			case "structureCode": {
 				const newCode = this.structureCode.getValue();
 				if (this.structureCode.hasError()) {
+					this.dataStructure.setError(this.structureCode.errorClass, this.structureCode.errorMessage);
 					return;
+				} else {
+					this.dataStructure.clearError();
 				}
 
 				Util.ajax({
@@ -427,9 +432,14 @@ class DataStructureBuilder extends React.Component {
 						if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
 							this.dataStructure.paramCode = newCode;
 							this.dataStructure.updateMemberParents();
-							//this.structureCode.clearError();
+							this.dataStructure.clearError();
+							this.structureCode.clearError();
 						} else {
 							this.structureCode.setError(
+								ErrorClass.ERROR,
+								Util.translate("datastructure-code-is-duplicated")
+							);
+							this.dataStructure.setError(
 								ErrorClass.ERROR,
 								Util.translate("datastructure-code-is-duplicated")
 							);
@@ -444,7 +454,10 @@ class DataStructureBuilder extends React.Component {
 			case "structureVersion": {
 				this.dataStructure.paramVersion = this.structureVersion.getValue();
 				if (this.structureVersion.hasError()) {
+					this.dataStructure.setError(this.structureVersion.errorClass, this.structureVersion.errorMessage);
 					return;
+				} else {
+					this.dataStructure.clearError();
 				}
 
 				Util.ajax({
@@ -463,6 +476,10 @@ class DataStructureBuilder extends React.Component {
 							this.structureCode.setError(
 								ErrorClass.ERROR,
 								Util.translate("datastructure-is-duplicated")
+							);
+							this.dataStructure.setError(
+								ErrorClass.ERROR,
+								Util.translate("ddatastructure-is-duplicated")
 							);
 						}
 					},
@@ -508,7 +525,7 @@ class DataStructureBuilder extends React.Component {
 
 		//console.log("listenerLoadPortlet: ", dataPacket, this.props.workbench);
 
-		this.sdeContent = await this.workbench.loadPortletWindow({
+		this.portletWindow = await this.workbench.loadPortletWindow({
 			portletName: dataPacket.portletName,
 			params: {
 				dataTypeId: this.dataTypeId,
@@ -517,6 +534,15 @@ class DataStructureBuilder extends React.Component {
 		});
 
 		this.setState({ manifestSDE: true });
+	};
+
+	listenerHandshake = (event) => {
+		const dataPacket = event.dataPacket;
+		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.formIds.dsbuilderId)) {
+			return;
+		}
+
+		console.log("Handshake from: ", dataPacket.sourcePortlet);
 	};
 
 	componentDidMount() {
@@ -529,6 +555,7 @@ class DataStructureBuilder extends React.Component {
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
 		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
+		Event.on(Event.SX_HANDSHAKE, this.listenerHandshake);
 	}
 
 	componentWillUnmount() {
@@ -539,6 +566,7 @@ class DataStructureBuilder extends React.Component {
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
 		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
+		Event.off(Event.SX_HANDSHAKE, this.listenerHandshake);
 	}
 
 	loadDataStructure() {
@@ -648,7 +676,7 @@ class DataStructureBuilder extends React.Component {
 	}
 
 	handleNewParameter = () => {
-		if (this.workingParam.hasError()) {
+		if (this.dataStructure.hasError()) {
 			this.setState({
 				confirmDlgState: true,
 				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
@@ -1044,16 +1072,7 @@ class DataStructureBuilder extends React.Component {
 							spritemap={this.spritemap}
 						/>
 					)}
-					{this.state.manifestSDE && (
-						<SXPortletWindow
-							namespace={this.sdeContent.portletNamespace}
-							formId={this.formIds.dsbuilderId}
-							title={Util.translate("structured-data-editor")}
-							content={this.sdeContent.portletContent}
-							windowId={this.workbench.zIndex}
-							spritemap={this.spritemap}
-						/>
-					)}
+					{this.state.manifestSDE && this.portletWindow}
 
 					{this.state.underConstruction && (
 						<SXModalDialog

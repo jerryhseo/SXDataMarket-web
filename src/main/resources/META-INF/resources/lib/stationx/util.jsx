@@ -186,10 +186,24 @@ export const Util = {
 		return url;
 	},
 
+	/*
+	html: function (domElement, html) {
+		$("#" + domElement).html(html);
+
+		$("#" + domElement + " script").each(function () {
+			const newScript = document.createElement("script");
+			if (this.src) {
+				newScript.src = this.src;
+			} else {
+				newScript.textContent = this.textContent;
+			}
+			document.body.appendChild(newScript);
+		});
+	},
+	*/
 	html: function (domElement, html) {
 		$(domElement).html(html);
 	},
-
 	ajax: function ({
 		namespace, //namespace of the portlet
 		baseResourceURL,

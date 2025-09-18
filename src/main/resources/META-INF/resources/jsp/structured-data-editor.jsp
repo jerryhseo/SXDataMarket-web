@@ -13,15 +13,18 @@
 
 <%
 	TypeStructureLink typeStructureLink = (TypeStructureLink)GetterUtil.getObject(renderRequest.getAttribute("typeStructureLink"), null);
+    long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
     long dataStructureId = ParamUtil.getLong(renderRequest, "dataStructureId", 0);
     long structuredDataId = ParamUtil.getLong(renderRequest, "structuredDataId", 0);
 	JSONArray permissions = (JSONArray)GetterUtil.getObject(renderRequest.getAttribute("permissions"), JSONFactoryUtil.createJSONArray());
 
 	String workbenchNamespace = ParamUtil.getString(renderRequest, StationXWebKeys.WORKBENCH_NAMESPACE, StringPool.BLANK);
+	String workbenchId = ParamUtil.getString(renderRequest, StationXWebKeys.WORKBENCH_ID, StringPool.BLANK);
 	
 	String portalURL = PortalUtil.getPortalURL(renderRequest);
 	
 	System.out.println("[SXDataTypeEditor] workbenchNamespace: " + workbenchNamespace);
+	System.out.println("[SXDataTypeEditor] portletId: " + portletDisplay.getId());
 %>
 
 <portlet:renderURL  var="baseRenderURL">
@@ -38,7 +41,7 @@
 <script>
 	window.SXWorkingPortletInfo = {
 			rootElement: "<portlet:namespace />structuredDataEditorRoot",
-			portletId: "<%=WebPortletKey.SXStructuredDataEditorPortlet %>",
+			portletId: "<%=portletDisplay.getPortletName()%>",
 			portletParams:{
 				namespace: '<portlet:namespace/>',
 				portalURL: '<%= portalURL %>', 
@@ -51,8 +54,10 @@
 				baseResourceURL: '<%=  baseResourceURL %>',
 				permissions: JSON.parse('<%= permissions.toJSONString() %>'),
 				workbenchNamespace: '<%= workbenchNamespace %>',
+				workbenchId: '<%= workbenchId %>',
 				typeStructureLink: <%= typeStructureLink.toJSON().toString()%>,
 				dataStructureId: Number('<%= dataStructureId %>'),
+				dataTypeId: Number('<%= dataTypeId %>'),
 				structuredDataId: Number('<%= structuredDataId %>')
 			}
 	};

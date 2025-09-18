@@ -1042,7 +1042,7 @@ export class SXNumeric extends React.Component {
 			return "";
 		}
 
-		return Number(Number(val).toFixed(this.parameter.decimalPlaces));
+		return Number(Number(val).toFixed(this.parameter.isInteger ? 0 : this.parameter.decimalPlaces));
 	}
 
 	handleValueChanged = (newValue) => {
@@ -1050,21 +1050,25 @@ export class SXNumeric extends React.Component {
 			return;
 		} else if (Util.isNotEmpty(this.state.value) && Util.isEmpty(newValue)) {
 			this.parameter.setValue({ value: "", cellIndex: this.cellIndex, validate: true });
-			this.parameter.fireValueChanged(this.cellIndex);
+			//this.parameter.fireValueChanged(this.cellIndex);
 
 			this.setState({ value: "" });
 
 			return;
 		} else if (Util.isNotEmpty(newValue)) {
-			if (this.state.value == Number(newValue)) {
+			if (this.state.value === newValue) {
 				return;
 			} else {
-				const regExpr = new RegExp(ValidationRule.NUMERIC);
+				const regExpr = this.parameter.isInteger
+					? new RegExp(ValidationRule.INTEGER)
+					: new RegExp(ValidationRule.NUMERIC);
 
 				if (!regExpr.test(newValue)) {
 					this.parameter.setError(
 						ErrorClass.ERROR,
-						Util.translate("only-numbers-allowed-for-this-field"),
+						this.parameter.isInteger
+							? Util.translate("only-digits-allowed-for-this-field")
+							: Util.translate("only-numbers-allowed-for-this-field"),
 						this.cellIndex
 					);
 					this.parameter.setDirty(true, this.cellIndex);
@@ -1085,7 +1089,7 @@ export class SXNumeric extends React.Component {
 		}
 
 		this.parameter.setValue({ value: value, cellIndex: this.cellIndex, validate: true });
-		this.parameter.fireValueChanged(this.cellIndex);
+		//this.parameter.fireValueChanged(this.cellIndex);
 
 		this.setState({ value: Util.isEmpty(newValue) ? "" : this.toNumber(newValue) });
 	};
@@ -1103,15 +1107,19 @@ export class SXNumeric extends React.Component {
 
 			return;
 		} else if (Util.isNotEmpty(newUncertainty)) {
-			if (this.state.uncertainty == Number(newUncertainty)) {
+			if (this.state.uncertainty === newUncertainty) {
 				return;
 			} else {
-				const regExpr = new RegExp(ValidationRule.NUMERIC);
-				console.log("SXNumeric newValue: " + newUncertainty, regExpr.test(newUncertainty));
+				const regExpr = this.parameter.isInteger
+					? new RegExp(ValidationRule.INTEGER)
+					: new RegExp(ValidationRule.NUMERIC);
+
 				if (!regExpr.test(newUncertainty)) {
 					this.parameter.setError(
 						ErrorClass.ERROR,
-						Util.translate("only-numbers-allowed-for-this-field"),
+						this.parameter.isInteger
+							? Util.translate("only-digits-allowed-for-this-field")
+							: Util.translate("only-numbers-allowed-for-this-field"),
 						this.cellIndex
 					);
 					this.parameter.setDirty(true, this.cellIndex);
@@ -1127,7 +1135,7 @@ export class SXNumeric extends React.Component {
 		this.setState({ uncertainty: this.toNumber(newUncertainty) });
 		this.parameter.setValue({ value: value, cellIndex: this.cellIndex, validate: true });
 
-		this.parameter.fireValueChanged(this.cellIndex);
+		//this.parameter.fireValueChanged(this.cellIndex);
 	}
 
 	renderClayUI() {
@@ -1186,6 +1194,9 @@ export class SXNumeric extends React.Component {
 								onChange={(e) => {
 									this.handleValueChanged(e.target.value);
 								}}
+								onBlur={(e) => {
+									this.parameter.fireValueChanged(this.cellIndex);
+								}}
 							/>
 						</ClayInput.GroupItem>
 					</ClayInput.Group>
@@ -1210,6 +1221,9 @@ export class SXNumeric extends React.Component {
 								max={max}
 								disabled={this.parameter.getDisabled(this.cellIndex)}
 								onChange={(e) => this.handleUncertaintyChanged(e.target.value)}
+								onBlur={(e) => {
+									this.parameter.fireValueChanged(this.cellIndex);
+								}}
 							/>
 						</ClayInput.GroupItem>
 					</>

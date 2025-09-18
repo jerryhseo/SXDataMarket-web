@@ -216,28 +216,20 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		);
 		*/
 
+		/*
 		if (dataPacket.parameter.hasError()) {
 			this.workingParam.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
 		} else {
 			this.workingParam.clearError();
 		}
+			*/
 
 		this.workingParam[dataPacket.paramCode] = dataPacket.parameter.getValue();
 
-		if (dataPacket.paramCode == ParamProperty.PARAM_CODE && !this.workingParam.hasError()) {
+		if (dataPacket.paramCode == ParamProperty.PARAM_CODE) {
 			if (this.dataStructure.checkDuplicateParam(this.workingParam)) {
-				this.fields.paramCode.setError(
-					ErrorClass.ERROR,
-					Util.translate("parameter-code-must-be-unique"),
-					"value"
-				);
+				this.fields.paramCode.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
 				this.fields.paramCode.setDirty(true);
-
-				this.workingParam.setError(
-					ErrorClass.ERROR,
-					Util.translate("parameter-code-must-be-unique"),
-					"paramCode"
-				);
 
 				this.setState({
 					confirmDlgState: true,

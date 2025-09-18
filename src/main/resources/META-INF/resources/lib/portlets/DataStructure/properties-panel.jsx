@@ -182,7 +182,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 	}
 
 	handlePanelStepChange(step) {
-		if (this.workingParam.hasError()) {
+		if (this.dataStructure.hasError()) {
 			this.setState({
 				confirmDlgState: true,
 				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),

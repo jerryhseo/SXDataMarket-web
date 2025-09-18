@@ -59,7 +59,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 			}
 		];
 
-		const baseValue = Parameter.createParameter(
+		const baseValueString = Parameter.createParameter(
 			this.namespace,
 			this.formId,
 			this.languageId,
@@ -68,6 +68,18 @@ class SXDSBuilderValidationPanel extends React.Component {
 			{
 				displayName: Util.getTranslationObject(this.languageId, "value"),
 				placeholder: Util.getTranslationObject(this.languageId, "error-message")
+			}
+		);
+		const baseValueNumeric = Parameter.createParameter(
+			this.namespace,
+			this.formId,
+			this.languageId,
+			this.availableLanguageIds,
+			ParamType.NUMERIC,
+			{
+				displayName: Util.getTranslationObject(this.languageId, "value"),
+				placeholder: Util.getTranslationObject(this.languageId, "error-message"),
+				decimalPlaces: 32
 			}
 		);
 		const baseBoundary = Parameter.createParameter(
@@ -120,7 +132,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 			errorLevel: requiredErrorLevel
 		};
 
-		const patternValue = baseValue.copy();
+		const patternValue = baseValueString.copy();
 		patternValue.paramCode = "patternValue";
 		patternValue.setValue({ value: this.getSectionValue(ValidationKeys.PATTERN) });
 		const patternMessage = baseMessage.copy();
@@ -136,8 +148,9 @@ class SXDSBuilderValidationPanel extends React.Component {
 			errorLevel: patternErrorLevel
 		};
 
-		const minLengthValue = baseValue.copy();
+		const minLengthValue = baseValueNumeric.copy();
 		minLengthValue.paramCode = "minLengthValue";
+		minLengthValue.isInteger = true;
 		minLengthValue.setValue({ value: this.getSectionValue(ValidationKeys.MIN_LENGTH) });
 		const minLengthMessage = baseMessage.copy();
 		minLengthMessage.paramCode = "minLengthMessage";
@@ -152,8 +165,9 @@ class SXDSBuilderValidationPanel extends React.Component {
 			errorLevel: minLengthErrorLevel
 		};
 
-		const maxLengthValue = baseValue.copy();
+		const maxLengthValue = baseValueNumeric.copy();
 		maxLengthValue.paramCode = "maxLengthValue";
+		maxLengthValue.isInteger = true;
 		maxLengthValue.setValue({ value: this.getSectionValue(ValidationKeys.MAX_LENGTH) });
 		const maxLengthMessage = baseMessage.copy();
 		maxLengthMessage.paramCode = "maxLengthMessage";
@@ -168,7 +182,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 			errorLevel: maxLengthErrorLevel
 		};
 
-		const minValue = baseValue.copy();
+		const minValue = baseValueNumeric.copy();
 		minValue.paramCode = "minValue";
 		const minValueBoundary = baseBoundary.copy();
 		minValueBoundary.paramCode = "minValueBoundary";
@@ -188,7 +202,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 			errorLevel: minErrorLevel
 		};
 
-		const maxValue = baseValue.copy();
+		const maxValue = baseValueNumeric.copy();
 		maxValue.paramCode = "maxValue";
 		const maxValueBoundary = baseBoundary.copy();
 		maxValueBoundary.paramCode = "maxValueBoundary";
@@ -208,7 +222,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 			errorLevel: maxErrorLevel
 		};
 
-		const normalMinValue = baseValue.copy();
+		const normalMinValue = baseValueNumeric.copy();
 		normalMinValue.paramCode = "normalMinValue";
 		const normalMinBoundary = baseBoundary.copy();
 		normalMinBoundary.paramCode = "normalMinBoundary";
@@ -228,7 +242,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 			errorLevel: normalMinErrorLevel
 		};
 
-		const normalMaxValue = baseValue.copy();
+		const normalMaxValue = baseValueNumeric.copy();
 		normalMaxValue.paramCode = "normalMaxValue";
 		const normalMaxBoundary = baseBoundary.copy();
 		normalMaxBoundary.paramCode = "normalMaxBoundary";
@@ -248,7 +262,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 			errorLevel: normalMaxErrorLevel
 		};
 
-		const customValue = baseValue.copy();
+		const customValue = baseValueString.copy();
 		customValue.paramCode = "customValue";
 		customValue.multipleLine = true;
 		const customMessage = baseMessage.copy();
@@ -311,10 +325,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("min-length-must-be-smaller-than-max-length")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("min-length-must-be-smaller-than-max-length")
+						);
 
 						this.minLengthProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -347,10 +367,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("max-length-must-be-larger-than-min-length")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("max-length-must-be-larger-than-min-length")
+						);
 
 						this.maxLengthProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -385,10 +411,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("min-value-must-be-smaller-than-normal-min")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("min-value-must-be-smaller-than-normal-min")
+						);
 
 						this.minProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -398,10 +430,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("min-value-must-be-smaller-than-normal-max")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("min-value-must-be-smaller-than-normal-max")
+						);
 
 						this.minProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -411,10 +449,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("min-value-must-be-smaller-than-max")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("min-value-must-be-smaller-than-max")
+						);
 
 						this.minProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -453,10 +497,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("max-value-must-be-larger-than-normal-min")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("max-value-must-be-larger-than-normal-min")
+						);
 
 						this.maxProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -466,10 +516,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("max-value-must-be-larger-than-normal-max")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("max-value-must-be-larger-than-normal-max")
+						);
 
 						this.maxProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -479,10 +535,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("max-value-must-be-larger-than-min")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("max-value-must-be-larger-than-min")
+						);
 
 						this.maxProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -521,10 +583,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("normal-min-value-must-be-smaller-than-normal-max")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("normal-min-value-must-be-smaller-than-normal-max")
+						);
 
 						this.normalMinProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -534,10 +602,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("normal-min-value-must-be-larger-than-min")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("normal-min-value-must-be-larger-than-min")
+						);
 
 						this.normalMinProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -547,10 +621,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("normal-min-value-must-be-smaller-than-max")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("normal-min-value-must-be-smaller-than-max")
+						);
 
 						this.normalMinProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -589,10 +669,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("normal-max-value-must-be-larger-than-normal-min")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("normal-max-value-must-be-larger-than-normal-min")
+						);
 
 						this.normalMaxProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -602,10 +688,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("normal-max-value-must-be-larger-than-min")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("normal-max-value-must-be-larger-than-min")
+						);
 
 						this.normalMaxProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 
@@ -615,10 +707,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 							ErrorClass.ERROR,
 							Util.translate("normal-max-value-must-be-smaller-than-max")
 						);
+						this.dataStructure.setError(
+							ErrorClass.ERROR,
+							Util.translate("normal-max-value-must-be-smaller-than-max")
+						);
 
 						this.normalMaxProps.value.fireRefresh();
 
 						break;
+					} else {
+						this.dataStructure.clearError();
 					}
 				}
 

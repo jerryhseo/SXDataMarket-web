@@ -150,10 +150,13 @@ class SXGroupBuilder extends React.Component {
 							);
 							this.fieldMemberCode.refreshKey();
 
-							this.groupParam.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
+							this.dataStructure.setError(
+								ErrorClass.ERROR,
+								Util.translate("parameter-code-must-be-unique")
+							);
 						} else {
 							this.fieldMemberCode.clearError();
-							this.groupParam.clearError();
+							this.dataStructure.clearError();
 						}
 						this.state.selectedMember.refreshKey();
 
@@ -512,6 +515,7 @@ class SXSelectOptionBuilder extends React.Component {
 	constructor(props) {
 		super(props);
 
+		this.dataStructure = props.dataStructure;
 		this.workingParam = props.workingParam;
 
 		this.namespace = this.workingParam.namespace;
@@ -591,10 +595,16 @@ class SXSelectOptionBuilder extends React.Component {
 					ErrorClass.ERROR,
 					Util.translate("the-option-value-exists-already-try-another-value")
 				);
+				this.dataStructure.setError(
+					ErrorClass.ERROR,
+					Util.translate("the-option-value-exists-already-try-another-value")
+				);
 				this.setState({
 					optionValueDuplicated: true
 				});
 			} else {
+				this.fieldOptionValue.clearError();
+				this.dataStructure.clearError();
 				this.workingOption.value = this.fieldOptionValue.getValue();
 			}
 		}
@@ -934,6 +944,7 @@ class SXStringTypeOptionForm extends React.Component {
 		this.namespace = props.workingParam.namespace;
 		this.languageId = props.workingParam.languageId;
 		this.availableLanguageIds = props.workingParam.availableLanguageIds;
+		this.dataStructure = props.dataStructure;
 		this.workingParam = props.workingParam;
 		this.spritemap = props.spritemap;
 
@@ -1063,6 +1074,7 @@ class SXNumericTypeOptionForm extends React.Component {
 		super(props);
 
 		this.formIds = props.formIds;
+		this.dataStructure = props.dataStructure;
 		this.workingParam = props.workingParam;
 		this.namespace = props.workingParam.namespace;
 		this.languageId = props.workingParam.languageId;
@@ -1248,6 +1260,7 @@ class SXSelectTypeOptionForm extends React.Component {
 		super(props);
 
 		this.formIds = props.formIds;
+		this.dataStructure = props.dataStructure;
 		this.workingParam = props.workingParam;
 		this.namespace = props.workingParam.namespace;
 		this.languageId = props.workingParam.languageId;
@@ -1478,6 +1491,7 @@ class SXSelectTypeOptionForm extends React.Component {
 				<SXSelectOptionBuilder
 					namespace={this.namespace}
 					formIds={this.formIds}
+					dataStructure={this.dataStructure}
 					workingParam={this.workingParam}
 					spritemap={this.spritemap}
 				/>
@@ -1491,6 +1505,7 @@ class SXBooleanTypeOptionForm extends React.Component {
 		super(props);
 
 		this.formIds = props.formIds;
+		this.dataStructure = props.dataStructure;
 		this.workingParam = props.workingParam;
 		this.namespace = props.workingParam.namespace;
 		this.languageId = props.workingParam.languageId;
@@ -1627,6 +1642,7 @@ class SXPhoneTypeOptionForm extends React.Component {
 		super(props);
 
 		this.formIds = props.formIds;
+		this.dataStructure = props.dataStructure;
 		this.workingParam = props.workingParam;
 		this.namespace = props.workingParam.namespace;
 		this.languageId = props.workingParam.languageId;
@@ -1694,6 +1710,7 @@ class SXAddressTypeOptionForm extends React.Component {
 		super(props);
 
 		this.formIds = props.formIds;
+		this.dataStructure = props.dataStructure;
 		this.workingParam = props.workingParam;
 		this.namespace = props.workingParam.namespace;
 		this.languageId = props.workingParam.languageId;
@@ -1771,6 +1788,7 @@ class SXDateTypeOptionForm extends React.Component {
 		super(props);
 
 		this.formIds = props.formIds;
+		this.dataStructure = props.dataStructure;
 		this.workingParam = props.workingParam;
 		this.namespace = props.workingParam.namespace;
 		this.languageId = props.workingParam.languageId;
@@ -1882,6 +1900,10 @@ class SXDateTypeOptionForm extends React.Component {
 						ErrorClass.ERROR,
 						Util.translate("start-year-must-be-smaller-than-end-year")
 					);
+					this.dataStructure.setError(
+						ErrorClass.ERROR,
+						Util.translate("start-year-must-be-smaller-than-end-year")
+					);
 
 					Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
 						targetFormId: this.formId,
@@ -1889,10 +1911,15 @@ class SXDateTypeOptionForm extends React.Component {
 						paramVersion: dataPacket.paramVersion
 					});
 
+					/*
 					this.workingParam.setError(
 						ErrorClass.ERROR,
 						Util.translate("start-year-must-be-smaller-than-end-year")
 					);
+					*/
+				} else {
+					dataPacket.parameter.clearError();
+					this.dataStructure.clearError();
 				}
 				break;
 			}
@@ -1905,6 +1932,10 @@ class SXDateTypeOptionForm extends React.Component {
 						ErrorClass.ERROR,
 						Util.translate("end-year-must-be-larger-than-start-year")
 					);
+					this.dataStructure.setError(
+						ErrorClass.ERROR,
+						Util.translate("end-year-must-be-larger-than-start-year")
+					);
 
 					Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
 						targetFormId: this.formId,
@@ -1912,10 +1943,15 @@ class SXDateTypeOptionForm extends React.Component {
 						paramVersion: dataPacket.paramVersion
 					});
 
+					/*
 					this.workingParam.setError(
 						ErrorClass.ERROR,
 						Util.translate("end-year-must-be-larger-than-start-year")
 					);
+					*/
+				} else {
+					dataPacket.parameter.clearError();
+					this.dataStructure.clearError();
 				}
 				break;
 			}
@@ -2180,6 +2216,7 @@ class SXDSBuilderTypeSpecificPanel extends React.Component {
 				return (
 					<SXStringTypeOptionForm
 						formIds={this.formIds}
+						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>
@@ -2189,6 +2226,7 @@ class SXDSBuilderTypeSpecificPanel extends React.Component {
 				return (
 					<SXNumericTypeOptionForm
 						formIds={this.formIds}
+						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>
@@ -2198,6 +2236,7 @@ class SXDSBuilderTypeSpecificPanel extends React.Component {
 				return (
 					<SXSelectTypeOptionForm
 						formIds={this.formIds}
+						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>
@@ -2207,6 +2246,7 @@ class SXDSBuilderTypeSpecificPanel extends React.Component {
 				return (
 					<SXBooleanTypeOptionForm
 						formIds={this.formIds}
+						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>
@@ -2216,6 +2256,7 @@ class SXDSBuilderTypeSpecificPanel extends React.Component {
 				return (
 					<SXPhoneTypeOptionForm
 						formIds={this.formIds}
+						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>
@@ -2225,6 +2266,7 @@ class SXDSBuilderTypeSpecificPanel extends React.Component {
 				return (
 					<SXAddressTypeOptionForm
 						formIds={this.formIds}
+						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>
@@ -2234,6 +2276,7 @@ class SXDSBuilderTypeSpecificPanel extends React.Component {
 				return (
 					<SXDateTypeOptionForm
 						formIds={this.formIds}
+						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>

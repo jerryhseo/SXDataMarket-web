@@ -251,8 +251,9 @@ export class SXDataTypeStructureLink extends React.Component {
 
 		this.namespace = props.namespace;
 		this.formId = props.formId;
-		this.languageId = props.languageId;
-		this.availableLanguageIds = props.availableLanguageIds;
+		this.languageId = props.languageId ?? SXSystem.getLanguageId();
+		this.defaultLanguageId = props.languageId ?? SXSystem.getDefaultLanguageId();
+		this.availableLanguageIds = props.availableLanguageIds ?? SXSystem.getAvailableLanguages();
 
 		this.spritemap = props.spritemap;
 
