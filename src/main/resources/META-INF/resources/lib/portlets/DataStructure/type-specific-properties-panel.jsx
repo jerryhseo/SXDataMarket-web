@@ -14,6 +14,7 @@ import { Table, Head, Body, Cell, Icon, Row } from "@clayui/core";
 import Form, { ClayInput, ClaySelectWithOption } from "@clayui/form";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXActionDropdown from "../../stationx/dropdown";
+import { DataStructure } from "./data-structure";
 
 class SXGroupBuilder extends React.Component {
 	constructor(props) {
@@ -136,6 +137,11 @@ class SXGroupBuilder extends React.Component {
 					this.fieldMemberDisplayName
 				);
 
+				if (dataPacket.parameter.hasError()) {
+					this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+					return;
+				}
+
 				switch (dataPacket.paramCode) {
 					case "memberCode": {
 						let duplicated = false;
@@ -148,19 +154,16 @@ class SXGroupBuilder extends React.Component {
 								ErrorClass.ERROR,
 								Util.translate("parameter-code-must-be-unique")
 							);
-							this.fieldMemberCode.refreshKey();
+							this.fieldMemberCode.fireRefresh();
 
 							this.dataStructure.setError(
 								ErrorClass.ERROR,
 								Util.translate("parameter-code-must-be-unique")
 							);
-						} else {
-							this.fieldMemberCode.clearError();
-							this.dataStructure.clearError();
+
+							return;
 						}
 						this.state.selectedMember.refreshKey();
-
-						this.forceUpdate();
 						break;
 					}
 					case "memberDisplayName": {
@@ -170,6 +173,15 @@ class SXGroupBuilder extends React.Component {
 					}
 				}
 			}
+		}
+
+		const error = this.checkError();
+		if (Util.isEmpty(error)) {
+			this.dataStructure.clearError();
+		} else {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+
+			return;
 		}
 
 		if (this.groupParam.isRendered()) {
@@ -187,6 +199,11 @@ class SXGroupBuilder extends React.Component {
 			return;
 		}
 		console.log("listenerPopActionClicked: ", dataPacket);
+		const error = this.checkError();
+		if (Util.isNotEmpty(error)) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", error.errorMessage));
+			return;
+		}
 
 		switch (dataPacket.action) {
 			case "copy": {
@@ -220,6 +237,27 @@ class SXGroupBuilder extends React.Component {
 	componentWillUnmount() {
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
 		Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
+	}
+
+	checkError() {
+		const error = DataStructure.checkError([this.fieldMemberCode, this.fieldMemberDisplayName]);
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
+	}
+
+	openErrorDlg(message) {
+		this.setState({
+			confirmDlgState: true,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: message
+		});
 	}
 
 	moveMemberUp = (index) => {
@@ -269,35 +307,21 @@ class SXGroupBuilder extends React.Component {
 			return;
 		}
 
-		if (this.groupParam.hasError()) {
-			this.setState({
-				confirmDlgState: true,
-				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", this.groupParam.errorMessage)
-			});
-
+		const error = this.checkError();
+		if (Util.isNotEmpty(error)) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", error.errorMessage));
 			return;
 		}
 
 		this.setMemberPropertyFields(member);
-		/*
-		this.fieldMemberCode.setValue({ value: member.paramCode });
-		this.fieldMemberCode.refreshKey();
-		this.fieldMemberDisplayName.setValue({ value: member.displayName });
-		this.fieldMemberDisplayName.refreshKey();
-		*/
 
 		this.setState({ selectedMember: member });
 	};
 
 	handleMemberTypeSelect(memberType) {
-		if (this.groupParam.hasError()) {
-			this.setState({
-				confirmDlgState: true,
-				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
-			});
-
+		const error = this.checkError();
+		if (Util.isNotEmpty(error)) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", error.errorMessage));
 			return;
 		}
 
@@ -528,7 +552,10 @@ class SXSelectOptionBuilder extends React.Component {
 		this.setWorkingOption();
 
 		this.state = {
-			optionValueDuplicated: false
+			optionValueDuplicated: false,
+			confirmDlgState: false,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: <></>
 		};
 
 		this.formId = this.namespace + "selectOptionBuilder";
@@ -544,7 +571,19 @@ class SXSelectOptionBuilder extends React.Component {
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "option-label"),
 				placeholder: Util.getTranslationObject(this.languageId, "option-label"),
-				value: this.selectedOption.label ?? {}
+				value: this.selectedOption.label ?? {},
+				validation: {
+					required: {
+						value: true,
+						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+						errorClass: ErrorClass.ERROR
+					},
+					maxLength: {
+						value: 32,
+						message: Util.getTranslationObject(this.languageId, "option-label-must-be-longer-than", 32),
+						errorClass: ErrorClass.ERROR
+					}
+				}
 			}
 		);
 
@@ -558,18 +597,32 @@ class SXSelectOptionBuilder extends React.Component {
 				paramCode: "optionValue",
 				displayName: Util.getTranslationObject(this.languageId, "option-value"),
 				placeholder: Util.getTranslationObject(this.languageId, "option-value"),
-				value: this.selectedOption.value ?? ""
+				value: this.selectedOption.value ?? "",
+				validation: {
+					required: {
+						value: true,
+						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+						errorClass: ErrorClass.ERROR
+					},
+					maxLength: {
+						value: 16,
+						message: Util.getTranslationObject(this.languageId, "option-value-must-be-shorter-than", 16),
+						errorClass: ErrorClass.ERROR
+					}
+				}
 			}
 		);
 	}
 
 	listenerFieldValueChanged = (event) => {
+		/*
 		console.log(
 			"SXSelectOptionBuilder SX_FIELD_VALUE_CHANGED before: ",
 			event.dataPacket.parameter,
 			event.dataPacket.parameter.getValue(),
 			this.selectedOption
 		);
+		*/
 
 		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
 
@@ -577,17 +630,28 @@ class SXSelectOptionBuilder extends React.Component {
 			return;
 		}
 
+		/*
 		console.log(
 			"SXSelectOptionBuilder SX_FIELD_VALUE_CHANGED: ",
 			dataPacket.parameter,
 			dataPacket.parameter.getValue(),
 			this.selectedOption
 		);
+		*/
+
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+			return;
+		}
 
 		if (dataPacket.paramCode == "optionLabel") {
 			this.workingOption.label = this.fieldOptionLabel.getValue();
 		} else {
 			const value = this.fieldOptionValue.getValue();
+			if (value == this.workingOption.value) {
+				this.checkError();
+				return;
+			}
 
 			const duplicated = this.workingParam.checkDuplicatedOptionValue(value);
 			if (duplicated) {
@@ -595,21 +659,30 @@ class SXSelectOptionBuilder extends React.Component {
 					ErrorClass.ERROR,
 					Util.translate("the-option-value-exists-already-try-another-value")
 				);
-				this.dataStructure.setError(
-					ErrorClass.ERROR,
-					Util.translate("the-option-value-exists-already-try-another-value")
-				);
-				this.setState({
-					optionValueDuplicated: true
-				});
+				this.fieldOptionValue.fireRefresh();
 			} else {
 				this.fieldOptionValue.clearError();
-				this.dataStructure.clearError();
 				this.workingOption.value = this.fieldOptionValue.getValue();
 			}
 		}
 
-		this.forceUpdate();
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
+		}
+
+		if (this.workingParam.isRendered()) {
+			if (this.workingParam.isGridCell()) {
+				const gridParam = this.dataStructure.findParameter({
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version,
+					descendant: true
+				});
+
+				gridParam.fireRefresh();
+			} else {
+				this.workingParam.fireRefresh();
+			}
+		}
 	};
 
 	listenerPopActionClicked = (event) => {
@@ -619,7 +692,14 @@ class SXSelectOptionBuilder extends React.Component {
 			return;
 		}
 
-		console.log("SXSelectOptionBuilder listenerPopActionClicked: ", dataPacket);
+		const error = this.checkError();
+		if (Util.isNotEmpty(error)) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", error.errorMessage));
+
+			return;
+		}
+
+		//console.log("SXSelectOptionBuilder listenerPopActionClicked: ", dataPacket);
 		switch (dataPacket.action) {
 			case "copy": {
 				this.copyOption(dataPacket.data);
@@ -658,7 +738,14 @@ class SXSelectOptionBuilder extends React.Component {
 		this.workingOption = Util.isEmpty(this.selectedOption) ? {} : this.selectedOption;
 	};
 
-	handleNewOption() {
+	handleNewOption = () => {
+		const error = this.checkError();
+		if (Util.isNotEmpty(error)) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", error.errorMessage));
+
+			return;
+		}
+
 		this.workingOption = {};
 		this.selectedOption = {};
 
@@ -668,10 +755,17 @@ class SXSelectOptionBuilder extends React.Component {
 		this.fieldOptionValue.refreshKey();
 
 		this.forceUpdate();
-	}
+	};
 
 	handleAddOption() {
-		console.log("handleAddOption: ", this.workingOption);
+		//console.log("handleAddOption: ", this.workingOption);
+		const error = this.checkError();
+		if (Util.isNotEmpty(error)) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", error.errorMessage));
+
+			return;
+		}
+
 		const optionLength = this.workingParam.addOption(this.workingOption);
 		this.selectedOption = this.workingOption;
 		if (optionLength.length == 0) {
@@ -721,7 +815,35 @@ class SXSelectOptionBuilder extends React.Component {
 		this.forceUpdate();
 	};
 
+	checkError() {
+		const error = DataStructure.checkError([this.fieldOptionLabel, this.fieldOptionValue]);
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
+	}
+
+	openErrorDlg(message) {
+		this.setState({
+			confirmDlgState: true,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: message
+		});
+	}
+
 	handleOptionSelected(option) {
+		const error = this.checkError();
+		if (Util.isNotEmpty(error)) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", error.errorMessage));
+
+			return;
+		}
+
 		this.fieldOptionLabel.setValue({ value: option.label });
 		this.fieldOptionLabel.refreshKey();
 		this.fieldOptionValue.setValue({ value: option.value });
@@ -733,12 +855,14 @@ class SXSelectOptionBuilder extends React.Component {
 	}
 
 	render() {
+		/*
 		console.log(
 			"SXSelectOptionBuilder render: ",
 			this.selectedOption,
 			Util.isNotEmpty(this.selectedOption),
 			!(this.fieldOptionLabel.hasValue() && this.fieldOptionValue.hasValue())
 		);
+		*/
 
 		return (
 			<>
@@ -929,6 +1053,23 @@ class SXSelectOptionBuilder extends React.Component {
 								displayType: "secondary"
 							}
 						]}
+					/>
+				)}
+				{this.state.confirmDlgState && (
+					<SXModalDialog
+						header={this.state.confirmDlgHeader}
+						body={this.state.confirmDlgBody}
+						buttons={[
+							{
+								onClick: () => {
+									this.setState({ confirmDlgState: false });
+								},
+								label: Util.translate("ok"),
+								displayType: "primary"
+							}
+						]}
+						status="info"
+						spritemap={this.spritemap}
 					/>
 				)}
 			</>

@@ -8,7 +8,8 @@ function waitForSXWorkingPortletInfo() {
 			window.SXWorkingPortletInfo.portletParams
 		);
 	} else {
-		setTimeout(waitForSXWorkingPortletInfo, 50);
+		console.log("Waiting working portlet Info...");
+		setTimeout(waitForSXWorkingPortletInfo, 200);
 	}
 }
 

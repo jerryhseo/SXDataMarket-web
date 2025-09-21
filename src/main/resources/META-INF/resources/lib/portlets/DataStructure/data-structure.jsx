@@ -13,6 +13,22 @@ export class DataStructure extends GroupParameter {
 		DISPLAY_NAME: "displayName"
 	};
 
+	static checkError(fields) {
+		let error = null;
+		fields.every((field) => {
+			if (field.hasError()) {
+				error = {
+					errorClass: field.errorClass,
+					errorMessage: field.errorMessage
+				};
+			}
+
+			return Util.isEmpty(error) ? Constant.CONTINUE_EVERY : Constant.STOP_EVERY;
+		});
+
+		return error;
+	}
+
 	#paramDelimiter = ";";
 	#paramDelimiterPosition = "end";
 	#paramValueDelimiter = "=";
@@ -78,6 +94,20 @@ export class DataStructure extends GroupParameter {
 		this.parse(json);
 	}
 
+	checkDuplicateParamCode(param) {
+		let duplicated = false;
+
+		this.members.every((member) => {
+			if (param !== member) {
+				duplicated = member.checkDuplicateParamCode(param);
+			}
+
+			return duplicated ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
+		});
+
+		return duplicated;
+	}
+
 	checkDuplicateParam(param) {
 		let duplicated = false;
 
@@ -90,21 +120,6 @@ export class DataStructure extends GroupParameter {
 		});
 
 		return duplicated;
-	}
-
-	checkError() {
-		if (this.hasError()) {
-			return this.error;
-		}
-
-		let error = null;
-		this.members.every((member) => {
-			error = member.checkError();
-
-			return Util.isEmpty(error) ? Constant.CONTINUE_EVERY : Constant.STOP_EVERY;
-		});
-
-		return error;
 	}
 
 	addMember(member) {

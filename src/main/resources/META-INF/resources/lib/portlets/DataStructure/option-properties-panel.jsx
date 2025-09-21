@@ -1,6 +1,6 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Util } from "../../stationx/util";
-import { Event, ParamProperty, ParamType, ValidationRule } from "../../stationx/station-x";
+import { ErrorClass, Event, ParamProperty, ParamType, ValidationRule } from "../../stationx/station-x";
 import SXFormField from "../../stationx/form";
 import {
 	BooleanParameter,
@@ -9,6 +9,7 @@ import {
 	SelectParameter,
 	StringParameter
 } from "../../stationx/parameter";
+import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 
 class SXDSBuilderOptionPropertiesPanel extends React.Component {
 	constructor(props) {
@@ -21,6 +22,12 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 		this.spritemap = props.spritemap;
 		this.workingParam = props.workingParam;
 		this.dataStructure = props.dataStructure;
+
+		this.state = {
+			confirmDlgState: false,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: <></>
+		};
 
 		this.toggleFields = {
 			abstractKey: Parameter.createParameter(
@@ -106,7 +113,20 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 				displayName: Util.getTranslationObject(this.languageId, "width"),
 				placeholder: Util.getTranslationObject(this.languageId, "20.rem or 100px"),
 				tooltip: Util.getTranslationObject(this.languageId, "width-of-the-parameter-tooltip"),
-				value: this.workingParam.cssWidth
+				value: this.workingParam.cssWidth,
+				validation: {
+					custom: {
+						value: `value = value.trim(); 
+						if( !(value.endsWith("rem") || value.endsWith("px") || value.endsWith("%") || value.endsWith("em"))){
+								return false;
+							}
+
+							return true;
+						`,
+						message: Util.getTranslationObject(this.languageId, "invalid-width-format"),
+						errorClass: ErrorClass.ERROR
+					}
+				}
 			}
 		);
 	}
@@ -124,6 +144,10 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 			this.workingParam
 		);
 		*/
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+			return;
+		}
 
 		if (dataPacket.paramCode == ParamProperty.CSS_WIDTH) {
 			this.workingParam.cssWidth = this.fieldCssWidth.getValue();
@@ -131,6 +155,10 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 			this.workingParam.setDisabled(this.toggleFields[dataPacket.paramCode].getValue());
 		} else {
 			this.workingParam[dataPacket.paramCode] = this.toggleFields[dataPacket.paramCode].getValue();
+		}
+
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
 		}
 
 		if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
@@ -156,6 +184,33 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
 	}
 
+	checkError() {
+		const error = DataStructure.checkError([
+			this.toggleFields.abstractKey,
+			this.toggleFields.downloadable,
+			this.toggleFields.searchable,
+			this.toggleFields.disabled,
+			this.toggleFields.fieldCssWidth
+		]);
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
+	}
+
+	openErrorDlg(message) {
+		this.setState({
+			confirmDlgState: true,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: message
+		});
+	}
+
 	render() {
 		return (
 			<>
@@ -165,6 +220,23 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 				{this.fieldCssWidth.renderField({
 					spritemap: this.spritemap
 				})}
+				{this.state.confirmDlgState && (
+					<SXModalDialog
+						header={this.state.confirmDlgHeader}
+						body={this.state.confirmDlgBody}
+						buttons={[
+							{
+								onClick: () => {
+									this.setState({ confirmDlgState: false });
+								},
+								label: Util.translate("ok"),
+								displayType: "primary"
+							}
+						]}
+						status="info"
+						spritemap={this.spritemap}
+					/>
+				)}
 			</>
 		);
 	}

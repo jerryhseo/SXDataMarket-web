@@ -43,7 +43,9 @@ class SXDSBuilderValidationPanel extends React.Component {
 				normalMin: { label: this.languageId, symbol: this.languageId.toLowerCase() },
 				normalMax: { label: this.languageId, symbol: this.languageId.toLowerCase() }
 			},
-			noticeDialog: false
+			confirmDlgState: false,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: <></>
 		};
 
 		this.formId = this.namespace + "validationBulder";
@@ -284,6 +286,11 @@ class SXDSBuilderValidationPanel extends React.Component {
 		const dataPacket = event.dataPacket;
 
 		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.formId)) {
+			return;
+		}
+
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
 			return;
 		}
 
@@ -749,6 +756,8 @@ class SXDSBuilderValidationPanel extends React.Component {
 				break;
 			}
 		}
+
+		this.checkError();
 	};
 
 	componentDidMount() {
@@ -788,13 +797,16 @@ class SXDSBuilderValidationPanel extends React.Component {
 					break;
 				}
 				case ValidationKeys.CUSTOM: {
+					const fnBody = "value=1;\nif(value===1){\n  return true;\n} else {\n  return false;\n}";
 					this.validation.custom = {
-						value: "(value)=>{\n return true;\n}",
+						value: fnBody,
 						message: {},
 						errorClass: ErrorClass.ERROR
 					};
 
-					this.customProps.value.setValue({ value: "(value)=>{\n return true;\n}" });
+					this.customProps.value.setValue({
+						value: fnBody
+					});
 					break;
 				}
 				default: {
@@ -1182,6 +1194,54 @@ class SXDSBuilderValidationPanel extends React.Component {
 		);
 	}
 
+	checkError() {
+		const error = DataStructure.checkError([
+			this.requiredProps.message,
+			this.requiredProps.errorLevel,
+			this.patternProps.value,
+			this.patternProps.message,
+			this.patternProps.errorLevel,
+			this.minLengthProps.value,
+			this.minLengthProps.message,
+			this.minLengthProps.errorLevel,
+			this.maxLengthProps.value,
+			this.maxLengthProps.message,
+			this.maxLengthProps.errorLevel,
+			this.minProps.value,
+			this.minProps.message,
+			this.minProps.errorLevel,
+			this.maxProps.value,
+			this.maxProps.message,
+			this.maxProps.errorLevel,
+			this.normalMinProps.value,
+			this.normalMinProps.message,
+			this.normalMinProps.errorLevel,
+			this.normalMaxProps.value,
+			this.normalMaxProps.message,
+			this.normalMaxProps.errorLevel,
+			this.customProps.value,
+			this.customProps.message,
+			this.customProps.errorLevel
+		]);
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
+	}
+
+	openErrorDlg(message) {
+		this.setState({
+			confirmDlgState: true,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: message
+		});
+	}
+
 	render() {
 		return (
 			<>
@@ -1267,15 +1327,15 @@ class SXDSBuilderValidationPanel extends React.Component {
 						)}
 					</div>
 				)}
-				{this.state.noticeDialog && (
+				{this.state.confirmDlgState && (
 					<SXModalDialog
-						header={this.dlgHeader}
-						body={this.dlgBody}
+						header={this.state.confirmDlgHeader}
+						body={this.state.confirmDlgBody}
 						buttons={[
 							{
 								label: Util.translate("ok"),
 								onClick: () => {
-									this.setState({ noticeDialog: false });
+									this.setState({ confirmDlgState: false });
 								}
 							}
 						]}

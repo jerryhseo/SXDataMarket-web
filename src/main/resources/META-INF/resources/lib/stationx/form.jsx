@@ -433,7 +433,7 @@ export class SXPreviewRow extends React.Component {
 		e.stopPropagation();
 
 		if (!this.parameter.focused) {
-			this.parameter.fireParameterSelected(this.dsbuilderId);
+			this.parameter.fireParameterSelected();
 		}
 	}
 
@@ -465,9 +465,7 @@ export class SXPreviewRow extends React.Component {
 	}
 
 	handleActiveChange(val) {
-		if (!this.parameter.focused) {
-			this.parameter.fireParameterSelected(this.dsbuilderId);
-		}
+		this.parameter.fireParameterSelected();
 
 		this.setState({ activeDropdown: val });
 	}

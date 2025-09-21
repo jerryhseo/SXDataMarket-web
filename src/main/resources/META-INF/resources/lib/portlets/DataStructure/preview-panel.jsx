@@ -5,6 +5,7 @@ import { ClayInput } from "@clayui/form";
 import Button, { ClayButtonWithIcon } from "@clayui/button";
 import { Autocomplete } from "@clayui/autocomplete";
 import { Util } from "../../stationx/util";
+import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 
 class SXDataStructurePreviewer extends React.Component {
 	constructor(props) {
@@ -18,6 +19,12 @@ class SXDataStructurePreviewer extends React.Component {
 		this.spritemap = props.spritemap;
 
 		this.formId = this.formIds.previewCanvasId;
+
+		this.state = {
+			confirmDlgState: false,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: <></>
+		};
 	}
 
 	fieldValueChangedHandler = (e) => {
@@ -88,11 +95,17 @@ class SXDataStructurePreviewer extends React.Component {
 		}
 
 		//console.log("DataStructurePreviewer SX_PARAMETER_SELECTED: ", e.dataPacket);
+		if (this.dataStructure.hasError()) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
+			return;
+		}
 
-		Event.fire(Event.SX_PARAMETER_SELECTED, this.namespace, this.namespace, {
-			targetFormId: this.formIds.dsbuilderId,
-			parameter: e.dataPacket.parameter
-		});
+		if (!e.dataPacket.parameter.focused) {
+			Event.fire(Event.SX_PARAMETER_SELECTED, this.namespace, this.namespace, {
+				targetFormId: this.formIds.dsbuilderId,
+				parameter: e.dataPacket.parameter
+			});
+		}
 	};
 
 	componentDidMount() {
@@ -109,6 +122,14 @@ class SXDataStructurePreviewer extends React.Component {
 		Event.on(Event.SX_MOVE_PARAMETER_DOWN, this.moveParameterDownHandler);
 		Event.on(Event.SX_REFRESH_FORM, this.refreshFormHandler);
 		Event.off(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
+	}
+
+	openErrorDlg(message) {
+		this.setState({
+			confirmDlgState: true,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: message
+		});
 	}
 
 	handleManifestSDE = async () => {
@@ -235,6 +256,23 @@ class SXDataStructurePreviewer extends React.Component {
 						spritemap: this.spritemap
 					})}
 				</div>
+				{this.state.confirmDlgState && (
+					<SXModalDialog
+						header={this.state.confirmDlgHeader}
+						body={this.state.confirmDlgBody}
+						buttons={[
+							{
+								onClick: () => {
+									this.setState({ confirmDlgState: false });
+								},
+								label: Util.translate("ok"),
+								displayType: "primary"
+							}
+						]}
+						status="info"
+						spritemap={this.spritemap}
+					/>
+				)}
 			</>
 		);
 	}

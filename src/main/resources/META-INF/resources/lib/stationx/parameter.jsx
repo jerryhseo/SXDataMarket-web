@@ -591,8 +591,12 @@ export class Parameter {
 		return this.#key;
 	}
 
-	checkDuplicateParam(param) {
+	checkDuplicateParamCode(param) {
 		return this.paramCode == param.paramCode;
+	}
+
+	checkDuplicateParam(param) {
+		return this.paramCode == param.paramCode && this.paramVersion == param.paramVersion;
 	}
 
 	setDisabled(disabled, cellIndex) {
@@ -1418,15 +1422,13 @@ export class Parameter {
 					break;
 				}
 				case ValidationKeys.CUSTOM: {
-					const func = eval(validationValue);
+					//const func = eval(validationValue);
+					const dynamicFn = new Function("value", validationValue);
 
-					const valid = func(value);
+					const valid = dynamicFn(value);
 
 					if (!valid) {
-						this.error = {
-							message: validationMessage,
-							errorClass: validationErrorClass
-						};
+						this.setError(validationErrorClass, validationMessage);
 
 						break;
 					}
@@ -3581,8 +3583,24 @@ export class GroupParameter extends Parameter {
 		return this.memberCount > 0;
 	}
 
-	checkDuplicateParam(param) {
+	checkDuplicateParamCode(param) {
 		let duplicated = this.paramCode == param.paramCode;
+
+		if (!duplicated) {
+			this.members.every((member) => {
+				if (param !== member) {
+					duplicated = member.checkDuplicateParamCode(param);
+				}
+
+				return duplicated ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
+			});
+		}
+
+		return duplicated;
+	}
+
+	checkDuplicateParam(param) {
+		let duplicated = this.paramCode == param.paramCode && this.paramVersion == param.paramVersion;
 
 		if (!duplicated) {
 			this.members.every((member) => {

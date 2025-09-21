@@ -270,7 +270,7 @@ class DataStructureBuilder extends React.Component {
 	parameterSelectedHandler = (e) => {
 		const dataPacket = e.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) {
-			//console.log("SX_PARAMETER_SELECTED rejected: ", dataPacket);
+			console.log("SX_PARAMETER_SELECTED rejected: ", dataPacket);
 			return;
 		}
 
@@ -279,13 +279,10 @@ class DataStructureBuilder extends React.Component {
 			return;
 		}
 
-		if (this.dataStructure.hasError()) {
-			this.setState({
-				confirmDlgState: true,
-				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", this.dataStructure.errorMessage)
-			});
+		console.log("SX_PARAMETER_SELECTED received: ", dataPacket);
 
+		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
 			return;
 		}
 
@@ -353,13 +350,8 @@ class DataStructureBuilder extends React.Component {
 		const dataPacket = e.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
 
-		if (this.dataStructure.hasError()) {
-			this.setState({
-				confirmDlgState: true,
-				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", this.dataStructure.errorMessage)
-			});
-
+		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
 			return;
 		}
 
@@ -387,13 +379,8 @@ class DataStructureBuilder extends React.Component {
 		const dataPacket = e.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
 
-		if (this.dataStructure.hasError()) {
-			this.setState({
-				confirmDlgState: true,
-				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", this.dataStructure.errorMessage)
-			});
-
+		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
 			return;
 		}
 
@@ -412,13 +399,11 @@ class DataStructureBuilder extends React.Component {
 
 		switch (dataPacket.paramCode) {
 			case "structureCode": {
-				const newCode = this.structureCode.getValue();
 				if (this.structureCode.hasError()) {
-					this.dataStructure.setError(this.structureCode.errorClass, this.structureCode.errorMessage);
 					return;
-				} else {
-					this.dataStructure.clearError();
 				}
+
+				const newCode = this.structureCode.getValue();
 
 				Util.ajax({
 					namespace: this.namespace,
@@ -452,13 +437,11 @@ class DataStructureBuilder extends React.Component {
 				break;
 			}
 			case "structureVersion": {
-				this.dataStructure.paramVersion = this.structureVersion.getValue();
 				if (this.structureVersion.hasError()) {
-					this.dataStructure.setError(this.structureVersion.errorClass, this.structureVersion.errorMessage);
 					return;
-				} else {
-					this.dataStructure.clearError();
 				}
+
+				this.dataStructure.paramVersion = this.structureVersion.getValue();
 
 				Util.ajax({
 					namespace: this.namespace,
@@ -525,7 +508,7 @@ class DataStructureBuilder extends React.Component {
 
 		//console.log("listenerLoadPortlet: ", dataPacket, this.props.workbench);
 
-		this.portletWindow = await this.workbench.loadPortletWindow({
+		this.portletWindow = await this.workbench.openPortletWindow({
 			portletName: dataPacket.portletName,
 			params: {
 				dataTypeId: this.dataTypeId,
@@ -656,6 +639,32 @@ class DataStructureBuilder extends React.Component {
 		}
 	}
 
+	checkError() {
+		const error = DataStructure.checkError([
+			this.structureCode,
+			this.structureVersion,
+			this.structureDisplayName,
+			this.structureDescription
+		]);
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
+	}
+
+	openErrorDlg(message) {
+		this.setState({
+			confirmDlgState: true,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: message
+		});
+	}
+
 	fireRefreshPropertyPanel() {
 		Event.fire(Event.SX_REFRESH_PROPERTY_PANEL, this.namespace, this.namespace, {
 			targetFormId: this.formIds.propertyPanelId,
@@ -676,13 +685,8 @@ class DataStructureBuilder extends React.Component {
 	}
 
 	handleNewParameter = () => {
-		if (this.dataStructure.hasError()) {
-			this.setState({
-				confirmDlgState: true,
-				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
-			});
-
+		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
 			return;
 		}
 
@@ -703,18 +707,11 @@ class DataStructureBuilder extends React.Component {
 		console.log(JSON.stringify(this.dataStructure.toJSON(), null, 4));
 		console.log(JSON.stringify(this.typeStructureLink.toJSON(), null, 4));
 
-		const error = this.dataStructure.checkError();
-
-		if (Util.isNotEmpty(error)) {
-			//console.log("Data structure has error: ", error);
-			this.setState({
-				confirmDlgState: true,
-				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate(error.message)
-			});
-
+		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
+			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
 			return;
 		}
+
 		/*
 		const formData = new FormData();
 		formData.append(this.namespace + "typeStructureLink", this.typeStructureLink.toJSON());
@@ -761,11 +758,7 @@ class DataStructureBuilder extends React.Component {
 			this.forceUpdate();
 		} else {
 			console.log("checkIntegrity fail: ", this.workingParam);
-			this.setState({
-				confirmDlgState: true,
-				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: <h4>{Util.translate(this.workingParam.errorMessage)}</h4>
-			});
+			this.openErrorDlg(<h4>{Util.translate(this.workingParam.errorMessage)}</h4>);
 		}
 	};
 
@@ -776,7 +769,7 @@ class DataStructureBuilder extends React.Component {
 			return <h3>{this.loadingFailMessage}</h3>;
 		}
 
-		//console.log("DataStructureBuilder render: ", this.dataStructure, this.workingParam);
+		console.log("DataStructureBuilder render: ", this.dataStructure, this.workingParam);
 
 		return (
 			<>
@@ -910,7 +903,7 @@ class DataStructureBuilder extends React.Component {
 								/>
 							</Button.Group>
 							<SXDSBuilderPropertiesPanel
-								key={this.workingParam.key}
+								key={this.workingParam}
 								formIds={this.formIds}
 								workingParam={this.workingParam}
 								dataStructure={this.dataStructure}

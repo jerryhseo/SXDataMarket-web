@@ -5,6 +5,7 @@ import { SXBoolean, SXInput, SXLocalizedInput } from "../../stationx/form";
 import LocalizedInput from "@clayui/localized-input";
 import { BooleanParameter, Parameter, StringParameter } from "../../stationx/parameter";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
+import { DataStructure } from "./data-structure";
 
 class SXDSBuilderBasicPropertiesPanel extends React.Component {
 	constructor(props) {
@@ -216,28 +217,43 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		);
 		*/
 
-		/*
 		if (dataPacket.parameter.hasError()) {
-			this.workingParam.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
-		} else {
-			this.workingParam.clearError();
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+			return;
 		}
-			*/
+
+		const value = dataPacket.parameter.getValue();
 
 		this.workingParam[dataPacket.paramCode] = dataPacket.parameter.getValue();
 
 		if (dataPacket.paramCode == ParamProperty.PARAM_CODE) {
-			if (this.dataStructure.checkDuplicateParam(this.workingParam)) {
+			if (this.dataStructure.checkDuplicateParamCode(this.workingParam)) {
 				this.fields.paramCode.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
+				this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
 				this.fields.paramCode.setDirty(true);
+				this.fields.paramCode.fireRefresh();
 
-				this.setState({
-					confirmDlgState: true,
-					confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-					confirmDlgBody: Util.translate("parameter-code-must-be-unique")
-				});
 				return;
 			}
+		} else if (dataPacket.paramCode == ParamProperty.PARAM_VERSION) {
+			if (Util.isEmpty(this.workingParam.paramCode) || this.fields.paramCode.hasError()) {
+				this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-code-is-missing"));
+				this.openErrorDlg(Util.translate("input-parameter-code-first"));
+				return;
+			}
+
+			if (this.dataStructure.checkDuplicateParam(this.workingParam)) {
+				this.fields.paramVersion.setError(ErrorClass.ERROR, Util.translate("parameter-version-is-duplicated"));
+				this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-version-is-duplicated"));
+				this.fields.paramVersion.setDirty(true);
+				this.fields.paramVersion.fireRefresh();
+
+				return;
+			}
+		}
+
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
 		}
 
 		if (this.workingParam.isRendered()) {
@@ -263,9 +279,49 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.valueChangedHandler);
 	}
 
+	checkError() {
+		const error = DataStructure.checkError([
+			this.fields.paramCode,
+			this.fields.paramVersion,
+			this.fields.displayName,
+			this.fields.definition,
+			this.fields.tooltip,
+			this.fields.synonyms
+		]);
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
+	}
+
+	openErrorDlg(message) {
+		this.setState({
+			confirmDlgState: true,
+			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			confirmDlgBody: message
+		});
+	}
+
+	setPropertiesValue() {
+		this.fields.paramCode.setValue({ value: this.workingParam.paramCode });
+		this.fields.paramVersion.setValue({ value: this.workingParam.paramVersion });
+		this.fields.displayName.setValue({ value: this.workingParam.displayName });
+		this.fields.definition.setValue({ value: this.workingParam.definition });
+		this.fields.showDefinition.setValue({ value: this.workingParam.showDefinition });
+		this.fields.tooltip.setValue({ value: this.workingParam.tooltip });
+		this.fields.synonyms.setValue({ value: this.workingParam.synonyms });
+	}
+
 	render() {
 		//console.log("SXDSBuilderBasicPropertiesPanel: ", this.workingParam, this.formIds);
 		const fields = Object.values(this.fields);
+
+		//this.setPropertiesValue();
 
 		return (
 			<>

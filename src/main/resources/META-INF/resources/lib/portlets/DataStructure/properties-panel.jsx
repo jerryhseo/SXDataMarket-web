@@ -137,11 +137,12 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 		this.availableLanguageIds = props.workingParam.availableLanguageIds;
 		this.spritemap = props.spritemap;
 		this.dataStructure = props.dataStructure;
-		this.workingParam = props.workingParam;
+		//this.workingParam = props.workingParam;
 
 		this.state = {
 			panelStep: 0,
-			paramType: this.workingParam.paramType,
+			paramType: props.workingParam.paramType,
+			workingParam: props.workingParam,
 			openSelectGroupModal: false,
 			confirmDlgState: false,
 			confirmDlgBody: <></>,
@@ -159,26 +160,26 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 		this.setState({ openSelectGroupModal: true });
 	};
 
-	refreshPropertyPanelHandler = (e) => {
+	listenerRefreshPropertyPanel = (e) => {
 		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
+			//console.log("PropertyPanel rejected: ", e.dataPacket);
 			return;
 		}
+		//console.log("PropertyPanel received: ", e.dataPacket);
 
-		this.workingParam = e.dataPacket.workingParam;
-
-		this.setState({ paramType: this.workingParam.paramType });
+		this.setState({ workingParam: e.dataPacket.workingParam, paramType: e.dataPacket.workingParam.paramType });
 	};
 
 	componentDidMount() {
 		//console.log("componentDidMount: SXDSBuilderPropertiesPanel");
 
 		Event.on(Event.SX_SELECT_GROUP, this.selectGroupHandler);
-		Event.on(Event.SX_REFRESH_PROPERTY_PANEL, this.refreshPropertyPanelHandler);
+		Event.on(Event.SX_REFRESH_PROPERTY_PANEL, this.listenerRefreshPropertyPanel);
 	}
 
 	componentWillUnmount() {
-		Event.detach(Event.SX_SELECT_GROUP, this.selectGroupHandler);
-		Event.detach(Event.SX_REFRESH_PROPERTY_PANEL, this.refreshPropertyPanelHandler);
+		Event.off(Event.SX_SELECT_GROUP, this.selectGroupHandler);
+		Event.off(Event.SX_REFRESH_PROPERTY_PANEL, this.listenerRefreshPropertyPanel);
 	}
 
 	handlePanelStepChange(step) {
@@ -186,7 +187,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			this.setState({
 				confirmDlgState: true,
 				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", this.workingParam.errorMessage)
+				confirmDlgBody: Util.translate("fix-the-error-first", this.dataStructure.errorMessage)
 			});
 
 			return;
@@ -208,15 +209,17 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 		this.setState({ openSelectGroupModal: true });
 	}
 
-	renderPanelContent() {
+	renderPanelContent = () => {
+		//console.log("renderPanelContent: ", this.state.workingParam);
+
 		switch (this.state.panelStep) {
 			case 0: {
 				return (
 					<SXDSBuilderBasicPropertiesPanel
-						key={this.workingParam.paramCode}
+						key={this.state.workingParam.key}
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
-						workingParam={this.workingParam}
+						workingParam={this.state.workingParam}
 						spritemap={this.spritemap}
 					/>
 				);
@@ -224,10 +227,10 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			case 1: {
 				return (
 					<SXDSBuilderTypeSpecificPanel
-						key={this.workingParam.paramCode}
+						key={this.state.workingParam.key}
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
-						workingParam={this.workingParam}
+						workingParam={this.state.workingParam}
 						spritemap={this.spritemap}
 					/>
 				);
@@ -235,10 +238,10 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			case 2: {
 				return (
 					<SXDSBuilderOptionPropertiesPanel
-						key={this.workingParam.paramCode}
+						key={this.state.workingParam.key}
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
-						workingParam={this.workingParam}
+						workingParam={this.state.workingParam}
 						spritemap={this.spritemap}
 					/>
 				);
@@ -246,30 +249,24 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			case 3: {
 				return (
 					<SXDSBuilderValidationPanel
-						key={this.workingParam.paramCode}
+						key={this.state.workingParam.key}
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
-						workingParam={this.workingParam}
+						workingParam={this.state.workingParam}
 						spritemap={this.spritemap}
 					/>
 				);
 			}
 		}
-	}
+	};
 
 	render() {
-		/*
-		console.log(
-			"SXDSBuilderPropertiesPanel rendered: ",
-			this.workingParam.parent,
-			Util.isNotEmpty(this.workingParam.parent) ? this.workingParam.parent.code : "Root"
-		);
-		*/
+		//console.log("SXDSBuilderPropertiesPanel rendered: ", this.state.workingParam);
 
-		const parentGroup = Util.isNotEmpty(this.workingParam.parent)
+		const parentGroup = Util.isNotEmpty(this.state.workingParam.parent)
 			? this.dataStructure.findParameter({
-					paramCode: this.workingParam.parent.code,
-					paramVersion: this.workingParam.parent.version
+					paramCode: this.state.workingParam.parent.code,
+					paramVersion: this.state.workingParam.parent.version
 			  })
 			: this.dataStructure;
 		//console.log("Group selector parentGroup: ", parentGroup);
@@ -296,13 +293,13 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 							onChange={(e) => {
 								this.handleParamTypeSelect(e.target.value);
 							}}
-							disabled={this.workingParam.order > 0}
+							disabled={this.state.workingParam.order > 0}
 							style={{ paddingLeft: "10px" }}
 							spritemap={this.spritemap}
 						/>
 					</div>
 				</Form.Group>
-				{parentGroup && this.workingParam.displayType !== Parameter.DisplayTypes.GRID_CELL && (
+				{parentGroup && this.state.workingParam.displayType !== Parameter.DisplayTypes.GRID_CELL && (
 					<Form.Group style={{ marginBottom: "1.5rem" }}>
 						<SXLabel
 							label={Util.translate("group")}
@@ -338,10 +335,11 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 						header={Util.translate("select-group")}
 						body={
 							<GroupSelectorBody
+								key={this.state.workingParam}
 								namespace={this.namespace}
 								formIds={this.formIds}
 								dataStructure={this.dataStructure}
-								workingParam={this.workingParam}
+								workingParam={this.state.workingParam}
 								optionType="radio"
 								spritemap={this.spritemap}
 							/>

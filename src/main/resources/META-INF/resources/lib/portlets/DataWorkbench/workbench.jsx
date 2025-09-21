@@ -283,6 +283,7 @@ export class SXPortletWindow extends React.Component {
 							</div>
 							<div className="autofit-col">
 								<Button.Group>
+									{/*
 									<ClayButtonWithIcon
 										aria-label={Util.translate("minimize-window")}
 										symbol="hr"
@@ -291,7 +292,7 @@ export class SXPortletWindow extends React.Component {
 										style={{
 											borderRadius: "50%"
 										}}
-										conClick={(e) => {
+										onClick={(e) => {
 											e.stopPropagation();
 
 											Event.fire(Event.SX_MINIMIZE_WINDOW, this.namespace, this.namespace, {
@@ -309,7 +310,7 @@ export class SXPortletWindow extends React.Component {
 										style={{
 											borderRadius: "50%"
 										}}
-										conClick={(e) => {
+										onClick={(e) => {
 											e.stopPropagation();
 
 											Event.fire(Event.SX_MAXIMIZE_WINDOW, this.namespace, this.namespace, {
@@ -319,6 +320,7 @@ export class SXPortletWindow extends React.Component {
 										}}
 										spritemap={this.spritemap}
 									/>
+									*/}
 									<ClayButtonWithIcon
 										aria-label={Util.translate("close-window")}
 										symbol="times"
@@ -327,7 +329,7 @@ export class SXPortletWindow extends React.Component {
 										style={{
 											borderRadius: "50%"
 										}}
-										conClick={(e) => {
+										onClick={(e) => {
 											e.stopPropagation();
 
 											Event.fire(Event.SX_REMOVE_WINDOW, this.namespace, this.namespace, {

@@ -1,12 +1,20 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { Event } from "../../stationx/station-x";
+import { Event, LoadingStatus } from "../../stationx/station-x";
 import { DataTypeStructureLink, SXDataTypeStructureLink } from "../DataType/datatype";
 import Toolbar from "@clayui/toolbar";
 import { ClayInput } from "@clayui/form";
 import Button, { ClayButtonWithIcon } from "@clayui/button";
 
 class StructuredDataEditor extends React.Component {
+	static EditState = {
+		WAIT: "wait",
+		PREVIEW: "preview",
+		ADD: "add",
+		UPDATE: "update",
+		VIEW: "view"
+	};
+
 	constructor(props) {
 		super(props);
 
@@ -16,13 +24,41 @@ class StructuredDataEditor extends React.Component {
 		this.workbenchNamespace = props.workbenchNamespace;
 		this.workbenchId = props.workbenchId;
 		this.permissions = props.permissions;
-		this.editorId = props.portletId;
+		this.portletId = props.portletId;
 
-		this.typeStructureLink = props.typeStructureLink ?? {};
+		this.dataCollectionId = props.dataCollectionId ?? 0;
+		this.dataSetId = props.dataSetId ?? 0;
 		this.dataTypeId = props.dataTypeId ?? 0;
 		this.dataStructureId = props.dataStructureId ?? 0;
 		this.structuredDataId = props.structuredDataId ?? 0;
+
+		this.structuredDataInfo = [];
+		this.dataStructure = null;
+
+		this.setEditState();
+
+		this.visual;
+
+		this.state = {
+			loadingStatus: LoadingStatus.PENDING
+		};
 	}
+
+	setEditState() {
+		this.editState = StructuredDataEditor.EditState.WAIT;
+
+		if (this.structuredDataId > 0) {
+			this.editState = StructuredDataEditor.EditState.UPDATE;
+		} else {
+			if (this.dataCollectionId > 0 && this.dataSetId > 0 && this.dataTypeId > 0) {
+				this.editState = StructuredDataEditor.EditState.ADD;
+			} else if (this.dataStructureId > 0) {
+				this.editState = StructuredDataEditor.EditState.PREVIEW;
+			}
+		}
+	}
+
+	listenerLoadData = (event) => {};
 
 	componentDidMount() {
 		console.log("StructuredDataEditor: ", this.props);
@@ -50,6 +86,7 @@ class StructuredDataEditor extends React.Component {
 	render() {
 		return (
 			<div>
+				{StructuredDataEditor.EditState.UPDATE || StructuredDataEditor.EditState.ADD}
 				<SXDataTypeStructureLink
 					namespace={this.namespace}
 					formId={this.editorId}
@@ -66,7 +103,7 @@ class StructuredDataEditor extends React.Component {
 						<Toolbar.Item expand>
 							{this.typeStructureLink.jumpTo && (
 								<Toolbar.Section>
-									<ClayInput.Group>
+									<ClayInput.Group small>
 										<ClayInput.GroupItem shrink>
 											<label className="component-title">{Util.translate("jump-to")}</label>
 										</ClayInput.GroupItem>
@@ -89,7 +126,7 @@ class StructuredDataEditor extends React.Component {
 						{this.typeStructureLink.inputStatus && (
 							<Toolbar.Item>
 								<Toolbar.Section>
-									<ClayInput.Group>
+									<ClayInput.Group small>
 										<ClayInput.GroupItem shrink>
 											<ClayInput.GroupText
 												style={{ backgroundColor: "#f3ded7", borderRadius: "1.0rem" }}
@@ -117,6 +154,7 @@ class StructuredDataEditor extends React.Component {
 										title={Util.translate("save")}
 										aria-labelledby={Util.translate("save")}
 										symbol="disk"
+										size="sm"
 										spritemap={this.spritemap}
 									/>
 									<ClayButtonWithIcon
@@ -124,6 +162,7 @@ class StructuredDataEditor extends React.Component {
 										aria-labelledby={Util.translate("structured-data-editor")}
 										displayType="secondary"
 										symbol="order-form-pencil"
+										size="sm"
 										spritemap={this.spritemap}
 									/>
 								</Button.Group>
