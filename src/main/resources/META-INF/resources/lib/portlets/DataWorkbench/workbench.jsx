@@ -214,6 +214,8 @@ export class Workbench {
 		return url;
 	};
 
+	loadData = async (resourceId, params) => {};
+
 	ajax = async ({ url, params = {}, type = "post", dataType = "json" }) => {
 		let result;
 

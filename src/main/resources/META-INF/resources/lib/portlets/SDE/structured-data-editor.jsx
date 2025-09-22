@@ -1,6 +1,6 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { EditStatus, Event, LoadingStatus } from "../../stationx/station-x";
+import { EditStatus, Event, LoadingStatus, ResourceIds } from "../../stationx/station-x";
 import { DataTypeStructureLink, SXDataTypeStructureLink } from "../DataType/datatype";
 import Toolbar from "@clayui/toolbar";
 import { ClayInput } from "@clayui/form";
@@ -79,16 +79,24 @@ class StructuredDataEditor extends React.Component {
 	componentWillUnmount() {}
 
 	loadStructuredData = async () => {
-		switch (this.editStatus) {
-			case EditStatus.PREVIEW: {
-				break;
-			}
-			case EditStatus.ADD: {
-				break;
-			}
-			case EditStatus.UPDATE: {
-				break;
-			}
+		const params = {
+			cmd: this.editStatus,
+			dataCollectionId: this.dataCollectionId,
+			dataSetId: this.dataSetId,
+			dataTypeId: this.dataTypeId,
+			dataStructureId: this.dataStructureId,
+			structuredDataId: this.dataStructureId
+		};
+
+		const ajaxURL = await this.workbenchId.loadData(ResourceIds.LOAD_STRUCTURED_DATA_EDITING, params);
+
+		try {
+			const response = await fetch("https://api.example.com/data");
+			if (!response.ok) throw new Error("Fetch failed");
+			const data = await response.json();
+			console.log("Data:", data);
+		} catch (error) {
+			console.error("Error:", error);
 		}
 	};
 

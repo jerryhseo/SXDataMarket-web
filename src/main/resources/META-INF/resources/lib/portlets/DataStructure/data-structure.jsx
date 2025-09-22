@@ -14,6 +14,7 @@ export class DataStructure extends GroupParameter {
 	};
 
 	static checkError(fields) {
+		console.log("checkError: ", fields);
 		let error = null;
 		fields.every((field) => {
 			if (field.hasError()) {

@@ -162,10 +162,10 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 
 	listenerRefreshPropertyPanel = (e) => {
 		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
-			//console.log("PropertyPanel rejected: ", e.dataPacket);
+			console.log("PropertyPanel rejected: ", e.dataPacket);
 			return;
 		}
-		//console.log("PropertyPanel received: ", e.dataPacket);
+		console.log("PropertyPanel received: ", e.dataPacket);
 
 		this.setState({ workingParam: e.dataPacket.workingParam, paramType: e.dataPacket.workingParam.paramType });
 	};
@@ -210,7 +210,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 	}
 
 	renderPanelContent = () => {
-		//console.log("renderPanelContent: ", this.state.workingParam);
+		console.log("renderPanelContent: ", this.state.workingParam);
 
 		switch (this.state.panelStep) {
 			case 0: {

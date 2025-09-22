@@ -315,7 +315,8 @@ class DataStructureBuilder extends React.Component {
 		}
 
 		this.workingParam = selectedParam;
-		this.fireRefreshPropertyPanel();
+		//this.fireRefreshPropertyPanel();
+		this.forceUpdate();
 	};
 
 	parameterTypeChangedHandler = (e) => {
@@ -343,6 +344,8 @@ class DataStructureBuilder extends React.Component {
 			dataPacket.paramType
 		);
 
+		//this.fireRefreshPropertyPanel();
+
 		this.forceUpdate();
 	};
 
@@ -357,7 +360,8 @@ class DataStructureBuilder extends React.Component {
 
 		const copied = this.workingParam.copy();
 		this.workingParam.focused = false;
-		this.workingParam.refreshKey();
+		this.workingParam.fireRefresh();
+
 		copied.focused = true;
 		copied.refreshKey();
 
@@ -704,7 +708,7 @@ class DataStructureBuilder extends React.Component {
 
 		//this.dataStructure.focus();
 
-		this.fireRefreshPropertyPanel();
+		//this.fireRefreshPropertyPanel();
 
 		this.forceUpdate();
 	};
@@ -909,7 +913,7 @@ class DataStructureBuilder extends React.Component {
 								/>
 							</Button.Group>
 							<SXDSBuilderPropertiesPanel
-								key={this.workingParam}
+								key={this.workingParam.key}
 								formIds={this.formIds}
 								workingParam={this.workingParam}
 								dataStructure={this.dataStructure}

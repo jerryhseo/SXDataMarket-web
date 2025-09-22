@@ -10,6 +10,7 @@ import {
 	StringParameter
 } from "../../stationx/parameter";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
+import { DataStructure } from "./data-structure";
 
 class SXDSBuilderOptionPropertiesPanel extends React.Component {
 	constructor(props) {

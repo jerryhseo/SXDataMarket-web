@@ -281,6 +281,7 @@ export const ResourceIds = {
 	SEARCH_DATATYPES: "/ajax/DataType/search-datatypes",
 	LOAD_AVAILABLE_VISUALIZERS: "/ajax/DataType/load-available-visualizers",
 	LOAD_DATASTRUCTURE: "/ajax/DataStructure/load-datastructure",
+	LOAD_STRUCTURED_DATA_EDITING: "/ajax/StructuredData/load-editing-data",
 	SAVE_DATASTRUCTURE: "/ajax/DataStructure/save-datastructure",
 	DELETE_DATASTRUCTURE: "/ajax/DataStructure/delete-datastructure",
 	DELETE_TYPE_STRUCTURE_LINK: "/ajax/DataType/delete-type-structure-link",
