@@ -512,7 +512,8 @@ class DataStructureBuilder extends React.Component {
 			portletName: dataPacket.portletName,
 			params: {
 				dataTypeId: this.dataTypeId,
-				dataStructureId: this.dataStructure.dataStructureId
+				dataStructureId: this.dataStructure.dataStructureId,
+				editStatus: EditStatus.PREVIEW
 			}
 		});
 
@@ -690,6 +691,9 @@ class DataStructureBuilder extends React.Component {
 			return;
 		}
 
+		this.workingParam.focused = false;
+		this.workingParam.fireRefreshPreview();
+
 		this.workingParam = Parameter.createParameter(
 			this.namespace,
 			this.formIds.previewCanvasId,
@@ -698,7 +702,9 @@ class DataStructureBuilder extends React.Component {
 			ParamType.STRING
 		);
 
-		this.dataStructure.focus();
+		//this.dataStructure.focus();
+
+		this.fireRefreshPropertyPanel();
 
 		this.forceUpdate();
 	};
@@ -1065,7 +1071,6 @@ class DataStructureBuilder extends React.Component {
 							spritemap={this.spritemap}
 						/>
 					)}
-					{this.state.manifestSDE && this.portletWindow}
 
 					{this.state.underConstruction && (
 						<SXModalDialog
@@ -1082,6 +1087,7 @@ class DataStructureBuilder extends React.Component {
 						/>
 					)}
 				</div>
+				{this.state.manifestSDE && this.portletWindow}
 			</>
 		);
 	}

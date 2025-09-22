@@ -1,10 +1,11 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { Event, LoadingStatus } from "../../stationx/station-x";
+import { EditStatus, Event, LoadingStatus } from "../../stationx/station-x";
 import { DataTypeStructureLink, SXDataTypeStructureLink } from "../DataType/datatype";
 import Toolbar from "@clayui/toolbar";
 import { ClayInput } from "@clayui/form";
 import Button, { ClayButtonWithIcon } from "@clayui/button";
+import Visualizer from "../../stationx/visualizer";
 
 class StructuredDataEditor extends React.Component {
 	static EditState = {
@@ -35,13 +36,24 @@ class StructuredDataEditor extends React.Component {
 		this.structuredDataInfo = [];
 		this.dataStructure = null;
 
-		this.setEditState();
+		this.editStatus = props.editStatus;
 
-		this.visual;
+		this.visualizer = new Visualizer({});
 
 		this.state = {
 			loadingStatus: LoadingStatus.PENDING
 		};
+
+		/*
+		console.log(
+			"StructuredDataEditor constructor: ",
+			this.namespace,
+			this.portletId,
+			this.workbenchId,
+			this.workbenchNamespace,
+			this.editStatus
+		);
+		*/
 	}
 
 	setEditState() {
@@ -61,27 +73,24 @@ class StructuredDataEditor extends React.Component {
 	listenerLoadData = (event) => {};
 
 	componentDidMount() {
-		console.log("StructuredDataEditor: ", this.props);
-
-		if (Util.isNotEmpty(this.typeStructureLink)) {
-			this.dataTypeId =
-				this.typeStructureLink.dataTypeId > 0 ? this.typeStructureLink.dataTypeId : this.dataTypeId;
-			this.dataStructureId =
-				this.typeStructureLink.dataStructureId > 0
-					? this.typeStructureLink.dataStructureId
-					: this.dataStructureId;
-		}
-
-		if (Util.isNotEmpty(this.workbenchNamespace)) {
-			Event.fire(Event.SX_HANDSHAKE, this.namespace, this.workbenchNamespace, {
-				targetFormId: this.workbenchId
-			});
-		}
+		this.loadStructuredData();
 	}
 
 	componentWillUnmount() {}
 
-	loadStructuredData;
+	loadStructuredData = async () => {
+		switch (this.editStatus) {
+			case EditStatus.PREVIEW: {
+				break;
+			}
+			case EditStatus.ADD: {
+				break;
+			}
+			case EditStatus.UPDATE: {
+				break;
+			}
+		}
+	};
 
 	render() {
 		return (

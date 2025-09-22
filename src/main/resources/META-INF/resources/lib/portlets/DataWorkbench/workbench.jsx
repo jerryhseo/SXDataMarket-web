@@ -37,7 +37,7 @@ export class Workbench {
 		});
 	}
 
-	static BASE_WINDOW_ID = 10000;
+	static BASE_WINDOW_ZINDEX = 10000;
 
 	static WindowState = {
 		MINIMIZE: 0,
@@ -72,7 +72,7 @@ export class Workbench {
 	}
 
 	get zIndex() {
-		return Workbench.BASE_WINDOW_ID + this.windows.length - 1;
+		return Workbench.BASE_WINDOW_ZINDEX + this.windows.length - 1;
 	}
 
 	get increasedWindowId() {
@@ -246,9 +246,9 @@ export class SXPortletWindow extends React.Component {
 		this.standAlone = props.standAlone ?? false;
 		this.windowId = props.windowId ?? 0;
 		this.width = props.width ?? 800;
-		this.height = props.height ?? 600;
+		this.height = props.height ?? 800;
 		this.spritemap = props.spritemap;
-		this.zIndex = this.windowId;
+		this.zIndex = Workbench.BASE_WINDOW_ZINDEX + this.windowId;
 
 		this.portletContentRef = createRef(null);
 
@@ -267,7 +267,9 @@ export class SXPortletWindow extends React.Component {
 			<Rnd
 				default={{ x: 100, y: 100, width: this.width, height: this.height }}
 				dragHandleClassName="clay-panel-header"
-				style={{ zIndex: this.zIndex }}
+				style={{
+					zIndex: this.zIndex
+				}}
 			>
 				<Panel
 					displayType="secondary"
@@ -275,7 +277,11 @@ export class SXPortletWindow extends React.Component {
 				>
 					<Panel.Header
 						className="clay-panel-header"
-						style={{ backgroundColor: "#9ed8f9ff", padding: "0px 5px", borderRadius: "0.5rem 0.5rem 0 0" }}
+						style={{
+							backgroundColor: "#9ed8f9ff",
+							padding: "0px 5px",
+							borderRadius: "0.5rem 0.5rem 0 0"
+						}}
 					>
 						<div className="autofit-row autofit-padded">
 							<div className="autofit-col autofit-col-expand">

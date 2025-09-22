@@ -4,7 +4,8 @@ export const EditStatus = {
 	UPDATE: "update",
 	ADD: "add",
 	UPGRADE: "upgrade",
-	IMPORT: "import"
+	IMPORT: "import",
+	PREVIEW: "preview"
 };
 
 export const LiferayProperty = {

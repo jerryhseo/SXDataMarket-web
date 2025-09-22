@@ -13,6 +13,7 @@
 
 <%
 	TypeStructureLink typeStructureLink = (TypeStructureLink)GetterUtil.getObject(renderRequest.getAttribute("typeStructureLink"), null);
+    String editStatus = ParamUtil.getString(renderRequest, "editStatus", "");
     long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
     long dataStructureId = ParamUtil.getLong(renderRequest, "dataStructureId", 0);
     long structuredDataId = ParamUtil.getLong(renderRequest, "structuredDataId", 0);
@@ -58,7 +59,8 @@
 				typeStructureLink: <%= typeStructureLink.toJSON().toString()%>,
 				dataStructureId: Number('<%= dataStructureId %>'),
 				dataTypeId: Number('<%= dataTypeId %>'),
-				structuredDataId: Number('<%= structuredDataId %>')
+				structuredDataId: Number('<%= structuredDataId %>'),
+				editStatus: '<%= editStatus %>'
 			}
 	};
 	
