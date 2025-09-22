@@ -24,6 +24,7 @@ import com.sx.icecap.model.DataType;
 import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
+import com.sx.icecap.service.StructuredDataLocalService;
 import com.sx.icecap.service.TypeStructureLinkLocalService;
 
 import java.io.PrintWriter;
@@ -59,28 +60,15 @@ public class LoadEditingStructuredDataResourceCommand extends BaseMVCResourceCom
 		long structuredDataId = ParamUtil.getLong(resourceRequest, WebKey.STRUCTURED_DATA_ID, 0);
 		String cmd = ParamUtil.getString(resourceRequest, "cmd", "add");
 		
-		System.out.println("LoadEditingStructuredDataResourceCommand:  " + dataTypeId + ", dataStructureId: " + dataStructureId );
+		System.out.println("LoadEditingStructuredDataResourceCommand:  " );
+		System.out.println("cmd: " + cmd);
+		System.out.println("dataCollectionId: " + dataCollectionId);
+		System.out.println("dataSetId: " + dataSetId);
+		System.out.println("dataTypeId: " + dataTypeId);
+		System.out.println("dataStructureId: " + dataStructureId);
+		System.out.println("structuredDataId: " + structuredDataId);
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
-		
-		TypeStructureLink typeStructureLink = null;
-		try{
-			typeStructureLink = _typeStructureLocalService.getTypeStructureLink(dataTypeId);
-			dataStructureId = typeStructureLink.getDataStructureId();
-			result.put("typeStructureLink", typeStructureLink.toJSON());
-		} catch( PortalException e) {
-			System.out.println("No TypeStructureLink while loading data structure");
-		}
-		
-		if( dataTypeId > 0 ) {
-			DataType dataType = _dataTypeLocalService.getDataType(dataTypeId);
-			result.put("dataType", dataType.toJSON( ));
-		}
-		
-		if( dataStructureId > 0) {
-			DataStructure dataStructure = _dataStructureLocalService.getDataStructure(dataStructureId);
-			result.put("dataStructure", dataStructure.toJSON());
-		}
 		
 		//System.out.println("Result: " + result.toString(4));
 		PrintWriter pw = resourceResponse.getWriter();
@@ -90,14 +78,6 @@ public class LoadEditingStructuredDataResourceCommand extends BaseMVCResourceCom
 	}
 	
 	@Reference
-	private DataStructureLocalService _dataStructureLocalService;
+	private StructuredDataLocalService _structuredDataLocalService;
 	
-	@Reference
-	private DataTypeLocalService _dataTypeLocalService;
-	
-	@Reference
-	private TypeStructureLinkLocalService _typeStructureLocalService;
-	
-	@Reference
-	private UserLocalService _userLocalService;
 }

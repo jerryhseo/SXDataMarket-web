@@ -338,7 +338,7 @@ class DataStructureBuilder extends React.Component {
 
 		this.workingParam = Parameter.createParameter(
 			this.namespace,
-			this.formIds.previewCanvasId,
+			this.formIds.dsbuilderId,
 			this.languageId,
 			this.availableLanguageIds,
 			dataPacket.paramType
@@ -570,9 +570,10 @@ class DataStructureBuilder extends React.Component {
 			);
 			this.dataStructure = new DataStructure(
 				this.namespace,
-				this.formIds.previewCanvasId,
+				this.formIds.dsbuilderId,
 				this.languageId,
-				this.availableLanguageIds
+				this.availableLanguageIds,
+				{}
 			);
 		} else {
 			Util.ajax({
@@ -595,7 +596,7 @@ class DataStructureBuilder extends React.Component {
 
 					this.dataStructure = new DataStructure(
 						this.namespace,
-						this.formIds.previewCanvasId,
+						this.formIds.dsbuilderId,
 						this.languageId,
 						this.availableLanguageIds,
 						result.dataStructure ?? {
@@ -621,7 +622,7 @@ class DataStructureBuilder extends React.Component {
 						? this.dataStructure.members[0]
 						: Parameter.createParameter(
 								this.namespace,
-								this.formIds.previewCanvasId,
+								this.formIds.dsbuilderId,
 								this.languageId,
 								this.availableLanguageIds,
 								ParamType.STRING
@@ -700,7 +701,7 @@ class DataStructureBuilder extends React.Component {
 
 		this.workingParam = Parameter.createParameter(
 			this.namespace,
-			this.formIds.previewCanvasId,
+			this.formIds.dsbuilderId,
 			this.languageId,
 			this.availableLanguageIds,
 			ParamType.STRING

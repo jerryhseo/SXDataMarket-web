@@ -327,7 +327,7 @@ class SXGroupBuilder extends React.Component {
 
 		const member = Parameter.createParameter(
 			this.namespace,
-			this.groupParam.tagName,
+			this.groupParam.formId,
 			this.languageId,
 			this.availableLanguageIds,
 			memberType,
@@ -683,6 +683,8 @@ class SXSelectOptionBuilder extends React.Component {
 				this.workingParam.fireRefresh();
 			}
 		}
+
+		this.forceUpdate();
 	};
 
 	listenerPopActionClicked = (event) => {
