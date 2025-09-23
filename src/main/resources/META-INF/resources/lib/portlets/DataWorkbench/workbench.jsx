@@ -3,7 +3,7 @@ import Button, { ClayButtonWithIcon } from "@clayui/button";
 import Panel from "@clayui/panel";
 import { Rnd } from "react-rnd";
 import { Util } from "../../stationx/util";
-import { Constant, ResourceIds, WindowState } from "../../stationx/station-x";
+import { Constant, Event, ResourceIds, WindowState } from "../../stationx/station-x";
 import parse from "html-react-parser";
 
 export class Workbench {
@@ -48,23 +48,19 @@ export class Workbench {
 	namespace = "";
 	windows = {};
 	workbenchId = "";
-	workbenchPortletId = "";
-	workbenchNamespace;
 	baseResourceURL = "";
 	baseRenderURL = "";
 
-	constructor({ namespace, workbenchId, workbenchPortletId, baseRenderURL, baseResourceURL, spritemap }) {
+	constructor({ namespace, workbenchId, baseRenderURL, baseResourceURL, spritemap }) {
 		this.namespace = namespace;
 		this.workbenchId = workbenchId ?? "";
-		this.workbenchPortletId = workbenchPortletId ?? "";
-		this.workbenchNamespace = "_" + this.workbenchId + "_";
 		this.baseResourceURL = baseResourceURL;
 		this.baseRenderURL = baseRenderURL;
 		this.spritemap = spritemap;
 	}
 
-	get increasedWindowId() {
-		return this.windows.length;
+	get windowCount() {
+		return Object.keys(this.windows).length;
 	}
 
 	get topWindow() {
@@ -72,23 +68,30 @@ export class Workbench {
 	}
 
 	get zIndex() {
-		return Workbench.BASE_WINDOW_ZINDEX + this.windows.length - 1;
+		return Workbench.BASE_WINDOW_ZINDEX + this.windowCount - 1;
 	}
 
 	get increasedWindowId() {
 		let increased = 0;
 		Object.values(this.windows).forEach((value) => {
-			increased = value.windowId >= increased ? value.windowId + 1 : increased;
+			increased = value.windowId >= increased ? value.windowId : increased;
 		});
 
-		return increased;
+		return increased + 1;
 	}
 
-	addWindow = (portletId, windowState) => {
+	get windowContentArray() {
+		return Object.values(this.windows).map((value) => value.windowContent);
+	}
+
+	addWindow = (portletId, windowContent, windowState) => {
 		this.windows[portletId] = {
 			windowId: this.increasedWindowId,
+			windowContent: windowContent,
 			windowState: windowState
 		};
+
+		return this.windows.length;
 	};
 
 	setWindowState(portletId, windowState) {
@@ -107,7 +110,7 @@ export class Workbench {
 		delete this.windows[portletId];
 	}
 
-	openPortletWindow = async ({ portletName, params }) => {
+	openPortletWindow = async ({ portletName, title, params }) => {
 		let portletInstance = await this.createPortletInfo({
 			resourceId: ResourceIds.CREATE_PORTLET_INSTANCE,
 			portletName: portletName
@@ -127,18 +130,36 @@ export class Workbench {
 
 		let portletContent = await this.ajax({ url: renderURL, type: "get", dataType: "html" });
 
-		this.addWindow(portletInstance.portletId, Workbench.WindowState.NORMAL);
+		return this.addWindow(
+			portletInstance.portletId,
+			<SXPortletWindow
+				key={portletInstance.portletId}
+				portletNamespace={portletInstance.namespace}
+				portletId={portletInstance.portletId}
+				workbenchNamespace={this.namespace}
+				workbenchId={this.workbenchId}
+				title={title}
+				content={portletContent}
+				windowId={this.increasedWindowId}
+				spritemap={this.spritemap}
+			/>,
+			Workbench.WindowState.NORMAL
+		);
 
+		/*
 		return (
 			<SXPortletWindow
-				namespace={portletInstance.namespace}
+				portletNamespace={portletInstance.namespace}
+				portletId={portletInstance.portletId}
+				workbenchNamespace={this.namespace}
 				workbenchId={this.workbenchId}
-				title={Util.translate("structured-data-editor")}
+				title={title}
 				content={portletContent}
 				windowId={this.increasedWindowId}
 				spritemap={this.spritemap}
 			/>
 		);
+		*/
 	};
 
 	createPortletInfo = async ({ resourceId, portletName }) => {
@@ -164,7 +185,7 @@ export class Workbench {
 		await AUI().use("aui-base, portlet-url", (A) => {
 			let resourceURL = Liferay.PortletURL.createURL(this.baseResourceURL);
 			resourceURL.setResourceId(resourceId);
-			resourceURL.setPortletId(this.workbenchPortletId);
+			resourceURL.setPortletId(this.workbenchId);
 
 			url = resourceURL.toString();
 		});
@@ -214,7 +235,10 @@ export class Workbench {
 		return url;
 	};
 
-	loadData = async (resourceId, params) => {};
+	fetchData = async (resourceId, params) => {
+		const resourceURL = this.createResourceURL({ resourceId: resourceId });
+		console.log("fetchData: ", resourceURL);
+	};
 
 	ajax = async ({ url, params = {}, type = "post", dataType = "json" }) => {
 		let result;
@@ -240,21 +264,26 @@ export class SXPortletWindow extends React.Component {
 	constructor(props) {
 		super(props);
 
-		this.namespace = props.namespace;
+		this.portletNamespace = props.portletNamespace;
+		this.portletId = props.portletId;
+		this.workbenchNamespace = props.workbenchNamespace;
 		this.workbenchId = props.workbenchId;
 
 		this.title = props.title;
 		this.content = props.content;
 		this.standAlone = props.standAlone ?? false;
 		this.windowId = props.windowId ?? 0;
-		this.width = props.width ?? 800;
-		this.height = props.height ?? 800;
 		this.spritemap = props.spritemap;
 		this.zIndex = Workbench.BASE_WINDOW_ZINDEX + this.windowId;
 
 		this.portletContentRef = createRef(null);
 
 		this.portletBody = this.namespace + this.windowId;
+
+		this.state = {
+			width: props.width ?? 800,
+			height: props.height ?? 800
+		};
 	}
 
 	componentDidMount() {
@@ -264,18 +293,42 @@ export class SXPortletWindow extends React.Component {
 		//Util.html(this.portletBody, this.content);
 	}
 
+	handleClick = (e) => {
+		e.stopPropagation();
+
+		Event.fire(Event.SX_WINDOW_SELECTED, this.portletNamespace, this.workbenchNamespace, {
+			targetFormId: this.workbenchId,
+			windowId: this.portletId
+		});
+	};
+
 	render() {
 		return (
 			<Rnd
-				default={{ x: 100, y: 100, width: this.width, height: this.height }}
+				default={{ x: 100, y: 100, width: this.state.width, height: this.state.height }}
 				dragHandleClassName="clay-panel-header"
 				style={{
 					zIndex: this.zIndex
 				}}
+				onResizeStop={(e, direction, ref, delta, newPosition) => {
+					this.setState({
+						width: ref.offsetWidth,
+						height: ref.offsetHeight
+					});
+				}}
+				onClick={this.handleClick}
 			>
 				<Panel
 					displayType="secondary"
-					style={{ width: "100%", height: "100%", backgroundColor: "#fff", borderRadius: "0.5rem" }}
+					style={{
+						width: "100%",
+						height: "100%",
+						backgroundColor: "#fff",
+						borderWidth: "3px 3px 3px 3px",
+						borderRadius: "0.5rem",
+						boxShadow: "5px 5px 10px rgba(0, 0, 0, 0.2)",
+						overflow: "hidden"
+					}}
 				>
 					<Panel.Header
 						className="clay-panel-header"
@@ -340,10 +393,15 @@ export class SXPortletWindow extends React.Component {
 										onClick={(e) => {
 											e.stopPropagation();
 
-											Event.fire(Event.SX_REMOVE_WINDOW, this.namespace, this.namespace, {
-												targetFormId: this.workbenchId,
-												windowId: this.windowId
-											});
+											Event.fire(
+												Event.SX_REMOVE_WINDOW,
+												this.portletNamespace,
+												this.workbenchNamespace,
+												{
+													targetFormId: this.workbenchId,
+													portletId: this.portletId
+												}
+											);
 										}}
 										spritemap={this.spritemap}
 									/>
@@ -352,8 +410,17 @@ export class SXPortletWindow extends React.Component {
 						</div>
 					</Panel.Header>
 					<Panel.Body>
-						<div ref={this.portletContentRef}></div>
-						<div id={this.namespace + this.windowId}></div>
+						<div
+							ref={this.portletContentRef}
+							style={{
+								display: "block",
+								height: this.state.height - 40 + "px",
+								overflowX: "hidden",
+								overflowY: "auto",
+								paddingBottom: "2rem"
+							}}
+						></div>
+						<div style={{ paddingTop: "2rem" }}></div>
 					</Panel.Body>
 				</Panel>
 			</Rnd>

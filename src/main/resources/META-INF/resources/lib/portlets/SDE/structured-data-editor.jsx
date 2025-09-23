@@ -6,6 +6,8 @@ import Toolbar from "@clayui/toolbar";
 import { ClayInput } from "@clayui/form";
 import Button, { ClayButtonWithIcon } from "@clayui/button";
 import Visualizer from "../../stationx/visualizer";
+import Icon from "@clayui/icon";
+import { DataStructure } from "../DataStructure/data-structure";
 
 class StructuredDataEditor extends React.Component {
 	static EditState = {
@@ -20,12 +22,18 @@ class StructuredDataEditor extends React.Component {
 		super(props);
 
 		this.namespace = props.namespace;
+		this.languageId = SXSystem.getLanguageId();
+		this.defaultLanguageId = SXSystem.getDefaultLanguageId();
+		this.availableLanguageIds = SXSystem.getAvailableLanguages();
+
 		this.baseResourceURL = props.baseResourceURL;
 		this.spritemap = props.spritemapPath;
 		this.workbenchNamespace = props.workbenchNamespace;
 		this.workbenchId = props.workbenchId;
 		this.permissions = props.permissions;
 		this.portletId = props.portletId;
+
+		this.subject = props.subject;
 
 		this.dataCollectionId = props.dataCollectionId ?? 0;
 		this.dataSetId = props.dataSetId ?? 0;
@@ -38,7 +46,12 @@ class StructuredDataEditor extends React.Component {
 
 		this.editStatus = props.editStatus;
 
-		this.visualizer = new Visualizer({});
+		this.visualizer = new Visualizer({
+			namespace: this.namespace,
+			workbenchNamespace: this.workbenchNamespace,
+			workbenchId: this.workbenchId,
+			visualizerId: this.portletId
+		});
 
 		this.state = {
 			loadingStatus: LoadingStatus.PENDING
@@ -70,13 +83,42 @@ class StructuredDataEditor extends React.Component {
 		}
 	}
 
-	listenerLoadData = (event) => {};
+	listenerLoadData = (event) => {
+		const dataPacket = event.dataPacket;
+
+		console.log("StructuredDataEditor listenerLoadData: ", dataPacket);
+		if (dataPacket.targetPortlet !== this.namespace) {
+			return;
+		}
+
+		console.log("StructuredDataEditor listenerLoadData: ", dataPacket);
+
+		this.subject = dataPacket.data.subject;
+		this.dataCollection = dataPacket.data.dataCollection;
+		this.dataSet = dataPacket.data.dataSet;
+		this.dataType = dataPacket.data.dataType;
+		this.dataStructure = new DataStructure(
+			this.namespace,
+			this.portletId,
+			this.languageId,
+			this.availableLanguageIds,
+			dataPacket.data.dataStructure ?? {}
+		);
+
+		this.typeStructureLink = dataPacket.data.typeStructureLink;
+
+		this.forceUpdate();
+	};
 
 	componentDidMount() {
-		this.loadStructuredData();
+		//this.loadStructuredData();
+		Event.on(Event.SX_LOAD_DATA, this.listenerLoadData);
+		this.visualizer.fireHandshake();
 	}
 
-	componentWillUnmount() {}
+	componentWillUnmount() {
+		Event.off(Event.SX_LOAD_DATA, this.listenerLoadData);
+	}
 
 	loadStructuredData = async () => {
 		const params = {
@@ -100,8 +142,103 @@ class StructuredDataEditor extends React.Component {
 		}
 	};
 
+	handleSaveData = () => {
+		console.log("handleSaveData: ", this.dataStructure.toData());
+	};
+
+	handleCancel = () => {
+		Event.fire(Event.SX_REMOVE_WINDOW, this.namespace, this.workbenchNamespace, {
+			targetFormId: this.workbenchId
+		});
+	};
+
 	render() {
+		console.log("Editor render: ", this.dataStructure);
 		return (
+			<>
+				<div style={{ paddingRight: "10px" }}>
+					<div
+						className="autofit-row"
+						style={{ backgroundColor: "#ecf5de", padding: "5px 10px" }}
+					>
+						<div className="autofit-col autofit-col-expand">
+							{(Util.isNotEmpty(this.dataCollection) ||
+								Util.isNotEmpty(this.dataSet) ||
+								Util.isNotEmpty(this.dataType)) && (
+								<div className="autofit-row">
+									{Util.isNotEmpty(this.dataCollection) && (
+										<>
+											<div className="autofit-col shrink">
+												<Icon
+													symbol="angle-right"
+													spritemap={this.spritemap}
+												/>
+											</div>
+											<div className="autofit-col shrink">{this.dataCollection.displayName}</div>
+										</>
+									)}
+									{Util.isNotEmpty(this.dataSet) && (
+										<>
+											<div className="autofit-col shrink">
+												<Icon
+													symbol="angle-right"
+													spritemap={this.spritemap}
+												/>
+											</div>
+											<div className="autofit-col shrink">{this.dataSet.displayName}</div>
+										</>
+									)}
+									{Util.isNotEmpty(this.dataType) && (
+										<>
+											<div className="autofit-col shrink">
+												<Icon
+													symbol="angle-right"
+													spritemap={this.spritemap}
+												/>
+											</div>
+											<div className="autofit-col shrink">{this.dataType.displayName}</div>
+										</>
+									)}
+								</div>
+							)}
+						</div>
+						<div className="autofit-col shrink">{this.subject}</div>
+					</div>
+				</div>
+				<div
+					className="autofit-row"
+					style={{ backgroundColor: "#fff", paddingTop: "1.5rem", paddingRight: "10px" }}
+				>
+					<div className="autofit-col autofit-col-expand">
+						{Util.isNotEmpty(this.dataStructure) &&
+							this.dataStructure.render({ canvasId: this.namespace, spritemap: this.spritemap })}
+					</div>
+				</div>
+				<Button.Group
+					spaced
+					style={{ width: "100%", justifyContent: "center", marginTop: "1.5rem", marginBottom: "1.5rem" }}
+				>
+					<Button
+						displayType="primary"
+						onClick={this.handleSaveData}
+						title={Util.translate("save-data")}
+					>
+						<Icon
+							symbol="disk"
+							spritemap={this.spritemap}
+							style={{ marginRight: "5px" }}
+						/>
+						{Util.translate("save")}
+					</Button>
+					<Button
+						displayType="secondary"
+						onClick={this.handleCancel}
+						title={Util.translate("cancel")}
+					>
+						{Util.translate("cancel")}
+					</Button>
+				</Button.Group>
+				{/* 
 			<div>
 				{StructuredDataEditor.EditState.UPDATE || StructuredDataEditor.EditState.ADD}
 				<SXDataTypeStructureLink
@@ -189,6 +326,8 @@ class StructuredDataEditor extends React.Component {
 				</Toolbar>
 				<div className="field-area"></div>
 			</div>
+			*/}
+			</>
 		);
 	}
 }

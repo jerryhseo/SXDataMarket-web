@@ -266,7 +266,27 @@ export class DataStructure extends GroupParameter {
 		}
 	}
 
-	toData() {}
+	getDataAbstract() {
+		let abstrct = "";
+
+		this.members.forEach((member) => {
+			if (abstract && member.abstract) {
+				abstract += " ";
+			}
+
+			abstract += member.abstract;
+		});
+	}
+
+	toData() {
+		let data = {};
+
+		this.members.forEach((member) => {
+			data = { ...data, ...member.toData() };
+		});
+
+		return data;
+	}
 
 	parse(json = {}) {
 		super.parse(json);
@@ -316,7 +336,7 @@ export class DataStructure extends GroupParameter {
 		return (
 			<div id={canvasId}>
 				{this.members.map((parameter) =>
-					parameter.render({
+					parameter.renderField({
 						events: events,
 						className: className,
 						style: style,

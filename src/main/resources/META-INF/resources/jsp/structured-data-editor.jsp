@@ -14,6 +14,7 @@
 <%
 	TypeStructureLink typeStructureLink = (TypeStructureLink)GetterUtil.getObject(renderRequest.getAttribute("typeStructureLink"), null);
     String editStatus = ParamUtil.getString(renderRequest, "editStatus", "");
+    String subject = ParamUtil.getString(renderRequest, "subject", "");
     long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
     long dataStructureId = ParamUtil.getLong(renderRequest, "dataStructureId", 0);
     long structuredDataId = ParamUtil.getLong(renderRequest, "structuredDataId", 0);
@@ -57,6 +58,7 @@
 				workbenchNamespace: '<%= workbenchNamespace %>',
 				workbenchId: '<%= workbenchId %>',
 				typeStructureLink: <%= typeStructureLink.toJSON().toString()%>,
+				subject: '<%= subject %>',
 				dataStructureId: Number('<%= dataStructureId %>'),
 				dataTypeId: Number('<%= dataTypeId %>'),
 				structuredDataId: Number('<%= structuredDataId %>'),

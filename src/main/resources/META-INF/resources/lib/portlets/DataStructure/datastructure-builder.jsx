@@ -85,6 +85,7 @@ class DataStructureBuilder extends React.Component {
 		this.availableLanguageIds = props.availableLanguageIds;
 		this.permissions = props.permissions;
 		this.spritemap = props.spritemapPath;
+		this.portletId = props.portletId;
 
 		this.permissions = props.permissions;
 
@@ -129,8 +130,7 @@ class DataStructureBuilder extends React.Component {
 
 		this.workbench = new Workbench({
 			namespace: this.namespace,
-			workbenchPortletId: props.portletId,
-			workbenchId: this.formIds.dsbuilderId,
+			workbenchId: this.portletId,
 			baseRenderUrl: this.baseRenderUrl,
 			baseResourceURL: this.baseResourceURL,
 			spritemap: this.spritemap
@@ -510,10 +510,11 @@ class DataStructureBuilder extends React.Component {
 			return;
 		}
 
-		//console.log("listenerLoadPortlet: ", dataPacket, this.props.workbench);
+		console.log("listenerLoadPortlet: ", dataPacket, this.workbench);
 
 		this.portletWindow = await this.workbench.openPortletWindow({
 			portletName: dataPacket.portletName,
+			title: this.dataStructure.label + " " + Util.translate("preview"),
 			params: {
 				dataTypeId: this.dataTypeId,
 				dataStructureId: this.dataStructure.dataStructureId,
@@ -521,16 +522,42 @@ class DataStructureBuilder extends React.Component {
 			}
 		});
 
-		this.setState({ manifestSDE: true });
+		this.forceUpdate();
+		//this.setState({ manifestSDE: true });
+	};
+
+	listenerClosePreviewWindow = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.portletId)) {
+			return;
+		}
+
+		this.workbench.removeWindow(dataPacket.portletId);
+		console.log("listenerClosePreviewWindow: ", dataPacket, this.workbench);
+
+		//this.setState({ manifestSDE: false });
+		this.forceUpdate();
 	};
 
 	listenerHandshake = (event) => {
 		const dataPacket = event.dataPacket;
-		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.formIds.dsbuilderId)) {
+		if (dataPacket.targetPortlet !== this.namespace) {
 			return;
 		}
 
-		console.log("Handshake from: ", dataPacket.sourcePortlet);
+		Event.fire(Event.SX_LOAD_DATA, this.namespace, dataPacket.sourcePortlet, {
+			data: {
+				subject: this.dataStructure.label,
+				dataType: {
+					dataTypeId: this.dataType.dataTypeId,
+					dataTypeCode: this.dataType.dataTypeCode,
+					dataTypeVersion: this.dataType.dataTypeVersion,
+					displayName: this.dataType.getDisplayName()
+				},
+				dataStructure: this.dataStructure.toJSON()
+			}
+		});
 	};
 
 	componentDidMount() {
@@ -544,6 +571,7 @@ class DataStructureBuilder extends React.Component {
 		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
 		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
 		Event.on(Event.SX_HANDSHAKE, this.listenerHandshake);
+		Event.on(Event.SX_REMOVE_WINDOW, this.listenerClosePreviewWindow);
 	}
 
 	componentWillUnmount() {
@@ -555,6 +583,7 @@ class DataStructureBuilder extends React.Component {
 		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
 		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
 		Event.off(Event.SX_HANDSHAKE, this.listenerHandshake);
+		Event.off(Event.SX_REMOVE_WINDOW, this.listenerClosePreviewWindow);
 	}
 
 	loadDataStructure() {
@@ -1092,7 +1121,7 @@ class DataStructureBuilder extends React.Component {
 						/>
 					)}
 				</div>
-				{this.state.manifestSDE && this.portletWindow}
+				{this.workbench.windowCount > 0 && this.workbench.windowContentArray}
 			</>
 		);
 	}

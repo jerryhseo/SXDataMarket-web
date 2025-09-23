@@ -60,21 +60,31 @@ public class LoadEditingStructuredDataResourceCommand extends BaseMVCResourceCom
 		long structuredDataId = ParamUtil.getLong(resourceRequest, WebKey.STRUCTURED_DATA_ID, 0);
 		String cmd = ParamUtil.getString(resourceRequest, "cmd", "add");
 		
-		System.out.println("LoadEditingStructuredDataResourceCommand:  " );
+		System.out.println("--- Start LoadEditingStructuredDataResourceCommand:  " );
 		System.out.println("cmd: " + cmd);
 		System.out.println("dataCollectionId: " + dataCollectionId);
 		System.out.println("dataSetId: " + dataSetId);
 		System.out.println("dataTypeId: " + dataTypeId);
 		System.out.println("dataStructureId: " + dataStructureId);
 		System.out.println("structuredDataId: " + structuredDataId);
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
 		
-		JSONObject result = JSONFactoryUtil.createJSONObject();
+		JSONObject result = _structuredDataLocalService.getStructuredDataWithInfo(
+														structuredDataId, 
+														dataCollectionId, 
+														dataSetId, 
+														dataTypeId, 
+														dataStructureId, 
+														themeDisplay.getLocale());
 		
-		//System.out.println("Result: " + result.toString(4));
+		System.out.println("Result: " + result.toString(4));
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(result.toJSONString());
 		pw.flush();
 		pw.close();
+		
+		System.out.println("--- End LoadEditingStructuredDataResourceCommand" );
 	}
 	
 	@Reference

@@ -245,7 +245,13 @@ export class Parameter {
 	freezable = false;
 	freezableIcon = "";
 	freezed = false;
+	freezedUserId;
+	freezedUserName;
+	freezedDate;
 	verified = false;
+	verifiedUserId;
+	verifiedUserName;
+	verifiedDate;
 
 	constructor(namespace, formId, languageId, availableLanguageIds, paramType) {
 		this.#namespace = namespace;
@@ -768,12 +774,6 @@ export class Parameter {
 	}
 
 	isValueFilled() {}
-
-	loadData(data) {
-		this.freezed = data.freezed;
-		this.verified = data.verified;
-		this.value = data.value;
-	}
 
 	/**
 	 *
@@ -1456,13 +1456,31 @@ export class Parameter {
 		}
 	}
 
+	loadData(data) {
+		this.freezed = data.freezed;
+		this.freezedUserId = data.freezedUserId;
+		this.freezedUserName = data.freezedUserName;
+		this.freezedDate = data.freezedDate;
+		this.verified = data.verified;
+		this.verifiedUserId = data.verifiedUserId;
+		this.verifiedUserName = data.verifiedUserName;
+		this.verifiedDate = data.verifiedDate;
+		this.value = data.value;
+	}
+
 	toData() {
 		let data = {};
 
 		if (this.hasValue()) {
 			data[this.paramCode] = {
 				freezed: this.freezed,
+				freezedUserId: this.freezedUserId,
+				freezedUserName: this.freezedUserName,
+				freezedDate: this.freezedDate,
 				verified: this.verified,
+				verifiedUserId: this.verifiedUserId,
+				verifiedUserName: this.verifiedUserName,
+				verifiedDate: this.verifiedDate,
 				value: this.value
 			};
 		}
@@ -1694,6 +1712,14 @@ export class StringParameter extends Parameter {
 			name: lang,
 			symbol: lang.toLowerCase()
 		}));
+	}
+
+	get abstract() {
+		if (this.abstractKey && this.hasValue()) {
+			return this.paramCode + ": " + (this.localized ? this.value[this.languageId] : this.value);
+		}
+
+		return "";
 	}
 
 	set minLength(val) {
@@ -1943,6 +1969,14 @@ export class NumericParameter extends Parameter {
 	}
 	get max() {
 		return this.#max;
+	}
+
+	get abstract() {
+		if (this.abstractKey && this.hasValue()) {
+			return this.paramCode + ": " + (this.uncertainty ? this.value.value : this.value);
+		}
+
+		return "";
 	}
 
 	set uncertainty(val) {
@@ -2226,6 +2260,14 @@ export class SelectParameter extends Parameter {
 		return this.#options.length;
 	}
 
+	get abstract() {
+		if (this.abstractKey && this.hasValue()) {
+			return this.paramCode + ": " + JSON.stringify(this.value);
+		}
+
+		return "";
+	}
+
 	set options(val) {
 		this.#options = val;
 	}
@@ -2440,6 +2482,14 @@ export class DualListParameter extends Parameter {
 		return this.#viewType;
 	}
 
+	get abstract() {
+		if (this.abstractKey && this.hasValue()) {
+			return this.paramCode + ": " + JSON.stringify(this.value);
+		}
+
+		return "";
+	}
+
 	set options(val) {
 		this.#options = val;
 	}
@@ -2601,6 +2651,14 @@ export class BooleanParameter extends SelectParameter {
 		return (
 			this.viewType == BooleanParameter.ViewTypes.RADIO || this.viewType == BooleanParameter.ViewTypes.DROPDOWN
 		);
+	}
+
+	get abstract() {
+		if (this.abstractKey && this.hasValue()) {
+			return this.paramCode + ": " + this.value;
+		}
+
+		return "";
 	}
 
 	set trueOption(option) {
@@ -2876,6 +2934,14 @@ export class FileParameter extends Parameter {
 		super(namespace, formId, languageId, availableLanguageIds, ParamType.FILE);
 	}
 
+	get abstract() {
+		if (this.abstractKey && this.hasValue()) {
+			return this.paramCode + ": " + JSON.stringify(this.value);
+		}
+
+		return "";
+	}
+
 	initProperties(json) {
 		this.parse(json);
 
@@ -2965,6 +3031,14 @@ export class AddressParameter extends Parameter {
 
 	constructor(namespace, formId, languageId, availableLanguageIds, paramType = ParamType.ADDRESS) {
 		super(namespace, formId, languageId, availableLanguageIds, paramType);
+	}
+
+	get abstract() {
+		if (this.abstractKey && this.hasValue()) {
+			return this.paramCode + ": " + this.getFullAddress();
+		}
+
+		return "";
 	}
 
 	initProperties(json) {
@@ -3116,6 +3190,13 @@ export class DateParameter extends Parameter {
 	get endYear() {
 		return this.#endYear;
 	}
+	get abstract() {
+		if (this.abstractKey && this.hasValue()) {
+			return this.paramCode + ": " + this.getValue();
+		}
+
+		return "";
+	}
 
 	set enableTime(val) {
 		this.#enableTime = val;
@@ -3226,6 +3307,14 @@ export class PhoneParameter extends Parameter {
 		super(namespace, formId, languageId, availableLanguageIds, paramType);
 	}
 
+	get abstract() {
+		if (this.abstractKey && this.hasValue()) {
+			return this.paramCode + ": " + this.getPhoneNo();
+		}
+
+		return "";
+	}
+
 	initProperties(json) {
 		this.parse(json);
 
@@ -3260,6 +3349,18 @@ export class PhoneParameter extends Parameter {
 	}
 	get enableCountryNo() {
 		return this.#enableCountryNo;
+	}
+
+	getPhoneNo(cellIndex) {
+		return (
+			(this.enableCountryNo ? this.getCountryNo(cellIndex) : "") +
+			")" +
+			this.getAreaNo(cellIndex) +
+			"-" +
+			this.getStationNo(cellIndex) +
+			"-" +
+			this.getPersonalNo(cellIndex)
+		);
 	}
 
 	setCountryNo(val, cellIndex) {
@@ -3365,6 +3466,14 @@ export class EMailParameter extends Parameter {
 			errorClass: ErrorClass.ERROR
 		};
 		*/
+	}
+
+	get abstract() {
+		if (this.abstractKey && this.hasValue()) {
+			return this.paramCode + ": " + this.getEmailAddress();
+		}
+
+		return "";
 	}
 
 	initProperties(json) {
@@ -3541,6 +3650,10 @@ export class GroupParameter extends Parameter {
 
 	get showMembersPerRow() {
 		return this.viewType == GroupParameter.ViewTypes.ARRANGEMENT || this.viewType == GroupParameter.ViewTypes.PANEL;
+	}
+
+	get abstract() {
+		return "";
 	}
 
 	set members(val) {
@@ -3881,15 +3994,6 @@ export class GroupParameter extends Parameter {
 		});
 	}
 
-	loadData(data) {
-		this.members.forEach((member) => {
-			const value = data[member.paramCode];
-			if (Util.isNotEmpty(value)) {
-				member.loadData(value);
-			}
-		});
-	}
-
 	superParse(json) {
 		super.parse(json);
 	}
@@ -3930,6 +4034,17 @@ export class GroupParameter extends Parameter {
 				return parameter;
 			});
 		}
+	}
+
+	loadData(data) {
+		super.loadData(data);
+
+		this.members.forEach((member) => {
+			const value = data[member.paramCode];
+			if (Util.isNotEmpty(value)) {
+				member.loadData(value);
+			}
+		});
 	}
 
 	toData() {
@@ -4089,6 +4204,10 @@ export class GridParameter extends GroupParameter {
 	}
 	get columnCount() {
 		return this.members.length;
+	}
+
+	get abstract() {
+		return "";
 	}
 
 	set columns(val) {
