@@ -315,7 +315,7 @@ class DataTypeEditor extends React.Component {
 			this.formId,
 			this.languageId,
 			this.availableLanguageIds,
-			ParamType.DUALLIST,
+			"DualList",
 			{
 				paramCode: DataTypeProperty.VISUALIZERS,
 				displayName: Util.getTranslationObject(this.languageId, "associated-visualizers"),
@@ -506,7 +506,7 @@ class DataTypeEditor extends React.Component {
 
 				this.visualizers.options = result.availableVisualizers.map((item) => ({
 					label: item.displayName,
-					value: item.id,
+					value: item.id + "",
 					typeVisualizerLinkId: item.typeVisualizerLinkId ?? 0
 				}));
 
@@ -514,7 +514,7 @@ class DataTypeEditor extends React.Component {
 					//console.log("result.visualizers: ", result.visualizers);
 					this.visualizers.setValue({
 						value: result.visualizers.map((v) => ({
-							value: v.id,
+							value: v.id + "",
 							label: v.displayName,
 							typeVisualizerLinkId: v.typeVisualizerLinkId
 						}))

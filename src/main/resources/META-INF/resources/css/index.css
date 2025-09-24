@@ -71,7 +71,7 @@
 }
 
 .sx-table td label .custom-control-label {
-	margin-left: 1.5rem;
+	margin-left: 0;
 }
 
 .sx-table td label span.toggle-switch-handle span {
@@ -212,6 +212,10 @@ span.toggle-switch-bar {
 }
 .sx-param-definition pre {
 	margin: 0;
+}
+
+.custom-control {
+	margin-bottom: 0;
 }
 
 .custom-control-label-text {
@@ -495,6 +499,10 @@ div .under-construction {
 
 .table-list thead th {
 	background-color: #e6f8e6;
+}
+
+.dropdown-menu {
+	min-width: 40px;
 }
 
 .clay-reorder {

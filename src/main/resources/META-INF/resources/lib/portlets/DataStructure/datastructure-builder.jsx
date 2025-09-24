@@ -77,7 +77,7 @@ class DataStructureBuilder extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("DataStructureBuilder props: ", props);
+		//console.log("DataStructureBuilder props: ", props);
 		this.namespace = props.namespace;
 		this.baseRenderURL = props.baseRenderURL;
 		this.baseResourceURL = props.baseResourceURL;
@@ -510,7 +510,10 @@ class DataStructureBuilder extends React.Component {
 			return;
 		}
 
-		console.log("listenerLoadPortlet: ", dataPacket, this.workbench);
+		//console.log("listenerLoadPortlet: ", dataPacket, this.workbench);
+		if (this.state.manifestSDE) {
+			return;
+		}
 
 		this.portletWindow = await this.workbench.openPortletWindow({
 			portletName: dataPacket.portletName,
@@ -555,6 +558,7 @@ class DataStructureBuilder extends React.Component {
 					dataTypeVersion: this.dataType.dataTypeVersion,
 					displayName: this.dataType.getDisplayName()
 				},
+				typeStrtuctureLink: this.typeStructureLink.toJSON(),
 				dataStructure: this.dataStructure.toJSON()
 			}
 		});
@@ -809,7 +813,7 @@ class DataStructureBuilder extends React.Component {
 			return <h3>{this.loadingFailMessage}</h3>;
 		}
 
-		console.log("DataStructureBuilder render: ", this.dataStructure, this.workingParam);
+		//console.log("DataStructureBuilder render: ", this.dataStructure, this.workingParam);
 
 		return (
 			<>

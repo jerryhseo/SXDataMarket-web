@@ -191,7 +191,7 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 			this.toggleFields.downloadable,
 			this.toggleFields.searchable,
 			this.toggleFields.disabled,
-			this.toggleFields.fieldCssWidth
+			this.fieldCssWidth
 		]);
 
 		if (Util.isNotEmpty(error)) {

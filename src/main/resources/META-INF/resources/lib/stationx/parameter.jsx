@@ -102,7 +102,7 @@ export class Parameter {
 				parameter = new SelectParameter(namespace, formId, languageId, availableLanguageIds);
 				break;
 			}
-			case ParamType.DUALLIST: {
+			case "DualList": {
 				parameter = new DualListParameter(namespace, formId, languageId, availableLanguageIds);
 				break;
 			}
@@ -2312,6 +2312,10 @@ export class SelectParameter extends Parameter {
 	}
 
 	checkDuplicatedOptionValue(optionValue) {
+		if (!this.options) {
+			return false;
+		}
+
 		let duplicated = false;
 		this.options.every((option) => {
 			duplicated = option.value == optionValue;
@@ -2331,7 +2335,7 @@ export class SelectParameter extends Parameter {
 	}
 
 	getOption(index) {
-		return this.options[index];
+		return this.option ? this.options[index] : {};
 	}
 
 	copyOption(index) {
@@ -2468,8 +2472,8 @@ export class DualListParameter extends Parameter {
 		HORIZONTAL: "horizontal",
 		VERTICAL: "vertical"
 	};
-	#options;
-	#viewType;
+	#options = [];
+	#viewType = DualListParameter.ViewTypes.HORIZONTAL;
 
 	constructor(namespace, formId, languageId, availableLanguageIds, paramType = ParamType.DUALLIST) {
 		super(namespace, formId, languageId, availableLanguageIds, paramType);
@@ -2537,12 +2541,14 @@ export class DualListParameter extends Parameter {
 
 	getRightOptions(cellIndex) {
 		return this.options
-			.filter((option) => this.notIncludedInValues(option.value, cellIndex))
-			.map((option) => ({
-				key: option.value,
-				label: option.label[this.languageId],
-				value: option.value
-			}));
+			? this.options
+					.filter((option) => this.notIncludedInValues(option.value, cellIndex))
+					.map((option) => ({
+						key: option.value,
+						label: option.label[this.languageId],
+						value: option.value
+					}))
+			: [];
 	}
 
 	addValue(val) {
@@ -2566,6 +2572,77 @@ export class DualListParameter extends Parameter {
 		}
 
 		this.value = this.value.filter((elem) => elem.value !== val);
+	}
+	checkDuplicatedOptionValue(optionValue) {
+		if (!this.options) {
+			return false;
+		}
+
+		let duplicated = false;
+		this.options.every((option) => {
+			duplicated = option.value == optionValue;
+
+			return duplicated ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
+		});
+
+		return duplicated;
+	}
+
+	addOption(option) {
+		this.#options.push(option);
+
+		this.refreshKey();
+
+		return this.options.length;
+	}
+
+	getOption(index) {
+		return this.option ? this.options[index] : {};
+	}
+
+	copyOption(index) {
+		const insertPlace = index + 1;
+		const newOption = { ...this.getOption(index), value: "" };
+		this.options = [...this.options.slice(0, insertPlace), newOption, ...this.options.slice(insertPlace)];
+
+		this.refreshKey();
+		return newOption;
+	}
+
+	removeOption(index) {
+		this.#options.splice(index, 1);
+
+		this.refreshKey();
+
+		return this.#options.length > 0 ? this.#options[0] : {};
+	}
+
+	switchOptions(index1, index2) {
+		let elem1 = this.#options[index1];
+		this.#options[index1] = this.#options[index2];
+		this.#options[index2] = elem1;
+
+		this.refreshKey();
+	}
+
+	moveOptionUp(index) {
+		if (index == 0) {
+			return 0;
+		}
+
+		this.switchOptions(index - 1, index);
+
+		return index - 1;
+	}
+
+	moveOptionDown(index) {
+		if (index >= this.options.length - 1) {
+			return index;
+		}
+
+		this.switchOptions(index, index + 1);
+
+		return index + 1;
 	}
 
 	parse(json) {

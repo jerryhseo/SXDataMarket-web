@@ -768,20 +768,20 @@ export const ParamType = {
 	/*02.*/ NUMERIC: "Numeric",
 	/*03.*/ BOOLEAN: "Boolean",
 	/*04.*/ SELECT: "Select",
-	/*05.*/ DUALLIST: "DualList",
-	/*06.*/ MATRIX: "Matrix",
+	/*05. DUALLIST: "DualList",*/
+	/*06. MATRIX: "Matrix",*/
 	/*07.*/ FILE: "File",
 	/*08.*/ ADDRESS: "Address",
 	/*09.*/ DATE: "Date",
 	/*10.*/ PHONE: "Phone",
 	/*11.*/ EMAIL: "EMail",
 	/*12.*/ GROUP: "Group",
-	/*13.*/ GRID: "Grid",
-	/*13.*/ TABLE: "Table",
-	/*14.*/ CALCULATOR: "Calculator",
-	/*15.*/ REFERENCE: "Reference",
-	/*16.*/ LINKER: "Linker",
-	/*17.*/ IMAGE: "Image"
+	/*13.*/ GRID: "Grid"
+	/*13. TABLE: "Table",*/
+	/*14. CALCULATOR: "Calculator",*/
+	/*15. REFERENCE: "Reference",*/
+	/*16. LINKER: "Linker",*/
+	/*17. IMAGE: "Image"*/
 };
 
 export const WindowState = {

@@ -6,7 +6,7 @@
 <%@page import="com.sx.icecap.constant.WebKey"%>
 <%@page import="com.sx.constant.StationXWebKeys"%>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@clayui/css/lib/css/atlas.css">
+<!-- link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@clayui/css/lib/css/atlas.css" -->
 <%@ include file="./init.jsp" %>
 <%
 	JSONArray permissions = (JSONArray)renderRequest.getAttribute("permissions");

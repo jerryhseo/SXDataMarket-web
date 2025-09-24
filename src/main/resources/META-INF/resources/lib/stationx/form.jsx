@@ -40,7 +40,7 @@ import Autocomplete from "@clayui/autocomplete";
 import Panel from "@clayui/panel";
 import Toolbar from "@clayui/toolbar";
 import { DataStructure } from "../portlets/DataStructure/data-structure";
-import { Table, Text } from "@clayui/core";
+import { Body, Cell, Row, Table, Text } from "@clayui/core";
 import { SXFreezeIcon, SXLinkIcon, SXQMarkIcon, SXVerifyIcon } from "./icon";
 
 export const SXRequiredMark = ({ spritemap }) => {
@@ -744,6 +744,36 @@ export class SXInput extends BaseParameterComponent {
 		);
 	}
 
+	renderTableRow() {
+		return (
+			<tr>
+				<td>{this.parameter.renderTitle({ spritemap: this.spritemap })}</td>
+				<td>
+					<ClayInput
+						component={this.parameter.multipleLine ? "textarea" : "input"}
+						id={this.parameter.getTagId(this.cellIndex)}
+						name={this.parameter.tagName}
+						placeholder={this.parameter.getPlaceholder(this.parameter.languageId)}
+						type="text"
+						value={this.state.value}
+						disabled={this.parameter.getDisabled(this.cellIndex)}
+						onChange={(e) => this.handleChange(e.target.value)}
+						onClick={(e) => {
+							this.parameter.fireGridCellSelected(this.cellIndex);
+						}}
+						onBlur={(e) => this.fireValueChanged(e.target.value)}
+						sizing="sm"
+						style={{ border: "none" }}
+						ref={this.focusRef}
+					/>
+				</td>
+				<td>
+					<span>data status</span>
+				</td>
+			</tr>
+		);
+	}
+
 	renderFormField() {
 		const style = { ...this.style, ...this.parameter.style };
 		style.marginBottom = this.style.marginBottom ?? "15px";
@@ -780,16 +810,24 @@ export class SXInput extends BaseParameterComponent {
 	}
 
 	render() {
-		return (
-			<div
-				className={this.parameter.getClassName(this.className, this.cellIndex)}
-				style={{ ...this.style, ...this.parameter.style }}
-			>
-				{this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD && this.renderFormField()}
-				{this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL && this.renderGridCell()}
-				{this.parameter.renderFormFieldFeedback(this.spritemap, this.cellIndex)}
-			</div>
-		);
+		if (this.displayType == Parameter.DisplayTypes.TABLE_ROW) {
+			return this.renderTableRow();
+		} else {
+			return (
+				<>
+					{this.parameter.displayType !== Parameter.DisplayTypes.TABLE_ROW && (
+						<div
+							className={this.parameter.getClassName(this.className, this.cellIndex)}
+							style={{ ...this.style, ...this.parameter.style }}
+						>
+							{this.parameter.displayType == Parameter.DisplayTypes.FORM_FIELD && this.renderFormField()}
+							{this.parameter.displayType == Parameter.DisplayTypes.GRID_CELL && this.renderGridCell()}
+							{this.parameter.renderFormFieldFeedback(this.spritemap, this.cellIndex)}
+						</div>
+					)}
+				</>
+			);
+		}
 	}
 }
 
@@ -991,9 +1029,8 @@ export class SXNumeric extends BaseParameterComponent {
 			return;
 		} else if (Util.isNotEmpty(this.state.value) && Util.isEmpty(newValue)) {
 			this.parameter.setValue({ value: "", cellIndex: this.cellIndex, validate: true });
-			//this.parameter.fireValueChanged(this.cellIndex);
-
 			this.setState({ value: "" });
+			this.parameter.fireValueChanged(this.cellIndex);
 
 			return;
 		} else if (Util.isNotEmpty(newValue)) {
@@ -1030,9 +1067,9 @@ export class SXNumeric extends BaseParameterComponent {
 		}
 
 		this.parameter.setValue({ value: value, cellIndex: this.cellIndex, validate: true });
-		//this.parameter.fireValueChanged(this.cellIndex);
 
 		this.setState({ value: Util.isEmpty(newValue) ? "" : this.toNumber(newValue) });
+		this.parameter.fireValueChanged(this.cellIndex);
 	};
 
 	handleUncertaintyChanged(newUncertainty) {
@@ -1286,16 +1323,18 @@ export class SXBoolean extends BaseParameterComponent {
 		return (
 			<div style={{ justifyItems: "center" }}>
 				{this.parameter.viewType == BooleanParameter.ViewTypes.CHECKBOX && (
-					<ClayCheckbox
-						name={tagName}
-						label={this.parameter.getTrueLabel()}
-						aria-label={this.parameter.label}
-						checked={this.state.value}
-						onChange={(e) => {
-							this.handleValueChange(e.target.checked);
-						}}
-						disabled={this.parameter.getDisabled(this.cellIndex)}
-					/>
+					<>
+						<ClayCheckbox
+							name={tagName}
+							label={this.parameter.getTrueLabel()}
+							aria-label={this.parameter.label}
+							checked={this.state.value}
+							onChange={(e) => {
+								this.handleValueChange(e.target.checked);
+							}}
+							disabled={this.parameter.getDisabled(this.cellIndex)}
+						/>
+					</>
 				)}
 				{this.parameter.viewType == BooleanParameter.ViewTypes.DROPDOWN && (
 					<ClaySelect
@@ -1377,22 +1416,29 @@ export class SXBoolean extends BaseParameterComponent {
 		return (
 			<>
 				{this.parameter.viewType == BooleanParameter.ViewTypes.CHECKBOX && (
-					<ClayCheckbox
-						id={tagId}
-						name={tagName}
-						aria-label={this.parameter.label}
-						label={this.parameter.renderTitle({
-							spritemap: this.spritemap,
-							style: {
-								paddingLeft: "0",
-								fontSize: "0.875rem"
-							}
-						})}
-						checked={this.state.value}
-						onChange={(e) => this.handleValueChange(!this.state.value)}
-						disabled={this.parameter.getDisabled(this.cellIndex)}
-						ref={this.focusRef}
-					/>
+					<div className="autofit-row autofit-padded autofit-row-center">
+						<div className="autofit-col shirink">
+							<ClayCheckbox
+								id={tagId}
+								name={tagName}
+								aria-label={this.parameter.label}
+								checked={this.state.value}
+								onChange={(e) => this.handleValueChange(!this.state.value)}
+								disabled={this.parameter.getDisabled(this.cellIndex)}
+								style={{ marginBottom: "0" }}
+								ref={this.focusRef}
+							/>
+						</div>
+						<div className="autofit-col autofit-col-expand">
+							{this.parameter.renderTitle({
+								spritemap: this.spritemap,
+								style: {
+									paddingLeft: "0",
+									fontSize: "0.875rem"
+								}
+							})}
+						</div>
+					</div>
 				)}
 				{this.parameter.viewType == BooleanParameter.ViewTypes.DROPDOWN && (
 					<div ref={this.focusRef}>
@@ -1534,7 +1580,6 @@ export class SXSelect extends BaseParameterComponent {
 	}
 
 	handleLiastboxSelectChanged = (values) => {
-		console.log("handleLiastboxSelectChanged: ", values);
 		this.setValue(values.filter((value) => Util.isNotEmpty(value)));
 	};
 
@@ -1573,22 +1618,20 @@ export class SXSelect extends BaseParameterComponent {
 
 		return (
 			<ClaySelectBox
-				id={tagId}
-				name={tagName}
 				value={Util.isNotEmpty(this.state.value) ? this.state.value : []}
 				items={optionItems}
 				multiple
 				disabled={this.parameter.getDisabled(this.cellIndex)}
-				size={this.parameter.listboxSize}
+				size={this.parameter.listboxSize ?? 4}
 				onSelectChange={this.handleLiastboxSelectChanged}
 				style={{ marginBottom: "0px" }}
+				spritemap={this.spritemap}
 			/>
 		);
 	}
 
 	renderCheckBoxGroup(tagId, tagName) {
 		const optionRows = Util.convertArrayToRows(this.parameter.options, this.parameter.optionsPerRow);
-		console.log("SXSelect renderCheckBoxGroup: ", this.parameter, typeof this.parameter.optionsPerRow);
 
 		return (
 			<>
@@ -1898,11 +1941,11 @@ export class SXDualListBox extends BaseParameterComponent {
 	}
 
 	handleLeftSelectChange(selects, a) {
-		this.setState({ leftSelected: selects.map((value) => Number(value)) });
+		this.setState({ leftSelected: selects.map((value) => value) });
 	}
 
 	handleRightSelectChange(selects, a) {
-		this.setState({ rightSelected: selects.map((value) => Number(value)) });
+		this.setState({ rightSelected: selects.map((value) => value) });
 	}
 
 	handleRemoveBtnClick(e) {
@@ -1966,6 +2009,7 @@ export class SXDualListBox extends BaseParameterComponent {
 							value={this.state.leftSelected}
 							disabled={this.parameter.getDisabled(this.cellIndex)}
 							style={{ marginBottom: "5px" }}
+							onClick={(e) => e.stopPropagation()}
 						/>
 					</div>
 					<div className="btn-group-vertical sx-dual-listbox-actions sx-dual-listbox-item">
@@ -1999,6 +2043,7 @@ export class SXDualListBox extends BaseParameterComponent {
 							spritemap={this.spritemap}
 							value={this.state.rightSelected}
 							disabled={this.parameter.getDisabled(this.cellIndex)}
+							onClick={(e) => e.stopPropagation()}
 						/>
 					</div>
 				</div>
@@ -3077,51 +3122,26 @@ export class SXGroup extends BaseParameterComponent {
 				}}
 			>
 				{this.parameter.renderTitle({ spritemap: this.spritemap })}
-				<Table
-					displayTitle={
-						<Panel.Title>
-							<div className="autofit-row autofit-row-center">
-								<div className="autofit-col">
-									<h3>{this.parameter.label}</h3>
-								</div>
-								<div className="autofit-col">
-									{this.parameter.inputStatus && (
-										<div className="autofit-section">
-											<span>
-												{"(" +
-													this.parameter.valuedFieldsCount +
-													"/" +
-													this.parameter.totalFieldsCount +
-													")"}
-											</span>
-										</div>
-									)}
-								</div>
-							</div>
-							{this.parameter.showDefinition && this.state.expanded && (
-								<div
-									className="autofit-row"
-									style={{ paddingLeft: "10px" }}
-								>
-									<pre className="autofit-col">{this.parameter.getDefinition()}</pre>
-								</div>
-							)}
-						</Panel.Title>
-					}
-					displayType="secondary"
-					showCollapseIcon={true}
-					defaultExpanded={this.state.expanded}
-					onExpandedChange={(expanded) => this.setState({ expanded: expanded })}
-					spritemap={this.spritemap}
-					style={{
-						...this.style,
-						...this.parameter.style,
-						backgroundColor: "rgba(123, 233, 78, 0.1)",
-						marginBottom: "0"
-					}}
-				>
-					<Panel.Body style={{ backgroundColor: "#ffffff" }}>{this.renderArrangement()}</Panel.Body>
-				</Table>
+				{this.parameter.showDefinition && (
+					<div
+						className="autofit-row"
+						style={{ paddingLeft: "10px" }}
+					>
+						<pre className="autofit-col">{this.parameter.getDefinition()}</pre>
+					</div>
+				)}
+				<table style={{ tableLayout: "auto", width: "100%" }}>
+					<tbody>
+						{this.parameter.members.map((member) => {
+							if (member.paramType === ParamType.STRING) {
+								return member.render({
+									displayType: Parameter.DisplayTypes.TABLE_ROW,
+									spritemap: this.spritemap
+								});
+							}
+						})}
+					</tbody>
+				</table>
 			</div>
 		);
 	}

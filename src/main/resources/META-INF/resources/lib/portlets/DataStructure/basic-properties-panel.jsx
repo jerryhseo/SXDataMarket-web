@@ -280,14 +280,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 	}
 
 	checkError() {
-		const error = DataStructure.checkError([
-			this.fields.paramCode,
-			this.fields.paramVersion,
-			this.fields.displayName,
-			this.fields.definition,
-			this.fields.tooltip,
-			this.fields.synonyms
-		]);
+		const error = DataStructure.checkError(Object.values(this.fields));
 
 		if (Util.isNotEmpty(error)) {
 			this.dataStructure.setError(error.errorClass, error.errorMessage);

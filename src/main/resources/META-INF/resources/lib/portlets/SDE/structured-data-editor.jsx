@@ -130,7 +130,7 @@ class StructuredDataEditor extends React.Component {
 			structuredDataId: this.dataStructureId
 		};
 
-		const ajaxURL = await this.workbenchId.loadData(ResourceIds.LOAD_STRUCTURED_DATA_EDITING, params);
+		this.visualizer.loadData(ResourceIds.LOAD_STRUCTURED_DATA_EDITING, params);
 
 		try {
 			const response = await fetch("https://api.example.com/data");

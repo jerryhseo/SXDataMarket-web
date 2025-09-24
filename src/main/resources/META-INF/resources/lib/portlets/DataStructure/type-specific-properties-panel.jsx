@@ -1182,7 +1182,17 @@ class SXStringTypeOptionForm extends React.Component {
 
 		console.log("SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ", dataPacket, this.workingParam);
 
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.error = dataPacket.parameter.error;
+
+			return;
+		}
+
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
+
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
+		}
 
 		if (this.workingParam.isRendered()) {
 			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
@@ -1203,6 +1213,19 @@ class SXStringTypeOptionForm extends React.Component {
 
 	componentWillUnmount() {
 		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+	}
+
+	checkError() {
+		const error = DataStructure.checkError(Object.values(this.fields));
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
 	}
 
 	render() {
@@ -1352,13 +1375,26 @@ class SXNumericTypeOptionForm extends React.Component {
 		}
 
 		//console.log("SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ", dataPacket, this.workingParam);
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+			return;
+		}
 
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
 		if (dataPacket.paramCode == ParamProperty.IS_INTEGER) {
 			this.workingParam.decimalPlaces = this.workingParam.isInteger ? 0 : 1;
+		}
+
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
+		}
+
+		/*
+		if (dataPacket.paramCode == ParamProperty.IS_INTEGER) {
 			this.setState({ isInteger: this.workingParam.isInteger });
 		}
+			*/
 
 		if (this.workingParam.isRendered()) {
 			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
@@ -1379,6 +1415,19 @@ class SXNumericTypeOptionForm extends React.Component {
 
 	componentWillUnmount() {
 		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+	}
+
+	checkError() {
+		const error = DataStructure.checkError(Object.values(this.fields));
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
 	}
 
 	render() {
@@ -1583,11 +1632,23 @@ class SXSelectTypeOptionForm extends React.Component {
 			this.fields[dataPacket.paramCode].getValue()
 		);
 		*/
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+			return;
+		}
 
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
-		//this.workingParam.initValue();
 
-		this.forceUpdate();
+		if (dataPacket.paramCode == "viewType") {
+			this.forceUpdate();
+		}
+
+		//this.workingParam.initValue();
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
+		}
+
+		//this.forceUpdate();
 
 		if (this.workingParam.isRendered()) {
 			if (dataPacket.paramCode == "viewType") {
@@ -1618,6 +1679,19 @@ class SXSelectTypeOptionForm extends React.Component {
 		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
 	}
 
+	checkError() {
+		const error = DataStructure.checkError(Object.values(this.fields));
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
+	}
+
 	render() {
 		return (
 			<>
@@ -1631,6 +1705,146 @@ class SXSelectTypeOptionForm extends React.Component {
 					this.fields.placeholder.renderField({ spritemap: this.spritemap })}
 				{this.workingParam.viewType == SelectParameter.ViewTypes.LISTBOX &&
 					this.fields.listboxSize.renderField({ spritemap: this.spritemap })}
+				<SXSelectOptionBuilder
+					namespace={this.namespace}
+					formIds={this.formIds}
+					dataStructure={this.dataStructure}
+					workingParam={this.workingParam}
+					spritemap={this.spritemap}
+				/>
+			</>
+		);
+	}
+}
+
+class SXDualListTypeOptionForm extends React.Component {
+	constructor(props) {
+		super(props);
+
+		this.formIds = props.formIds;
+		this.dataStructure = props.dataStructure;
+		this.workingParam = props.workingParam;
+		this.namespace = props.workingParam.namespace;
+		this.languageId = props.workingParam.languageId;
+		this.availableLanguageIds = props.workingParam.availableLanguageIds;
+		this.spritemap = props.spritemap;
+
+		this.formId = this.workingParam.namespace + "dualListTypeOptionForm";
+
+		this.fields = {
+			listboxSize: Parameter.createParameter(
+				this.namespace,
+				this.formId,
+				this.languageId,
+				this.availableLanguageIds,
+				ParamType.NUMERIC,
+				{
+					paramCode: ParamProperty.LISTBOX_SIZE,
+					isInteger: true,
+					displayName: Util.getTranslationObject(this.languageId, "listbox-size"),
+					tooltip: Util.getTranslationObject(this.languageId, "listbox-size-tooltip"),
+					validation: {
+						min: {
+							value: 2,
+							boundary: true,
+							message: Util.getTranslationObject(
+								this.languageId,
+								"listbox-size-must-be-larger-than-or-equal-to",
+								2
+							),
+							errorClass: ErrorClass.ERROR
+						},
+						max: {
+							value: 10,
+							boundary: true,
+							message: Util.getTranslationObject(
+								this.languageId,
+								"listbox-size-must-be-smaller-than-or-equal-to",
+								10
+							),
+							errorClass: ErrorClass.ERROR
+						}
+					},
+					value: this.workingParam.listboxSize ?? 4
+				}
+			)
+		};
+	}
+
+	fieldValueChangedHandler = (e) => {
+		const dataPacket = e.dataPacket;
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
+			return;
+		}
+
+		/*
+		console.log(
+			"SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ",
+			dataPacket,
+			this.workingParam,
+			this.fields[dataPacket.paramCode],
+			this.fields[dataPacket.paramCode].getValue()
+		);
+		*/
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+			return;
+		}
+
+		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
+		//this.workingParam.initValue();
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
+		}
+
+		//this.forceUpdate();
+
+		if (this.workingParam.isRendered()) {
+			if (dataPacket.paramCode == "viewType") {
+				if (SelectParameter.ViewTypes.DROPDOWN || SelectParameter.ViewTypes.RADIO) {
+					this.workingParam.setValue({ value: "" });
+				} else {
+					this.workingParam.setValue({ value: [] });
+				}
+			}
+
+			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
+				Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
+					targetFormId: this.workingParam.formId,
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version
+				});
+			} else {
+				this.workingParam.fireRefreshPreview();
+			}
+		}
+	};
+
+	componentDidMount() {
+		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+	}
+
+	componentWillUnmount() {
+		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+	}
+
+	checkError() {
+		const error = DataStructure.checkError(Object.values(this.fields));
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
+	}
+
+	render() {
+		return (
+			<>
+				{this.fields.listboxSize.renderField({ spritemap: this.spritemap })}
 				<SXSelectOptionBuilder
 					namespace={this.namespace}
 					formIds={this.formIds}
@@ -1745,8 +1959,16 @@ class SXBooleanTypeOptionForm extends React.Component {
 			this.fields[dataPacket.paramCode].getValue()
 		);
 		*/
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+			return;
+		}
 
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
+
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
+		}
 
 		if (this.workingParam.isRendered()) {
 			if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
@@ -1766,7 +1988,20 @@ class SXBooleanTypeOptionForm extends React.Component {
 	}
 
 	componentWillUnmount() {
-		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+	}
+
+	checkError() {
+		const error = DataStructure.checkError(Object.values(this.fields));
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
 	}
 
 	render() {
@@ -1828,12 +2063,44 @@ class SXPhoneTypeOptionForm extends React.Component {
 		);
 		*/
 
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+			return;
+		}
+
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
+		}
+
 		if (this.workingParam.isRendered()) {
-			this.workingParam.fireRefreshPreview();
+			if (this.workingParam.isGridCell()) {
+				const gridParam = this.dataStructure.findParameter({
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version,
+					descendant: true
+				});
+
+				gridParam.fireRefresh();
+			} else {
+				this.workingParam.fireRefresh();
+			}
 		}
 	};
+
+	checkError() {
+		const error = DataStructure.checkError(Object.values(this.fields));
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
+	}
 
 	componentDidMount() {
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
@@ -1906,10 +2173,29 @@ class SXAddressTypeOptionForm extends React.Component {
 		);
 		*/
 
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+			return;
+		}
+
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
+		}
+
 		if (this.workingParam.isRendered()) {
-			this.workingParam.fireRefreshPreview();
+			if (this.workingParam.isGridCell()) {
+				const gridParam = this.dataStructure.findParameter({
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version,
+					descendant: true
+				});
+
+				gridParam.fireRefresh();
+			} else {
+				this.workingParam.fireRefresh();
+			}
 		}
 	};
 
@@ -1919,6 +2205,19 @@ class SXAddressTypeOptionForm extends React.Component {
 
 	componentWillUnmount() {
 		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+	}
+
+	checkError() {
+		const error = DataStructure.checkError(Object.values(this.fields));
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
 	}
 
 	render() {
@@ -2026,12 +2325,18 @@ class SXDateTypeOptionForm extends React.Component {
 			return;
 		}
 
+		/*
 		console.log(
 			"SXDateTypeOptionForm SX_FIELD_VALUE_CHANGED: ",
 			dataPacket,
 			this.workingParam,
 			this.fields[dataPacket.paramCode].getValue()
 		);
+		*/
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+			return;
+		}
 
 		switch (dataPacket.paramCode) {
 			case "startYear": {
@@ -2102,9 +2407,22 @@ class SXDateTypeOptionForm extends React.Component {
 
 		this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
 
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
+		}
+
 		if (this.workingParam.isRendered()) {
-			this.workingParam.initValue();
-			this.workingParam.fireRefreshPreview();
+			if (this.workingParam.isGridCell()) {
+				const gridParam = this.dataStructure.findParameter({
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version,
+					descendant: true
+				});
+
+				gridParam.fireRefresh();
+			} else {
+				this.workingParam.fireRefresh();
+			}
 		}
 	};
 
@@ -2114,6 +2432,19 @@ class SXDateTypeOptionForm extends React.Component {
 
 	componentWillUnmount() {
 		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+	}
+
+	checkError() {
+		const error = DataStructure.checkError(Object.values(this.fields));
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
 	}
 
 	render() {
@@ -2216,7 +2547,7 @@ class SXGroupTypeOptionForm extends React.Component {
 
 		this.fieldExpanded = Parameter.createParameter(
 			this.namespace,
-			this.formIds.basicPropertiesFormId,
+			this.formId,
 			this.languageId,
 			this.availableLanguageIds,
 			ParamType.BOOLEAN,
@@ -2244,6 +2575,10 @@ class SXGroupTypeOptionForm extends React.Component {
 			this.fieldMembersPerRow.getValue()
 		);
 		*/
+		if (dataPacket.parameter.hasError()) {
+			this.dataStructure.error = dataPacket.parameter.error;
+			return;
+		}
 
 		switch (dataPacket.paramCode) {
 			case ParamProperty.VIEW_TYPE: {
@@ -2260,8 +2595,12 @@ class SXGroupTypeOptionForm extends React.Component {
 			}
 		}
 
+		if (Util.isNotEmpty(this.checkError())) {
+			return;
+		}
+
 		if (this.workingParam.isRendered()) {
-			this.workingParam.fireRefreshPreview();
+			this.workingParam.fireRefresh();
 		}
 	};
 
@@ -2271,6 +2610,19 @@ class SXGroupTypeOptionForm extends React.Component {
 
 	componentWillUnmount() {
 		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+	}
+
+	checkError() {
+		const error = DataStructure.checkError([this.fieldMembersPerRow]);
+
+		if (Util.isNotEmpty(error)) {
+			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			return error;
+		} else {
+			this.dataStructure.clearError();
+		}
+
+		return error;
 	}
 
 	render() {
@@ -2378,6 +2730,16 @@ class SXDSBuilderTypeSpecificPanel extends React.Component {
 			case ParamType.SELECT: {
 				return (
 					<SXSelectTypeOptionForm
+						formIds={this.formIds}
+						dataStructure={this.dataStructure}
+						workingParam={this.workingParam}
+						spritemap={this.spritemap}
+					/>
+				);
+			}
+			case ParamType.DUALLIST: {
+				return (
+					<SXDualListTypeOptionForm
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
