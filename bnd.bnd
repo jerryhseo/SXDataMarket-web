@@ -1,5 +1,5 @@
 Bundle-Name: SXDataMarket-web
 Bundle-SymbolicName: com.sx.datamarket.web
-Bundle-Version: 0.8.0
+Bundle-Version: 0.8.1
 
 Web-ContextPath: /SXDataMarket-web
