@@ -19,10 +19,10 @@
 <%@page import="com.sx.icecap.model.DataType"%>
 <%@page import="java.util.List"%>
 <%@ include file="./init.jsp" %>
-<link
+<!-- link
 	rel="stylesheet"
 	href="https://cdn.jsdelivr.net/npm/@clayui/css/lib/css/atlas.css"
-/>
+/ -->
 
 <%
 	JSONArray permissions = (JSONArray)renderRequest.getAttribute("permissions");
@@ -97,7 +97,7 @@ window.SXWorkingPortletInfo = {
 				sortCol: '<%= orderCol %>',
 				sortType: '<%= orderType %>',
 				keywords: '<%= keywords %>',
-				viewType: '<%= DisplayStyle.TABLE %>',
+				displayStyle: '<%= DisplayStyle.TABLE %>',
 			}
 		}
 };

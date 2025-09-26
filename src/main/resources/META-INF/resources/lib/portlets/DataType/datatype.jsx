@@ -245,6 +245,58 @@ export class DataTypeStructureLink {
 	}
 }
 
+export const SXInstanceInfo = ({
+	title,
+	id,
+	code,
+	version,
+	displayName,
+	align = "left",
+	viewType = "INLINE_ATTACH"
+}) => {
+	return (
+		<>
+			<div className="form-group sx-fieldset">
+				<div className="sx-legend">{title}</div>
+				<div className="autofit-float autofit-padded-no-gutters-x autofit-row">
+					<div className="autofit-col">
+						<SXLabeledText
+							label={Util.translate("id")}
+							text={id}
+							align={align}
+							viewType={viewType}
+						/>
+					</div>
+					<div className="autofit-col">
+						<SXLabeledText
+							label={Util.translate("code")}
+							text={code}
+							align={align}
+							viewType={viewType}
+						/>
+					</div>
+					<div className="autofit-col">
+						<SXLabeledText
+							label={Util.translate("version")}
+							text={version}
+							align={align}
+							viewType={viewType}
+						/>
+					</div>
+					<div className="autofit-col autofit-col-expand">
+						<SXLabeledText
+							label={Util.translate("display-name")}
+							text={displayName}
+							align={align}
+							viewType={viewType}
+						/>
+					</div>
+				</div>
+			</div>
+		</>
+	);
+};
+
 export class SXDataTypeStructureLink extends React.Component {
 	constructor(props) {
 		super(props);
@@ -278,8 +330,6 @@ export class SXDataTypeStructureLink extends React.Component {
 		if (Util.isNotEmpty(this.dataType.description) && Util.isEmpty(this.dataStructure.description)) {
 			this.dataStructure.description = { ...this.dataType.description };
 		}
-
-		console.log("in constructor: ", this.typeStructureLinkViewMode);
 
 		this.componentId = this.namespace + "dataTypeStructureLink";
 

@@ -471,7 +471,7 @@ export class SXPreviewRow extends React.Component {
 	}
 
 	render() {
-		let className = this.parameter.focused ? "autofit autofit-row sx-focused" : "autofit autofit-row";
+		let className = this.parameter.focused ? "autofit-row sx-focused" : "autofit-row";
 
 		let style = {};
 		if (

@@ -1,6 +1,6 @@
 import React from "react";
 
-export const SXAddCommentIcon = ({ width = "0.875rem", height = "0.85rem" }) => {
+export const SXCommentIcon = ({ width = "0.875rem", height = "0.85rem" }) => {
 	return (
 		<svg
 			xmlns="http://www.w3.org/2000/svg"

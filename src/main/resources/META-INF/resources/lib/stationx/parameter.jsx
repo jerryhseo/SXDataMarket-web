@@ -238,7 +238,8 @@ export class Parameter {
 	modifedDate = null;
 
 	inputStatus = false;
-	commentable = false;
+	hasComment = false;
+	hasActionHistory = false;
 	commentableIcon = "";
 	verifiable = false;
 	verifiableIcon = "";
@@ -1457,6 +1458,8 @@ export class Parameter {
 	}
 
 	loadData(data) {
+		this.hasComment = data.hasComment;
+		this.hasActionHistory = data.hasActionHistory;
 		this.freezed = data.freezed;
 		this.freezedUserId = data.freezedUserId;
 		this.freezedUserName = data.freezedUserName;
@@ -1473,6 +1476,8 @@ export class Parameter {
 
 		if (this.hasValue()) {
 			data[this.paramCode] = {
+				hasComment: this.hasComment,
+				hasActionHistory: this.hasActionHistory,
 				freezed: this.freezed,
 				freezedUserId: this.freezedUserId,
 				freezedUserName: this.freezedUserName,
@@ -1486,6 +1491,18 @@ export class Parameter {
 		}
 
 		return data;
+	}
+
+	toValue() {
+		let value = {};
+
+		if (this.hasValue()) {
+			value[this.paramCode] = {
+				value: this.value
+			};
+		}
+
+		return value;
 	}
 
 	toJSON() {

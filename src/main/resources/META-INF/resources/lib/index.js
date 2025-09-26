@@ -6,7 +6,8 @@ import { ClayModalProvider } from "@clayui/modal";
 import DataTypeExplorer from "./portlets/DataType/datatype-explorer";
 import DataTypeEditor from "./portlets/DataType/datatype-editor";
 import DataStructureBuilder from "./portlets/DataStructure/datastructure-builder";
-import StructuredDataEditor from "./portlets/SDE/structured-data-editor";
+import StructuredDataEditor from "./portlets/StructuredData/structured-data-editor";
+import StructuredDataExplorer from "./portlets/StructuredData/structured-data-explorer";
 
 export default function (elementId, portletId, portletParams) {
 	const root = createRoot(document.getElementById(elementId));
@@ -48,6 +49,14 @@ export default function (elementId, portletId, portletParams) {
 			root.render(
 				<ClayModalProvider>
 					<StructuredDataEditor {...portletParams} />
+				</ClayModalProvider>
+			);
+			break;
+		}
+		case PortletKeys.STRUCTURED_DATA_EXPLORER: {
+			root.render(
+				<ClayModalProvider>
+					<StructuredDataExplorer {...portletParams} />
 				</ClayModalProvider>
 			);
 			break;

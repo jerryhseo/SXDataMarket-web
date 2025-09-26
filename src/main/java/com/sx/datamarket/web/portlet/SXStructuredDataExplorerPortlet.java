@@ -31,20 +31,20 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	immediate = true,
 	property = {
-		"com.liferay.portlet.display-category=category.sx.visualizers",
+		"com.liferay.portlet.display-category=category.sx.datamarket",
 		"com.liferay.portlet.header-portlet-css=/css/index.css",
 		"com.liferay.portlet.instanceable=true",
 		"com.liferay.portlet.add-default-resource=true",
-		"javax.portlet.display-name=Structured Data Editor",
+		"javax.portlet.display-name=Structured Data Explorer",
 		"javax.portlet.init-param.template-path=/",
-		"javax.portlet.init-param.view-template=/jsp/structured-data-editor.jsp",
-		"javax.portlet.name=" + WebPortletKey.SXStructuredDataEditorPortlet,
+		"javax.portlet.init-param.view-template=/jsp/structured-data-explorer.jsp",
+		"javax.portlet.name=" + WebPortletKey.SXStructuredDataExplorerPortlet,
 		"javax.portlet.resource-bundle=content.Language",
 		"javax.portlet.security-role-ref=power-user,user"
 	},
 	service = Portlet.class
 )
-public class SXStructuredDataEditorPortlet extends MVCPortlet {
+public class SXStructuredDataExplorerPortlet extends MVCPortlet {
 
 	@Override
 	public void doView(
@@ -53,24 +53,9 @@ public class SXStructuredDataEditorPortlet extends MVCPortlet {
 		
 		long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
 		long structuredDataId = ParamUtil.getLong(renderRequest, "structuredDataId", 0);
-		long dataStructureId = ParamUtil.getLong(renderRequest, "dataStructureId", 0);
 		
-		System.out.println("StructuredDataEditorPortlet: " + dataTypeId +", "+dataStructureId);
+		System.out.println("SXStructuredDataExplorerPortlet: " + dataTypeId);
 		
-		if(dataTypeId > 0 ) {
-			try {
-				TypeStructureLink typeStructureLink = _typeStructureLinkLocalService.getTypeStructureLink(dataTypeId);
-				renderRequest.setAttribute("typeStructureLink", typeStructureLink);
-				
-				if( dataStructureId == 0 ) {
-					dataStructureId = typeStructureLink.getDataStructureId();
-				}
-			} catch (PortalException e) {
-				System.out.println("Manifest SXStructuredDataEditor without typeStructureLink.");
-			}
-		}
-		
-		renderRequest.setAttribute("dataStructureId", dataStructureId);
 		
 		super.doView(renderRequest, renderResponse);
 	}

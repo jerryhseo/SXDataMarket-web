@@ -473,7 +473,7 @@ export class SXSearchResultConainer extends React.Component {
 
 	render() {
 		if (this.searchResults.length < 1) {
-			return <NotFound message={Util.translate("no-datatype-found")} />;
+			return <NotFound message={Util.translate("no-data-found")} />;
 		} else if (this.displayStyle == DisplayStyles.TABLE) {
 			return this.renderTable();
 		} else if (this.displayStyle == DisplayStyles.LIST) {

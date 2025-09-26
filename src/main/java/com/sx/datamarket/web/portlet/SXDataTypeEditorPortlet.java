@@ -76,7 +76,7 @@ public class SXDataTypeEditorPortlet extends MVCPortlet {
 		for(int i=0; i<fields.length; i++) {
 			Field field = fields[i];
 			
-			boolean hasPermission = DataTypeResourcePermissionHelper.contains(permissionChecker, themeDisplay.getScopeGroupId(), field.getName());
+			boolean hasPermission = true; //DataTypeResourcePermissionHelper.contains(permissionChecker, themeDisplay.getScopeGroupId(), field.getName());
 			if (hasPermission) {
 				permissions.put(field.getName());
 			}

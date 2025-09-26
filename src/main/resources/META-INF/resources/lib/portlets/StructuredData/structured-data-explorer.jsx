@@ -1,35 +1,20 @@
-import React, { useState, useLayoutEffect, useContext, useRef, useCallback } from "react";
-import {
-	ActionKeys,
-	LoadingStatus,
-	PortletKeys,
-	ResourceIds,
-	WindowState,
-	DisplayType,
-	DisplayStyles,
-	Event,
-	Constant
-} from "../../stationx/station-x";
-import { Util } from "../../stationx/util";
-import { Context } from "@clayui/modal";
-import { openConfirmModal, SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
-import { Body, Cell, Head, Row, Table } from "@clayui/core";
-import { ClayCheckbox, ClayInput } from "@clayui/form";
-import { ClayDropDownWithItems } from "@clayui/drop-down";
-import Button, { ClayButtonWithIcon } from "@clayui/button";
-import { NotFound, UnderConstruction } from "../../stationx/common";
-import Toolbar from "@clayui/toolbar";
+import React from "react";
+import { ActionKeys, Event, LoadingStatus, PortletKeys, ResourceIds, WindowState } from "../../stationx/station-x";
+import { SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
-import { FilterOptions } from "../../stationx/search-container";
-import SXActionDropdown from "../../stationx/dropdown";
-import { SXFreezeIcon, SXLinkIcon, SXVerifyIcon } from "../../stationx/icon";
+import { Util } from "../../stationx/util";
+import { DataType, SXInstanceInfo } from "../DataType/datatype";
 
-class DataTypeExplorer extends React.Component {
+class StructuredDataExplorer extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("DataTypeExplorer constructor: ", props);
+		console.log("StructuredDataExplorer props: ", props);
+
 		this.namespace = props.namespace;
+		this.languageId = SXSystem.getLanguageId();
+		this.defaultLanguageId = SXSystem.getDefaultLanguageId();
+		this.availableLanguageIds = SXSystem.getAvailableLanguages();
 		this.baseRenderURL = props.baseRenderURL;
 		this.baseResourceURL = props.baseResourceURL;
 		this.permissions = props.permissions;
@@ -39,8 +24,11 @@ class DataTypeExplorer extends React.Component {
 		this.userId = props.userId;
 
 		this.redirectURLs = props.redirectURLs;
-		this.workbench = props.workbench;
-		this.params = props.params;
+		this.workbenchNamespace = props.workbenchNamespace;
+		this.workbenchId = props.workbenchId;
+		this.workbenchURL = props.workbenchURL;
+
+		this.dataTypeId = props.dataTypeId;
 
 		this.checkboxEnabled =
 			this.permissions.includes(ActionKeys.UPDATE) || this.permissions.includes(ActionKeys.DELETE);
@@ -91,6 +79,12 @@ class DataTypeExplorer extends React.Component {
 			});
 		}
 
+		this.actionButtons.push({
+			id: "advancedSearch",
+			name: Util.translate("advanced-search"),
+			symbol: "search-experiences"
+		});
+
 		this.actionMenus = [];
 
 		this.searchResults = [];
@@ -99,20 +93,21 @@ class DataTypeExplorer extends React.Component {
 		this.confirmDialogHeader = <></>;
 		this.confirmDialogBody = <></>;
 		this.state = {
-			displayStyle: this.params.displayStyle ?? this.displayStyles[0].value, //table
-			filterBy: this.params.filterBy ?? this.filterOptions[0], //groupId
+			displayStyle: props.displayStyle ?? this.displayStyles[0].value, //table
+			filterBy: props.filterBy ?? this.filterOptions[0], //groupId
+			viewMode: "table",
 			loadingStatus: LoadingStatus.PENDING,
 			confirmDeleteDialog: false,
 			errorMessage: "",
 			progressDialog: false,
-			start: this.params.start ?? 0,
-			delta: this.params.delta ?? 10,
-			keywords: this.params.keywords ?? "",
+			start: props.start ?? 0,
+			delta: props.delta ?? 10,
+			keywords: props.keywords ?? "",
 			searchContainerKey: Util.randomKey(),
 			underConstruction: false
 		};
 
-		this.formId = this.namespace + "dataTypeExplorer";
+		this.formId = this.namespace;
 
 		this.contentActionMenus = [];
 
@@ -127,18 +122,7 @@ class DataTypeExplorer extends React.Component {
 				name: Util.translate("delete"),
 				symbol: "trash"
 			});
-			this.contentActionMenus.push({
-				id: "editStructure",
-				name: Util.translate("edit-datastructure"),
-				symbol: "edit-layout"
-			});
 		}
-
-		this.contentActionMenus.push({
-			name: Util.translate("advanced-search"),
-			id: "advancedSearch",
-			symbol: "search-experiences"
-		});
 
 		this.tableColumns = [
 			{ id: "index", name: Util.translate("index"), width: "5rem" },
@@ -163,8 +147,8 @@ class DataTypeExplorer extends React.Component {
 				width: "15rem"
 			},
 			{
-				id: "datastructure",
-				name: Util.translate("datastructure"),
+				id: "dataStatus",
+				name: Util.translate("data-status"),
 				width: "10rem"
 			},
 			{
@@ -244,57 +228,21 @@ class DataTypeExplorer extends React.Component {
 		}
 		//console.log("listenerPopActionClicked: ", dataPacket);
 
-		const selectedDataTypeId = this.searchResults[dataPacket.data][0].value;
+		const selectedDataId = this.searchResults[dataPacket.data][0].value;
 
 		switch (dataPacket.action) {
 			case "update": {
 				Util.redirectTo(
-					this.workbench.url,
+					this.workbenchURL,
 					{
-						namespace: this.workbench.namespace,
-						portletId: this.workbench.portletId,
+						namespace: this.workbenchNamespace,
+						portletId: this.workbenchId,
 						windowState: WindowState.NORMAL
 					},
 					{
-						workingPortletName: PortletKeys.DATATYPE_EDITOR,
+						workingPortletName: PortletKeys.STRUCTURED_DATA_EDITOR,
 						workingPortletParams: JSON.stringify({
-							dataTypeId: selectedDataTypeId
-						})
-					}
-				);
-
-				break;
-			}
-			case "editStructure": {
-				Util.redirectTo(
-					this.workbench.url,
-					{
-						namespace: this.workbench.namespace,
-						portletId: this.workbench.portletId,
-						windowState: WindowState.NORMAL
-					},
-					{
-						workingPortletName: PortletKeys.DATASTRUCTURE_BUILDER,
-						workingPortletParams: JSON.stringify({
-							dataTypeId: selectedDataTypeId
-						})
-					}
-				);
-
-				break;
-			}
-			case "manageData": {
-				Util.redirectTo(
-					this.workbench.url,
-					{
-						namespace: this.workbench.namespace,
-						portletId: this.workbench.portletId,
-						windowState: WindowState.NORMAL
-					},
-					{
-						workingPortletName: PortletKeys.STRUCTURED_DATA_EXPLORER,
-						workingPortletParams: JSON.stringify({
-							dataTypeId: selectedDataTypeId
+							structuredDataId: selectedDataId
 						})
 					}
 				);
@@ -304,7 +252,7 @@ class DataTypeExplorer extends React.Component {
 			case "delete": {
 				this.confirmDialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 				this.confirmDialogBody = Util.translate(
-					"selected-datatype-will-be-delete-with-datastructure-link-info-and-unrecoverable-are-you-sure-to-proceed"
+					"selected-data-will-be-deleted-and-unrecoverable-are-you-sure-to-proceed"
 				);
 
 				this.selectedResults = [this.searchResults[dataPacket.data]];
@@ -318,20 +266,21 @@ class DataTypeExplorer extends React.Component {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerAddButtonClicked event rejected: ", dataPacket);
+			//console.log("listenerAddButtonClicked event rejected: ", dataPacket);
 			return;
 		}
 		//console.log("listenerAddButtonClicked: ", dataPacket);
 
 		Util.redirectTo(
-			this.workbench.url,
+			this.workbenchURL,
 			{
-				namespace: this.workbench.namespace,
-				portletId: this.workbench.portletId,
+				namespace: this.workbenchNamespace,
+				portletId: this.workbenchId,
 				windowState: WindowState.NORMAL
 			},
 			{
-				workingPortletName: PortletKeys.DATATYPE_EDITOR
+				workingPortletName: PortletKeys.STRUCTURED_DATA_EDITOR,
+				dataTypeId: this.dataTypeId
 			}
 		);
 	};
@@ -347,7 +296,7 @@ class DataTypeExplorer extends React.Component {
 
 		this.confirmDialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.confirmDialogBody = Util.translate(
-			"selected-datatypes-will-be-delete-with-datastructure-link-info-and-unrecoverable-are-you-sure-to-proceed"
+			"selected-data-will-be-deleted-and-unrecoverable-are-you-sure-to-proceed"
 		);
 
 		this.setState({ confirmDeleteDialog: true });
@@ -396,17 +345,21 @@ class DataTypeExplorer extends React.Component {
 		Util.ajax({
 			namespace: this.namespace,
 			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.SEARCH_DATATYPES,
+			resourceId: ResourceIds.SEARCH_STRUCTUED_DATA,
 			params: {
+				dataCollectionId: this.dataCollectionId,
+				dataSetId: this.dataSetId,
+				dataTypeId: this.dataTypeId,
 				filterBy: this.state.filterBy,
 				keywords: this.state.keywords,
 				start: this.state.start,
 				delta: this.state.delta
 			},
 			successFunc: (result) => {
-				this.convertSearchResultsToContent(result);
+				//this.convertSearchResultsToContent(result);
 
-				//console.log("search results: ", result);
+				console.log("search results: ", result);
+				this.dataType = result.dataType;
 
 				this.setState({
 					loadingStatus: LoadingStatus.COMPLETE,
@@ -415,17 +368,19 @@ class DataTypeExplorer extends React.Component {
 			},
 			errorFunc: (e) => {
 				this.setState({
-					errorMessage: "Something wrong while searching data types",
+					errorMessage: "Something wrong while searching data",
 					loadingStatus: LoadingStatus.FAIL
 				});
 			}
 		});
 	}
 
+	/*
 	convertSearchResultsToContent(results) {
 		this.searchResults = results.map((result, index) => {
-			const { dataType, typeStructureLink } = result;
+			const { structuredData } = result;
 
+            this.dataStructure.loadData(structuredData);
 			//console.log("convertSearchResultsToContent: ", result, dataType, Util.isNotEmpty(typeStructureLink));
 			const contentActionMenus = [];
 
@@ -440,45 +395,24 @@ class DataTypeExplorer extends React.Component {
 					name: Util.translate("delete"),
 					symbol: "trash"
 				});
-
-				if (Util.isNotEmpty(typeStructureLink)) {
-					contentActionMenus.push({
-						id: "manageData",
-						name: Util.translate("manage-data"),
-						symbol: "order-form-pencil"
-					});
-					contentActionMenus.push({
-						name: Util.translate("advanced-search"),
-						id: "advancedSearch",
-						symbol: "search-experiences"
-					});
-					contentActionMenus.push({
-						id: "editStructure",
-						name: Util.translate("edit-datastructure"),
-						symbol: "edit-layout"
-					});
-				}
+				contentActionMenus.push({
+					id: "dataStatus",
+					name: Util.translate("data-status"),
+					symbol: "polls"
+				});
 			}
 
 			let row = [
 				{
-					id: "dataTypeId",
-					value: dataType.dataTypeId
+					id: "dataStructureId",
+					value: this.dataStructure.dataId
 				},
 				{
-					id: "displayName",
-					value: dataType.displayName
+					id: "abstract",
+					value: this.dataStructure.getAbstrction()
 				},
 				{
-					id: "dataTypeVersion",
-					value: dataType.dataTypeVersion
-				},
-				{
-					id: "dataTypeCode",
-					value: dataType.dataTypeCode
-				},
-				{
-					id: "structureStatus",
+					id: "dataStatus",
 					value: (
 						<>
 							<span style={{ marginRight: "5px" }}>
@@ -508,6 +442,7 @@ class DataTypeExplorer extends React.Component {
 
 		this.selectedResults = [];
 	}
+        */
 
 	selectedResultsToDataTypeIds = () => {
 		return this.selectedResults.map((result) => result[0].value);
@@ -537,14 +472,22 @@ class DataTypeExplorer extends React.Component {
 	};
 
 	render() {
-		//console.log("DataTypeExplorer render: " + this.state.loadingStatus, this.state.keywords);
 		if (this.state.loadingStatus == LoadingStatus.PENDING) {
 			return <SXLoadingModal imageURL={this.imagePath + "/searching.gif"} />;
 		} else if (this.state.loadingStatus == LoadingStatus.FAIL) {
 			return <SXErrorModal imageURL={this.imagePath + "/ajax-error.gif"} />;
 		} else {
+			console.log("SXInstanceInfo.render: ", this.dataType);
 			return (
 				<div>
+					<SXInstanceInfo
+						key={this.dataType.dataTypeId}
+						title={Util.translate("datatype")}
+						id={this.dataType.dataTypeId}
+						code={this.dataType.dataTypeCode}
+						version={this.dataType.dataTypeVersion}
+						displayName={this.dataType.displayName}
+					/>
 					<SXManagementToolbar
 						key={this.checkAllResultsSelected()}
 						namespace={this.namespace}
@@ -618,4 +561,4 @@ class DataTypeExplorer extends React.Component {
 	}
 }
 
-export default DataTypeExplorer;
+export default StructuredDataExplorer;
