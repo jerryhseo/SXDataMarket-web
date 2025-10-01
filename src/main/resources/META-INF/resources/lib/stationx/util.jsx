@@ -202,6 +202,7 @@ export const Util = {
 	},
 	*/
 	html: function (domElement, html) {
+		$(domElement).empty();
 		$(domElement).html(html);
 	},
 	ajax: function ({

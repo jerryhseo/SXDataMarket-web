@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.datastructure;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -40,6 +40,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
+	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_UPDATE_DATASTRUCTURE
 	    },

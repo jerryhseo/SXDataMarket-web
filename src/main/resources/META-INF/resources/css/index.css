@@ -501,6 +501,21 @@ div .under-construction {
 	background-color: #e6f8e6;
 }
 
+.sticker-sx-label-outline-3 {
+	background-color: #f1fce9;
+	border: 1px solid #458613;
+	color: #458613;
+	margin: 5px;
+	width: 100%;
+}
+.sticker-sx-label-outline-4 {
+	background-color: #ffe5e5;
+	border: 1px solid #e60000;
+	color: #e60000;
+	margin: 5px;
+	width: 100%;
+}
+
 .dropdown-menu {
 	min-width: 40px;
 }

@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.datatype.editor;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -21,6 +21,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
+	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXDataTypeEditorPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_AVAILABLE_VISUALIZERS
 	    },

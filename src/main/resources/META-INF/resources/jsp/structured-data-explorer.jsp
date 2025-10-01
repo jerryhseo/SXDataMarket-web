@@ -69,16 +69,18 @@
 				workbenchNamespace: '<%= workbenchNamespace %>',
 				workbenchId: '<%= workbenchId %>',
 				workbenchURL: '<%= workbenchId %>',
-				dataTypeId: Number('<%= dataTypeId %>'),
-				structuredDataId: Number('<%= structuredDataId %>'),
-				start: Number('<%= start %>'),
-				delta: Number('<%= delta %>'),
-				status: Number('<%= status %>'),
-				navigation: '<%= navigation %>',
-				sortCol: '<%= orderCol %>',
-				sortType: '<%= orderType %>',
-				keywords: '<%= keywords %>',
-				displayStyle: '<%= DisplayStyle.TABLE %>'
+				params:{
+					dataTypeId: Number('<%= dataTypeId %>'),
+					structuredDataId: Number('<%= structuredDataId %>'),
+					start: Number('<%= start %>'),
+					delta: Number('<%= delta %>'),
+					status: Number('<%= status %>'),
+					navigation: '<%= navigation %>',
+					sortCol: '<%= orderCol %>',
+					sortType: '<%= orderType %>',
+					keywords: '<%= keywords %>',
+					displayStyle: '<%= DisplayStyle.TABLE %>'
+				}
 			}
 	};
 	

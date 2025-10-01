@@ -8,12 +8,8 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.sx.icecap.constant.ActionKey;
-import com.sx.icecap.constant.JSPPath;
 import com.sx.icecap.constant.WebKey;
 import com.sx.icecap.constant.WebPortletKey;
-import com.sx.icecap.model.DataType;
-import com.sx.icecap.security.permission.resource.datatype.DataTypeResourcePermissionHelper;
-import com.sx.icecap.service.DataTypeLocalService;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -24,7 +20,6 @@ import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author jerry
@@ -36,36 +31,24 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.header-portlet-css=/css/index.css",
 		"com.liferay.portlet.instanceable=true",
 		"com.liferay.portlet.add-default-resource=true",
-		"javax.portlet.display-name=datatype-editor",
+		"javax.portlet.display-name=Data Collection Editor",
 		"javax.portlet.init-param.template-path=/",
-		"javax.portlet.init-param.view-template="+JSPPath.DATATYPE_EDITOR,
-		"javax.portlet.name=" + WebPortletKey.SXDataTypeEditorPortlet,
+		"javax.portlet.init-param.view-template=/jsp/datacollection-editor.jsp",
+		"javax.portlet.name=" + WebPortletKey.SXDataCollectionEditorPortlet,
 		"javax.portlet.resource-bundle=content.Language",
 		"javax.portlet.security-role-ref=power-user,user"
 	},
 	service = Portlet.class
 )
-public class SXDataTypeEditorPortlet extends MVCPortlet {
+public class SXDataCollectionEditorPortlet extends MVCPortlet {
 
 	@Override
 	public void doView(
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
 		
-		long dataTypeId = ParamUtil.getLong(renderRequest, WebKey.DATATYPE_ID, 0);
-		System.out.println("DataTypeEditorPortlet - dataTypeId: " + dataTypeId);
-		
-		DataType dataType = null;
-		if( dataTypeId > 0 ) {
-			try {
-				dataType = _dataTypeLocalService.getDataType(dataTypeId);
-				String jsonDataType = JSONFactoryUtil.looseSerialize(dataType);
-				renderRequest.setAttribute(WebKey.DATATYPE, jsonDataType);
-			} catch (Exception e) {
-				throw new PortletException( "Cannot find data type: " + dataTypeId );
-			}
-		}
-		
+		long dataCollectionId = ParamUtil.getLong(renderRequest, WebKey.DATACOLLECTION_ID, 0);
+		System.out.println("SXDataCollectionEditorPortlet - dataCollectionId: " + dataCollectionId);
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
@@ -86,7 +69,4 @@ public class SXDataTypeEditorPortlet extends MVCPortlet {
 		
 		super.doView(renderRequest, renderResponse);
 	}
-
-	@Reference
-	private DataTypeLocalService _dataTypeLocalService;
 }

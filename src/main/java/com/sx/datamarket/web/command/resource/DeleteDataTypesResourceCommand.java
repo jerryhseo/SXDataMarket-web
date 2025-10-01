@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.datatype.editor;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -38,36 +38,35 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
-	        "javax.portlet.name=" + WebPortletKey.SXDataTypeEditorPortlet,
+	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXDataTypeExplorerPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_DELETE_DATATYPE
+	        "mvc.command.name="+MVCCommand.RESOURCE_DELETE_DATATYPES
 	    },
 	    service = MVCResourceCommand.class
 )
-public class DeleteDataTypeResourceCommand extends BaseMVCResourceCommand{
+public class DeleteDataTypesResourceCommand extends BaseMVCResourceCommand{
 
 	@Override
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
 
-		System.out.println("DeleteDataTypeResourceCommand");
-		//long dataTypeId = ParamUtil.getLong(resourceRequest, IcecapWebKeys.DATATYPE_ID, 0);
-		long dataTypeId = ParamUtil.getLong(resourceRequest, WebKey.DATATYPE_ID, 0);
-		System.out.println("dataTypeId: " + dataTypeId);
+		System.out.println("DeleteDataTypesResourceCommand");
+		String strDataTypeIds = ParamUtil.getString(resourceRequest, "dataTypeIds", "[]");
+		System.out.println("strDataTypeIds: " + strDataTypeIds);
 		
-		DataType dataType =_dataTypeLocalService.removeDataType(dataTypeId);
-		
+		JSONArray dataTypeIds = JSONFactoryUtil.createJSONArray(strDataTypeIds);
+		for(int i=0; i<dataTypeIds.length(); i++) {
+			long dataTypeId = dataTypeIds.getLong(i);
+			_dataTypeLocalService.removeDataType(dataTypeId);
+		}
 		
 		PrintWriter pw = resourceResponse.getWriter();
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
-		result.put("dataTypeId", dataType.getDataTypeId());
-		result.put("dataTypeCode", dataType.getDataTypeCode());
-		result.put("dataTypeVersion", dataType.getDataTypeVersion());
+		result.put("dataTypeIds", dataTypeIds);
 		
 		pw.write(result.toJSONString());
-		
 		pw.flush();
 		pw.close();
 	}

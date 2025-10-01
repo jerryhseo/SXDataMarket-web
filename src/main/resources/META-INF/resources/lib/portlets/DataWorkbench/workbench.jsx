@@ -1,9 +1,10 @@
 import React, { createRef, useEffect, useRef } from "react";
+import { createRoot } from "react-dom/client";
 import Button, { ClayButtonWithIcon } from "@clayui/button";
 import Panel from "@clayui/panel";
 import { Rnd } from "react-rnd";
 import { Util } from "../../stationx/util";
-import { Constant, Event, ResourceIds, WindowState } from "../../stationx/station-x";
+import { Constant, Event, LoadingStatus, ResourceIds, WindowState } from "../../stationx/station-x";
 import parse from "html-react-parser";
 
 export class Workbench {
@@ -45,8 +46,29 @@ export class Workbench {
 		MAXIMIZE: 2
 	};
 
+	static PortletState = {
+		NORMAL: 0,
+		MODAL: 1,
+		POPUP: 2,
+		BLANK: 3
+	};
+
+	static RequestIDs = {
+		addDataType: "addDataType",
+		checkDataTypeUnique: "checkDataTypeUnique",
+		deleteDataTypes: "deleteDataTypes",
+		deleteTypeStructureLink: "deleteTypeStructureLink",
+		importDataType: "importDataType",
+		importDataStructure: "importDataStructure",
+		loadDataStructure: "loadDataStructure",
+		loadDataType: "loadDataType",
+		searchDataTypes: "searchDataTypes",
+		updateDataType: "updateDataType"
+	};
+
 	namespace = "";
 	windows = {};
+	portlets = {};
 	workbenchId = "";
 	baseResourceURL = "";
 	baseRenderURL = "";
@@ -61,6 +83,10 @@ export class Workbench {
 
 	get windowCount() {
 		return Object.keys(this.windows).length;
+	}
+
+	get portletCount() {
+		return Object.keys(this.portlets).length;
 	}
 
 	get topWindow() {
@@ -91,7 +117,17 @@ export class Workbench {
 			windowState: windowState
 		};
 
-		return this.windows.length;
+		return Object.keys(this.windows).length;
+	};
+
+	removePortlet(portletId) {
+		delete this.portlets[portletId];
+	}
+
+	addPortlet = (portletId, portletContent) => {
+		this.portlets[portletId] = portletContent;
+
+		return Object.keys(this.portlets).length;
 	};
 
 	setWindowState(portletId, windowState) {
@@ -109,6 +145,48 @@ export class Workbench {
 	removeWindow(portletId) {
 		delete this.windows[portletId];
 	}
+
+	loadPortlet = async ({ portletRootTag, portletName, params = {}, title }) => {
+		const portletInstance = await this.createPortletInfo({
+			resourceId: ResourceIds.CREATE_PORTLET_INSTANCE,
+			portletName: portletName
+		});
+		portletInstance.title = title;
+
+		params.workbenchNamespace = this.namespace;
+		params.workbenchId = this.workbenchId;
+
+		let renderURL = await this.createRenderURL({
+			baseRenderURL: portletInstance.url,
+			portletParams: {
+				portletId: portletInstance.portletId,
+				title: title,
+				windowState: WindowState.EXCLUSIVE
+			},
+			dataParams: params
+		});
+
+		const portletContent = await this.ajax({ url: renderURL, type: "get", dataType: "html" });
+
+		//const portletRoot = createRoot(portletRootTag);
+
+		return {
+			portletName: portletName,
+			portletId: portletInstance.portletId,
+			namespace: portletInstance.namespace,
+			displayName: portletInstance.displayName,
+			title: title,
+			content: portletContent,
+			portlet: (
+				<SXPortlet
+					key={portletInstance.namespace}
+					namespace={this.namespace}
+					portletNamespace={portletInstance.namespace}
+					portletContent={portletInstance.content}
+				/>
+			)
+		};
+	};
 
 	openPortletWindow = async ({ portletName, title, params }) => {
 		let portletInstance = await this.createPortletInfo({
@@ -241,6 +319,7 @@ export class Workbench {
 	};
 
 	ajax = async ({ url, params = {}, type = "post", dataType = "json" }) => {
+		//console.log("Workbench ajax URL: ", url, type, dataType);
 		let result;
 
 		await $.ajax({
@@ -257,6 +336,219 @@ export class Workbench {
 		});
 
 		return result;
+	};
+
+	searchDataTypes = async (params, requestPortlet, requestId) => {
+		const url = await this.createResourceURL({ resourceId: ResourceIds.SEARCH_DATATYPES });
+
+		//console.log("Workbench.searchDatatypes URL: ", url);
+		const dataParams = Util.toNamespacedParams(this.namespace, params);
+
+		const result = await this.ajax({
+			url: url,
+			params: dataParams
+		});
+
+		this.fireLoadData({
+			targetPortlet: requestPortlet,
+			requestId: requestId,
+			params: params,
+			data: result
+		});
+	};
+
+	loadDataType = async (params, requestPortlet, requestId) => {
+		const url = await this.createResourceURL({ resourceId: ResourceIds.LOAD_DATATYPE });
+
+		//console.log("Workbench.searchDatatypes URL: ", url);
+		const dataParams = Util.toNamespacedParams(this.namespace, params);
+
+		const result = await this.ajax({
+			url: url,
+			params: dataParams
+		});
+
+		this.fireLoadData({
+			targetPortlet: requestPortlet,
+			requestId: requestId,
+			params: params,
+			data: result
+		});
+	};
+
+	loadDataStructure = async (params, requestPortlet, requestId) => {
+		const url = await this.createResourceURL({ resourceId: ResourceIds.LOAD_DATASTRUCTURE });
+
+		//console.log("Workbench.searchDatatypes URL: ", url);
+		const dataParams = Util.toNamespacedParams(this.namespace, params);
+
+		const result = await this.ajax({
+			url: url,
+			params: dataParams
+		});
+
+		this.fireLoadData({
+			targetPortlet: requestPortlet,
+			requestId: requestId,
+			params: params,
+			data: result
+		});
+	};
+
+	deleteDataTypes = async (params, requestPortlet, requestId) => {
+		const url = await this.createResourceURL({ resourceId: ResourceIds.DELETE_DATATYPES });
+
+		const dataParams = Util.toNamespacedParams(this.namespace, params);
+
+		const result = await this.ajax({
+			url: url,
+			params: dataParams
+		});
+
+		this.fireResponse({
+			targetPortlet: requestPortlet,
+			requestId: requestId,
+			params: params,
+			data: result
+		});
+	};
+
+	addDataType = async (params, requestPortlet, requestId) => {
+		const url = await this.createResourceURL({ resourceId: ResourceIds.ADD_DATATYPE });
+
+		const dataParams = Util.toNamespacedParams(this.namespace, params);
+
+		const result = await this.ajax({
+			url: url,
+			params: dataParams
+		});
+
+		this.fireResponse({
+			targetPortlet: requestPortlet,
+			requestId: requestId,
+			params: params,
+			data: result
+		});
+	};
+
+	deleteTypeStructureLink = async (params, requestPortlet, requestId) => {
+		const url = await this.createResourceURL({ resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK });
+
+		const dataParams = Util.toNamespacedParams(this.namespace, params);
+
+		const result = await this.ajax({
+			url: url,
+			params: dataParams
+		});
+
+		this.fireResponse({
+			targetPortlet: requestPortlet,
+			requestId: requestId,
+			params: params,
+			data: result
+		});
+	};
+
+	checkDataTypeUnique = async (params, requestPortlet, requestId) => {
+		const url = await this.createResourceURL({ resourceId: ResourceIds.CHECK_DATATYPE_UNIQUE });
+
+		const dataParams = Util.toNamespacedParams(this.namespace, params);
+
+		const result = await this.ajax({
+			url: url,
+			params: dataParams
+		});
+
+		this.fireResponse({
+			targetPortlet: requestPortlet,
+			requestId: requestId,
+			params: params,
+			data: result
+		});
+	};
+
+	processRequest = async ({ params, requestPortlet, requestId }) => {
+		let resourceId;
+
+		switch (requestId) {
+			case Workbench.RequestIDs.addDataType: {
+				resourceId = ResourceIds.ADD_DATATYPE;
+				break;
+			}
+			case Workbench.RequestIDs.checkDataTypeUnique: {
+				resourceId = ResourceIds.CHECK_DATATYPE_UNIQUE;
+				break;
+			}
+			case Workbench.RequestIDs.deleteDataTypes: {
+				resourceId = ResourceIds.DELETE_DATATYPES;
+				break;
+			}
+			case Workbench.RequestIDs.deleteTypeStructureLink: {
+				resourceId = ResourceIds.DELETE_TYPE_STRUCTURE_LINK;
+				break;
+			}
+			case Workbench.RequestIDs.importDataType:
+			case Workbench.RequestIDs.loadDataType: {
+				resourceId = ResourceIds.LOAD_DATATYPE;
+				break;
+			}
+			case Workbench.RequestIDs.importDataStructure:
+			case Workbench.RequestIDs.loadDataStructure: {
+				resourceId = ResourceIds.LOAD_DATASTRUCTURE;
+				break;
+			}
+			case Workbench.RequestIDs.searchDataTypes: {
+				resourceId = ResourceIds.SEARCH_DATATYPES;
+				break;
+			}
+			case Workbench.RequestIDs.updateDataType: {
+				resourceId = ResourceIds.UPDATE_DATATYPE;
+				break;
+			}
+		}
+
+		let result;
+		if (Util.isNotEmpty(resourceId)) {
+			const url = await this.createResourceURL({ resourceId: resourceId });
+
+			const dataParams = Util.toNamespacedParams(this.namespace, params);
+
+			result = await this.ajax({
+				url: url,
+				params: dataParams
+			});
+		} else {
+			result = {};
+		}
+
+		this.fireResponse({
+			targetPortlet: requestPortlet,
+			requestId: requestId,
+			params: params,
+			data: result
+		});
+	};
+
+	fireLoadData = ({ targetPortlet, requestId, params, data }) => {
+		Event.fire(Event.SX_LOAD_DATA, this.namespace, targetPortlet, {
+			data: data,
+			requestId: requestId,
+			params: params,
+			status: data instanceof Promise ? LoadingStatus.FAIL : LoadingStatus.COMPLETE
+		});
+	};
+
+	fireResponse = ({ targetPortlet, requestId, params, data }) => {
+		Event.fire(Event.SX_RESPONSE, this.namespace, targetPortlet, {
+			requestId: requestId,
+			data: data,
+			params: params,
+			status: data instanceof Promise ? LoadingStatus.FAIL : LoadingStatus.COMPLETE
+		});
+	};
+
+	fireComponentWillUnmount = ({ targetPortlet }) => {
+		Event.fire(Event.SX_COMPONENT_WILL_UNMOUNT, this.namespace, targetPortlet, {});
 	};
 }
 
@@ -276,7 +568,7 @@ export class SXPortletWindow extends React.Component {
 		this.spritemap = props.spritemap;
 		this.zIndex = Workbench.BASE_WINDOW_ZINDEX + this.windowId;
 
-		this.portletContentRef = createRef(null);
+		this.portletContentRef = createRef();
 
 		this.portletBody = this.namespace + this.windowId;
 
@@ -425,5 +717,36 @@ export class SXPortletWindow extends React.Component {
 				</Panel>
 			</Rnd>
 		);
+	}
+}
+
+export class SXPortlet extends React.Component {
+	constructor(props) {
+		super(props);
+
+		this.namespace = props.namespace;
+		this.portletContent = props.portletContent;
+		this.portletNamespace = props.portletNamespace;
+
+		this.portletRootRef = createRef();
+	}
+
+	componentDidMount() {
+		if (this.portletRootRef.current) {
+			Util.html(this.portletRootRef.current, this.portletContent);
+			this.forceUpdate();
+		}
+	}
+
+	componentWillUnmount() {
+		//console.log("SXPortlet will unmount");
+
+		Event.fire(Event.SX_COMPONENT_WILL_UNMOUNT, this.namespace, this.portletNamespace, {
+			targetPortlet: this.portletNamespace
+		});
+	}
+
+	render() {
+		return <div ref={this.portletRootRef}></div>;
 	}
 }

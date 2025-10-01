@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.datatype.editor;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -27,6 +27,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
+	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXDataTypeEditorPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_CHECK_DATATYPE_UNIQUE
 	    },
@@ -76,6 +77,8 @@ public class CheckDataTypeUniqueResourceCommand extends BaseMVCResourceCommand{
 				result = "true";
 			}
 		}
+		
+		System.out.println("CheckDataTypeUniqueResourceCommand result: " + result);
 		
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(result);

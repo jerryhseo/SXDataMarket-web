@@ -1,12 +1,14 @@
-package com.sx.datamarket.web.command.resource.workbench;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.LiferayPortletMode;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -22,6 +24,7 @@ import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
@@ -39,10 +42,11 @@ public class CreatePortletInstanceIdResourceCommand extends BaseMVCResourceComma
 		
 		String portletName = ParamUtil.getString(resourceRequest, "portletName");
 		String portletId = PortletIdCodec.encode(portletName);
-		System.out.println("CreatePortletInstanceIdResourceCommand portletId: " + portletId);
+		//System.out.println("CreatePortletInstanceIdResourceCommand portletId: " + portletId);
 		
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
-		System.out.println(themeDisplay.getPpid());
+		Portlet portlet = _portletLocalService.getPortletById(portletName);
+		//System.out.println("Portlet DisplayName: " + portlet.getDisplayName());
 		
 		String portletURL = SXPortletURLUtil.createURL(
 				resourceRequest, 
@@ -55,13 +59,17 @@ public class CreatePortletInstanceIdResourceCommand extends BaseMVCResourceComma
 		JSONObject portletInstance = JSONFactoryUtil.createJSONObject();
 		portletInstance.put( "url" , portletURL );
 		portletInstance.put( "portletId", portletId);
+		portletInstance.put( "displayName", portlet.getDisplayName());
 		portletInstance.put( "namespace", "_"+portletId+"_" );
 		
-		System.out.println("CreatePortletInstanceIdResourceCommand PortletInstance: " + portletInstance.toString(4));
+		//System.out.println("CreatePortletInstanceIdResourceCommand PortletInstance: " + portletInstance.toString(4));
 		
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(portletInstance.toString());
 		pw.flush();
 		pw.close();
 	}
+	
+	@Reference
+	PortletLocalService _portletLocalService;
 }

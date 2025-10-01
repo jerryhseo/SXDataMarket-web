@@ -25,6 +25,9 @@
 / -->
 
 <%
+	long dataCollectionId = ParamUtil.getLong(renderRequest, "dataCollectionId", 0);
+	long dataSetId = ParamUtil.getLong(renderRequest, "dataSetId", 0);
+	
 	JSONArray permissions = (JSONArray)renderRequest.getAttribute("permissions");
 	int start = GetterUtil.getInteger(renderRequest.getAttribute(StationXWebKeys.START), StationXConstants.DEFAULT_START);
 	int end = GetterUtil.getInteger(renderRequest.getAttribute(StationXWebKeys.END), StationXConstants.DEFAULT_END);
@@ -84,12 +87,11 @@ window.SXWorkingPortletInfo = {
 				backURL:'<%= currentURL %>',
 			},
 			permissions: JSON.parse('<%= permissions.toJSONString() %>'),
-			workbench:{
-				url: '<%= workbenchURL %>',
-			 	namespace: '<%= workbenchNamespace %>',
-				portletId: '<%= workbenchId %>',
-			},
+			workbenchNamespace: '<%= workbenchNamespace %>',
+			workbenchPortletId: '<%= workbenchId %>',
 			params: { // initial parameters
+				dataCollectionId: Number('<%= dataCollectionId %>'),
+				dataSetId: Number('<%= dataSetId %>'),
 				start: Number('<%= start %>'),
 				delta: Number('<%= delta %>'),
 				status: Number('<%= status %>'),

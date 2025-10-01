@@ -8,8 +8,9 @@ import Button, { ClayButtonWithIcon } from "@clayui/button";
 import Visualizer from "../../stationx/visualizer";
 import Icon from "@clayui/icon";
 import { DataStructure } from "../DataStructure/data-structure";
+import SXBaseVisualizer from "../../stationx/visualizer";
 
-class StructuredDataEditor extends React.Component {
+class StructuredDataEditor extends SXBaseVisualizer {
 	static EditState = {
 		WAIT: "wait",
 		PREVIEW: "preview",
@@ -21,30 +22,20 @@ class StructuredDataEditor extends React.Component {
 	constructor(props) {
 		super(props);
 
-		this.namespace = props.namespace;
-		this.languageId = SXSystem.getLanguageId();
-		this.defaultLanguageId = SXSystem.getDefaultLanguageId();
-		this.availableLanguageIds = SXSystem.getAvailableLanguages();
+		console.log("StructuredDataEditor props: ", props);
 
-		this.baseResourceURL = props.baseResourceURL;
-		this.spritemap = props.spritemapPath;
-		this.workbenchNamespace = props.workbenchNamespace;
-		this.workbenchId = props.workbenchId;
-		this.permissions = props.permissions;
-		this.portletId = props.portletId;
+		this.subject = this.params.subject;
 
-		this.subject = props.subject;
-
-		this.dataCollectionId = props.dataCollectionId ?? 0;
-		this.dataSetId = props.dataSetId ?? 0;
-		this.dataTypeId = props.dataTypeId ?? 0;
-		this.dataStructureId = props.dataStructureId ?? 0;
-		this.structuredDataId = props.structuredDataId ?? 0;
+		this.dataCollectionId = this.params.dataCollectionId ?? 0;
+		this.dataSetId = this.params.dataSetId ?? 0;
+		this.dataTypeId = this.params.dataTypeId ?? 0;
+		this.dataStructureId = this.params.dataStructureId ?? 0;
+		this.structuredDataId = this.params.structuredDataId ?? 0;
 
 		this.structuredDataInfo = [];
 		this.dataStructure = null;
 
-		this.editStatus = props.editStatus;
+		this.editStatus = this.params.editStatus;
 
 		this.visualizer = new Visualizer({
 			namespace: this.namespace,
@@ -110,6 +101,18 @@ class StructuredDataEditor extends React.Component {
 		this.forceUpdate();
 	};
 
+	listenerComponentWillUnmount = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[StructuredDataEditor] listenerComponentWillUnmount rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[StructuredDataEditor] listenerComponentWillUnmount received: ", dataPacket);
+		this.componentWillUnmount();
+	};
+
 	componentDidMount() {
 		//this.loadStructuredData();
 		Event.on(Event.SX_LOAD_DATA, this.listenerLoadData);
@@ -117,6 +120,7 @@ class StructuredDataEditor extends React.Component {
 	}
 
 	componentWillUnmount() {
+		console.log("[StructuredDataEditor] componentWillUnmount");
 		Event.off(Event.SX_LOAD_DATA, this.listenerLoadData);
 	}
 
@@ -131,15 +135,6 @@ class StructuredDataEditor extends React.Component {
 		};
 
 		this.visualizer.loadData(ResourceIds.LOAD_STRUCTURED_DATA_EDITING, params);
-
-		try {
-			const response = await fetch("https://api.example.com/data");
-			if (!response.ok) throw new Error("Fetch failed");
-			const data = await response.json();
-			console.log("Data:", data);
-		} catch (error) {
-			console.error("Error:", error);
-		}
 	};
 
 	handleSaveData = () => {

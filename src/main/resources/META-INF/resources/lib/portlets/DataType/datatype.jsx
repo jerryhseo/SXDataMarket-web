@@ -256,7 +256,10 @@ export const SXInstanceInfo = ({
 }) => {
 	return (
 		<>
-			<div className="form-group sx-fieldset">
+			<div
+				className="form-group sx-fieldset"
+				style={{ marginTop: "2rem" }}
+			>
 				<div className="sx-legend">{title}</div>
 				<div className="autofit-float autofit-padded-no-gutters-x autofit-row">
 					<div className="autofit-col">
@@ -510,7 +513,7 @@ export class SXDataTypeStructureLink extends React.Component {
 
 	render() {
 		return (
-			<>
+			<div style={{ marginTop: "2rem" }}>
 				{this.dataTypeViewMode !== DataTypeStructureLink.ViewTypes.NONE && (
 					<>
 						<div className="form-group sx-fieldset">
@@ -782,7 +785,7 @@ export class SXDataTypeStructureLink extends React.Component {
 						</div>
 					</div>
 				)}
-			</>
+			</div>
 		);
 	}
 }

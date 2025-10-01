@@ -32,7 +32,8 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.header-portlet-css=/css/index.css",
 		"com.liferay.portlet.instanceable=true",
 		"com.liferay.portlet.add-default-resource=true",
-		"javax.portlet.display-name=Data Structure Bulder",
+		//"javax.portlet.display-name=Data Structure Bulder",
+		"javax.portlet.display-name=data-structure-builder",
 		"javax.portlet.init-param.template-path=/",
 		"javax.portlet.init-param.view-template=" + JSPPath.DATA_STRUCTURE_BUILDER,
 		"javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
@@ -57,7 +58,7 @@ public class SXDataStructureBuilderPortlet extends MVCPortlet {
 		for(int i=0; i<fields.length; i++) {
 			Field field = fields[i];
 			
-			boolean hasPermission = true; //DataTypeResourcePermissionHelper.contains(permissionChecker, themeDisplay.getScopeGroupId(), field.getName());
+			boolean hasPermission = true; //ResourcePermissionHelper.contains(permissionChecker, themeDisplay.getScopeGroupId(), field.getName());
 			if (hasPermission) {
 				permissions.put(field.getName());
 			}

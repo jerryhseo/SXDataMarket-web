@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.datatype.editor;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -40,6 +40,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
+	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXDataTypeEditorPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_SAVE_TYPE_STRUCTURE_LINK
 	    },

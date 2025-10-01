@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.datatype.editor;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -43,8 +43,14 @@ import javax.portlet.ResourceResponse;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
-@Component(immediate = true, property = { "javax.portlet.name=" + WebPortletKey.SXDataTypeEditorPortlet,
-		"mvc.command.name=" + MVCCommand.RESOURCE_ADD_DATATYPE }, service = MVCResourceCommand.class)
+@Component(
+		immediate = true, 
+		property = { 
+				"javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
+				"javax.portlet.name=" + WebPortletKey.SXDataTypeEditorPortlet,
+				"mvc.command.name=" + MVCCommand.RESOURCE_ADD_DATATYPE 
+		}, 
+		service = MVCResourceCommand.class)
 public class AddDataTypeResourceCommand extends BaseMVCResourceCommand {
 
 	@Override

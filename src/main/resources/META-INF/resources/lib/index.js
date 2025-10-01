@@ -8,6 +8,7 @@ import DataTypeEditor from "./portlets/DataType/datatype-editor";
 import DataStructureBuilder from "./portlets/DataStructure/datastructure-builder";
 import StructuredDataEditor from "./portlets/StructuredData/structured-data-editor";
 import StructuredDataExplorer from "./portlets/StructuredData/structured-data-explorer";
+import DataCollectionEditor from "./portlets/DataCollection/datacollection-editor";
 
 export default function (elementId, portletId, portletParams) {
 	const root = createRoot(document.getElementById(elementId));
@@ -17,6 +18,14 @@ export default function (elementId, portletId, portletParams) {
 			root.render(
 				<ClayModalProvider>
 					<DataWorkbench {...portletParams} />
+				</ClayModalProvider>
+			);
+			break;
+		}
+		case PortletKeys.DATACOLLECTION_EDITOR: {
+			root.render(
+				<ClayModalProvider>
+					<DataCollectionEditor {...portletParams} />
 				</ClayModalProvider>
 			);
 			break;

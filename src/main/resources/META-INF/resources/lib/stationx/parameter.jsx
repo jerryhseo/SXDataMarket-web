@@ -812,8 +812,12 @@ export class Parameter {
 			: this.error.errorClass == ErrorClass.WARNING;
 	}
 
-	checkError() {
+	checkError(cellIndex) {
+		this.validate(cellIndex);
+
 		if (this.hasError()) {
+			this.dirty = true;
+			//this.refreshKey();
 			return this.error;
 		}
 

@@ -177,7 +177,10 @@ export const SXErrorModal = ({ imageURL }) => {
 			center
 		>
 			<Modal.Body style={{ justifyItems: "center" }}>
-				<img src={imageURL} />
+				<img
+					src={imageURL}
+					width="300"
+				/>
 			</Modal.Body>
 		</Modal>
 	);
@@ -193,7 +196,10 @@ export const SXLoadingModal = ({ imageURL }) => {
 			center
 		>
 			<Modal.Body style={{ justifyItems: "center" }}>
-				<img src={imageURL} />
+				<img
+					src={imageURL}
+					width="300"
+				/>
 			</Modal.Body>
 		</Modal>
 	);

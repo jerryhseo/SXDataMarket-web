@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.datastructure;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -24,6 +24,7 @@ import org.osgi.service.component.annotations.Reference;
 
 @Component(
 		property = {
+				"javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 				"javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
 				"mvc.command.name=" + MVCCommand.RESOURCE_CHECK_DATASTRUCTURE_UNIQUE
 		},

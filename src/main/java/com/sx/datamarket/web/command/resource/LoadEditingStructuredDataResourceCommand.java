@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.structureddata;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -42,6 +42,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
+	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXStructuredDataEditorPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_STRUCTURED_DATA_EDITING
 	    },

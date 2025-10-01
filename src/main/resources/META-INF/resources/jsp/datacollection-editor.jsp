@@ -12,7 +12,7 @@
 <%@ include file="./init.jsp" %>
 
 <%
-	long dataTypeId = ParamUtil.getLong(renderRequest, WebKey.DATATYPE_ID, 0);
+	long dataCollectionId = ParamUtil.getLong(renderRequest, WebKey.DATACOLLECTION_ID, 0);
 	JSONArray permissions = (JSONArray)renderRequest.getAttribute("permissions");
 
 	String workbenchNamespace = ParamUtil.getString(renderRequest, StationXWebKeys.WORKBENCH_NAMESPACE, StringPool.BLANK);
@@ -20,8 +20,8 @@
 	
 	String portalURL = PortalUtil.getPortalURL(renderRequest);
 	
-	System.out.println("[SXDataTypeEditor] workbenchNamespace: " + workbenchNamespace);
-	System.out.println("[SXDataTypeEditor] workbenchId: " + workbenchId);
+	System.out.println("[datacollection-editor.jsp] workbenchNamespace: " + workbenchNamespace);
+	System.out.println("[datacollection-editor.jsp] workbenchId: " + workbenchId);
 %>
 
 <portlet:renderURL  var="baseRenderURL">
@@ -36,12 +36,12 @@
 <liferay-portlet:renderURL portletName="<%=workbenchId%>"  var="workbenchURL"  windowState="<%=LiferayWindowState.NORMAL.toString()%>">
 </liferay-portlet:renderURL>
 
-<div id="<portlet:namespace />dataTypeEditorRoot"></div>
+<div id="<portlet:namespace />dataCollectionEditorRoot"></div>
 
 <script>
 	window.SXWorkingPortletInfo = {
-			rootElement: "<portlet:namespace />dataTypeEditorRoot",
-			portletId: "<%=WebPortletKey.SXDataTypeEditorPortlet%>",
+			rootElement: "<portlet:namespace />dataCollectionEditorRoot",
+			portletId: "<%=WebPortletKey.SXDataCollectionEditorPortlet%>",
 			portletParams:{
 				namespace: '<portlet:namespace/>',
 				groupId: themeDisplay.getScopeGroupId(),
@@ -56,15 +56,10 @@
 				baseActionURL: '<%=  baseActionURL %>',
 				baseResourceURL: '<%=  baseResourceURL %>',
 				permissions: JSON.parse('<%= permissions.toJSONString() %>'),
-				redirectURLs:{
-					workbenchURL: '<%= workbenchURL %>',
-					dataTypeEditorURL:"",
-					backURL:'<%= currentURL %>',
-				},
 				workbenchNamespace: '<%= workbenchNamespace %>',
 				workbenchPortletId: '<%= workbenchId %>',
-				params: { // initial parameters
-					dataTypeId: Number('<%= dataTypeId %>'),
+				params:{
+					dataCollectionId: Number('<%= dataCollectionId %>')
 				}
 			}
 	};

@@ -30,6 +30,8 @@ import { DataType, DataTypeStructureLink, SXDataTypeStructureLink } from "./data
 import { Autocomplete } from "@clayui/autocomplete";
 import { DataStructure } from "../DataStructure/data-structure";
 import { SXBroomIcon, SXEditIcon, SXUpgradeIcon } from "../../stationx/icon";
+import SXBaseVisualizer from "../../stationx/visualizer";
+import { Workbench } from "../DataWorkbench/workbench";
 
 export const DataTypeInfo = ({ title, abstract, items, colsPerRow = 1 }) => {
 	let sectionContent;
@@ -101,7 +103,7 @@ export const DataTypeInfo = ({ title, abstract, items, colsPerRow = 1 }) => {
 	);
 };
 
-class DataTypeEditor extends React.Component {
+class DataTypeEditor extends SXBaseVisualizer {
 	dataTypeAutoCompleteItems = [];
 	dataStructureAutoCompleteItems = [];
 
@@ -109,19 +111,6 @@ class DataTypeEditor extends React.Component {
 		super(props);
 
 		//console.log("DataTypeEditor props: ", props);
-		this.namespace = props.namespace;
-		this.baseResourceURL = props.baseResourceURL;
-		this.spritemap = props.spritemapPath;
-		this.languageId = props.languageId;
-		this.availableLanguageIds = props.availableLanguageIds;
-		this.permissions = props.permissions;
-
-		this.redirectURLs = props.redirectURLs;
-		this.workbench = props.workbench;
-		this.params = props.params;
-
-		this.formId = this.namespace + "dataTypeEditor";
-
 		this.dirty = false;
 
 		this.dataType = new DataType(this.languageId, this.availableLanguageIds);
@@ -130,8 +119,6 @@ class DataTypeEditor extends React.Component {
 		this.dataStructure = new DataStructure(this.namespace, this.formId, this.languageId, this.availableLanguageIds);
 
 		this.loadingFailMessage = "";
-
-		this.fields = [];
 
 		this.dataTypeCode = Parameter.createParameter(
 			this.namespace,
@@ -348,17 +335,13 @@ class DataTypeEditor extends React.Component {
 			}
 		);
 
-		this.fields.push(this.groupParameter);
-		this.fields.push(this.displayName);
-		this.fields.push(this.description);
-		this.fields.push(this.tooltip);
-		this.fields.push(this.visualizers);
+		this.fields = [this.groupParameter, this.displayName, this.description, this.tooltip, this.visualizers];
 
 		this.state = {
 			loadingStatus: LoadingStatus.PENDING,
 			autoCompleteField: "label",
 			deleteSuccessDlgStatus: false,
-			dlgProcResult: false,
+			infoDialog: false,
 			dataTypeCodeDuplicated: false,
 			dataTypeDuplicated: false,
 			dlgWarningDeleteDataType: false,
@@ -416,7 +399,14 @@ class DataTypeEditor extends React.Component {
 					dlgDeleteLinkInfoAndImportDataStructure: true
 				});
 			} else {
-				this.importDataStructure();
+				this.fireRequest({
+					requestId: Workbench.RequestIDs.importDataStructure,
+					params: {
+						dataStructureId: this.importDataStructureId
+					}
+				});
+
+				this.setState({ loadingStatus: LoadingStatus.PENDING });
 			}
 		}
 	};
@@ -432,21 +422,162 @@ class DataTypeEditor extends React.Component {
 		this.forceUpdate();
 	};
 
+	listenerWorkbenchReady = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("listenerWorkbenchReady event rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("listenerWorkbenchReady received: ", dataPacket);
+
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.loadDataType,
+			params: {
+				dataTypeId: this.dataType.dataTypeId,
+				loadStructure: true,
+				loadVisualizers: true,
+				loadAvailableVisualizers: true,
+				loadDataTypeAutoCompleteItems: true,
+				loadDataStructureAutoCompleteItems: true
+			}
+		});
+
+		this.setState({ loadingStatus: LoadingStatus.PENDING });
+	};
+
+	listenerLoadData = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[DataTypeEditor] listenerLoadData rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[DataTypeEditor] listenerLoadData received: ", dataPacket, this.state.loadingStatus);
+
+		/*
+		this.setState({
+			loadingStatus: dataPacket.status,
+			searchContainerKey: Util.randomKey()
+		});
+		*/
+	};
+
+	listenerResponce = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("listenerResponce event rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("listenerResponce received: ", dataPacket);
+		const state = {};
+		switch (dataPacket.requestId) {
+			case Workbench.RequestIDs.checkDataTypeUnique: {
+				const result = dataPacket.data;
+				const { validationCode, dataTypeCode, dataTypeVersion } = dataPacket.params;
+
+				if (!result) {
+					const errorMessage =
+						validationCode == "code"
+							? Util.translate("datatype-code-duplicated")
+							: Util.translate("datatype-duplicated");
+
+					this.dataTypeCode.setError(ErrorClass.ERROR, errorMessage);
+
+					state.dataTypeDuplicated = true;
+				} else {
+					this.dataType.dataTypeCode = dataTypeCode;
+					this.dataType.dataTypeVersion = dataTypeVersion;
+				}
+
+				break;
+			}
+			case Workbench.RequestIDs.addDataType:
+			case Workbench.RequestIDs.updateDataType: {
+				if (dataPacket.status === LoadingStatus.COMPLETE) {
+					if (!this.dataType.dataTypeId) {
+						this.dataType.dataTypeId = dataPacket.data.dataTypeId;
+					}
+
+					this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
+					this.dlgBody = Util.translate("datatype-is-saved-successfully-as", this.dataType.dataTypeId);
+					state.infoDialog = true;
+
+					this.editStatus = EditStatus.UPDATE;
+				}
+
+				break;
+			}
+			case Workbench.RequestIDs.deleteTypeStructureLink: {
+				console.log("[DataTypeEditor] listenerResonse: ", dataPacket);
+				break;
+			}
+			case Workbench.RequestIDs.loadDataType: {
+				this.loadDataType(dataPacket.data);
+
+				break;
+			}
+			case Workbench.RequestIDs.importDataType: {
+				this.setImportedDataType(dataPacket.data);
+
+				break;
+			}
+			case Workbench.RequestIDs.importDataStructure: {
+				this.importDataStructure(dataPacket.data);
+
+				break;
+			}
+		}
+
+		this.setState({
+			...state,
+			loadingStatus: dataPacket.status
+		});
+	};
+
+	listenerComponentWillUnmount = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[DataTypeEditor] listenerComponentWillUnmount rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[DataTypeEditor] listenerComponentWillUnmount received: ", dataPacket);
+		this.componentWillUnmount();
+	};
+
 	componentDidMount() {
 		//Loading dataType
-		this.loadDataType();
+		//this.loadDataType();
 
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.on(Event.SX_AUTOCOMPLETE_SELECTED, this.listenerAutocompleteSelected);
 		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerTypeStructureLinkInfoChanged);
+		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+		Event.on(Event.SX_LOAD_DATA, this.listenerLoadData);
+		Event.on(Event.SX_RESPONSE, this.listenerResponce);
+		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+
+		this.fireHandshake();
 	}
 
 	componentWillUnmount() {
+		console.log("[DataTypeEditor] componentWillUnmount");
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.off(Event.SX_AUTOCOMPLETE_SELECTED, this.listenerAutocompleteSelected);
 		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerTypeStructureLinkInfoChanged);
+		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+		Event.off(Event.SX_LOAD_DATA, this.listenerLoadData);
+		Event.off(Event.SX_RESPONSE, this.listenerResponce);
+		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 	}
 
+	/*
 	constructTypeStructureLink({ typeVisualizerLinkId = 0, dataTypeId = 0, dataStructureId = 0 }) {
 		Util.ajax({
 			namespace: this.namespace,
@@ -466,99 +597,119 @@ class DataTypeEditor extends React.Component {
 			}
 		});
 	}
+		*/
 
-	loadDataType = (dataTypeId) => {
-		//console.log("loadDataType: ", this.dataType, this.dataType.dataTypeId);
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.LOAD_DATATYPE,
-			type: "post",
-			dataType: "json",
-			params: {
-				dataTypeId: this.dataType.dataTypeId,
-				loadStructure: true,
-				loadVisualizers: true,
-				loadAvailableVisualizers: true,
-				loadDataTypeAutoCompleteItems: true,
-				loadDataStructureAutoCompleteItems: true
-			},
-			successFunc: (result) => {
-				console.log("data type loaded: ", result, this.dataType);
+	loadDataType = (data) => {
+		console.log("data type loaded: ", data, this.dataType);
 
-				this.dataType.parse(result.dataType ?? {});
+		this.dataType.parse(data.dataType ?? {});
 
-				// Set dataType values to fields and initialize fields
-				this.setFormValues();
+		// Set dataType values to fields and initialize fields
+		this.setFormValues();
 
-				this.structureLink.parse(result.structureLink ?? {});
-				if (this.structureLink.dataTypeId > 0) {
-					this.structureLink.fromDB = true;
-				}
+		this.structureLink.parse(data.structureLink ?? {});
+		if (this.structureLink.dataTypeId > 0) {
+			this.structureLink.fromDB = true;
+		}
 
-				this.dataStructure.parse(result.dataStructure ?? {});
-				console.log(
-					"In Loading: ",
-					JSON.stringify(this.structureLink, null, 4),
-					this.structureLink,
-					this.dataStructure
-				);
+		this.dataStructure.parse(data.dataStructure ?? {});
+		/*
+		console.log(
+			"In Loading: ",
+			JSON.stringify(this.structureLink, null, 4),
+			this.structureLink,
+			this.dataStructure
+		);
+		*/
 
-				this.visualizers.options = result.availableVisualizers.map((item) => ({
-					label: item.displayName,
-					value: item.id + "",
-					typeVisualizerLinkId: item.typeVisualizerLinkId ?? 0
-				}));
+		this.visualizers.options = data.availableVisualizers.map((item) => ({
+			label: item.displayName,
+			value: item.id + "",
+			typeVisualizerLinkId: item.typeVisualizerLinkId ?? 0
+		}));
 
-				if (Util.isNotEmpty(result.visualizers)) {
-					//console.log("result.visualizers: ", result.visualizers);
-					this.visualizers.setValue({
-						value: result.visualizers.map((v) => ({
-							value: v.id + "",
-							label: v.displayName,
-							typeVisualizerLinkId: v.typeVisualizerLinkId
-						}))
-					});
-					this.visualizers.dirty = false;
-				}
-				//this.visualizers.disabled = !this.dataType.validate();
+		if (Util.isNotEmpty(data.visualizers)) {
+			//console.log("data.visualizers: ", data.visualizers);
+			this.visualizers.setValue({
+				value: data.visualizers.map((v) => ({
+					value: v.id + "",
+					label: v.displayName,
+					typeVisualizerLinkId: v.typeVisualizerLinkId
+				}))
+			});
+			this.visualizers.dirty = false;
+		}
+		//this.visualizers.disabled = !this.dataType.validate();
 
-				this.dataTypeAutoCompleteItems = result.dataTypeAutoCompleteItems;
-				this.dataStructureAutoCompleteItems = result.dataStructureAutoCompleteItems;
+		this.dataTypeAutoCompleteItems = data.dataTypeAutoCompleteItems;
+		this.dataStructureAutoCompleteItems = data.dataStructureAutoCompleteItems;
 
-				console.log("AutoCompleItes: ", this.dataTypeAutoCompleteItems, this.dataStructureAutoCompleteItems);
+		//console.log("AutoCompleItes: ", this.dataTypeAutoCompleteItems, this.dataStructureAutoCompleteItems);
 
-				if (this.editStatus == EditStatus.IMPORT) {
-					this.dataTypeCode.setError(ErrorClass.ERROR, Util.translate("change-datatype-code-or-version"));
-				}
+		if (this.editStatus == EditStatus.IMPORT) {
+			this.dataTypeCode.setError(ErrorClass.ERROR, Util.translate("change-datatype-code-or-version"));
+		}
 
-				//Change edit status
-				if (this.editStatus == EditStatus.ADD) {
-					this.editStatus = Util.isEmpty(result.dataType) ? EditStatus.ADD : EditStatus.UPDATE;
-				}
+		//Change edit status
+		if (this.editStatus == EditStatus.ADD) {
+			this.editStatus = Util.isEmpty(data.dataType) ? EditStatus.ADD : EditStatus.UPDATE;
+		}
+	};
 
-				// Change loding state
-				this.setState({
-					loadingStatus: LoadingStatus.COMPLETE
-				});
-			},
-			errorFunc: (err) => {
-				this.loadingFailMessage = "Error while loading data type: " + this.dataType.dataTypeId;
-				this.setState({ loadingStatus: LoadingStatus.FAIL });
-			}
-		});
+	setImportedDataType = (data) => {
+		this.dataType.parse(data.dataType ?? {});
+		this.dataType.dataTypeId = 0;
+		this.dataType.dataTypeCode = "";
+		this.dataType.dataTypeVersion = "1.0.0";
+		this.dataType.dirty = true;
+
+		console.log("imported data type loaded: ", data, this.dataType);
+
+		// Set dataType values to fields and initialize fields
+		this.setFormValues();
+
+		this.structureLink.parse(data.structureLink ?? {});
+		this.structureLink.dataTypeId = 0;
+		this.structureLink.dirty = true;
+		this.structureLink.fromDB = true;
+
+		this.dataStructure.parse(data.dataStructure ?? {});
+		console.log(
+			"In Loading imported data type: ",
+			JSON.stringify(this.structureLink, null, 4),
+			this.structureLink,
+			this.dataStructure
+		);
+
+		if (Util.isNotEmpty(data.visualizers)) {
+			//console.log("data.visualizers: ", data.visualizers);
+			this.visualizers.setValue({
+				value: data.visualizers.map((v) => ({
+					value: v.id,
+					label: v.displayName,
+					typeVisualizerLinkId: v.typeVisualizerLinkId
+				}))
+			});
+			this.visualizers.dirty = false;
+			//this.visualizers.disabled = false;
+		}
+
+		this.dataTypeAutoCompleteItems = data.dataTypeAutoCompleteItems;
+		this.dataStructureAutoCompleteItems = data.dataStructureAutoCompleteItems;
+
+		console.log(
+			"imported data type AutoCompleItes: ",
+			this.dataTypeAutoCompleteItems,
+			this.dataStructureAutoCompleteItems
+		);
 	};
 
 	importDataType = (dataTypeId) => {
 		//console.log("loadDataType: ", this.dataType, this.dataType.dataTypeId);
 		this.setState({ loadingStatus: LoadingStatus.PENDING });
 
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.LOAD_DATATYPE,
-			type: "post",
-			dataType: "json",
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.importDataType,
 			params: {
 				dataTypeId: dataTypeId,
 				loadStructure: true,
@@ -566,66 +717,12 @@ class DataTypeEditor extends React.Component {
 				loadAvailableVisualizers: false,
 				loadDataTypeAutoCompleteItems: true,
 				loadDataStructureAutoCompleteItems: true
-			},
-			successFunc: (result) => {
-				console.log("data type loaded: ", result, this.dataType);
-
-				this.dataType.parse(result.dataType ?? {});
-				this.dataType.dataTypeId = 0;
-				this.dataType.dataTypeCode = "";
-				this.dataType.dataTypeVersion = "1.0.0";
-				this.dataType.dirty = true;
-
-				// Set dataType values to fields and initialize fields
-				this.setFormValues();
-
-				this.structureLink.parse(result.structureLink ?? {});
-				this.structureLink.dataTypeId = 0;
-				this.structureLink.dirty = true;
-				this.structureLink.fromDB = true;
-
-				this.dataStructure.parse(result.dataStructure ?? {});
-				console.log(
-					"In Loading: ",
-					JSON.stringify(this.structureLink, null, 4),
-					this.structureLink,
-					this.dataStructure
-				);
-
-				if (Util.isNotEmpty(result.visualizers)) {
-					//console.log("result.visualizers: ", result.visualizers);
-					this.visualizers.setValue({
-						value: result.visualizers.map((v) => ({
-							value: v.id,
-							label: v.displayName,
-							typeVisualizerLinkId: v.typeVisualizerLinkId
-						}))
-					});
-					this.visualizers.dirty = false;
-					//this.visualizers.disabled = false;
-				}
-
-				this.dataTypeAutoCompleteItems = result.dataTypeAutoCompleteItems;
-				this.dataStructureAutoCompleteItems = result.dataStructureAutoCompleteItems;
-
-				console.log("AutoCompleItes: ", this.dataTypeAutoCompleteItems, this.dataStructureAutoCompleteItems);
-
-				//Change edit status
-				//this.editStatus = EditStatus.UPDATE;
-
-				// Change loding state
-				this.setState({
-					loadingStatus: LoadingStatus.COMPLETE
-				});
-			},
-			errorFunc: (err) => {
-				this.loadingFailMessage = "Error while loading data type: " + this.dataType.dataTypeId;
-				this.setState({ loadingStatus: LoadingStatus.FAIL });
 			}
 		});
 	};
 
 	setFormValues = () => {
+		console.log("setFormValues: ", this.dataType);
 		for (const prop in this.dataType) {
 			switch (prop) {
 				case "dataTypeCode": {
@@ -678,6 +775,16 @@ class DataTypeEditor extends React.Component {
 	};
 
 	deleteDataType = () => {
+		this.setState({ loadingStatus: LoadingStatus.PENDING });
+
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.deleteDataTypes,
+			params: {
+				dataTypeIds: [this.dataType.dataTypeId]
+			}
+		});
+
+		/*
 		Util.ajax({
 			namespace: this.namespace,
 			baseResourceURL: this.baseResourceURL,
@@ -695,13 +802,6 @@ class DataTypeEditor extends React.Component {
 					this.availableLanguageIds
 				);
 
-				/*
-				this.clearForm(false);
-				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dlgBody = Util.translate("datatype-is-deleted-successfully", this.dataType.dataTypeId);
-				this.setState({ dlgProcResult: true });
-				*/
-
 				this.handleMoveToExplorer();
 			},
 			errorFunc: (err) => {
@@ -709,46 +809,29 @@ class DataTypeEditor extends React.Component {
 				this.dlgHeader = SXModalUtil.errorDlgHeader(this.spritemap);
 				this.dlgBody = Util.translate("error-is-occured-while-delete-datatype", this.dataType.dataTypeId);
 
-				this.setState({ dlgProcResult: true });
+				this.setState({ infoDialog: true });
 			}
 		});
+		*/
 	};
 
-	importDataStructure = () => {
-		this.setState({ loadingStatus: LoadingStatus.PENDING });
+	importDataStructure = (data) => {
+		this.dataStructure.parse(data.dataStructure);
+		this.structureLink.dataTypeId = this.dataType.dataTypeId;
+		this.structureLink.dataStructureId = this.dataStructure.dataStructureId;
+		this.structureLink.dirty = true;
+		this.structureLink.fromDB = false;
+		this.dataStructure.setTitleBarInfos(this.structureLink.toJSON());
 
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.LOAD_DATASTRUCTURE,
-			type: "post",
-			dataType: "json",
-			params: {
-				dataStructureId: this.importDataStructureId
-			},
-			successFunc: (result) => {
-				this.dataStructure.parse(result.dataStructure);
-				this.structureLink.dataTypeId = this.dataType.dataTypeId;
-				this.structureLink.dataStructureId = this.dataStructure.dataStructureId;
-				this.structureLink.dirty = true;
-				this.structureLink.fromDB = false;
-				this.dataStructure.setTitleBarInfos(this.structureLink.toJSON());
+		console.log(
+			"importDataStructure: ",
+			data.dataStructure,
+			this.dataTypeId,
+			this.structureLink,
+			this.dataStructure
+		);
 
-				console.log(
-					"importDataStructure: ",
-					result.dataStructure,
-					this.dataTypeId,
-					this.structureLink,
-					this.dataStructure
-				);
-
-				this.setState({ loadingStatus: LoadingStatus.COMPLETE });
-			},
-			errorFunc: (err) => {
-				this.loadingFailMessage = "Error while loading data type: " + this.dataType.dataTypeId;
-				this.setState({ loadingStatus: LoadingStatus.FAIL });
-			}
-		});
+		this.setState({ loadingStatus: LoadingStatus.COMPLETE });
 	};
 
 	setDataTypeValue = (fieldCode, value) => {
@@ -813,38 +896,13 @@ class DataTypeEditor extends React.Component {
 	};
 
 	checkDataTypeUnique = (dataTypeCode, dataTypeVersion, validationCode) => {
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.CHECK_DATATYPE_UNIQUE,
-			type: "post",
-			dataType: "json",
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.checkDataTypeUnique,
 			params: {
 				dataTypeId: this.dataType.dataTypeId,
 				dataTypeCode: dataTypeCode,
 				dataTypeVersion: dataTypeVersion,
 				validationCode: validationCode
-			},
-			successFunc: (result) => {
-				if (!result) {
-					const errorMessage =
-						validationCode == "code"
-							? Util.translate("datatype-code-duplicated")
-							: Util.translate("datatype-duplicated");
-
-					this.dataTypeCode.setError(ErrorClass.ERROR, errorMessage);
-
-					this.setState({ dataTypeDuplicated: true });
-				} else {
-					this.dataType.dataTypeCode = dataTypeCode;
-					this.dataType.dataTypeVersion = dataTypeVersion;
-
-					this.forceUpdate();
-				}
-			},
-			errorFunc: (err) => {
-				this.loadingFailMessage = "Error while loading visualizers: ";
-				this.setState({ loadingStatus: LoadingStatus.FAIL });
 			}
 		});
 	};
@@ -885,7 +943,7 @@ class DataTypeEditor extends React.Component {
 				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
 				this.dlgBody =
 					Util.translate("datatype-structure-link-info-deleted") + ": " + this.structureLink.dataTypeId;
-				this.setState({ dlgProcResult: true });
+				this.setState({ infoDialog: true });
 			},
 			errorFunc: (a, b, c, d) => {
 				console.log("ERROR: ", a, b, c, d);
@@ -912,20 +970,12 @@ class DataTypeEditor extends React.Component {
 	};
 
 	redirectToStructureBuilder = () => {
-		Util.redirectTo(
-			this.workbench.url,
-			{
-				namespace: this.workbench.namespace,
-				portletId: this.workbench.portletId,
-				windowState: WindowState.NORMAL
-			},
-			{
-				workingPortletName: PortletKeys.DATASTRUCTURE_BUILDER,
-				workingPortletParams: JSON.stringify({
-					dataTypeId: this.dataType.dataTypeId
-				})
+		this.redirectTo({
+			portletName: PortletKeys.DATASTRUCTURE_BUILDER,
+			params: {
+				dataTypeId: this.dataType.dataTypeId
 			}
-		);
+		});
 	};
 
 	collectFormValues() {
@@ -950,30 +1000,42 @@ class DataTypeEditor extends React.Component {
 	}
 
 	validateFormValues(fields) {
-		let errorParam;
+		let error;
 		fields.every((field) => {
 			//console.log("validate field: ", field);
 
-			if (field.isGroup) {
-				errorParam = this.validateFormValues(field.members);
+			if (field.hasError()) {
+				error = field.error;
 			} else {
-				field.validate();
+				if (field.isGroup) {
+					error = this.validateFormValues(field.members);
+				} else {
+					field.validate();
 
-				if (field.hasError()) {
-					field.setDirty();
-					errorParam = field;
+					if (field.hasError()) {
+						field.setDirty();
+						error = field;
+					}
 				}
 			}
 
-			return errorParam ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
+			return Util.isNotEmpty(error) ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
 		});
 
-		return errorParam;
+		return error;
 	}
 
 	deleteLinkInfoAndImportDataStructure = () => {
 		this.setState({ LoadingStatus: LoadingStatus.PENDING });
 
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.deleteTypeStructureLink,
+			params: {
+				dataTypeId: this.structureLink.dataTypeId
+			}
+		});
+
+		/*
 		Util.ajax({
 			namespace: this.namespace,
 			baseResourceURL: this.baseResourceURL,
@@ -999,6 +1061,7 @@ class DataTypeEditor extends React.Component {
 				this.setState({ loadingStatus: LoadingStatus.FAIL });
 			}
 		});
+		*/
 	};
 
 	handleDeleteLinkInfo = () => {
@@ -1034,17 +1097,9 @@ class DataTypeEditor extends React.Component {
 	};
 
 	handleMoveToExplorer(e) {
-		Util.redirectTo(
-			this.workbench.url,
-			{
-				namespace: this.workbench.namespace,
-				portletId: this.workbench.portletId,
-				windowState: WindowState.NORMAL
-			},
-			{
-				workingPortletName: PortletKeys.DATATYPE_EXPLORER
-			}
-		);
+		this.redirectTo({
+			portletName: PortletKeys.DATATYPE_EXPLORER
+		});
 	}
 
 	handleBtnSaveClick(e) {
@@ -1055,9 +1110,6 @@ class DataTypeEditor extends React.Component {
 
 			return;
 		}
-
-		const saveResourceId =
-			this.editStatus == EditStatus.UPDATE ? ResourceIds.UPDATE_DATATYPE : ResourceIds.ADD_DATATYPE;
 
 		const formValues = {
 			dataType: this.dataType.toJSON()
@@ -1071,13 +1123,21 @@ class DataTypeEditor extends React.Component {
 			formValues.visualizers = this.visualizers.getValue();
 		}
 
+		const requestId =
+			this.editStatus == EditStatus.UPDATE
+				? Workbench.RequestIDs.updateDataType
+				: Workbench.RequestIDs.addDataType;
 		//console.log("handleBtnSaveClick: ", JSON.stringify(formValues, null, 4), this.fields);
 
-		const params = {
-			dataTypeId: this.dataType.dataTypeId,
-			formData: JSON.stringify(formValues)
-		};
+		this.fireRequest({
+			requestId: requestId,
+			params: {
+				dataTypeId: this.dataType.dataTypeId,
+				formData: JSON.stringify(formValues)
+			}
+		});
 
+		/*
 		Util.ajax({
 			namespace: this.namespace,
 			baseResourceURL: this.baseResourceURL,
@@ -1095,7 +1155,7 @@ class DataTypeEditor extends React.Component {
 				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
 				this.dlgBody = Util.translate("datatype-is-saved-successfully-as", this.dataType.dataTypeId);
 				this.setState({
-					dlgProcResult: true
+					infoDialog: true
 				});
 				this.editStatus = EditStatus.UPDATE;
 			},
@@ -1103,6 +1163,7 @@ class DataTypeEditor extends React.Component {
 				console.log("ERROR: ", a, b, c, d);
 			}
 		});
+		*/
 	}
 
 	handleBtnUpgradeDataTypeClick() {
@@ -1189,7 +1250,7 @@ class DataTypeEditor extends React.Component {
 					this.structureLink.dataTypeId,
 					this.structureLink.dataStructureId
 				);
-				this.setState({ dlgProcResult: true });
+				this.setState({ infoDialog: true });
 			},
 			errorFunc: (a, b, c, d) => {
 				console.log("ERROR: ", a, b, c, d);
@@ -1463,7 +1524,7 @@ class DataTypeEditor extends React.Component {
 							)}
 						</>
 					)}
-					{this.state.dlgProcResult && (
+					{this.state.infoDialog && (
 						<SXModalDialog
 							header={this.dlgHeader}
 							body={this.dlgBody}
@@ -1471,7 +1532,7 @@ class DataTypeEditor extends React.Component {
 								{
 									label: Util.translate("ok"),
 									onClick: () => {
-										this.setState({ dlgProcResult: false });
+										this.setState({ infoDialog: false });
 									}
 								}
 							]}

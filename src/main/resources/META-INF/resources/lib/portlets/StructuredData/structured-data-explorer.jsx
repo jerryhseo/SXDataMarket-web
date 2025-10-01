@@ -4,31 +4,15 @@ import { SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { Util } from "../../stationx/util";
 import { DataType, SXInstanceInfo } from "../DataType/datatype";
+import SXBaseVisualizer from "../../stationx/visualizer";
 
-class StructuredDataExplorer extends React.Component {
+class StructuredDataExplorer extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
 		console.log("StructuredDataExplorer props: ", props);
 
-		this.namespace = props.namespace;
-		this.languageId = SXSystem.getLanguageId();
-		this.defaultLanguageId = SXSystem.getDefaultLanguageId();
-		this.availableLanguageIds = SXSystem.getAvailableLanguages();
-		this.baseRenderURL = props.baseRenderURL;
-		this.baseResourceURL = props.baseResourceURL;
-		this.permissions = props.permissions;
-		this.spritemap = props.spritemapPath;
-		this.imagePath = props.imagePath;
-		this.groupId = props.groupId;
-		this.userId = props.userId;
-
-		this.redirectURLs = props.redirectURLs;
-		this.workbenchNamespace = props.workbenchNamespace;
-		this.workbenchId = props.workbenchId;
-		this.workbenchURL = props.workbenchURL;
-
-		this.dataTypeId = props.dataTypeId;
+		this.dataTypeId = this.params.dataTypeId;
 
 		this.checkboxEnabled =
 			this.permissions.includes(ActionKeys.UPDATE) || this.permissions.includes(ActionKeys.DELETE);
@@ -280,7 +264,11 @@ class StructuredDataExplorer extends React.Component {
 			},
 			{
 				workingPortletName: PortletKeys.STRUCTURED_DATA_EDITOR,
-				dataTypeId: this.dataTypeId
+				workingPortletParams: JSON.stringify({
+					dataCollectionId: this.dataCollectionId,
+					dataSetId: this.dataSetId,
+					dataTypeId: this.dataTypeId
+				})
 			}
 		);
 	};
@@ -315,6 +303,18 @@ class StructuredDataExplorer extends React.Component {
 		this.setState({ searchContainerKey: Util.randomKey() });
 	};
 
+	listenerComponentWillUnmount = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[StructuredDataExplorer] listenerComponentWillUnmount rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[StructuredDataExplorer] listenerComponentWillUnmount received: ", dataPacket);
+		this.componentWillUnmount();
+	};
+
 	componentDidMount() {
 		Event.on(Event.SX_SEARCH_KEYWORDS_CHANGED, this.listenerSearchKeywordsChanged);
 		Event.on(Event.SX_FILTER_MENU_CLICKED, this.listenerFilterMenuClicked);
@@ -329,6 +329,7 @@ class StructuredDataExplorer extends React.Component {
 	}
 
 	componentWillUnmount() {
+		console.log("[StructuredDataExplorer] componentWillUnmount");
 		Event.off(Event.SX_SEARCH_KEYWORDS_CHANGED, this.listenerSearchKeywordsChanged);
 		Event.off(Event.SX_FILTER_MENU_CLICKED, this.listenerFilterMenuClicked);
 		Event.off(Event.SX_ADVANCED_SEARCH_BUTTON_CLICKED, this.listenerAdvancedSearchButtonClicked);

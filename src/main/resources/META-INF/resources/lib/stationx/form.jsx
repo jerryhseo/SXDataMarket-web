@@ -688,6 +688,32 @@ class BaseParameterComponent extends React.Component {
 	}
 }
 
+export class SXInputGroup extends BaseParameterComponent {
+	constructor(props) {
+		super(props);
+	}
+
+	render() {
+		return (
+			<ClayInput.Group
+				small
+				style={this.style}
+			>
+				<ClayInput.GroupItem>
+					<ClayInput className="input-group-inset input-group-inset-after"></ClayInput>
+				</ClayInput.GroupItem>
+				<span className="input-group-inset-item input-group-inset-item-after">
+					<ClayButtonWithIcon
+						displayType="unstyled"
+						symbol="search"
+						spritemap={this.spritemap}
+					/>
+				</span>
+			</ClayInput.Group>
+		);
+	}
+}
+
 /****************************************************
  *  01. The type of Parametrer is String and
  * 		localized property is false
@@ -3059,7 +3085,11 @@ export class SXGroup extends BaseParameterComponent {
 							{row.map((field) => (
 								<div
 									key={field.key}
-									className="autofit-col autofit-col-expand"
+									className={
+										Util.isEmpty(field.style.width)
+											? "autofit-col autofit-col-expand"
+											: "autofit-col autofit-col-shrink"
+									}
 									style={{ marginBottom: "0" }}
 								>
 									{this.renderMember(field)}

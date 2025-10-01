@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.structureddata;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -47,6 +47,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
+	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXStructuredDataExplorerPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_SEARCH_STRUCTURED_DATA
 	    },
@@ -79,7 +80,7 @@ public class SearchStructuredDataResourceCommand extends BaseMVCResourceCommand{
 		pw.flush();
 		pw.close();
 		
-		System.out.println("--- End LoadEditingStructuredDataResourceCommand" );
+		System.out.println("--- End SearchStructuredDataResourceCommand" );
 	}
 	
 	@Reference

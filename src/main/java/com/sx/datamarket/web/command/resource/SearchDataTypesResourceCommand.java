@@ -1,4 +1,4 @@
-package com.sx.datamarket.web.command.resource.datatype.explorer;
+package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -21,10 +21,12 @@ import com.sx.constant.StationXConstants;
 import com.sx.constant.StationXWebKeys;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataType;
+import com.sx.icecap.model.SetTypeLink;
 import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.security.permission.resource.datatype.DataTypeModelPermissionHelper;
 import com.sx.icecap.security.permission.resource.datatype.DataTypeResourcePermissionHelper;
 import com.sx.icecap.service.DataTypeLocalService;
+import com.sx.icecap.service.SetTypeLinkLocalService;
 import com.sx.icecap.service.TypeStructureLinkLocalService;
 
 import java.io.PrintWriter;
@@ -41,6 +43,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
+	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXDataTypeExplorerPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXDataTypeEditorPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_SEARCH_DATATYPES
@@ -55,6 +58,9 @@ public class SearchDataTypesResourceCommand extends BaseMVCResourceCommand{
 
 		System.out.println("SearchDataTypesResourceCommand");
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+
+		long dataCollectionId = ParamUtil.getLong(resourceRequest,  "dataCollectionId", 0);
+		long dataSetId = ParamUtil.getLong(resourceRequest,  "dataSetId", 0);
 		
 		int start = ParamUtil.getInteger(resourceRequest, StationXWebKeys.START, StationXConstants.DEFAULT_START);
 		int delta = ParamUtil.getInteger(resourceRequest, StationXWebKeys.DELTA, StationXConstants.DEFAULT_DELTA);
@@ -71,6 +77,10 @@ public class SearchDataTypesResourceCommand extends BaseMVCResourceCommand{
 		System.out.println("End: " + end);
 		List<DataType> dataTypeList = null;
 		
+		if(dataSetId > 0) {
+			List<SetTypeLink> setTypeLinkList = 
+			setTypeLinkList = _setTypeLinkLocalService.getSetTypeLinkListBySet(dataSetId);
+		}
 		if(keywords.isEmpty()) {
 			dataTypeList = _dataTypeLocalService.getDataTypesByG_S(groupId, status, start, end);
 		}
@@ -109,6 +119,9 @@ public class SearchDataTypesResourceCommand extends BaseMVCResourceCommand{
 	
 	@Reference
 	private DataTypeLocalService _dataTypeLocalService;
+	
+	@Reference
+	private SetTypeLinkLocalService _setTypeLinkLocalService;
 	
 	@Reference
 	private TypeStructureLinkLocalService _typeStructureLinkLocalService;

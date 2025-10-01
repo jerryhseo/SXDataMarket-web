@@ -57,6 +57,7 @@ class SXActionDropdown extends React.Component {
 							aria-label={this.triggerTitle}
 							symbol={this.symbol ?? "ellipsis-v"}
 							title={this.triggerTitle}
+							style={{ cursor: "pointer" }}
 							spritemap={this.spritemap}
 						/>
 					) : (
@@ -66,6 +67,7 @@ class SXActionDropdown extends React.Component {
 							title={this.triggerTitle}
 							displayType="unstyled"
 							className="btn-secondary"
+							style={{ cursor: "pointer" }}
 							spritemap={this.spritemap}
 						/>
 					)

@@ -21,8 +21,9 @@ import { UnderConstruction } from "../../stationx/common";
 import { DataType, DataTypeStructureLink, SXDataTypeStructureLink } from "../DataType/datatype";
 import { SXLabeledText } from "../../stationx/form";
 import { SXPortletWindow, Workbench } from "../DataWorkbench/workbench";
+import SXBaseVisualizer from "../../stationx/visualizer";
 
-class DataStructureBuilder extends React.Component {
+class DataStructureBuilder extends SXBaseVisualizer {
 	rerenderProperties = [
 		ParamProperty.DEFINITION,
 		ParamProperty.DISABLED,
@@ -78,20 +79,6 @@ class DataStructureBuilder extends React.Component {
 		super(props);
 
 		//console.log("DataStructureBuilder props: ", props);
-		this.namespace = props.namespace;
-		this.baseRenderURL = props.baseRenderURL;
-		this.baseResourceURL = props.baseResourceURL;
-		this.languageId = props.languageId;
-		this.availableLanguageIds = props.availableLanguageIds;
-		this.permissions = props.permissions;
-		this.spritemap = props.spritemapPath;
-		this.portletId = props.portletId;
-
-		this.permissions = props.permissions;
-
-		this.redirectURLs = props.redirectURLs;
-		//this.workbench = props.workbench;
-		this.params = props.params;
 
 		this.typeStructureLink = null;
 		this.dataType = null;
@@ -100,7 +87,7 @@ class DataStructureBuilder extends React.Component {
 		this.dataTypeId = this.params.dataTypeId ?? 0;
 		this.dataStructureId = this.params.dataStructureId ?? 0;
 
-		this.editPhase = props.params.editPhase ?? EditStatus.ADD;
+		this.editPhase = this.params.editPhase ?? EditStatus.ADD;
 
 		this.formIds = {
 			dsbuilderId: this.namespace + "dataStructureBuilder",
@@ -564,6 +551,18 @@ class DataStructureBuilder extends React.Component {
 		});
 	};
 
+	listenerComponentWillUnmount = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[DataStructureBuilder] listenerComponentWillUnmount rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[DataStructureBuilder] listenerComponentWillUnmount received: ", dataPacket);
+		this.componentWillUnmount();
+	};
+
 	componentDidMount() {
 		this.loadDataStructure();
 
@@ -579,6 +578,7 @@ class DataStructureBuilder extends React.Component {
 	}
 
 	componentWillUnmount() {
+		console.log("[DataStructureBuilder] componentWillUnmount");
 		Event.off(Event.SX_PARAMETER_SELECTED, this.parameterSelectedHandler);
 		Event.off(Event.SX_PARAM_TYPE_CHANGED, this.parameterTypeChangedHandler);
 		Event.off(Event.SX_COPY_PARAMETER, this.copyParameterHandler);
