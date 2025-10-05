@@ -539,6 +539,7 @@ class SXSelectOptionBuilder extends React.Component {
 	constructor(props) {
 		super(props);
 
+		console.log("SXSelectOptionBuilder constructor: ", props);
 		this.dataStructure = props.dataStructure;
 		this.workingParam = props.workingParam;
 
@@ -701,7 +702,7 @@ class SXSelectOptionBuilder extends React.Component {
 			return;
 		}
 
-		//console.log("SXSelectOptionBuilder listenerPopActionClicked: ", dataPacket);
+		console.log("SXSelectOptionBuilder listenerPopActionClicked: ", dataPacket, this.workingParam);
 		switch (dataPacket.action) {
 			case "copy": {
 				this.copyOption(dataPacket.data);
@@ -724,6 +725,8 @@ class SXSelectOptionBuilder extends React.Component {
 				break;
 			}
 		}
+
+		this.actionRefreshKey = Util.randomKey();
 	};
 
 	componentDidMount() {
@@ -783,6 +786,7 @@ class SXSelectOptionBuilder extends React.Component {
 		this.workingOption = this.selectedOption = this.workingParam.copyOption(index);
 
 		this.workingParam.fireRefreshPreview();
+
 		this.forceUpdate();
 	};
 
@@ -806,6 +810,7 @@ class SXSelectOptionBuilder extends React.Component {
 		this.workingParam.removeOption(index);
 		this.fieldOptionLabel.setValue({ value: {} });
 		this.fieldOptionValue.setValue({ value: "" });
+		//console.log("removeOption: ", this.fieldOptionLabel, this.fieldOptionValue);
 		this.fieldOptionLabel.refreshKey();
 		this.fieldOptionValue.refreshKey();
 
@@ -846,6 +851,11 @@ class SXSelectOptionBuilder extends React.Component {
 			return;
 		}
 
+		//console.log("handleOptionSelected: ", option, this.selectedOption);
+		if (option === this.selectedOption) {
+			return;
+		}
+
 		this.fieldOptionLabel.setValue({ value: option.label });
 		this.fieldOptionLabel.refreshKey();
 		this.fieldOptionValue.setValue({ value: option.value });
@@ -862,7 +872,8 @@ class SXSelectOptionBuilder extends React.Component {
 			"SXSelectOptionBuilder render: ",
 			this.selectedOption,
 			Util.isNotEmpty(this.selectedOption),
-			!(this.fieldOptionLabel.hasValue() && this.fieldOptionValue.hasValue())
+			!(this.fieldOptionLabel.hasValue() && this.fieldOptionValue.hasValue()),
+			this.workingParam.options
 		);
 		*/
 
@@ -924,36 +935,32 @@ class SXSelectOptionBuilder extends React.Component {
 							}
 						}}
 					</Head>
-					<Body defaultItems={this.workingParam.options}>
+					<Body items={this.workingParam.options}>
 						{(option, index) => {
 							let actionItems = [
 								{
 									id: "copy", //
 									name: Util.translate("copy"),
-									symbol: "copy",
-									action: this.copyOption
+									symbol: "copy"
 								},
 								{
 									id: "delete", //
 									name: Util.translate("delete"),
-									symbol: "times",
-									action: this.removeOption
+									symbol: "times"
 								}
 							];
 							if (index > 0) {
 								actionItems.push({
 									id: "up",
 									name: Util.translate("moveUp"),
-									symbol: "order-arrow-up",
-									action: this.moveOptionUp
+									symbol: "order-arrow-up"
 								});
 							}
 							if (index < this.workingParam.options.length - 1) {
 								actionItems.push({
 									id: "down",
 									name: Util.translate("moveDown"),
-									symbol: "order-arrow-down",
-									action: this.moveOptionDown
+									symbol: "order-arrow-down"
 								});
 							}
 
@@ -963,6 +970,7 @@ class SXSelectOptionBuilder extends React.Component {
 								<Row
 									key={option.value}
 									onClick={(e) => {
+										e.stopPropagation();
 										this.handleOptionSelected(option);
 									}}
 								>
@@ -979,7 +987,7 @@ class SXSelectOptionBuilder extends React.Component {
 									<Cell textAlign="center">
 										<div style={{ backgroundColor: selected ? selectedColor : "inherit" }}>
 											<SXActionDropdown
-												key={this.workingParam.options.length - index}
+												key={this.actionRefreshKey}
 												namespace={this.namespace}
 												formId={this.formId}
 												actionItems={actionItems}

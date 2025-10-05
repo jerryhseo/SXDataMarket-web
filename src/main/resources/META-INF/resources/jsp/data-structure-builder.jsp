@@ -51,9 +51,6 @@
 		portletId: "<%=WebPortletKey.SXDataStructureBuilderPortlet%>",
 		portletParams: {
 			namespace: '<portlet:namespace/>',
-			dafaultLanguageId: '<%= defaultLocale.toLanguageTag() %>',
-			languageId: '<%= locale.toLanguageTag() %>',
-			availableLanguageIds: '<%= String.join( ",", locales.toArray(new String[0]) ) %>'.split(','), 
 			portalURL: '<%= portalURL %>', 
 			contextPath: '<%= contextPath %>',
 			spritemapPath: '<%= contextPath %>/asset/images/icons.svg',
@@ -63,18 +60,9 @@
 			baseRenderURL: '<%=  baseRenderURL %>',
 			baseActionURL: '<%=  baseActionURL %>',
 			baseResourceURL: '<%=  baseResourceURL %>',
-			redirectURLs:{
-				workbenchURL: '<%= workbenchURL %>',
-				dataTypeEditorURL:"",
-				sdeManifestURL:"<%= sdeManifestURL %>",
-				backURL:'<%= currentURL %>',
-			},
 			permissions: JSON.parse('<%= permissions.toJSONString() %>'),
-			workbench:{
-				url: '<%= workbenchURL %>',
-			 	namespace: '<%= "_"+workbenchId+"_" %>',
-				portletId: '<%= workbenchId %>',
-			},
+			workbenchNamespace: '<%=workbenchNamespace %>',
+			workbenchPortletId: '<%= workbenchId %>',
 			params: { // initial parameters
 				dataTypeId: JSON.parse('<%= String.valueOf(dataTypeId) %>'),
 				dataStructureId: JSON.parse('<%= String.valueOf(dataStructureId) %>')

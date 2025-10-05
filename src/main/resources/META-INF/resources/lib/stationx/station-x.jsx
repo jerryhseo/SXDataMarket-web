@@ -24,7 +24,7 @@ export const LiferayProperty = {
 
 export const DataTypeProperty = {
 	ID: "dataTypeId",
-	NAME: "dataTypeName",
+	CODE: "dataTypeCode",
 	VERSION: "dataTypeVersion",
 	EXTENSION: "extension",
 	DISPLAY_NAME: "displayName",
@@ -283,6 +283,7 @@ export const ResourceIds = {
 	LOAD_DATATYPES: "/ajax/DataType/load-datatypes",
 	LOAD_DATATYPE: "/ajax/DataType/load-datatype",
 	LOAD_STRUCTURED_DATA_EDITING: "/ajax/StructuredData/load-editing-data",
+	SSAVE_DATACOLLECTION: "/ajax/DataCollection/save-datacollection",
 	SAVE_DATASTRUCTURE: "/ajax/DataStructure/save-datastructure",
 	SAVE_TYPE_STRUCTURE_LINK: "/ajax/DataType/save-type-structure-link",
 	SEARCH_DATATYPES: "/ajax/DataType/search-datatypes",
@@ -617,6 +618,7 @@ export const Event = {
 	SX_LOAD_FILE: "SX_LOAD_FILE",
 	SX_LOAD_HTML: "SX_LOAD_HTML",
 	SX_OK_CLICKED: "SX_OK_CLICKED",
+	SX_OPEN_PORTLET_WINDOW: "SX_OPEN_PORTLET_WINDOW",
 	SX_PORT_SELECTED: "SX_PORT_SELECTED",
 	SX_PORT_STATUS_CHANGED: "SX_PORT_STATUS_CHANGED",
 	SX_READ_LOCAL_FILE: "SX_READ_LOCAL_FILE",

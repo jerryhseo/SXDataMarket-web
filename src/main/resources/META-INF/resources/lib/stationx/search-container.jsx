@@ -249,12 +249,10 @@ export class SXManagementToolbar extends React.Component {
 									placeholder={Util.translate("search-keywords")}
 									onChange={(e) => this.handleSearchKeywordsChanged(e.target.value)}
 									type="text"
+									className="input-group-inset input-group-inset-after"
 								/>
 							</ClayInput.GroupItem>
-							<ClayInput.GroupItem
-								shrink
-								append
-							>
+							<div className="input-group-inset-item input-group-inset-item-after">
 								<ClayButtonWithIcon
 									aria-label={Util.translate("search")}
 									title={Util.translate("search")}
@@ -264,7 +262,7 @@ export class SXManagementToolbar extends React.Component {
 									symbol="search"
 									className="form-control"
 								/>
-							</ClayInput.GroupItem>
+							</div>
 						</ClayInput.Group>
 					</Toolbar.Item>
 				)}

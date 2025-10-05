@@ -210,7 +210,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 	}
 
 	renderPanelContent = () => {
-		console.log("renderPanelContent: ", this.state.workingParam);
+		//console.log("renderPanelContent: ", this.state.workingParam);
 
 		switch (this.state.panelStep) {
 			case 0: {

@@ -883,34 +883,6 @@ export class Parameter {
 		return !!(this.validation && this.validation[section]);
 	}
 
-	/*
-	enableValidation(section, enable) {
-		if (enable) {
-			switch (section) {
-				case ValidationKeys.REQUIRED: {
-					this.validation.required = {
-						value: true
-					};
-					break;
-				}
-				case ValidationKeys.CUSTOM: {
-					this.validation.custom = 'function(value){\n return {\nmessage:"",\nerrorClass:"has-error"};\n}';
-					break;
-				}
-				default: {
-					this.validation[section] = {};
-				}
-			}
-		} else {
-			delete this.validation[section];
-		}
-	}
-
-	toggleValidationSection(section) {
-		return this.enableValidation(section, !this.checkValidationEnabled(section));
-	}
-		*/
-
 	getValidationValue(section, valueProp, locale) {
 		if (this.checkValidationEnabled(section)) {
 			switch (valueProp) {
@@ -934,52 +906,6 @@ export class Parameter {
 			}
 		}
 	}
-
-	/*
-	setValidationValue(section, valueProp, value, locale) {
-		if (this.checkValidationEnabled(section)) {
-			switch (valueProp) {
-				case "message": {
-					if (Util.isEmpty(this.validation[section].message)) {
-						this.validation[section].message = {};
-					}
-
-					if (Util.isNotEmpty(value)) {
-						if (locale) {
-							this.validation[section].message[locale] = value;
-						} else {
-							this.validation[section].message = value;
-						}
-					} else {
-						if (locale) {
-							delete this.validation[section].message[locale];
-						} else {
-							delete this.validation[section].message;
-						}
-					}
-
-					break;
-				}
-				case "value":
-				case "boundary": {
-					if (Util.isNotEmpty(value)) {
-						this.validation[section][valueProp] = value;
-					} else {
-						delete this.validation[section][valueProp];
-					}
-					break;
-				}
-				default: {
-					if (Util.isNotEmpty(value)) {
-						this.validation[section] = value;
-					} else {
-						delete this.validation[section];
-					}
-				}
-			}
-		}
-	}
-		*/
 
 	convertToSelectItem() {
 		return {
@@ -1008,6 +934,7 @@ export class Parameter {
 	}
 
 	setValue({ value, cellIndex = null, validate = false }) {
+		//console.log("setValue: ", this.label, this.value, value);
 		if (this.isGridCell()) {
 			if (!this.value) {
 				this.value = [];
@@ -2356,14 +2283,13 @@ export class SelectParameter extends Parameter {
 	}
 
 	getOption(index) {
-		return this.option ? this.options[index] : {};
+		return this.options ? this.options[index] : {};
 	}
 
 	copyOption(index) {
 		const insertPlace = index + 1;
 		const newOption = { ...this.getOption(index), value: "" };
 		this.options = [...this.options.slice(0, insertPlace), newOption, ...this.options.slice(insertPlace)];
-
 		this.refreshKey();
 		return newOption;
 	}

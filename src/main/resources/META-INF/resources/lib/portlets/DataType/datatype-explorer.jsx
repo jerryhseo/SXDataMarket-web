@@ -25,6 +25,8 @@ import SXActionDropdown from "../../stationx/dropdown";
 import { SXFreezeIcon, SXLinkIcon, SXVerifyIcon } from "../../stationx/icon";
 import SXBaseVisualizer, { Visualizer } from "../../stationx/visualizer";
 import { Workbench } from "../DataWorkbench/workbench";
+import { SXInputGroup } from "../../stationx/form";
+import { StringParameter } from "../../stationx/parameter";
 
 class DataTypeExplorer extends SXBaseVisualizer {
 	constructor(props) {

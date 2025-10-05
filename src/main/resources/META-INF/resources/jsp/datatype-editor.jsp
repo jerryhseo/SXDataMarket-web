@@ -56,11 +56,6 @@
 				baseActionURL: '<%=  baseActionURL %>',
 				baseResourceURL: '<%=  baseResourceURL %>',
 				permissions: JSON.parse('<%= permissions.toJSONString() %>'),
-				redirectURLs:{
-					workbenchURL: '<%= workbenchURL %>',
-					dataTypeEditorURL:"",
-					backURL:'<%= currentURL %>',
-				},
 				workbenchNamespace: '<%= workbenchNamespace %>',
 				workbenchPortletId: '<%= workbenchId %>',
 				params: { // initial parameters

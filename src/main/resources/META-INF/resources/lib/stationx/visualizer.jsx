@@ -1,5 +1,5 @@
 import React from "react";
-import { Event } from "./station-x";
+import { Event, LoadingStatus } from "./station-x";
 import { Workbench } from "../portlets/DataWorkbench/workbench";
 
 export class Visualizer {
@@ -11,8 +11,6 @@ export class Visualizer {
 
 		this.basicFuncs = basicFuncs;
 	}
-
-	loadData() {}
 
 	fireHandshake() {
 		Event.fire(Event.SX_HANDSHAKE, this.namespace, this.workbenchNamespace, {
@@ -42,16 +40,10 @@ class SXBaseVisualizer extends React.Component {
 		this.userId = props.userId;
 
 		this.languageId = SXSystem.getLanguageId();
-		this.languageId = SXSystem.getDefaultLanguageId();
+		this.defaultLanguageId = SXSystem.getDefaultLanguageId();
 		this.availableLanguageIds = SXSystem.getAvailableLanguages();
 
 		this.params = props.params;
-	}
-
-	detachEventListeners(listeners) {
-		listeners.forEach((listener) => {
-			Event.off(listener.event, listener.func);
-		});
 	}
 
 	fireHandshake() {
@@ -71,20 +63,25 @@ class SXBaseVisualizer extends React.Component {
 		this.componentWillUnmount();
 	}
 
-	fireRequestData({ requestId, params }) {
-		Event.fire(Event.SX_REQUEST_DATA, this.namespace, this.workbenchNamespace, {
+	fireOpenPortletWindow({ portletName, params = {}, windowTitle }) {
+		Event.fire(Event.SX_OPEN_PORTLET_WINDOW, this.namespace, this.workbenchNamespace, {
 			targetFormId: this.workbenchId,
-			requestId: requestId,
+			portletName: portletName,
+			windowTitle: windowTitle,
 			params: params
 		});
 	}
 
-	fireRequest({ requestId, params }) {
+	fireRequest({ requestId, params, refresh = true }) {
 		Event.fire(Event.SX_REQUEST, this.namespace, this.workbenchNamespace, {
 			targetFormId: this.workbenchId,
 			requestId: requestId,
 			params: params
 		});
+
+		if (refresh) {
+			this.setState({ loadingStatus: LoadingStatus.PENDING });
+		}
 	}
 
 	redirectTo({ portletName, params = {} }) {

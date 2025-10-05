@@ -73,10 +73,6 @@ public class LoadEditingStructuredDataResourceCommand extends BaseMVCResourceCom
 		
 		JSONObject result = _structuredDataLocalService.getStructuredDataWithInfo(
 														structuredDataId, 
-														dataCollectionId, 
-														dataSetId, 
-														dataTypeId, 
-														dataStructureId, 
 														themeDisplay.getLocale());
 		
 		System.out.println("Result: " + result.toString(4));

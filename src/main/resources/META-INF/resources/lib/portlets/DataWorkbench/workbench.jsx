@@ -56,12 +56,21 @@ export class Workbench {
 	static RequestIDs = {
 		addDataType: "addDataType",
 		checkDataTypeUnique: "checkDataTypeUnique",
+		checkDataStructureUnique: "checkDataStructureUnique",
+		checkDataStructureCodeUnique: "checkDataStructureCodeUnique",
 		deleteDataTypes: "deleteDataTypes",
 		deleteTypeStructureLink: "deleteTypeStructureLink",
+		deleteTypeStructureLinkAndImportDataStructure: "deleteTypeStructureLinkAndImportDataStructure",
 		importDataType: "importDataType",
 		importDataStructure: "importDataStructure",
 		loadDataStructure: "loadDataStructure",
+		loadDataStructureWithInfo: "loadDataStructureWithInfo",
 		loadDataType: "loadDataType",
+		loadStructuredData: "loadStructuredData",
+		removeLinkInfoAndRedirectToBuilder: "removeLinkInfoAndRedirectToBuilder",
+		saveDataStructure: "saveDataStructure",
+		saveTypeStructureLink: "saveTypeStructureLink",
+		saveLinkInfoAndRedirectToBuilder: "saveLinkInfoAndRedirectToBuilder",
 		searchDataTypes: "searchDataTypes",
 		updateDataType: "updateDataType"
 	};
@@ -188,7 +197,11 @@ export class Workbench {
 		};
 	};
 
-	openPortletWindow = async ({ portletName, title, params }) => {
+	getWindowMap() {
+		return Object.values(this.windows).map((win) => win.windowContent);
+	}
+
+	openPortletWindow = async ({ portletName, windowTitle, params }) => {
 		let portletInstance = await this.createPortletInfo({
 			resourceId: ResourceIds.CREATE_PORTLET_INSTANCE,
 			portletName: portletName
@@ -216,7 +229,7 @@ export class Workbench {
 				portletId={portletInstance.portletId}
 				workbenchNamespace={this.namespace}
 				workbenchId={this.workbenchId}
-				title={title}
+				title={windowTitle}
 				content={portletContent}
 				windowId={this.increasedWindowId}
 				spritemap={this.spritemap}
@@ -311,11 +324,6 @@ export class Workbench {
 		});
 
 		return url;
-	};
-
-	fetchData = async (resourceId, params) => {
-		const resourceURL = this.createResourceURL({ resourceId: resourceId });
-		console.log("fetchData: ", resourceURL);
 	};
 
 	ajax = async ({ url, params = {}, type = "post", dataType = "json" }) => {
@@ -479,11 +487,18 @@ export class Workbench {
 				resourceId = ResourceIds.CHECK_DATATYPE_UNIQUE;
 				break;
 			}
+			case Workbench.RequestIDs.checkDataStructureUnique:
+			case Workbench.RequestIDs.checkDataStructureCodeUnique: {
+				resourceId = ResourceIds.CHECK_DATASTRUCTURE_UNIQUE;
+				break;
+			}
 			case Workbench.RequestIDs.deleteDataTypes: {
 				resourceId = ResourceIds.DELETE_DATATYPES;
 				break;
 			}
-			case Workbench.RequestIDs.deleteTypeStructureLink: {
+			case Workbench.RequestIDs.deleteTypeStructureLink:
+			case Workbench.RequestIDs.removeLinkInfoAndRedirectToBuilder:
+			case Workbench.RequestIDs.deleteTypeStructureLinkAndImportDataStructure: {
 				resourceId = ResourceIds.DELETE_TYPE_STRUCTURE_LINK;
 				break;
 			}
@@ -497,12 +512,30 @@ export class Workbench {
 				resourceId = ResourceIds.LOAD_DATASTRUCTURE;
 				break;
 			}
+			case Workbench.RequestIDs.saveLinkInfoAndRedirectToBuilder:
+			case Workbench.RequestIDs.saveTypeStructureLink: {
+				resourceId = ResourceIds.SAVE_TYPE_STRUCTURE_LINK;
+				break;
+			}
 			case Workbench.RequestIDs.searchDataTypes: {
 				resourceId = ResourceIds.SEARCH_DATATYPES;
 				break;
 			}
 			case Workbench.RequestIDs.updateDataType: {
 				resourceId = ResourceIds.UPDATE_DATATYPE;
+				break;
+			}
+			case Workbench.RequestIDs.loadDataStructure:
+			case Workbench.RequestIDs.loadDataStructureWithInfo: {
+				resourceId = ResourceIds.LOAD_DATASTRUCTURE;
+				break;
+			}
+			case Workbench.RequestIDs.saveDataStructure: {
+				resourceId = ResourceIds.SAVE_DATASTRUCTURE;
+				break;
+			}
+			case Workbench.RequestIDs.loadStructuredData: {
+				resourceId = ResourceIds.LOAD_STRUCTURED_DATA_EDITING;
 				break;
 			}
 		}

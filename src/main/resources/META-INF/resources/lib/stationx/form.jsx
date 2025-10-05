@@ -335,6 +335,7 @@ export class SXAutoComplete extends React.Component {
 								filterKey={this.itemFilterKey}
 								value={this.state.value}
 								onChange={this.handleInputChaned}
+								className="input-group-inset input-group-inset-after"
 							>
 								{(item) => {
 									return (
@@ -350,10 +351,7 @@ export class SXAutoComplete extends React.Component {
 								}}
 							</Autocomplete>
 						</ClayInput.GroupItem>
-						<ClayInput.GroupItem
-							shrink
-							append
-						>
+						<div className="input-group-inset-item input-group-inset-item-after">
 							<ClayButtonWithIcon
 								aria-labelledby={this.label}
 								title={this.label}
@@ -364,7 +362,7 @@ export class SXAutoComplete extends React.Component {
 								borderless
 								onClick={(e) => this.handleSelectionSubmit()}
 							/>
-						</ClayInput.GroupItem>
+						</div>
 					</ClayInput.Group>
 				</div>
 			</div>
@@ -613,6 +611,8 @@ class BaseParameterComponent extends React.Component {
 	cellIndex = null;
 	focusRef = null;
 
+	disabledControlStyle = {};
+
 	constructor(props) {
 		super(props);
 
@@ -626,6 +626,10 @@ class BaseParameterComponent extends React.Component {
 		this.cellIndex = props.cellIndex;
 
 		this.focusRef = createRef(null);
+
+		this.disabledControlStyle = this.parameter.disabled
+			? { backgroundColor: "#fff", borderColor: "#e1ebf6", color: "#7b7c85" }
+			: {};
 	}
 
 	refreshHandler = (event) => {
@@ -702,13 +706,13 @@ export class SXInputGroup extends BaseParameterComponent {
 				<ClayInput.GroupItem>
 					<ClayInput className="input-group-inset input-group-inset-after"></ClayInput>
 				</ClayInput.GroupItem>
-				<span className="input-group-inset-item input-group-inset-item-after">
+				<div className="input-group-inset-item input-group-inset-item-after">
 					<ClayButtonWithIcon
 						displayType="unstyled"
 						symbol="search"
 						spritemap={this.spritemap}
 					/>
-				</span>
+				</div>
 			</ClayInput.Group>
 		);
 	}
@@ -764,7 +768,7 @@ export class SXInput extends BaseParameterComponent {
 				}}
 				onBlur={(e) => this.fireValueChanged(e.target.value)}
 				sizing="sm"
-				style={{ border: "none" }}
+				style={{ ...this.disabledControlStyle, border: "none" }}
 				ref={this.focusRef}
 			/>
 		);
@@ -789,7 +793,7 @@ export class SXInput extends BaseParameterComponent {
 						}}
 						onBlur={(e) => this.fireValueChanged(e.target.value)}
 						sizing="sm"
-						style={{ border: "none" }}
+						style={{ ...this.disabledControlStyle, border: "none" }}
 						ref={this.focusRef}
 					/>
 				</td>
@@ -827,6 +831,7 @@ export class SXInput extends BaseParameterComponent {
 							onBlur={(e) => this.fireValueChanged(e.target.value)}
 							ref={this.focusRef}
 							sizing="sm"
+							style={{ ...this.disabledControlStyle }}
 						/>
 					</ClayInput.GroupItem>
 					{!!this.parameter.postfix && this.parameter.renderPostfix()}
@@ -836,6 +841,7 @@ export class SXInput extends BaseParameterComponent {
 	}
 
 	render() {
+		//this.disabledControlStyle = this.parameter.disabled ? { backgroundColor: "#fff", borderColor: "#e1ebf6" } : {};
 		if (this.displayType == Parameter.DisplayTypes.TABLE_ROW) {
 			return this.renderTableRow();
 		} else {
@@ -867,7 +873,7 @@ export class SXLocalizedInput extends BaseParameterComponent {
 
 		this.initValue = { ...this.parameter.getValue(this.cellIndex) };
 		this.state = {
-			selectedLang: props.parameter.languageId,
+			selectedLang: this.parameter.languageId,
 			translation: this.parameter.getTranslation(this.parameter.languageId, this.cellIndex)
 		};
 
@@ -894,98 +900,125 @@ export class SXLocalizedInput extends BaseParameterComponent {
 		this.parameter.fireValueChanged(this.cellIndex);
 	}
 
+	getTranslatedArray() {
+		const translations = this.parameter.getTranslations();
+
+		const translated = [];
+		Object.keys(translations).forEach((key) => {
+			if (key !== this.state.selectedLang) {
+				translated.push([key, translations[key]]);
+			}
+		});
+
+		return translated;
+	}
+
 	getClayUI(tagId, tagName) {
+		const translated = this.getTranslatedArray();
+
 		return (
-			<ClayInput.Group>
-				{this.parameter.renderPrefix()}
-				<ClayInput.GroupItem>
-					<ClayInput
-						component={this.parameter.multipleLine ? "textarea" : "input"}
-						type="text"
-						id={tagId}
-						name={tagName}
-						value={this.state.translation}
-						placeholder={this.parameter.getPlaceholder(this.state.selectedLang)}
-						disabled={this.parameter.getDisabled(this.cellIndex)}
-						onChange={(e) => this.handleChange(e.target.value)}
-						onBlur={(e) => this.fireValueChanged(e.target.value)}
-						ref={this.focusRef}
-						sizing="sm"
-					/>
-				</ClayInput.GroupItem>
-				{this.parameter.renderPostfix()}
-				<ClayInput.GroupItem shrink>
-					<DropDown
-						trigger={
-							<Button
-								displayType="secondary"
-								className="btn-monospaced"
-								disabled={this.parameter.getDisabled(this.cellIndex)}
-								size="sm"
-							>
-								<Icon
-									symbol={this.state.selectedLang.toLowerCase()}
-									spritemap={this.spritemap}
-								/>
-								<span className="btn-section">{this.state.selectedLang}</span>
-							</Button>
-						}
-						closeOnClick={true}
-					>
-						<DropDown.ItemList items={this.parameter.languageFlags}>
-							{(flag) => {
-								let displayType, label;
-								const translations = this.parameter.getTranslations(this.cellIndex);
+			<>
+				<ClayInput.Group>
+					{this.parameter.renderPrefix()}
+					<ClayInput.GroupItem>
+						<ClayInput
+							component={this.parameter.multipleLine ? "textarea" : "input"}
+							type="text"
+							id={tagId}
+							name={tagName}
+							value={this.state.translation}
+							placeholder={this.parameter.getPlaceholder(this.state.selectedLang)}
+							disabled={this.parameter.getDisabled(this.cellIndex)}
+							onChange={(e) => this.handleChange(e.target.value)}
+							onBlur={(e) => this.fireValueChanged(e.target.value)}
+							ref={this.focusRef}
+							sizing="sm"
+						/>
+					</ClayInput.GroupItem>
+					{this.parameter.renderPostfix()}
+					<ClayInput.GroupItem shrink>
+						<DropDown
+							trigger={
+								<Button
+									displayType="secondary"
+									className="btn-monospaced"
+									disabled={this.parameter.getDisabled(this.cellIndex)}
+									size="sm"
+								>
+									<Icon
+										symbol={this.state.selectedLang.toLowerCase()}
+										spritemap={this.spritemap}
+									/>
+									<span className="btn-section">{this.state.selectedLang}</span>
+								</Button>
+							}
+							closeOnClick={true}
+						>
+							<DropDown.ItemList items={this.parameter.languageFlags}>
+								{(flag) => {
+									let displayType, label;
+									const translations = this.parameter.getTranslations(this.cellIndex);
 
-								if (translations[flag.name]) {
-									displayType = "success";
-									label = Util.translate("translated");
-								} else {
-									displayType = "warning";
-									label = Util.translate("not-translated");
-								}
+									if (translations[flag.name]) {
+										displayType = "success";
+										label = Util.translate("translated");
+									} else {
+										displayType = "warning";
+										label = Util.translate("not-translated");
+									}
 
-								return (
-									<DropDown.Item
-										key={flag.name}
-										onClick={() => {
-											console.log(
-												"Locealized Dropdown: ",
-												flag.name,
-												this.parameter.value,
-												this.parameter.getTranslation(flag.name, this.cellIndex)
-											);
-											this.setState({
-												selectedLang: flag.name,
-												translation: this.parameter.getTranslation(flag.name, this.cellIndex)
-											});
-										}}
-										active={this.state.selectedLang == flag.name}
-									>
-										<Icon
-											spritemap={this.spritemap}
-											symbol={flag.symbol}
-											style={{
-												marginRight: "5px"
+									return (
+										<DropDown.Item
+											key={flag.name}
+											onClick={() => {
+												console.log(
+													"Locealized Dropdown: ",
+													flag.name,
+													this.parameter.value,
+													this.parameter.getTranslation(flag.name, this.cellIndex)
+												);
+												this.setState({
+													selectedLang: flag.name,
+													translation: this.parameter.getTranslation(
+														flag.name,
+														this.cellIndex
+													)
+												});
 											}}
-										/>
-										{flag.name}
-										<ClayLabel
-											displayType={displayType}
-											spritemap={this.spritemap}
-											style={{
-												float: "right"
-											}}
+											active={this.state.selectedLang == flag.name}
 										>
-											{label}
-										</ClayLabel>
-									</DropDown.Item>
-								);
-							}}
-						</DropDown.ItemList>
-					</DropDown>
-				</ClayInput.GroupItem>
-			</ClayInput.Group>
+											<Icon
+												spritemap={this.spritemap}
+												symbol={flag.symbol}
+												style={{
+													marginRight: "5px"
+												}}
+											/>
+											{flag.name}
+											<ClayLabel
+												displayType={displayType}
+												spritemap={this.spritemap}
+												style={{
+													float: "right"
+												}}
+											>
+												{label}
+											</ClayLabel>
+										</DropDown.Item>
+									);
+								}}
+							</DropDown.ItemList>
+						</DropDown>
+					</ClayInput.GroupItem>
+				</ClayInput.Group>
+				{translated.length > 0 && (
+					<div style={{ fontSize: "0.7rem", fontWeight: "300", paddingLeft: "1.5rem" }}>
+						{translated.map((trans) => {
+							return <div key={trans[0]}>{trans[0] + ": " + trans[1]}</div>;
+						})}
+					</div>
+				)}
+			</>
 		);
 	}
 
@@ -1012,6 +1045,7 @@ export class SXLocalizedInput extends BaseParameterComponent {
 	}
 
 	render() {
+		//console.log("SXLocalizedInput render: ", this.parameter.label, this.parameter.value);
 		return (
 			<div
 				className={this.parameter.getClassName(this.className, this.cellIndex)}

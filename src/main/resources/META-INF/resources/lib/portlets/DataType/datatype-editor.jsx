@@ -111,6 +111,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		super(props);
 
 		//console.log("DataTypeEditor props: ", props);
+		console.log("LanguageID: ", Liferay.ThemeDisplay.getLanguageId(), SXSystem.getLanguageId(), this.languageId);
 		this.dirty = false;
 
 		this.dataType = new DataType(this.languageId, this.availableLanguageIds);
@@ -119,6 +120,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.dataStructure = new DataStructure(this.namespace, this.formId, this.languageId, this.availableLanguageIds);
 
 		this.loadingFailMessage = "";
+		this.prevVersion = "";
 
 		this.dataTypeCode = Parameter.createParameter(
 			this.namespace,
@@ -127,7 +129,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 			this.availableLanguageIds,
 			ParamType.STRING,
 			{
-				paramCode: DataTypeProperty.NAME,
+				paramCode: DataTypeProperty.CODE,
 				displayName: Util.getTranslationObject(this.languageId, "datatype-code"),
 				required: true,
 				placeholder: Util.getTranslationObject(this.languageId, "datatype-code"),
@@ -403,7 +405,8 @@ class DataTypeEditor extends SXBaseVisualizer {
 					requestId: Workbench.RequestIDs.importDataStructure,
 					params: {
 						dataStructureId: this.importDataStructureId
-					}
+					},
+					refresh: true
 				});
 
 				this.setState({ loadingStatus: LoadingStatus.PENDING });
@@ -441,39 +444,23 @@ class DataTypeEditor extends SXBaseVisualizer {
 				loadAvailableVisualizers: true,
 				loadDataTypeAutoCompleteItems: true,
 				loadDataStructureAutoCompleteItems: true
-			}
+			},
+			refresh: true
 		});
 
 		this.setState({ loadingStatus: LoadingStatus.PENDING });
-	};
-
-	listenerLoadData = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataTypeEditor] listenerLoadData rejected: ", dataPacket);
-			return;
-		}
-
-		console.log("[DataTypeEditor] listenerLoadData received: ", dataPacket, this.state.loadingStatus);
-
-		/*
-		this.setState({
-			loadingStatus: dataPacket.status,
-			searchContainerKey: Util.randomKey()
-		});
-		*/
 	};
 
 	listenerResponce = (event) => {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("listenerResponce event rejected: ", dataPacket);
+			console.log("[DataTypeEditor] listenerResponce rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("listenerResponce received: ", dataPacket);
+		console.log("[DataTypeEditor] listenerResonse: ", dataPacket);
+
 		const state = {};
 		switch (dataPacket.requestId) {
 			case Workbench.RequestIDs.checkDataTypeUnique: {
@@ -492,6 +479,9 @@ class DataTypeEditor extends SXBaseVisualizer {
 				} else {
 					this.dataType.dataTypeCode = dataTypeCode;
 					this.dataType.dataTypeVersion = dataTypeVersion;
+
+					//If code is unique return here to prevent refresh.
+					return;
 				}
 
 				break;
@@ -512,12 +502,42 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 				break;
 			}
+			case Workbench.RequestIDs.deleteTypeStructureLinkAndImportDataStructure: {
+				this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
+				this.dataStructure = new DataStructure(
+					this.namespace,
+					this.formId,
+					this.languageId,
+					this.availableLanguageIds
+				);
+
+				this.importDataStructure();
+
+				break;
+			}
+			case Workbench.RequestIDs.removeLinkInfoAndRedirectToBuilder: {
+				this.redirectToStructureBuilder();
+
+				break;
+			}
 			case Workbench.RequestIDs.deleteTypeStructureLink: {
-				console.log("[DataTypeEditor] listenerResonse: ", dataPacket);
+				this.structureLink.dirty = false;
+
+				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dlgBody = Util.translate("datatype-structure-link-info-deleted", this.structureLink.dataTypeId);
+				this.setState({ infoDialog: true });
+
 				break;
 			}
 			case Workbench.RequestIDs.loadDataType: {
 				this.loadDataType(dataPacket.data);
+
+				break;
+			}
+			case Workbench.RequestIDs.deleteDataTypes: {
+				this.redirectTo({
+					portletName: PortletKeys.DATATYPE_EXPLORER
+				});
 
 				break;
 			}
@@ -528,6 +548,27 @@ class DataTypeEditor extends SXBaseVisualizer {
 			}
 			case Workbench.RequestIDs.importDataStructure: {
 				this.importDataStructure(dataPacket.data);
+
+				break;
+			}
+			case Workbench.RequestIDs.saveLinkInfoAndRedirectToBuilder: {
+				this.structureLink.dirty = false;
+
+				this.redirectToStructureBuilder();
+				break;
+			}
+			case Workbench.RequestIDs.saveTypeStructureLink: {
+				this.structureLink.dirty = false;
+				this.structureLink.fromDB = true;
+
+				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dlgBody = Util.translate(
+					"datatype-structure-link-info-saved",
+					this.structureLink.dataTypeId,
+					this.structureLink.dataStructureId
+				);
+
+				state.infoDialog = true;
 
 				break;
 			}
@@ -559,7 +600,6 @@ class DataTypeEditor extends SXBaseVisualizer {
 		Event.on(Event.SX_AUTOCOMPLETE_SELECTED, this.listenerAutocompleteSelected);
 		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerTypeStructureLinkInfoChanged);
 		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
-		Event.on(Event.SX_LOAD_DATA, this.listenerLoadData);
 		Event.on(Event.SX_RESPONSE, this.listenerResponce);
 		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 
@@ -572,32 +612,9 @@ class DataTypeEditor extends SXBaseVisualizer {
 		Event.off(Event.SX_AUTOCOMPLETE_SELECTED, this.listenerAutocompleteSelected);
 		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerTypeStructureLinkInfoChanged);
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
-		Event.off(Event.SX_LOAD_DATA, this.listenerLoadData);
 		Event.off(Event.SX_RESPONSE, this.listenerResponce);
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 	}
-
-	/*
-	constructTypeStructureLink({ typeVisualizerLinkId = 0, dataTypeId = 0, dataStructureId = 0 }) {
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.LOAD_DATASTRUCTURE,
-			type: "post",
-			dataType: "json",
-			params: {
-				dataStructureId: dataStructureId
-			},
-			successFunc: (result) => {
-				this.setState({ loadingStatus: LoadingStatus.COMPLETE });
-			},
-			errorFunc: (err) => {
-				this.loadingFailMessage = "Error while loading data structure info: " + ResourceIds.LOAD_DATASTRUCTURE;
-				this.setState({ loadingStatus: LoadingStatus.FAIL });
-			}
-		});
-	}
-		*/
 
 	loadDataType = (data) => {
 		console.log("data type loaded: ", data, this.dataType);
@@ -717,7 +734,8 @@ class DataTypeEditor extends SXBaseVisualizer {
 				loadAvailableVisualizers: false,
 				loadDataTypeAutoCompleteItems: true,
 				loadDataStructureAutoCompleteItems: true
-			}
+			},
+			refresh: true
 		});
 	};
 
@@ -775,44 +793,13 @@ class DataTypeEditor extends SXBaseVisualizer {
 	};
 
 	deleteDataType = () => {
-		this.setState({ loadingStatus: LoadingStatus.PENDING });
-
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.deleteDataTypes,
 			params: {
 				dataTypeIds: [this.dataType.dataTypeId]
-			}
-		});
-
-		/*
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.DELETE_DATATYPE,
-			params: {
-				dataTypeId: this.dataType.dataTypeId
 			},
-			successFunc: (result) => {
-				this.dataType = new DataType(this.languageId, this.availableLanguageIds);
-				this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
-				this.dataStructure = new DataStructure(
-					this.namespace,
-					this.formId,
-					this.languageId,
-					this.availableLanguageIds
-				);
-
-				this.handleMoveToExplorer();
-			},
-			errorFunc: (err) => {
-				console.log("error: ", err);
-				this.dlgHeader = SXModalUtil.errorDlgHeader(this.spritemap);
-				this.dlgBody = Util.translate("error-is-occured-while-delete-datatype", this.dataType.dataTypeId);
-
-				this.setState({ infoDialog: true });
-			}
+			refresh: true
 		});
-		*/
 	};
 
 	importDataStructure = (data) => {
@@ -836,7 +823,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 	setDataTypeValue = (fieldCode, value) => {
 		switch (fieldCode) {
-			case DataTypeProperty.NAME: {
+			case DataTypeProperty.CODE: {
 				const dataTypeCode = value ?? this.dataTypeCode.getValue();
 
 				if (Util.isNotEmpty(dataTypeCode)) {
@@ -903,7 +890,8 @@ class DataTypeEditor extends SXBaseVisualizer {
 				dataTypeCode: dataTypeCode,
 				dataTypeVersion: dataTypeVersion,
 				validationCode: validationCode
-			}
+			},
+			refresh: false
 		});
 	};
 
@@ -929,43 +917,18 @@ class DataTypeEditor extends SXBaseVisualizer {
 	}
 
 	removeLinkInfo = () => {
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK,
-			type: "post",
-			dataType: "json",
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.deleteTypeStructureLink,
 			params: this.structureLink.toJSON(),
-			successFunc: (result) => {
-				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
-				this.structureLink.dirty = false;
-
-				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dlgBody =
-					Util.translate("datatype-structure-link-info-deleted") + ": " + this.structureLink.dataTypeId;
-				this.setState({ infoDialog: true });
-			},
-			errorFunc: (a, b, c, d) => {
-				console.log("ERROR: ", a, b, c, d);
-			}
+			refresh: true
 		});
 	};
 
 	removeLinkInfoAndRedirectToBuilder = () => {
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK,
-			type: "post",
-			dataType: "json",
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.removeLinkInfoAndRedirectToBuilder,
 			params: this.structureLink.toJSON(),
-			successFunc: (result) => {
-				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
-				this.redirectToStructureBuilder();
-			},
-			errorFunc: (a, b, c, d) => {
-				console.log("ERROR: ", a, b, c, d);
-			}
+			refresh: false
 		});
 	};
 
@@ -999,7 +962,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		return dataTypeValues;
 	}
 
-	validateFormValues(fields) {
+	validateFormValues = (fields) => {
 		let error;
 		fields.every((field) => {
 			//console.log("validate field: ", field);
@@ -1023,76 +986,15 @@ class DataTypeEditor extends SXBaseVisualizer {
 		});
 
 		return error;
-	}
-
-	deleteLinkInfoAndImportDataStructure = () => {
-		this.setState({ LoadingStatus: LoadingStatus.PENDING });
-
-		this.fireRequest({
-			requestId: Workbench.RequestIDs.deleteTypeStructureLink,
-			params: {
-				dataTypeId: this.structureLink.dataTypeId
-			}
-		});
-
-		/*
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK,
-			type: "post",
-			dataType: "json",
-			params: {
-				dataTypeId: this.structureLink.dataTypeId
-			},
-			successFunc: (result) => {
-				this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
-				this.dataStructure = new DataStructure(
-					this.namespace,
-					this.formId,
-					this.languageId,
-					this.availableLanguageIds
-				);
-
-				this.importDataStructure();
-			},
-			errorFunc: (err) => {
-				this.loadingFailMessage = "Error while loading visualizers: ";
-				this.setState({ loadingStatus: LoadingStatus.FAIL });
-			}
-		});
-		*/
 	};
 
-	handleDeleteLinkInfo = () => {
-		this.setState({ LoadingStatus: LoadingStatus.PENDING });
-
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK,
-			type: "post",
-			dataType: "json",
+	deleteLinkInfoAndImportDataStructure = () => {
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.deleteTypeStructureLinkAndImportDataStructure,
 			params: {
 				dataTypeId: this.structureLink.dataTypeId
 			},
-			successFunc: (result) => {
-				this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
-				this.dataStructure = new DataStructure(
-					this.namespace,
-					this.formId,
-					this.languageId,
-					this.availableLanguageIds
-				);
-
-				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dlgBody = Util.translate("datatype-structure-link-info-is-deleted", result.dataTypeId);
-				this.setState({ loadingStatus: LoadingStatus.COMPLETE });
-			},
-			errorFunc: (err) => {
-				this.loadingFailMessage = "Error while loading visualizers: ";
-				this.setState({ loadingStatus: LoadingStatus.FAIL });
-			}
+			refresh: true
 		});
 	};
 
@@ -1103,11 +1005,13 @@ class DataTypeEditor extends SXBaseVisualizer {
 	}
 
 	handleBtnSaveClick(e) {
-		const errorParam = this.validateFormValues(this.fields);
+		const error = this.validateFormValues(this.fields);
 
-		if (errorParam) {
-			this.forceUpdate();
+		if (error) {
+			this.dlgHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+			this.dlgBody = Util.translate("fix-the-error-first", error.message);
 
+			this.setState({ infoDialog: true });
 			return;
 		}
 
@@ -1134,48 +1038,16 @@ class DataTypeEditor extends SXBaseVisualizer {
 			params: {
 				dataTypeId: this.dataType.dataTypeId,
 				formData: JSON.stringify(formValues)
-			}
-		});
-
-		/*
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: saveResourceId,
-			type: "post",
-			dataType: "json",
-			params: params,
-			successFunc: (result) => {
-				//console.log("data: ", result);
-
-				if (!this.dataType.dataTypeId) {
-					this.dataType.dataTypeId = result.dataTypeId;
-				}
-
-				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dlgBody = Util.translate("datatype-is-saved-successfully-as", this.dataType.dataTypeId);
-				this.setState({
-					infoDialog: true
-				});
-				this.editStatus = EditStatus.UPDATE;
 			},
-			errorFunc: (a, b, c, d) => {
-				console.log("ERROR: ", a, b, c, d);
-			}
+			refresh: true
 		});
-		*/
 	}
 
 	handleBtnUpgradeDataTypeClick() {
-		this.dataTypeVersion.value = "";
-		this.dataTypeVersion.disabled = false;
+		this.prevVersion = this.dataTypeVersion.getValue();
 
 		this.dataTypeCode.disabled = true;
-		this.extension.disabled = true;
-		this.displayName.disabled = false;
-		this.description.disabled = false;
-		this.tooltip.disabled = false;
-		this.visualizers.disabled = false;
+		this.dataTypeCode.refreshKey();
 
 		this.dataType.dataTypeId = 0;
 		this.structureLink.dataTypeId = 0;
@@ -1232,51 +1104,18 @@ class DataTypeEditor extends SXBaseVisualizer {
 	};
 
 	handleSaveLinkInfoBtnClick = () => {
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.SAVE_TYPE_STRUCTURE_LINK,
-			type: "post",
-			dataType: "json",
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.saveTypeStructureLink,
 			params: this.structureLink.toJSON(),
-			successFunc: (result) => {
-				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
-				this.structureLink.dirty = false;
-				this.structureLink.fromDB = true;
-
-				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dlgBody = Util.translate(
-					"datatype-structure-link-info-saved",
-					this.structureLink.dataTypeId,
-					this.structureLink.dataStructureId
-				);
-				this.setState({ infoDialog: true });
-			},
-			errorFunc: (a, b, c, d) => {
-				console.log("ERROR: ", a, b, c, d);
-			}
+			refresh: true
 		});
 	};
 
 	handleSaveLinkInfoAndRedirectToBuilder = () => {
-		console.log("handleSaveLinkInfo: ", this.structureLink.toJSON());
-
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.SAVE_TYPE_STRUCTURE_LINK,
-			type: "post",
-			dataType: "json",
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.saveLinkInfoAndRedirectToBuilder,
 			params: this.structureLink.toJSON(),
-			successFunc: (result) => {
-				console.log("SAVE_TYPE_STRUCTURE_LINK result: ", result);
-				this.structureLink.dirty = false;
-
-				this.redirectToStructureBuilder();
-			},
-			errorFunc: (a, b, c, d) => {
-				console.log("ERROR: ", a, b, c, d);
-			}
+			refresh: false
 		});
 	};
 

@@ -78,7 +78,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		//console.log("DataStructureBuilder props: ", props);
+		console.log("DataStructureBuilder props: ", props);
 
 		this.typeStructureLink = null;
 		this.dataType = null;
@@ -114,16 +114,6 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			manifestSDE: false,
 			underConstruction: false
 		};
-
-		this.workbench = new Workbench({
-			namespace: this.namespace,
-			workbenchId: this.portletId,
-			baseRenderUrl: this.baseRenderUrl,
-			baseResourceURL: this.baseResourceURL,
-			spritemap: this.spritemap
-		});
-
-		this.portletWindow = null;
 
 		this.structureCode = Parameter.createParameter(
 			this.namespace,
@@ -394,37 +384,16 @@ class DataStructureBuilder extends SXBaseVisualizer {
 					return;
 				}
 
-				const newCode = this.structureCode.getValue();
+				this.dataStructure.paramCode = this.structureCode.getValue();
 
-				Util.ajax({
-					namespace: this.namespace,
-					baseResourceURL: this.baseResourceURL,
-					resourceId: ResourceIds.CHECK_DATASTRUCTURE_UNIQUE,
+				this.fireRequest({
+					requestId: Workbench.RequestIDs.checkDataStructureCodeUnique,
 					params: {
-						dataStructureCode: newCode,
+						dataStructureCode: this.dataStructure.paramCode,
 						dataStructureVersion: this.dataStructure.paramVersion
-					},
-					successFunc: (result) => {
-						if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
-							this.dataStructure.paramCode = newCode;
-							this.dataStructure.updateMemberParents();
-							this.dataStructure.clearError();
-							this.structureCode.clearError();
-						} else {
-							this.structureCode.setError(
-								ErrorClass.ERROR,
-								Util.translate("datastructure-code-is-duplicated")
-							);
-							this.dataStructure.setError(
-								ErrorClass.ERROR,
-								Util.translate("datastructure-code-is-duplicated")
-							);
-						}
-					},
-					errorFunc: (err) => {
-						console.log("[ERROR] While checking DataStructure unique: ", err);
 					}
 				});
+
 				break;
 			}
 			case "structureVersion": {
@@ -433,32 +402,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
 				}
 
 				this.dataStructure.paramVersion = this.structureVersion.getValue();
-
-				Util.ajax({
-					namespace: this.namespace,
-					baseResourceURL: this.baseResourceURL,
-					resourceId: ResourceIds.CHECK_DATASTRUCTURE_UNIQUE,
+				this.fireRequest({
+					requestId: Workbench.RequestIDs.checkDataStructureUnique,
 					params: {
 						dataStructureCode: this.dataStructure.paramCode,
 						dataStructureVersion: this.dataStructure.paramVersion
-					},
-					successFunc: (result) => {
-						if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
-							this.dataStructure.updateMemberParents();
-							this.structureVersion.clearError();
-						} else {
-							this.structureCode.setError(
-								ErrorClass.ERROR,
-								Util.translate("datastructure-is-duplicated")
-							);
-							this.dataStructure.setError(
-								ErrorClass.ERROR,
-								Util.translate("ddatastructure-is-duplicated")
-							);
-						}
-					},
-					errorFunc: (err) => {
-						console.log("[ERROR] While checking DataStructure unique: ", err);
 					}
 				});
 				break;
@@ -502,53 +450,24 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			return;
 		}
 
-		this.portletWindow = await this.workbench.openPortletWindow({
+		this.fireOpenPortletWindow({
 			portletName: dataPacket.portletName,
-			title: this.dataStructure.label + " " + Util.translate("preview"),
+			windowTitle: this.dataStructure.label + " " + Util.translate("preview"),
 			params: {
-				dataTypeId: this.dataTypeId,
-				dataStructureId: this.dataStructure.dataStructureId,
-				editStatus: EditStatus.PREVIEW
+				dataStructureId: this.dataStructure.dataStructureId
 			}
 		});
-
-		this.forceUpdate();
-		//this.setState({ manifestSDE: true });
 	};
 
-	listenerClosePreviewWindow = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.portletId)) {
-			return;
-		}
-
-		this.workbench.removeWindow(dataPacket.portletId);
-		console.log("listenerClosePreviewWindow: ", dataPacket, this.workbench);
-
-		//this.setState({ manifestSDE: false });
-		this.forceUpdate();
-	};
-
-	listenerHandshake = (event) => {
+	listenerWorkbenchReady = (event) => {
 		const dataPacket = event.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[DataStructureBuilder] listenerWorkbenchReady rejected: ", dataPacket);
 			return;
 		}
+		console.log("[DataStructureBuilder] listenerWorkbenchReady received: ", dataPacket);
 
-		Event.fire(Event.SX_LOAD_DATA, this.namespace, dataPacket.sourcePortlet, {
-			data: {
-				subject: this.dataStructure.label,
-				dataType: {
-					dataTypeId: this.dataType.dataTypeId,
-					dataTypeCode: this.dataType.dataTypeCode,
-					dataTypeVersion: this.dataType.dataTypeVersion,
-					displayName: this.dataType.getDisplayName()
-				},
-				typeStrtuctureLink: this.typeStructureLink.toJSON(),
-				dataStructure: this.dataStructure.toJSON()
-			}
-		});
+		this.loadDataStructure();
 	};
 
 	listenerComponentWillUnmount = (event) => {
@@ -563,8 +482,116 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		this.componentWillUnmount();
 	};
 
+	listenerResponce = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[DataStructureBuilder] listenerResponce rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[DataStructureBuilder] listenerResonse: ", dataPacket);
+		const state = {};
+		const result = dataPacket.data;
+
+		switch (dataPacket.requestId) {
+			case Workbench.RequestIDs.loadDataStructure: {
+				this.dataType = new DataType(this.languageId, this.availableLanguageIds, result.dataType ?? {});
+				this.typeStructureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
+				this.typeStructureLink.parse(result.typeStructureLink ?? {});
+				if (this.dataType.dataTypeId > 0) {
+					this.typeStructureLink.dataTypeId = this.dataType.dataTypeId;
+				}
+
+				this.dataStructure = new DataStructure(
+					this.namespace,
+					this.formIds.dsbuilderId,
+					this.languageId,
+					this.availableLanguageIds,
+					result.dataStructure ?? {
+						dataStructureCode: this.dataType.dataTypeCode,
+						dataStructureVersion: "1.0.0",
+						displayName: { ...this.dataType.displayName },
+						description: { ...this.dataType.description }
+					}
+				);
+
+				//set type-structure link info to dataStructure.
+				this.dataStructure.setTitleBarInfos(this.typeStructureLink.toJSON());
+
+				console.log("TypeStructureLink: ", JSON.stringify(this.typeStructureLink, null, 4));
+				this.structureCode.setValue({ value: this.dataStructure.dataStructureCode });
+				this.structureVersion.setValue({ value: this.dataStructure.dataStructureVersion });
+				this.structureDisplayName.setValue({ value: this.dataStructure.displayName });
+				this.structureDescription.setValue({ value: this.dataStructure.description });
+
+				this.editPhase = Util.isEmpty(result.dataStructure) ? EditStatus.ADD : EditStatus.UPDATE;
+
+				this.workingParam = this.dataStructure.hasMembers()
+					? this.dataStructure.members[0]
+					: Parameter.createParameter(
+							this.namespace,
+							this.formIds.dsbuilderId,
+							this.languageId,
+							this.availableLanguageIds,
+							ParamType.STRING
+					  );
+
+				if (this.workingParam.isRendered()) {
+					this.workingParam.focused = true;
+				}
+
+				break;
+			}
+			case Workbench.RequestIDs.checkDataStructureUnique: {
+				if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
+					this.dataStructure.updateMemberParents();
+					this.dataStructure.clearError();
+					this.structureVersion.clearError();
+				} else {
+					this.structureCode.setError(ErrorClass.ERROR, Util.translate("datastructure-is-duplicated"));
+					this.dataStructure.setError(ErrorClass.ERROR, Util.translate("ddatastructure-is-duplicated"));
+				}
+
+				break;
+			}
+			case Workbench.RequestIDs.checkDataStructureCodeUnique: {
+				if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
+					this.dataStructure.updateMemberParents();
+					this.dataStructure.clearError();
+					this.structureCode.clearError();
+				} else {
+					this.structureCode.setError(ErrorClass.ERROR, Util.translate("datastructure-code-is-duplicated"));
+					this.dataStructure.setError(ErrorClass.ERROR, Util.translate("datastructure-code-is-duplicated"));
+				}
+
+				break;
+			}
+			case Workbench.RequestIDs.saveDataStructure: {
+				this.dataStructure.dataStructureId = result.dataStructureId;
+				this.dataStructure.setDirty(false);
+
+				state.confirmDlgState = true;
+				state.confirmDlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				state.confirmDlgBody = (
+					<h4>
+						{Util.translate(
+							"datastructure-is-saved-successfully-as-which-is-linked-to",
+							result.dataStructureId,
+							result.dataTypeId
+						)}
+					</h4>
+				);
+
+				break;
+			}
+		}
+
+		this.setState({ ...state, loadingStatus: dataPacket.status });
+	};
+
 	componentDidMount() {
-		this.loadDataStructure();
+		//this.loadDataStructure();
 
 		Event.on(Event.SX_PARAMETER_SELECTED, this.parameterSelectedHandler);
 		Event.on(Event.SX_PARAM_TYPE_CHANGED, this.parameterTypeChangedHandler);
@@ -573,8 +600,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
 		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
-		Event.on(Event.SX_HANDSHAKE, this.listenerHandshake);
-		Event.on(Event.SX_REMOVE_WINDOW, this.listenerClosePreviewWindow);
+		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+		Event.on(Event.SX_RESPONSE, this.listenerResponce);
+		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+
+		this.fireHandshake();
 	}
 
 	componentWillUnmount() {
@@ -586,8 +616,9 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
 		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
-		Event.off(Event.SX_HANDSHAKE, this.listenerHandshake);
-		Event.off(Event.SX_REMOVE_WINDOW, this.listenerClosePreviewWindow);
+		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+		Event.off(Event.SX_RESPONSE, this.listenerResponce);
+		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 	}
 
 	loadDataStructure() {
@@ -609,70 +640,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
 				{}
 			);
 		} else {
-			Util.ajax({
-				namespace: this.namespace,
-				baseResourceURL: this.baseResourceURL,
-				resourceId: ResourceIds.LOAD_DATASTRUCTURE,
+			this.fireRequest({
+				requestId: Workbench.RequestIDs.loadDataStructure,
 				params: {
 					dataTypeId: this.dataTypeId,
 					dataStructureId: this.dataStructureId
-				},
-				successFunc: (result) => {
-					console.log("loadDataStructure completed: ", result, result.typeStructureLink);
-
-					this.dataType = new DataType(this.languageId, this.availableLanguageIds, result.dataType ?? {});
-					this.typeStructureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
-					this.typeStructureLink.parse(result.typeStructureLink ?? {});
-					if (this.dataType.dataTypeId > 0) {
-						this.typeStructureLink.dataTypeId = this.dataType.dataTypeId;
-					}
-
-					this.dataStructure = new DataStructure(
-						this.namespace,
-						this.formIds.dsbuilderId,
-						this.languageId,
-						this.availableLanguageIds,
-						result.dataStructure ?? {
-							dataStructureCode: this.dataType.dataTypeCode,
-							dataStructureVersion: "1.0.0",
-							displayName: { ...this.dataType.displayName },
-							description: { ...this.dataType.description }
-						}
-					);
-
-					//set type-structure link info to dataStructure.
-					this.dataStructure.setTitleBarInfos(this.typeStructureLink.toJSON());
-
-					console.log("TypeStructureLink: ", JSON.stringify(this.typeStructureLink, null, 4));
-					this.structureCode.setValue({ value: this.dataStructure.dataStructureCode });
-					this.structureVersion.setValue({ value: this.dataStructure.dataStructureVersion });
-					this.structureDisplayName.setValue({ value: this.dataStructure.displayName });
-					this.structureDescription.setValue({ value: this.dataStructure.description });
-
-					this.editPhase = Util.isEmpty(result.dataStructure) ? EditStatus.ADD : EditStatus.UPDATE;
-
-					this.workingParam = this.dataStructure.hasMembers()
-						? this.dataStructure.members[0]
-						: Parameter.createParameter(
-								this.namespace,
-								this.formIds.dsbuilderId,
-								this.languageId,
-								this.availableLanguageIds,
-								ParamType.STRING
-						  );
-
-					if (this.workingParam.isRendered()) {
-						this.workingParam.focused = true;
-					}
-
-					this.setState({
-						loadingStatus: LoadingStatus.COMPLETE
-					});
-				},
-				errorFunc: (err) => {
-					console.log("ajax error: ", err);
-					this.loadingFailMessage = "Failed to load data structure: " + this.dataTypeId;
-					this.setState({ loadingStatus: LoadingStatus.FAIL });
 				}
 			});
 		}
@@ -748,49 +720,19 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	};
 
 	handleSaveDataStructure = () => {
-		console.log(JSON.stringify(this.dataStructure.toJSON(), null, 4));
-		console.log(JSON.stringify(this.typeStructureLink.toJSON(), null, 4));
+		//console.log(JSON.stringify(this.dataStructure.toJSON(), null, 4));
+		//console.log(JSON.stringify(this.typeStructureLink.toJSON(), null, 4));
 
 		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
 			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
 			return;
 		}
 
-		/*
-		const formData = new FormData();
-		formData.append(this.namespace + "typeStructureLink", this.typeStructureLink.toJSON());
-		formData.append(this.namespace + "dataStructure", this.dataStructure.toJSON());
-		*/
-
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.SAVE_DATASTRUCTURE,
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.saveDataStructure,
 			params: {
 				typeStructureLink: JSON.stringify(this.typeStructureLink.toJSON()),
 				dataStructure: JSON.stringify(this.dataStructure.toJSON())
-			},
-			successFunc: (result) => {
-				console.log("Saved dataStructure result: ", result);
-				this.dataStructure.dataStructureId = result.dataStructureId;
-				this.dataStructure.setDirty(false);
-
-				this.setState({
-					confirmDlgState: true,
-					confirmDlgHeader: SXModalUtil.successDlgHeader(this.spritemap),
-					confirmDlgBody: (
-						<h4>
-							{Util.translate(
-								"datastructure-is-saved-successfully-as-which-is-linked-to",
-								result.dataStructureId,
-								result.dataTypeId
-							)}
-						</h4>
-					)
-				});
-			},
-			errorFunc: (err) => {
-				this.setState({ loadingStatus: LoadingStatus.FAIL });
 			}
 		});
 	};
@@ -1125,7 +1067,6 @@ class DataStructureBuilder extends SXBaseVisualizer {
 						/>
 					)}
 				</div>
-				{this.workbench.windowCount > 0 && this.workbench.windowContentArray}
 			</>
 		);
 	}

@@ -45,7 +45,7 @@ import org.osgi.service.component.annotations.Reference;
 	    property = {
 	    		"javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 	    		"javax.portlet.name=" + WebPortletKey.SXDataCollectionEditorPortlet,
-	    		"mvc.command.name="+MVCCommand.RESOURCE_UPDATE_DATASTRUCTURE
+	    		"mvc.command.name="+MVCCommand.RESOURCE_SAVE_DATACOLLECTION
 	    },
 	    service = MVCResourceCommand.class
 )

@@ -98,6 +98,27 @@ class DataWorkbench extends React.Component {
 		});
 	};
 
+	listenerOpenPortletWindow = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			return;
+		}
+
+		console.log("SX_OPEN_PORTLET_WINDOW received: ", dataPacket);
+
+		this.workbench
+			.openPortletWindow({
+				portletName: dataPacket.portletName,
+				windowTitle: dataPacket.windowTitle,
+				params: dataPacket.params
+			})
+			.then(() => {
+				//console.log("Portlet Window Created: ", this.workbench.windows);
+				this.forceUpdate();
+			});
+	};
+
 	listenerSearchDataTypes = (event) => {
 		const dataPacket = event.dataPacket;
 
@@ -180,7 +201,21 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("SX_SAVE_DATACOLLECTION receivrd: ", dataPacket.data);
+		console.log("SX_SAVE_DATACOLLECTION received: ", dataPacket.data);
+	};
+
+	listenerClosePreviewWindow = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			return;
+		}
+
+		this.workbench.removeWindow(dataPacket.portletId);
+		//console.log("listenerClosePreviewWindow: ", dataPacket, this.workbench);
+
+		//this.setState({ manifestSDE: false });
+		this.forceUpdate();
 	};
 
 	listenerRequest = async (event) => {
@@ -190,7 +225,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("SX_REQUEST received: ", dataPacket);
+		//console.log("SX_REQUEST received: ", dataPacket);
 		this.workbench.processRequest({
 			params: dataPacket.params,
 			requestPortlet: dataPacket.sourcePortlet,
@@ -204,7 +239,10 @@ class DataWorkbench extends React.Component {
 		Event.on(Event.SX_CLOSE_VERTICAL_NAV, this.listenerCloseVerticalNav);
 		Event.on(Event.SX_SAVE_DATACOLLECTION, this.listenerSaveDataCollection);
 		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
+		Event.on(Event.SX_OPEN_PORTLET_WINDOW, this.listenerOpenPortletWindow);
 		Event.on(Event.SX_REQUEST, this.listenerRequest);
+		Event.on(Event.SX_REMOVE_WINDOW, this.listenerClosePreviewWindow);
+
 		window.addEventListener("resize", this.listenerWindowResize);
 
 		this.boundingRect = this.canvasRef.current.getBoundingClientRect();
@@ -226,7 +264,10 @@ class DataWorkbench extends React.Component {
 		Event.off(Event.SX_CLOSE_VERTICAL_NAV, this.listenerCloseVerticalNav);
 		Event.off(Event.SX_SAVE_DATACOLLECTION, this.listenerSaveDataCollection);
 		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
+		Event.off(Event.SX_OPEN_PORTLET_WINDOW, this.listenerOpenPortletWindow);
 		Event.off(Event.SX_REQUEST, this.listenerRequest);
+		Event.off(Event.SX_REMOVE_WINDOW, this.listenerClosePreviewWindow);
+
 		window.removeEventListener("resize", this.listenerWindowResize);
 	}
 
@@ -258,7 +299,7 @@ class DataWorkbench extends React.Component {
 			height = window.innerHeight - this.boundingRect.top;
 		}
 
-		console.log("Workbench render: ", this.state.workingPortletInstance);
+		//console.log("Workbench render: ", this.workbench);
 		return (
 			<div style={{ border: "3px groove #ccc" }}>
 				<div className="autofit-row">
@@ -413,6 +454,7 @@ class DataWorkbench extends React.Component {
 						</div>
 					</div>
 				</div>
+				{this.workbench.windowCount > 0 && <>{this.workbench.getWindowMap()}</>}
 			</div>
 		);
 	}

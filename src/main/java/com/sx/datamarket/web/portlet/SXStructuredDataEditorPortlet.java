@@ -51,34 +51,7 @@ public class SXStructuredDataEditorPortlet extends MVCPortlet {
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
 		
-		long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
-		long structuredDataId = ParamUtil.getLong(renderRequest, "structuredDataId", 0);
-		long dataStructureId = ParamUtil.getLong(renderRequest, "dataStructureId", 0);
-		
-		System.out.println("StructuredDataEditorPortlet: " + dataTypeId +", "+dataStructureId);
-		
-		if(dataTypeId > 0 ) {
-			try {
-				TypeStructureLink typeStructureLink = _typeStructureLinkLocalService.getTypeStructureLink(dataTypeId);
-				renderRequest.setAttribute("typeStructureLink", typeStructureLink);
-				
-				if( dataStructureId == 0 ) {
-					dataStructureId = typeStructureLink.getDataStructureId();
-				}
-			} catch (PortalException e) {
-				System.out.println("Manifest SXStructuredDataEditor without typeStructureLink.");
-			}
-		}
-		
-		renderRequest.setAttribute("dataStructureId", dataStructureId);
-		
 		super.doView(renderRequest, renderResponse);
 	}
-
-	@Reference
-	TypeStructureLinkLocalService _typeStructureLinkLocalService;
-	
-	@Reference
-	DataStructureLocalService _dataStructureLocalService;
 
 }

@@ -12,9 +12,9 @@
 <%@ include file="./init.jsp" %>
 
 <%
-	TypeStructureLink typeStructureLink = (TypeStructureLink)GetterUtil.getObject(renderRequest.getAttribute("typeStructureLink"), null);
-    String editStatus = ParamUtil.getString(renderRequest, "editStatus", "");
     String subject = ParamUtil.getString(renderRequest, "subject", "");
+    long dataCollectionId = ParamUtil.getLong(renderRequest, "dataCollectionId", 0);
+    long dataSetId = ParamUtil.getLong(renderRequest, "dataSetId", 0);
     long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
     long dataStructureId = ParamUtil.getLong(renderRequest, "dataStructureId", 0);
     long structuredDataId = ParamUtil.getLong(renderRequest, "structuredDataId", 0);
@@ -25,8 +25,8 @@
 	
 	String portalURL = PortalUtil.getPortalURL(renderRequest);
 	
-	System.out.println("[SXDataTypeEditor] workbenchNamespace: " + workbenchNamespace);
-	System.out.println("[SXDataTypeEditor] portletId: " + portletDisplay.getId());
+	System.out.println("[SXStructuredDataEditor] workbenchNamespace: " + workbenchNamespace);
+	System.out.println("[SXStructuredDataEditor] portletId: " + portletDisplay.getId());
 %>
 
 <portlet:renderURL  var="baseRenderURL">
@@ -56,13 +56,15 @@
 				baseResourceURL: '<%=  baseResourceURL %>',
 				permissions: JSON.parse('<%= permissions.toJSONString() %>'),
 				workbenchNamespace: '<%= workbenchNamespace %>',
-				workbenchId: '<%= workbenchId %>',
-				typeStructureLink: <%= typeStructureLink.toJSON().toString()%>,
-				subject: '<%= subject %>',
-				dataStructureId: Number('<%= dataStructureId %>'),
-				dataTypeId: Number('<%= dataTypeId %>'),
-				structuredDataId: Number('<%= structuredDataId %>'),
-				editStatus: '<%= editStatus %>'
+				workbenchPortletId: '<%= workbenchId %>',
+				params:{
+					subject: '<%= subject %>',
+					dataStructureId: Number('<%= dataStructureId %>'),
+					dataCollectionId: Number('<%= dataCollectionId %>'),
+					dataSetId: Number('<%= dataSetId %>'),
+					dataTypeId: Number('<%= dataTypeId %>'),
+					structuredDataId: Number('<%= structuredDataId %>'),
+				}
 			}
 	};
 	

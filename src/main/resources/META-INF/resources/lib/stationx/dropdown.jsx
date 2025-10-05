@@ -38,16 +38,8 @@ class SXActionDropdown extends React.Component {
 	};
 
 	render() {
-		/*
-		<ClayButtonWithIcon
-			aria-label={this.triggerTitle}
-			symbol={this.symbol ?? "ellipsis-v"}
-			title={this.triggerTitle}
-			displayType="unstyled"
-			className="btn-secondary"
-			spritemap={this.spritemap}
-		/>;
-		*/
+		//console.log("SXActionDropdown render: ", this.actionItems);
+
 		return (
 			<DropDown
 				active={this.state.activeDropdown}
@@ -81,7 +73,10 @@ class SXActionDropdown extends React.Component {
 					{(actionItem, index) => (
 						<DropDown.Item
 							key={actionItem.id}
-							onClick={(e) => this.handleActionClick(actionItem, index)}
+							onClick={(e) => {
+								e.stopPropagation();
+								this.handleActionClick(actionItem, index);
+							}}
 						>
 							<Icon
 								spritemap={this.spritemap}

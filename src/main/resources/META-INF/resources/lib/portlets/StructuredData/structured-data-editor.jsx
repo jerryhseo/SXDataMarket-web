@@ -9,6 +9,7 @@ import Visualizer from "../../stationx/visualizer";
 import Icon from "@clayui/icon";
 import { DataStructure } from "../DataStructure/data-structure";
 import SXBaseVisualizer from "../../stationx/visualizer";
+import { Workbench } from "../DataWorkbench/workbench";
 
 class StructuredDataEditor extends SXBaseVisualizer {
 	static EditState = {
@@ -16,13 +17,14 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		PREVIEW: "preview",
 		ADD: "add",
 		UPDATE: "update",
-		VIEW: "view"
+		VIEW: "view",
+		ERROR: "error"
 	};
 
 	constructor(props) {
 		super(props);
 
-		console.log("StructuredDataEditor props: ", props);
+		//console.log("StructuredDataEditor props: ", props);
 
 		this.subject = this.params.subject;
 
@@ -35,14 +37,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		this.structuredDataInfo = [];
 		this.dataStructure = null;
 
-		this.editStatus = this.params.editStatus;
-
-		this.visualizer = new Visualizer({
-			namespace: this.namespace,
-			workbenchNamespace: this.workbenchNamespace,
-			workbenchId: this.workbenchId,
-			visualizerId: this.portletId
-		});
+		this.setEditState();
 
 		this.state = {
 			loadingStatus: LoadingStatus.PENDING
@@ -55,7 +50,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 			this.portletId,
 			this.workbenchId,
 			this.workbenchNamespace,
-			this.editStatus
+			this.editState
 		);
 		*/
 	}
@@ -70,6 +65,8 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				this.editState = StructuredDataEditor.EditState.ADD;
 			} else if (this.dataStructureId > 0) {
 				this.editState = StructuredDataEditor.EditState.PREVIEW;
+			} else {
+				StructuredDataEditor.EditState.ERROR;
 			}
 		}
 	}
@@ -101,6 +98,93 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		this.forceUpdate();
 	};
 
+	listenerWorkbenchReady = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[StructuredDataEditor] listenerWorkbenchReady event rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[StructuredDataEditor] listenerWorkbenchReady received: ", dataPacket, this.editState);
+
+		if (this.editState === StructuredDataEditor.EditState.PREVIEW) {
+			this.fireRequest({
+				requestId: Workbench.RequestIDs.loadDataStructure,
+				params: {
+					dataStructureId: this.dataStructureId
+				},
+				refresh: true
+			});
+		} else if (this.editState === StructuredDataEditor.EditState.ADD) {
+			this.fireRequest({
+				requestId: Workbench.RequestIDs.loadDataStructureWithInfo,
+				params: {
+					dataCollectionId: this.dataCollectionId,
+					dataSetId: this.dataSetId,
+					dataTypeId: this.dataTypeId,
+					dataStructureId: this.dataStructureId
+				},
+				refresh: true
+			});
+		} else if (this.editState === StructuredDataEditor.EditState.UPDATE) {
+			this.fireRequest({
+				requestId: Workbench.RequestIDs.loadStructuredData,
+				params: {
+					structuredDataId: 0
+				},
+				refresh: true
+			});
+		}
+
+		this.setState({ loadingStatus: LoadingStatus.PENDING });
+	};
+
+	listenerResponce = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[StructuredDataEditor] listenerResponce rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[StructuredDataEditor] listenerResonse: ", dataPacket);
+
+		const data = dataPacket.data;
+		switch (dataPacket.requestId) {
+			case Workbench.RequestIDs.loadDataStructureWithInfo:
+			case Workbench.RequestIDs.loadStructuredData: {
+				this.dataCollection = data.dataCollection;
+				this.dataSet = data.dataSet;
+				this.dataType = data.dataType;
+				this.dataStructure = new DataStructure(
+					this.namespace,
+					this.portletId,
+					this.languageId,
+					this.availableLanguageIds,
+					data.dataStructure ?? {}
+				);
+
+				this.typeStructureLink = data.typeStructureLink ?? {};
+
+				break;
+			}
+			case Workbench.RequestIDs.loadDataStructure: {
+				this.dataStructure = new DataStructure(
+					this.namespace,
+					this.portletId,
+					this.languageId,
+					this.availableLanguageIds,
+					data.dataStructure ?? {}
+				);
+
+				break;
+			}
+		}
+
+		this.setState({ loadingStatus: dataPacket.status });
+	};
+
 	listenerComponentWillUnmount = (event) => {
 		const dataPacket = event.dataPacket;
 
@@ -115,18 +199,21 @@ class StructuredDataEditor extends SXBaseVisualizer {
 
 	componentDidMount() {
 		//this.loadStructuredData();
-		Event.on(Event.SX_LOAD_DATA, this.listenerLoadData);
-		this.visualizer.fireHandshake();
+		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+		Event.on(Event.SX_RESPONSE, this.listenerResponce);
+		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+
+		this.fireHandshake();
 	}
 
 	componentWillUnmount() {
-		console.log("[StructuredDataEditor] componentWillUnmount");
-		Event.off(Event.SX_LOAD_DATA, this.listenerLoadData);
+		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+		Event.off(Event.SX_RESPONSE, this.listenerResponce);
+		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 	}
 
 	loadStructuredData = async () => {
 		const params = {
-			cmd: this.editStatus,
 			dataCollectionId: this.dataCollectionId,
 			dataSetId: this.dataSetId,
 			dataTypeId: this.dataTypeId,
@@ -134,7 +221,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 			structuredDataId: this.dataStructureId
 		};
 
-		this.visualizer.loadData(ResourceIds.LOAD_STRUCTURED_DATA_EDITING, params);
+		//this.visualizer.loadData(ResourceIds.LOAD_STRUCTURED_DATA_EDITING, params);
 	};
 
 	handleSaveData = () => {
@@ -148,92 +235,99 @@ class StructuredDataEditor extends SXBaseVisualizer {
 	};
 
 	render() {
-		console.log("Editor render: ", this.dataStructure);
-		return (
-			<>
-				<div style={{ paddingRight: "10px" }}>
+		//console.log("Editor render: ", this.dataStructure, this.loadingStatus);
+		if (this.loadingStatus === LoadingStatus.PENDING) {
+			return <h3>Loading...</h3>;
+		} else if (this.loadingStatus === LoadingStatus.FAIL) {
+			return <h3>Loading Failed</h3>;
+		} else {
+			return (
+				<>
+					<div style={{ paddingRight: "10px" }}>
+						<div
+							className="autofit-row"
+							style={{ backgroundColor: "#ecf5de", padding: "5px 10px" }}
+						>
+							<div className="autofit-col autofit-col-expand">
+								{(Util.isNotEmpty(this.dataCollection) ||
+									Util.isNotEmpty(this.dataSet) ||
+									Util.isNotEmpty(this.dataType)) && (
+									<div className="autofit-row">
+										{Util.isNotEmpty(this.dataCollection) && (
+											<>
+												<div className="autofit-col shrink">
+													<Icon
+														symbol="angle-right"
+														spritemap={this.spritemap}
+													/>
+												</div>
+												<div className="autofit-col shrink">
+													{this.dataCollection.displayName}
+												</div>
+											</>
+										)}
+										{Util.isNotEmpty(this.dataSet) && (
+											<>
+												<div className="autofit-col shrink">
+													<Icon
+														symbol="angle-right"
+														spritemap={this.spritemap}
+													/>
+												</div>
+												<div className="autofit-col shrink">{this.dataSet.displayName}</div>
+											</>
+										)}
+										{Util.isNotEmpty(this.dataType) && (
+											<>
+												<div className="autofit-col shrink">
+													<Icon
+														symbol="angle-right"
+														spritemap={this.spritemap}
+													/>
+												</div>
+												<div className="autofit-col shrink">{this.dataType.displayName}</div>
+											</>
+										)}
+									</div>
+								)}
+							</div>
+							<div className="autofit-col shrink">{this.subject}</div>
+						</div>
+					</div>
 					<div
 						className="autofit-row"
-						style={{ backgroundColor: "#ecf5de", padding: "5px 10px" }}
+						style={{ backgroundColor: "#fff", paddingTop: "1.5rem", paddingRight: "10px" }}
 					>
 						<div className="autofit-col autofit-col-expand">
-							{(Util.isNotEmpty(this.dataCollection) ||
-								Util.isNotEmpty(this.dataSet) ||
-								Util.isNotEmpty(this.dataType)) && (
-								<div className="autofit-row">
-									{Util.isNotEmpty(this.dataCollection) && (
-										<>
-											<div className="autofit-col shrink">
-												<Icon
-													symbol="angle-right"
-													spritemap={this.spritemap}
-												/>
-											</div>
-											<div className="autofit-col shrink">{this.dataCollection.displayName}</div>
-										</>
-									)}
-									{Util.isNotEmpty(this.dataSet) && (
-										<>
-											<div className="autofit-col shrink">
-												<Icon
-													symbol="angle-right"
-													spritemap={this.spritemap}
-												/>
-											</div>
-											<div className="autofit-col shrink">{this.dataSet.displayName}</div>
-										</>
-									)}
-									{Util.isNotEmpty(this.dataType) && (
-										<>
-											<div className="autofit-col shrink">
-												<Icon
-													symbol="angle-right"
-													spritemap={this.spritemap}
-												/>
-											</div>
-											<div className="autofit-col shrink">{this.dataType.displayName}</div>
-										</>
-									)}
-								</div>
-							)}
+							{Util.isNotEmpty(this.dataStructure) &&
+								this.dataStructure.render({ canvasId: this.namespace, spritemap: this.spritemap })}
 						</div>
-						<div className="autofit-col shrink">{this.subject}</div>
 					</div>
-				</div>
-				<div
-					className="autofit-row"
-					style={{ backgroundColor: "#fff", paddingTop: "1.5rem", paddingRight: "10px" }}
-				>
-					<div className="autofit-col autofit-col-expand">
-						{Util.isNotEmpty(this.dataStructure) &&
-							this.dataStructure.render({ canvasId: this.namespace, spritemap: this.spritemap })}
-					</div>
-				</div>
-				<Button.Group
-					spaced
-					style={{ width: "100%", justifyContent: "center", marginTop: "1.5rem", marginBottom: "1.5rem" }}
-				>
-					<Button
-						displayType="primary"
-						onClick={this.handleSaveData}
-						title={Util.translate("save-data")}
+					<Button.Group
+						spaced
+						style={{ width: "100%", justifyContent: "center", marginTop: "1.5rem", marginBottom: "1.5rem" }}
 					>
-						<Icon
-							symbol="disk"
-							spritemap={this.spritemap}
-							style={{ marginRight: "5px" }}
-						/>
-						{Util.translate("save")}
-					</Button>
-					<Button
-						displayType="secondary"
-						onClick={this.handleCancel}
-						title={Util.translate("cancel")}
-					>
-						{Util.translate("cancel")}
-					</Button>
-				</Button.Group>
-				{/* 
+						<Button
+							displayType="primary"
+							onClick={this.handleSaveData}
+							title={Util.translate("save-data")}
+						>
+							<Icon
+								symbol="disk"
+								spritemap={this.spritemap}
+								style={{ marginRight: "5px" }}
+							/>
+							{Util.translate("save")}
+						</Button>
+						<Button
+							displayType="secondary"
+							onClick={this.handleCancel}
+							title={Util.translate("cancel")}
+						>
+							{Util.translate("cancel")}
+						</Button>
+					</Button.Group>
+					{/* 
 			<div>
 				{StructuredDataEditor.EditState.UPDATE || StructuredDataEditor.EditState.ADD}
 				<SXDataTypeStructureLink
@@ -322,8 +416,9 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				<div className="field-area"></div>
 			</div>
 			*/}
-			</>
-		);
+				</>
+			);
+		}
 	}
 }
 
