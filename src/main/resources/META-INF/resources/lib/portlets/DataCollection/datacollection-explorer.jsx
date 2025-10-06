@@ -1,11 +1,11 @@
 import React from "react";
 import { ClayVerticalNav } from "@clayui/nav";
 
-class SXDataCollectionNavigator extends React.Component {
+class DataCollectionExplorer extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("SXDataCollectionNavigator: ", props);
+		console.log("DataCollectionExplorer: ", props);
 		this.namespace = props.namespace;
 		this.spritemap = props.spritemap;
 		this.navItems = props.navItems;
@@ -38,4 +38,4 @@ class SXDataCollectionNavigator extends React.Component {
 	}
 }
 
-export default SXDataCollectionNavigator;
+export default DataCollectionExplorer;

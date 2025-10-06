@@ -429,11 +429,11 @@ class DataTypeEditor extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("listenerWorkbenchReady event rejected: ", dataPacket);
+			console.log("[dataTypeEditor] listenerWorkbenchReady event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("listenerWorkbenchReady received: ", dataPacket);
+		console.log("[dataTypeEditor] listenerWorkbenchReady received: ", dataPacket);
 
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.loadDataType,

@@ -32,7 +32,7 @@ class SXDataStructurePreviewer extends React.Component {
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) return;
 
 		console.log(
-			"SXDataStructurePreviewer SX_FIELD_VALUE_CHANGED RECEIVED: ",
+			"[SXDataStructurePreviewer] SX_FIELD_VALUE_CHANGED RECEIVED: ",
 			dataPacket,
 			this.dataStructure,
 			this.dataStructure.members
