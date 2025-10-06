@@ -5,12 +5,13 @@ import { Event, LoadingStatus, PortletKeys, ResourceIds, WindowState } from "../
 import { SXPortlet, Workbench } from "./workbench";
 import { Rnd } from "react-rnd";
 import SXWorkbenchMenu from "./workbench-menu";
-import SXDataCollectionNavigator from "../DataCollection/datacollection-navigator";
+import SXDataCollectionNavigator from "../DataCollection/datacollection-explorer";
 import { ClayInput } from "@clayui/form";
 import { Util } from "../../stationx/util";
 import { ClayButtonWithIcon } from "@clayui/button";
 import Sticker from "@clayui/sticker";
 import SXApplicationBar from "../../stationx/application-bar";
+import Icon from "@clayui/icon";
 
 class DataWorkbench extends React.Component {
 	workbench = null;
@@ -78,6 +79,51 @@ class DataWorkbench extends React.Component {
 			{
 				id: "dataExplorer",
 				label: Util.translate("data-explorer")
+			}
+		];
+
+		this.navItems = [
+			{
+				id: "subjectManage",
+				items: [
+					{
+						id: "2",
+						href: "#nested1",
+						label: "Nested1"
+					}
+				],
+				label: Util.translate("subject-manage")
+			},
+			{
+				id: "3",
+				href: "#2",
+				label: "About"
+			},
+			{
+				id: "4",
+				href: "#3",
+				label: "Contact"
+			},
+			{
+				id: "5",
+				items: [
+					{
+						id: "6",
+						href: "#5",
+						label: "Five"
+					},
+					{
+						id: "7",
+						href: "#6",
+						label: "Six"
+					}
+				],
+				label: "Projects"
+			},
+			{
+				id: "8",
+				href: "#7",
+				label: "Seven"
 			}
 		];
 	}
@@ -357,56 +403,18 @@ class DataWorkbench extends React.Component {
 										height: "40px"
 									}}
 								>
+									<Icon
+										symbol="home-full"
+										spritemap={this.spritemap}
+										style={{ marginRight: "5px" }}
+									/>
 									{this.dataCollection
 										? this.dataCollection.label
 										: Util.translate("no-datacollection")}
 								</Sticker>
 								<SXDataCollectionNavigator
 									namespace={this.namespace}
-									navItems={[
-										{
-											id: "1",
-											items: [
-												{
-													id: "2",
-													href: "#nested1",
-													label: "Nested1"
-												}
-											],
-											label: "Home"
-										},
-										{
-											id: "3",
-											href: "#2",
-											label: "About"
-										},
-										{
-											id: "4",
-											href: "#3",
-											label: "Contact"
-										},
-										{
-											id: "5",
-											items: [
-												{
-													id: "6",
-													href: "#5",
-													label: "Five"
-												},
-												{
-													id: "7",
-													href: "#6",
-													label: "Six"
-												}
-											],
-											label: "Projects"
-										},
-										{
-											id: "8",
-											href: "#7",
-											label: "Seven"
-										}
-									]}
+									navItems={this.navItems}
 									style={{
 										width: "100%"
 									}}
