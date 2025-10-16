@@ -34,12 +34,46 @@ export class SXManagementToolbar extends React.Component {
 
 		this.searchBar = props.searchBar ?? true;
 		this.addButton = props.addButton ?? true;
-		this.displayStyleOptions = props.displayStyleOptions ?? [];
+		this.displayStyleOptions = props.displayStyleOptions ?? [
+			{
+				name: "Table",
+				id: "table",
+				symbol: "table"
+			},
+			{
+				name: "List",
+				id: "list",
+				symbol: "list"
+			},
+			{
+				name: "Card",
+				id: "card",
+				symbol: "cards2"
+			}
+		];
+
 		this.actionButtons = props.actionButtons ?? [];
 		this.actionMenus = props.actionMenus ?? [];
 		this.checkbox = props.checkbox ?? true;
 		this.checkboxChecked = props.checkboxChecked ?? false;
-		this.filterOptions = props.filterOptions ?? [];
+		this.filterOptions = props.filterOptions ?? [
+			{
+				name: Util.translate("group"),
+				id: "groupId"
+			},
+			{
+				name: Util.translate("user"),
+				id: "userId"
+			},
+			{
+				name: Util.translate("mine"),
+				id: "mine"
+			},
+			{
+				name: Util.translate("status"),
+				id: "status"
+			}
+		];
 		this.groupByOptions = props.groupByOptions ?? [];
 		this.advancedSearch = props.advancedSearch ?? false;
 
@@ -453,6 +487,19 @@ export class SXSearchResultConainer extends React.Component {
 											<Cell
 												key={column.id}
 												textAlign="center"
+												onClick={(e) => {
+													e.stopPropagation();
+
+													Event.fire(
+														Event.SX_TABLE_COLUMN_CLICKED,
+														this.namespace,
+														this.namespace,
+														{
+															targetFormId: this.formId,
+															columnId: column.id
+														}
+													);
+												}}
 											>
 												{column.value}
 											</Cell>

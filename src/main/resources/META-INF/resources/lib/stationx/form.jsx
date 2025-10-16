@@ -133,7 +133,7 @@ export class SXTitleBar extends React.Component {
 		console.log("SXTitleBar: Verified clicked");
 	};
 
-	handlerVerifyClicked = () => {
+	handlerFreezeClicked = () => {
 		console.log("SXTitleBar: Freezed clicked");
 	};
 
@@ -2045,6 +2045,7 @@ export class SXDualListBox extends BaseParameterComponent {
 	}
 
 	renderFormField() {
+		console.log("SSXDualListBox rightOptions: ", this.state.rightOptions);
 		return (
 			<>
 				{this.parameter.renderTitle({

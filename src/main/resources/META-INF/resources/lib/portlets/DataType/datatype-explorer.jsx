@@ -178,11 +178,11 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerSelectAll event rejected: ", dataPacket);
+			console.log("[DataTypeExplorer] listenerSelectAll event rejected: ", dataPacket);
 			return;
 		}
 
-		//console.log("listenerSelectAll: ", dataPacket);
+		//console.log("[DataTypeExplorer] listenerSelectAll: ", dataPacket);
 
 		this.selectedResults = dataPacket.selectAll ? [...this.searchResults] : [];
 
@@ -193,10 +193,10 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerSearchKeywordsChanged event rejected: ", dataPacket);
+			console.log("[DataTypeExplorer] listenerSearchKeywordsChanged event rejected: ", dataPacket);
 			return;
 		}
-		//console.log("listenerSearchKeywordsChanged: ", dataPacket);
+		//console.log("[DataTypeExplorer] listenerSearchKeywordsChanged: ", dataPacket);
 
 		this.setState({ keywords: dataPacket.keywords, underConstruction: true });
 
@@ -207,10 +207,10 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerFilterMenuClicked event rejected: ", dataPacket);
+			console.log("[DataTypeExplorer] listenerFilterMenuClicked event rejected: ", dataPacket);
 			return;
 		}
-		console.log("listenerFilterMenuClicked: ", dataPacket);
+		console.log("[DataTypeExplorer] listenerFilterMenuClicked: ", dataPacket);
 
 		const isFilterMenu = this.filterOptions.map((option) => option.value).includes(dataPacket.menuItem.value);
 
@@ -221,10 +221,10 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerAdvancedSearchButtonClicked event rejected: ", dataPacket);
+			console.log("[DataTypeExplorer] listenerAdvancedSearchButtonClicked event rejected: ", dataPacket);
 			return;
 		}
-		//console.log("listenerAdvancedSearchButtonClicked: ", dataPacket);
+		//console.log("[DataTypeExplorer] listenerAdvancedSearchButtonClicked: ", dataPacket);
 		this.setState({ underConstruction: true });
 	};
 
@@ -232,10 +232,10 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerPopActionClicked event rejected: ", dataPacket);
+			console.log("[DataTypeExplorer] listenerPopActionClicked event rejected: ", dataPacket);
 			return;
 		}
-		//console.log("listenerPopActionClicked: ", dataPacket);
+		console.log("[DataTypeExplorer] listenerPopActionClicked: ", dataPacket);
 
 		const selectedDataTypeId = this.searchResults[dataPacket.data][0].value;
 
@@ -319,10 +319,10 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerSelectedResultsChanged event rejected: ", dataPacket);
+			console.log("[DataTypeExplorer] listenerSelectedResultsChanged event rejected: ", dataPacket);
 			return;
 		}
-		//console.log("listenerSelectedResultsChanged: ", dataPacket);
+		//console.log("[DataTypeExplorer] listenerSelectedResultsChanged: ", dataPacket);
 		this.selectedResults = dataPacket.selectedResults;
 
 		this.setState({ searchContainerKey: Util.randomKey() });
@@ -361,15 +361,15 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		*/
 	};
 
-	listenerResponce = (event) => {
+	listenerResponse = (event) => {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("listenerResponce event rejected: ", dataPacket);
+			console.log("[DataTypeExplorer] listenerResponse event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("listenerResponce received: ", dataPacket);
+		console.log("[DataTypeExplorer] listenerResponse received: ", dataPacket);
 		let state = {};
 
 		switch (dataPacket.requestId) {
@@ -428,7 +428,7 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		Event.on(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
 		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.on(Event.SX_LOAD_DATA, this.listenerLoadData);
-		Event.on(Event.SX_RESPONSE, this.listenerResponce);
+		Event.on(Event.SX_RESPONSE, this.listenerResponse);
 		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 
 		this.fireHandshake();
@@ -447,7 +447,7 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		Event.off(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.off(Event.SX_LOAD_DATA, this.listenerLoadData);
-		Event.off(Event.SX_RESPONSE, this.listenerResponce);
+		Event.off(Event.SX_RESPONSE, this.listenerResponse);
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 	}
 

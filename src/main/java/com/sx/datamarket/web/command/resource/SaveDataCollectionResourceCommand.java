@@ -18,6 +18,7 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.sx.icecap.constant.MVCCommand;
 import com.sx.icecap.constant.ParameterType;
 import com.sx.icecap.constant.WebPortletKey;
+import com.sx.icecap.model.CollectionSetLink;
 import com.sx.icecap.model.DataCollection;
 import com.sx.icecap.model.DataStructure;
 import com.sx.icecap.model.TypeStructureLink;
@@ -58,25 +59,26 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 		System.out.println("SaveDataCollectionResourceCommand");
 		
 		// Save data structure
-		String cmd = ParamUtil.getString(resourceRequest, "cmd", "add");
 		long dataCollectionId = ParamUtil.getLong(resourceRequest, "dataCollectionId", 0);
-		String strDataCollection = ParamUtil.getString(resourceRequest, "dataCollection", "{}");
-		JSONObject jsonDataCollection = JSONFactoryUtil.createJSONObject(strDataCollection);
-		System.out.println("Data Collection: " + jsonDataCollection.toString(4));
+		String dataCollectionCode = ParamUtil.getString(resourceRequest, "dataCollectionCode", "");
+		String dataCollectionVersion = ParamUtil.getString(resourceRequest, "dataCollectionVersion", "");
+		String strDisplayName = ParamUtil.getString(resourceRequest, "displayName", "{}");
+		String strDescription = ParamUtil.getString(resourceRequest, "description", "{}");
+		String strDataSets = ParamUtil.getString(resourceRequest, "dataSets", "[]");
 		
-		String dataCollectionCode = jsonDataCollection.getString("dataCollectionCode");
-		String dataCollectionVersion = jsonDataCollection.getString("dataCollectionVersion");
-		JSONObject displayName = jsonDataCollection.getJSONObject("displayName");
-		JSONObject description = jsonDataCollection.getJSONObject("description");
+		JSONObject jsonDisplayName = JSONFactoryUtil.createJSONObject(strDisplayName);
+		JSONObject jsonDescription = JSONFactoryUtil.createJSONObject(strDescription);
 
+		JSONArray jsonDataSets = JSONFactoryUtil.createJSONArray(strDataSets);
+		
 		ServiceContext dataCollectionSC = ServiceContextFactory.getInstance(DataCollection.class.getName(), resourceRequest);
 		
 		if( dataCollectionId == 0 ) {
 			DataCollection dataCollection = _dataCollectionLocalService.addDataCollection(
 					dataCollectionCode, 
 					dataCollectionVersion, 
-					SXLocalizationUtil.jsonToLocalizedMap(displayName), 
-					SXLocalizationUtil.jsonToLocalizedMap(description), 
+					SXLocalizationUtil.jsonToLocalizedMap(jsonDisplayName), 
+					SXLocalizationUtil.jsonToLocalizedMap(jsonDescription), 
 					WorkflowConstants.STATUS_APPROVED, 
 					dataCollectionSC);
 			
@@ -87,10 +89,23 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 					dataCollectionId, 
 					dataCollectionCode, 
 					dataCollectionVersion, 
-					SXLocalizationUtil.jsonToLocalizedMap(displayName), 
-					SXLocalizationUtil.jsonToLocalizedMap(description), 
+					SXLocalizationUtil.jsonToLocalizedMap(jsonDisplayName), 
+					SXLocalizationUtil.jsonToLocalizedMap(jsonDescription), 
 					WorkflowConstants.STATUS_APPROVED, 
 					dataCollectionSC);
+		}
+		
+		if(jsonDataSets.length() > 0) {
+			for( int i=0; i<jsonDataSets.length(); i++) {
+				long dataSetId = jsonDataSets.getLong(i);
+				
+				CollectionSetLink collectionSetLink = 
+						_collectionSetLinkLocalService.getCollectionSetLink(dataCollectionId, dataSetId);
+				
+				if( Validator.isNotNull(collectionSetLink)) {
+					//_collectionSetLinkLocalService.
+				}
+			}
 		}
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();

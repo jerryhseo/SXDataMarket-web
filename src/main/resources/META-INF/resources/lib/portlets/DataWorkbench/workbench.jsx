@@ -59,19 +59,32 @@ export class Workbench {
 		checkDataStructureUnique: "checkDataStructureUnique",
 		checkDataStructureCodeUnique: "checkDataStructureCodeUnique",
 		deleteDataTypes: "deleteDataTypes",
+		deleteDataSets: "deleteDataSets",
 		deleteTypeStructureLink: "deleteTypeStructureLink",
 		deleteTypeStructureLinkAndImportDataStructure: "deleteTypeStructureLinkAndImportDataStructure",
 		importDataType: "importDataType",
 		importDataStructure: "importDataStructure",
+		loadDataCollection: "loadDataCollection",
+		loadDataSet: "loadDataSet",
+		loadDataSetList: "loadDataSetList",
 		loadDataStructure: "loadDataStructure",
 		loadDataStructureWithInfo: "loadDataStructureWithInfo",
 		loadDataType: "loadDataType",
 		loadStructuredData: "loadStructuredData",
 		removeLinkInfoAndRedirectToBuilder: "removeLinkInfoAndRedirectToBuilder",
+		saveDataCollection: "saveDataCollection",
+		saveDataSet: "saveDataSet",
 		saveDataStructure: "saveDataStructure",
+		saveParameter: "saveParameter",
+		saveStructuredData: "saveStructuredData",
 		saveTypeStructureLink: "saveTypeStructureLink",
 		saveLinkInfoAndRedirectToBuilder: "saveLinkInfoAndRedirectToBuilder",
+		searchDataCollections: "searchDataCollections",
+		searchDataSets: "searchDataSets",
+		searchDataStructures: "searchDataStructures",
 		searchDataTypes: "searchDataTypes",
+		searchParameters: "searchParameters",
+		searchStructuredData: "searchStructuredData",
 		updateDataType: "updateDataType"
 	};
 
@@ -155,12 +168,15 @@ export class Workbench {
 		delete this.windows[portletId];
 	}
 
-	loadPortlet = async ({ portletRootTag, portletName, params = {}, title }) => {
+	loadPortlet = async ({ portletRootTag, portletName, params = {}, title = "" }) => {
+		console.log("Workbench loadPortlet: ", portletName, title);
 		const portletInstance = await this.createPortletInfo({
 			resourceId: ResourceIds.CREATE_PORTLET_INSTANCE,
 			portletName: portletName
 		});
+
 		portletInstance.title = title;
+		console.log("Workbench loadPortlet: ", portletInstance);
 
 		params.workbenchNamespace = this.namespace;
 		params.workbenchId = this.workbenchId;
@@ -175,7 +191,11 @@ export class Workbench {
 			dataParams: params
 		});
 
-		const portletContent = await this.ajax({ url: renderURL, type: "get", dataType: "html" });
+		const portletContent = await this.ajax({
+			url: renderURL,
+			type: "get",
+			dataType: "html"
+		});
 
 		//const portletRoot = createRoot(portletRootTag);
 
@@ -254,9 +274,12 @@ export class Workbench {
 	};
 
 	createPortletInfo = async ({ resourceId, portletName }) => {
+		console.log("Workbench ResourceId: ", resourceId);
 		let url = await this.createResourceURL({
 			resourceId: resourceId
 		});
+
+		console.log("Workbench URL: ", url);
 
 		const dataParams = Util.toNamespacedParams(this.namespace, {
 			portletName: portletName
@@ -271,208 +294,134 @@ export class Workbench {
 	};
 
 	createResourceURL = async ({ resourceId }) => {
-		let url = "";
+		return new Promise((resolve, reject) => {
+			AUI().use("aui-base, portlet-url", (A) => {
+				try {
+					let resourceURL = Liferay.PortletURL.createURL(this.baseResourceURL);
+					resourceURL.setResourceId(resourceId);
+					resourceURL.setPortletId(this.workbenchId);
 
-		await AUI().use("aui-base, portlet-url", (A) => {
-			let resourceURL = Liferay.PortletURL.createURL(this.baseResourceURL);
-			resourceURL.setResourceId(resourceId);
-			resourceURL.setPortletId(this.workbenchId);
-
-			url = resourceURL.toString();
+					resolve(resourceURL.toString());
+				} catch (error) {
+					reject(error);
+				}
+			});
 		});
-
-		return url;
 	};
 
 	createRenderURL = async ({ baseRenderURL, portletParams, dataParams }) => {
-		let url;
-		await AUI().use("aui-base, portlet-url", function (A) {
-			let renderURL = Liferay.PortletURL.createURL(baseRenderURL);
-			for (const portletParam in portletParams) {
-				switch (portletParam) {
-					case "portletId":
-						renderURL.setPortletId(portletParams[portletParam]);
-						break;
-					case "windowState":
-						renderURL.setWindowState(portletParams[portletParam]);
-						break;
-					case "lifecycle":
-						renderURL.setLifecycle(portletParams[portletParam]);
-						break;
-					case "doAsGroupId":
-						renderURL.setDoAsGroupId(portletParams[portletParam]);
-						break;
-					case "doAsUserId":
-						renderURL.setDoAsUserId(portletParams[portletParam]);
-						break;
-					case "escapeXML":
-						renderURL.setEscapeXML(portletParams[portletParam]);
-						break;
-					case "plid":
-						renderURL.setPlid(portletParams[portletParam]);
-						break;
-					case "portletMode":
-						renderURL.setPortletMode(portletParams[portletParam]);
-						break;
+		return new Promise((resolve, reject) => {
+			AUI().use("aui-base, portlet-url", function (A) {
+				try {
+					let renderURL = Liferay.PortletURL.createURL(baseRenderURL);
+					for (const portletParam in portletParams) {
+						switch (portletParam) {
+							case "portletId":
+								renderURL.setPortletId(portletParams[portletParam]);
+								break;
+							case "windowState":
+								renderURL.setWindowState(portletParams[portletParam]);
+								break;
+							case "lifecycle":
+								renderURL.setLifecycle(portletParams[portletParam]);
+								break;
+							case "doAsGroupId":
+								renderURL.setDoAsGroupId(portletParams[portletParam]);
+								break;
+							case "doAsUserId":
+								renderURL.setDoAsUserId(portletParams[portletParam]);
+								break;
+							case "escapeXML":
+								renderURL.setEscapeXML(portletParams[portletParam]);
+								break;
+							case "plid":
+								renderURL.setPlid(portletParams[portletParam]);
+								break;
+							case "portletMode":
+								renderURL.setPortletMode(portletParams[portletParam]);
+								break;
+						}
+					}
+
+					//const namespacedParams = Util.toNamespacedParams(namespace, dataParams);
+					renderURL.setParameters(dataParams);
+
+					resolve(renderURL.toString());
+				} catch (error) {
+					reject(error);
 				}
-			}
-
-			//const namespacedParams = Util.toNamespacedParams(namespace, dataParams);
-			renderURL.setParameters(dataParams);
-
-			url = renderURL.toString();
+			});
 		});
-
-		return url;
 	};
 
 	ajax = async ({ url, params = {}, type = "post", dataType = "json" }) => {
 		//console.log("Workbench ajax URL: ", url, type, dataType);
 		let result;
 
-		await $.ajax({
-			url: url,
-			type: type,
-			dataType: dataType,
-			data: params,
-			success: (successData) => {
-				result = successData;
-			},
-			error: (err) => {
-				console.log("[ERROR] Workbecn.ajax: ", err);
+		let data;
+		if (type === "post") {
+			const formData = new FormData();
+			Object.keys(params).forEach((key) => {
+				formData.append(this.namespace + key, params[key]);
+				console.log(this.namespace + key + ": " + params[key]);
+			});
+
+			return new Promise((resolve, reject) => {
+				try {
+					$.ajax({
+						url: url,
+						type: type,
+						data: formData,
+						processData: false,
+						contentType: false,
+						success: (result) => {
+							console.log("Data Ajax finished: ", typeof result, result);
+							resolve(JSON.parse(result));
+						}
+					});
+				} catch (error) {
+					reject(error);
+				}
+			});
+		} else {
+			console.log("Ajax get: ", url, params);
+			return new Promise((resolve, reject) => {
+				try {
+					$.ajax({
+						url: url,
+						type: type,
+						dataType: dataType,
+						success: (result) => {
+							console.log("Data Ajax finished: ", url, params);
+							resolve(result);
+						}
+					});
+				} catch (error) {
+					reject(error);
+				}
+			});
+		}
+	};
+
+	fetch = async ({ url, method = "post", contentType = "application/json", formData }) => {
+		try {
+			const response = await fetch(url, {
+				method: method,
+				headers: {
+					"Content-Type": contentType
+				},
+				body: formData
+			});
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! Status: ${response.status}`);
 			}
-		});
 
-		return result;
-	};
-
-	searchDataTypes = async (params, requestPortlet, requestId) => {
-		const url = await this.createResourceURL({ resourceId: ResourceIds.SEARCH_DATATYPES });
-
-		//console.log("Workbench.searchDatatypes URL: ", url);
-		const dataParams = Util.toNamespacedParams(this.namespace, params);
-
-		const result = await this.ajax({
-			url: url,
-			params: dataParams
-		});
-
-		this.fireLoadData({
-			targetPortlet: requestPortlet,
-			requestId: requestId,
-			params: params,
-			data: result
-		});
-	};
-
-	loadDataType = async (params, requestPortlet, requestId) => {
-		const url = await this.createResourceURL({ resourceId: ResourceIds.LOAD_DATATYPE });
-
-		//console.log("Workbench.searchDatatypes URL: ", url);
-		const dataParams = Util.toNamespacedParams(this.namespace, params);
-
-		const result = await this.ajax({
-			url: url,
-			params: dataParams
-		});
-
-		this.fireLoadData({
-			targetPortlet: requestPortlet,
-			requestId: requestId,
-			params: params,
-			data: result
-		});
-	};
-
-	loadDataStructure = async (params, requestPortlet, requestId) => {
-		const url = await this.createResourceURL({ resourceId: ResourceIds.LOAD_DATASTRUCTURE });
-
-		//console.log("Workbench.searchDatatypes URL: ", url);
-		const dataParams = Util.toNamespacedParams(this.namespace, params);
-
-		const result = await this.ajax({
-			url: url,
-			params: dataParams
-		});
-
-		this.fireLoadData({
-			targetPortlet: requestPortlet,
-			requestId: requestId,
-			params: params,
-			data: result
-		});
-	};
-
-	deleteDataTypes = async (params, requestPortlet, requestId) => {
-		const url = await this.createResourceURL({ resourceId: ResourceIds.DELETE_DATATYPES });
-
-		const dataParams = Util.toNamespacedParams(this.namespace, params);
-
-		const result = await this.ajax({
-			url: url,
-			params: dataParams
-		});
-
-		this.fireResponse({
-			targetPortlet: requestPortlet,
-			requestId: requestId,
-			params: params,
-			data: result
-		});
-	};
-
-	addDataType = async (params, requestPortlet, requestId) => {
-		const url = await this.createResourceURL({ resourceId: ResourceIds.ADD_DATATYPE });
-
-		const dataParams = Util.toNamespacedParams(this.namespace, params);
-
-		const result = await this.ajax({
-			url: url,
-			params: dataParams
-		});
-
-		this.fireResponse({
-			targetPortlet: requestPortlet,
-			requestId: requestId,
-			params: params,
-			data: result
-		});
-	};
-
-	deleteTypeStructureLink = async (params, requestPortlet, requestId) => {
-		const url = await this.createResourceURL({ resourceId: ResourceIds.DELETE_TYPE_STRUCTURE_LINK });
-
-		const dataParams = Util.toNamespacedParams(this.namespace, params);
-
-		const result = await this.ajax({
-			url: url,
-			params: dataParams
-		});
-
-		this.fireResponse({
-			targetPortlet: requestPortlet,
-			requestId: requestId,
-			params: params,
-			data: result
-		});
-	};
-
-	checkDataTypeUnique = async (params, requestPortlet, requestId) => {
-		const url = await this.createResourceURL({ resourceId: ResourceIds.CHECK_DATATYPE_UNIQUE });
-
-		const dataParams = Util.toNamespacedParams(this.namespace, params);
-
-		const result = await this.ajax({
-			url: url,
-			params: dataParams
-		});
-
-		this.fireResponse({
-			targetPortlet: requestPortlet,
-			requestId: requestId,
-			params: params,
-			data: result
-		});
+			const result = await response.json();
+			console.log(result);
+		} catch (error) {
+			console.error("Fetch error:", error);
+		}
 	};
 
 	processRequest = async ({ params, requestPortlet, requestId }) => {
@@ -525,6 +474,10 @@ export class Workbench {
 				resourceId = ResourceIds.UPDATE_DATATYPE;
 				break;
 			}
+			case Workbench.RequestIDs.loadDataCollection: {
+				resourceId = ResourceIds.LOAD_DATACOLLECTION;
+				break;
+			}
 			case Workbench.RequestIDs.loadDataStructure:
 			case Workbench.RequestIDs.loadDataStructureWithInfo: {
 				resourceId = ResourceIds.LOAD_DATASTRUCTURE;
@@ -538,20 +491,36 @@ export class Workbench {
 				resourceId = ResourceIds.LOAD_STRUCTURED_DATA_EDITING;
 				break;
 			}
+			case Workbench.RequestIDs.searchDataCollections: {
+				resourceId = ResourceIds.SEARCH_DATACOLLECTIONS;
+				break;
+			}
+			case Workbench.RequestIDs.searchDataSets: {
+				resourceId = ResourceIds.SEARCH_DATASETS;
+				break;
+			}
+			case Workbench.RequestIDs.loadDataSet: {
+				resourceId = ResourceIds.LOAD_DATASET;
+				break;
+			}
+			case Workbench.RequestIDs.saveDataSet: {
+				resourceId = ResourceIds.SAVE_DATASET;
+				break;
+			}
+			case Workbench.RequestIDs.deleteDataSets: {
+				resourceId = ResourceIds.DELETE_DATASETS;
+				break;
+			}
 		}
 
-		let result;
+		let result = {};
 		if (Util.isNotEmpty(resourceId)) {
 			const url = await this.createResourceURL({ resourceId: resourceId });
 
-			const dataParams = Util.toNamespacedParams(this.namespace, params);
-
 			result = await this.ajax({
 				url: url,
-				params: dataParams
+				params: params
 			});
-		} else {
-			result = {};
 		}
 
 		this.fireResponse({
@@ -560,6 +529,8 @@ export class Workbench {
 			params: params,
 			data: result
 		});
+
+		return LoadingStatus.COMPLETE;
 	};
 
 	fireLoadData = ({ targetPortlet, requestId, params, data }) => {

@@ -35,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.header-portlet-css=/css/index.css",
 		"com.liferay.portlet.instanceable=true",
 		"com.liferay.portlet.add-default-resource=true",
-		"javax.portlet.display-name=Structured Data Explorer",
+		"javax.portlet.display-name=structured-data-explorer",
 		"javax.portlet.init-param.template-path=/",
 		"javax.portlet.init-param.view-template=/jsp/structured-data-explorer.jsp",
 		"javax.portlet.name=" + WebPortletKey.SXStructuredDataExplorerPortlet,

@@ -1,11 +1,11 @@
 import React, { createRef } from "react";
 import ReactDom from "react-dom";
 import { createRoot } from "react-dom/client";
-import { Event, LoadingStatus, PortletKeys, ResourceIds, WindowState } from "../../stationx/station-x";
+import { Event, FilterOptions, LoadingStatus, PortletKeys, ResourceIds, WindowState } from "../../stationx/station-x";
 import { SXPortlet, Workbench } from "./workbench";
 import { Rnd } from "react-rnd";
 import SXWorkbenchMenu from "./workbench-menu";
-import SXDataCollectionNavigator from "../DataCollection/datacollection-explorer";
+import SXDataCollectionNavigator from "../DataCollection/datacollection-navigationbar";
 import { ClayInput } from "@clayui/form";
 import { Util } from "../../stationx/util";
 import { ClayButtonWithIcon } from "@clayui/button";
@@ -44,6 +44,7 @@ class DataWorkbench extends React.Component {
 
 		this.state = {
 			dataCollectionId: props.dataCollectionId ?? 0,
+			dataCollectionSelector: true,
 			workingPortletInstance: {
 				portletName: "",
 				portletId: "",
@@ -71,6 +72,18 @@ class DataWorkbench extends React.Component {
 						label: Util.translate("new-datacollection")
 					},
 					{
+						id: "newDataSet",
+						label: Util.translate("new-dataset")
+					},
+					{
+						id: "newDataType",
+						label: Util.translate("new-datatype")
+					},
+					{
+						id: "newDataStructure",
+						label: Util.translate("new-datastructure")
+					},
+					{
 						id: "openDataCollection",
 						label: Util.translate("open-datacollection")
 					}
@@ -78,7 +91,29 @@ class DataWorkbench extends React.Component {
 			},
 			{
 				id: "dataExplorer",
-				label: Util.translate("data-explorer")
+				label: Util.translate("data-explorer"),
+				children: [
+					{
+						id: "dataCollectionExplorer",
+						label: Util.translate("datacollection-explorer")
+					},
+					{
+						id: "dataSetExplorer",
+						label: Util.translate("dataset-explorer")
+					},
+					{
+						id: "dataTypeExplorer",
+						label: Util.translate("datatype-explorer")
+					},
+					{
+						id: "dataStructureExplorer",
+						label: Util.translate("datastructure-explorer")
+					},
+					{
+						id: "structuredDataExplorer",
+						label: Util.translate("structured-data-explorer")
+					}
+				]
 			}
 		];
 
@@ -208,24 +243,48 @@ class DataWorkbench extends React.Component {
 				});
 				break;
 			}
-			case "dataExplorer": {
-				this.deployPortlet({
-					portletName: PortletKeys.DATATYPE_EXPLORER,
-					params: {
-						dataCollectionId: this.dataCollectionId,
-						dataSetId: this.dataSetId
-					},
-					title: Util.translate("datatype-explorer")
-				});
-				break;
-			}
 			case "openDataCollection": {
 				this.deployPortlet({
 					portletName: PortletKeys.DATACOLLECTION_EXPLORER,
 					params: {
-						dataCollectionId: this.dataCollectionId
+						managementBar: false
 					},
 					title: Util.translate("open-datacollection")
+				});
+				break;
+			}
+			case "dataCollectionExplorer": {
+				this.deployPortlet({
+					portletName: PortletKeys.DATACOLLECTION_EXPLORER,
+					title: Util.translate("datacollection-explorer")
+				});
+				break;
+			}
+			case "dataSetExplorer": {
+				this.deployPortlet({
+					portletName: PortletKeys.DATASET_EXPLORER,
+					title: Util.translate("dataset-explorer")
+				});
+				break;
+			}
+			case "dataTypeExplorer": {
+				this.deployPortlet({
+					portletName: PortletKeys.DATATYPE_EXPLORER,
+					title: Util.translate("datatype-explorer")
+				});
+				break;
+			}
+			case "dataStructureExplorer": {
+				this.deployPortlet({
+					portletName: PortletKeys.DATASTRUCTURE_EXPLORER,
+					title: Util.translate("datastructure-explorer")
+				});
+				break;
+			}
+			case "structureDataExplorer": {
+				this.deployPortlet({
+					portletName: PortletKeys.STRUCTURED_DATA_EXPLORER,
+					title: Util.translate("structured-data-explorer")
 				});
 				break;
 			}
@@ -271,7 +330,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		//console.log("SX_REQUEST received: ", dataPacket);
+		console.log("SX_REQUEST received: ", dataPacket);
 		this.workbench.processRequest({
 			params: dataPacket.params,
 			requestPortlet: dataPacket.sourcePortlet,
@@ -293,7 +352,18 @@ class DataWorkbench extends React.Component {
 
 		this.boundingRect = this.canvasRef.current.getBoundingClientRect();
 
-		this.forceUpdate();
+		if (this.state.dataCollectionId === 0) {
+			this.deployPortlet({
+				portletName: PortletKeys.DATACOLLECTION_EXPLORER,
+				title: Util.translate("datacollection-selector"),
+				params: {
+					managementBar: false
+				},
+				portletState: Workbench.PortletState.NORMAL
+			});
+		}
+
+		//this.forceUpdate();
 
 		/*
 		Workbench.loadWorkingPortlet({
@@ -323,7 +393,7 @@ class DataWorkbench extends React.Component {
 		this.workbench.fireLoadData(targetPortlet, result);
 	};
 
-	deployPortlet = async ({ portletName, params, title = "", portletState = Workbench.PortletState.NORMAL }) => {
+	deployPortlet = async ({ portletName, params = {}, title = "", portletState = Workbench.PortletState.NORMAL }) => {
 		const portletInstance = await this.workbench.loadPortlet({
 			portletRootTag: this.workingPortletRef.current,
 			portletName: portletName,
@@ -439,14 +509,6 @@ class DataWorkbench extends React.Component {
 							verticalNavOpened={this.state.openVerticalNav}
 							spritemap={this.spritemap}
 						/>
-						{/*
-						<SXPortlet
-							key={this.state.workingPortletInstance.namespace}
-							namespace={this.namespace}
-							portletNamespace={this.state.workingPortletInstance.namespace}
-							portletContent={this.state.workingPortletInstance.content}
-						/>
-						*/}
 						<div
 							ref={this.workingPortletRef}
 							style={{ overflowX: "hidden", overflowY: "auto", padding: "0 10px" }}

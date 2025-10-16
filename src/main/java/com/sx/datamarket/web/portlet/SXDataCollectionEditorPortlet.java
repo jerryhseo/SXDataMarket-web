@@ -31,7 +31,7 @@ import org.osgi.service.component.annotations.Component;
 		"com.liferay.portlet.header-portlet-css=/css/index.css",
 		"com.liferay.portlet.instanceable=true",
 		"com.liferay.portlet.add-default-resource=true",
-		"javax.portlet.display-name=Data Collection Editor",
+		"javax.portlet.display-name=datacollection-editor",
 		"javax.portlet.init-param.template-path=/",
 		"javax.portlet.init-param.view-template=/jsp/datacollection-editor.jsp",
 		"javax.portlet.name=" + WebPortletKey.SXDataCollectionEditorPortlet,

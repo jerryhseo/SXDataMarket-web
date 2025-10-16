@@ -1368,18 +1368,20 @@ export class Parameter {
 			}
 
 			if (this.hasError()) {
-				return;
+				return -1;
 			}
 		}
 
 		if (this.hasWarning()) {
-			return;
+			return 1;
 		} else {
 			this.error = {
 				message: "",
 				errorClass: ErrorClass.SUCCESS
 			};
 		}
+
+		return 0;
 	}
 
 	parse(json) {

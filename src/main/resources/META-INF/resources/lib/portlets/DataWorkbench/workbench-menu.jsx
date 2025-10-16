@@ -21,17 +21,19 @@ class SXWorkbenchMenu extends React.Component {
 			dropDown: false
 		};
 
-		//console.log("SXWorkbenchMenu: ", props);
+		console.log("SXWorkbenchMenu: ", props);
 	}
 
 	handleMenuItemClick = (menuId) => {
 		Event.fire(Event.SX_MENU_SELECTED, this.namespace, this.namespace, {
 			menuId: menuId
 		});
+
+		this.setState({ active: false });
 	};
 
 	render() {
-		//console.log("SXWorkbenchMenu render: ", this.state.active);
+		console.log("SXWorkbenchMenu render: ", this.state.active);
 		return (
 			<NavigationBar
 				spritemap={this.spritemap}
@@ -42,32 +44,24 @@ class SXWorkbenchMenu extends React.Component {
 						return (
 							<NavigationBar.Item
 								key={menuItem.id}
-								active={this.state.active === menuItem.id}
+								style={{ marginRight: "10px" }}
 							>
 								<DropDown
-									active={this.state.dropDown}
+									active={this.state.active === menuItem.id}
 									alignmentByViewport={true}
 									closeOnClick={true}
 									trigger={
-										<Link
-											style={{ fontWeight: "550", fontSize: "1.0rem" }}
-											onClick={(event) => {
-												this.setState({ active: menuItem.id });
-											}}
-										>
-											{menuItem.label}
-										</Link>
+										<Link style={{ fontWeight: "550", fontSize: "1.0rem" }}>{menuItem.label}</Link>
 									}
 									onActiveChange={(val) => {
-										const state = { dropDown: val };
-
-										this.setState(state);
+										let active = val ? menuItem.id : "";
+										this.setState({ dropDown: val, active: active });
 									}}
 									style={{
 										cursor: "pointer"
 									}}
 								>
-									{this.state.dropDown && (
+									{this.state.active === menuItem.id && (
 										<DropDown.ItemList items={menuItem.children}>
 											{(item) => {
 												return (

@@ -11,6 +11,7 @@ import StructuredDataExplorer from "./portlets/StructuredData/structured-data-ex
 import DataCollectionEditor from "./portlets/DataCollection/datacollection-editor";
 import DataSetExplorer from "./portlets/DataSet/dataset-explorer";
 import DataCollectionExplorer from "./portlets/DataCollection/datacollection-explorer";
+import DataSetEditor from "./portlets/DataSet/dataset-editor";
 
 export default function (elementId, portletId, portletParams) {
 	const root = createRoot(document.getElementById(elementId));

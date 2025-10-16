@@ -308,7 +308,6 @@ class DataTypeEditor extends SXBaseVisualizer {
 			{
 				paramCode: DataTypeProperty.VISUALIZERS,
 				displayName: Util.getTranslationObject(this.languageId, "associated-visualizers"),
-				required: true,
 				tooltip: Util.getTranslationObject(this.languageId, "associated-visualizers-tooltip"),
 				viewType: DualListParameter.ViewTypes.HORIZONTAL,
 				validation: {

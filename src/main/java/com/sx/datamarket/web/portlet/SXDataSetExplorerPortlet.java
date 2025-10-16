@@ -33,7 +33,7 @@ import org.osgi.service.component.annotations.Component;
 		"com.liferay.portlet.add-default-resource=true",
 		"javax.portlet.display-name=dataset-explorer",
 		"javax.portlet.init-param.template-path=/",
-		"javax.portlet.init-param.view-template=/jsp/dataset-eexplorer.jsp",
+		"javax.portlet.init-param.view-template=/jsp/dataset-explorer.jsp",
 		"javax.portlet.name=" + WebPortletKey.SXDataSetExplorerPortlet,
 		"javax.portlet.resource-bundle=content.Language",
 		"javax.portlet.security-role-ref=power-user,user"

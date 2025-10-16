@@ -31,11 +31,11 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	immediate = true,
 	property = {
-		"com.liferay.portlet.display-category=category.sx.visualizers",
+		"com.liferay.portlet.display-category=category.sx.datamarket",
 		"com.liferay.portlet.header-portlet-css=/css/index.css",
 		"com.liferay.portlet.instanceable=true",
 		"com.liferay.portlet.add-default-resource=true",
-		"javax.portlet.display-name=Structured Data Editor",
+		"javax.portlet.display-name=structured-data-editor",
 		"javax.portlet.init-param.template-path=/",
 		"javax.portlet.init-param.view-template=/jsp/structured-data-editor.jsp",
 		"javax.portlet.name=" + WebPortletKey.SXStructuredDataEditorPortlet,

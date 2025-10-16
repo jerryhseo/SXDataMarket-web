@@ -24,7 +24,7 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.header-portlet-css=/css/index.css",
 		"com.liferay.portlet.instanceable=true",
 		"com.liferay.portlet.add-default-resource=true",
-		"javax.portlet.display-name=Data Workbench",
+		"javax.portlet.display-name=data-workbench",
 		"javax.portlet.init-param.template-path=/",
 		"javax.portlet.init-param.view-template=/jsp/data-workbench.jsp",
 		"javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,

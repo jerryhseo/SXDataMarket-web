@@ -1,11 +1,12 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { ErrorClass, Event, ParamType, ValidationRule } from "../../stationx/station-x";
-import { GroupParameter, Parameter } from "../../stationx/parameter";
+import { EditStatus, ErrorClass, Event, LoadingStatus, ParamType, ValidationRule } from "../../stationx/station-x";
+import { GroupParameter, Parameter, SelectParameter } from "../../stationx/parameter";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXBaseVisualizer from "../../stationx/visualizer";
+import { Workbench } from "../DataWorkbench/workbench";
 
 class DataCollectionEditor extends SXBaseVisualizer {
 	constructor(props) {
@@ -16,10 +17,15 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		this.dataCollectionId = this.params.dataCollectionId ?? 0;
 
 		this.state = {
-			confirmDlgState: false,
-			confirmDlgHeader: <></>,
-			confirmDlgBody: <></>
+			editStatus: this.dataCollectionId > 0 ? EditStatus.UPDATE : EditStatus.ADD,
+			infoDialog: false,
+			confirmDeleteDialog: false,
+			waringAndSaveDialog: false,
+			loadingStatus: LoadingStatus.PENDING
 		};
+
+		this.dialogHeader = <></>;
+		this.dialogBody = <></>;
 
 		this.dataCollectionCode = Parameter.createParameter(
 			this.namespace,
@@ -154,7 +160,104 @@ class DataCollectionEditor extends SXBaseVisualizer {
 				membersPerRow: 3
 			}
 		);
+
+		this.dataSets = Parameter.createParameter(
+			this.namespace,
+			this.formId,
+			this.languageId,
+			this.availableLanguageIds,
+			ParamType.SELECT,
+			{
+				paramCode: "dataSets",
+				displayName: Util.getTranslationObject(this.languageId, "associated-datasets"),
+				tooltip: Util.getTranslationObject(this.languageId, "associated-datasets-tooltip"),
+				viewType: SelectParameter.ViewTypes.CHECKBOX,
+				validation: {
+					required: {
+						value: true,
+						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+						errorClass: ErrorClass.ERROR
+					}
+				}
+			}
+		);
 	}
+
+	listenerWorkbenchReady = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[dataCollectionEditor] listenerWorkbenchReady event rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[dataCollectionEditor] listenerWorkbenchReady received: ", dataPacket);
+
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.loadDataCollection,
+			params: {
+				dataCollectionId: this.dataCollectionId,
+				loadAvailableDataSets: true
+			}
+		});
+	};
+
+	listenerResponce = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[dataCollectionEditor] listenerResponce rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[dataCollectionEditor] listenerResonse: ", dataPacket);
+		switch (dataPacket.requestId) {
+			case Workbench.RequestIDs.loadDataCollection: {
+				const {
+					dataCollectionCode,
+					dataCollectionVersion,
+					displayName,
+					description,
+					associatedDataSetList,
+					availableDataSetList
+				} = dataPacket.data;
+
+				this.dataCollectionCode.setValue({ value: dataCollectionCode });
+				this.dataCollectionVersion.setValue({ value: dataCollectionVersion });
+				this.displayName.setValue({ value: displayName });
+				this.description.setValue({ value: description });
+
+				if (Util.isNotEmpty(associatedDataSetList)) {
+					this.dataSets.setValue({
+						value: associatedDataSetList.map((dataSet) => {
+							return dataSet.dataSetId;
+						})
+					});
+				}
+
+				if (Util.isNotEmpty(availableDataSetList)) {
+					this.availableDataSetList = availableDataSetList;
+					this.dataSets.options = this.availableDataSetList.map((dataSet) => {
+						let label = {};
+						Object.keys(dataSet.displayName).forEach((key) => {
+							label[key] = dataSet.displayName[key] + " v." + dataSet.dataSetVersion;
+						});
+
+						return {
+							value: dataSet.dataSetId,
+							label: label
+						};
+					});
+
+					this.dataSets.refreshKey();
+				}
+
+				break;
+			}
+		}
+
+		this.setState({ loadingStatus: LoadingStatus.COMPLETE });
+	};
 
 	listenerComponentWillUnmount = (event) => {
 		const dataPacket = event.dataPacket;
@@ -169,27 +272,95 @@ class DataCollectionEditor extends SXBaseVisualizer {
 	};
 
 	componentDidMount() {
+		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+		Event.on(Event.SX_RESPONSE, this.listenerResponce);
 		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+
+		this.fireHandshake();
 	}
 
 	componentWillUnmount() {
 		console.log("[DataCollectionEditor] componentWillUnmount");
+		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+		Event.off(Event.SX_RESPONSE, this.listenerResponce);
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 	}
 
+	checkFieldError = () => {
+		let error = this.dataCollectionCode.validate();
+		let warning = null;
+		if (error === -1) {
+			this.dataCollectionCode.dirty = true;
+			return this.dataCollectionCode.error;
+		} else if (error === 1) {
+			warning = this.dataCollectionCode.error;
+		}
+
+		error = this.dataCollectionVersion.validate();
+		if (error === -1) {
+			this.dataCollectionVersion.dirty = true;
+			return this.dataCollectionVersion.error;
+		} else if (error === 1 && Util.isEmpty(warning)) {
+			warning = this.dataCollectionVersion.error;
+		}
+
+		error = this.displayName.validate();
+		if (error === -1) {
+			this.displayName.dirty = true;
+			return this.displayName.error;
+		} else if (error === 1 && Util.isEmpty(warning)) {
+			warning = this.displayName.error;
+		}
+
+		error = this.description.validate();
+		if (error === -1) {
+			this.description.dirty = true;
+			return this.description.error;
+		} else if (error === 1 && Util.isEmpty(warning)) {
+			warning = this.description.error;
+		}
+
+		error = this.dataSets.validate();
+		if (error === -1) {
+			this.dataSets.dirty = true;
+			return this.dataSets.error;
+		} else if (error === 1 && Util.isEmpty(warning)) {
+			warning = this.dataSets.error;
+		}
+
+		return warning;
+	};
+
 	handleSaveDataCollection = () => {
-		let error = this.groupParameter.checkError();
+		const error = this.checkFieldError();
 
 		if (Util.isNotEmpty(error)) {
-			this.setState({
-				confirmDlgState: true,
-				confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				confirmDlgBody: Util.translate("fix-the-error-first", error.message)
-			});
+			if (error.errorClass === ErrorClass.ERROR) {
+				this.dialogHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+				this.dialogBody = Util.translate("fix-the-error-first", error.message);
+
+				this.setState({ infoDialog: true });
+			} else {
+				this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+				this.dialogBody = Util.translate("data-has-warning-do-you-proceed-anyway", error.message);
+
+				this.setState({ waringAndSaveDialog: true });
+			}
 
 			return;
 		}
 
+		this.saveDataCollection();
+	};
+
+	handleDeleteClick = () => {
+		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
+
+		this.setState({ confirmDeleteDialog: true });
+	};
+
+	saveDataCollection = () => {
 		let data = {};
 		data.dataCollectionId = this.dataCollectionId;
 		data.dataCollectionCode = this.dataCollectionCode.getValue();
@@ -197,9 +368,24 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		data.displayName = this.displayName.getValue();
 		data.description = this.description.getValue();
 
-		Event.fire(Event.SX_SAVE_DATACOLLECTION, this.namespace, this.workbenchNamespace, {
-			targetFormId: this.workbenchId,
-			data: data
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.saveDataCollection,
+			params: {
+				dataCollectionId: this.dataCollectionId,
+				dataCollectionCode: this.dataCollectionCode.getValue(),
+				dataCollectionVersion: this.dataCollectionVersion.getValue(),
+				displayName: this.displayName.getValue(),
+				description: this.description.getValue()
+			}
+		});
+	};
+
+	deleteDataCollection = () => {
+		this.fireRequest({
+			requestId: Workbench.RequestIDs.deleteDataCollections,
+			params: {
+				dataCollectionIds: [this.dataCollectionId]
+			}
 		});
 	};
 
@@ -208,6 +394,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 			<div style={{ marginTop: "2rem" }}>
 				{this.groupParameter.render({ spritemap: this.spritemap })}
 				{this.description.renderField({ spritemap: this.spritemap })}
+				{this.dataSets.renderField({ spritemap: this.spritemap })}
 				<Button.Group
 					spaced
 					style={{ width: "100%", justifyContent: "center" }}
@@ -224,22 +411,76 @@ class DataCollectionEditor extends SXBaseVisualizer {
 						/>
 						{Util.translate("save")}
 					</Button>
+					<Button
+						title={Util.translate("delete")}
+						onClick={this.handleDeleteClick}
+						displayType="warning"
+					>
+						<span className="inline-item inline-item-before">
+							<Icon
+								symbol="trash"
+								spritemap={this.spritemap}
+							/>
+						</span>
+						{Util.translate("delete")}
+					</Button>
 				</Button.Group>
-				{this.state.confirmDlgState && (
+				{this.state.infoDialog && (
 					<SXModalDialog
-						header={this.state.confirmDlgHeader}
-						body={this.state.confirmDlgBody}
+						header={this.dialogHeader}
+						body={this.dialogBody}
 						buttons={[
 							{
-								onClick: () => {
-									this.setState({ confirmDlgState: false });
-								},
 								label: Util.translate("ok"),
-								displayType: "primary"
+								onClick: () => {
+									this.setState({ infoDialog: false });
+								}
 							}
 						]}
-						status="info"
-						spritemap={this.spritemap}
+					/>
+				)}
+				{this.state.confirmDeleteDialog && (
+					<SXModalDialog
+						header={this.dialogHeader}
+						body={this.dialogBody}
+						buttons={[
+							{
+								label: Util.translate("confirm"),
+								onClick: (e) => {
+									this.deleteDataCollection();
+									this.setState({ confirmDeleteDialog: false });
+								},
+								displayType: "secondary"
+							},
+							{
+								label: Util.translate("cancel"),
+								onClick: (e) => {
+									this.setState({ confirmDeleteDialog: false });
+								}
+							}
+						]}
+					/>
+				)}
+				{this.state.waringAndSaveDialog && (
+					<SXModalDialog
+						header={this.dialogHeader}
+						body={this.dialogBody}
+						buttons={[
+							{
+								label: Util.translate("confirm"),
+								onClick: (e) => {
+									this.saveDataCollection();
+									this.setState({ waringAndSaveDialog: false });
+								},
+								displayType: "secondary"
+							},
+							{
+								label: Util.translate("cancel"),
+								onClick: (e) => {
+									this.setState({ waringAndSaveDialog: false });
+								}
+							}
+						]}
 					/>
 				)}
 			</div>
