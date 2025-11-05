@@ -2,6 +2,7 @@ import React from "react";
 import { Util } from "../../stationx/util";
 import {
 	ActionKeys,
+	Constant,
 	ErrorClass,
 	Event,
 	FilterOptions,
@@ -18,12 +19,13 @@ import SXBaseVisualizer from "../../stationx/visualizer";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { UnderConstruction } from "../../stationx/common";
 import { Workbench } from "../DataWorkbench/workbench";
+import { SXFreezeIcon } from "../../stationx/icon";
 
 class DataCollectionExplorer extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		console.log("DataCollectionExplorer props: ", props);
+		console.log("DataCollectionExplorer props: ", props, this.params);
 
 		this.checkboxEnabled =
 			this.permissions.includes(ActionKeys.UPDATE) || this.permissions.includes(ActionKeys.DELETE);
@@ -52,17 +54,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		this.dialogHeader = <></>;
 		this.dialogBody = <></>;
 
-		if (this.state.enableActionButtons) {
-			this.actionButtons = [];
-			if (this.checkboxEnabled) {
-				this.actionButtons.push({
-					id: "deleteSelected",
-					name: Util.translate("delete-selected"),
-					symbol: "trash"
-				});
-			}
-		}
-
+		this.searchedData = [];
 		this.actionMenus = [];
 		this.searchResults = [];
 		this.selectedResults = [];
@@ -80,6 +72,17 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 				name: Util.translate("delete"),
 				symbol: "trash"
 			});
+
+			if (this.enableActionButtons) {
+				this.actionButtons = [];
+				if (this.checkboxEnabled) {
+					this.actionButtons.push({
+						id: "deleteSelected",
+						name: Util.translate("delete-selected"),
+						symbol: "trash"
+					});
+				}
+			}
 		}
 
 		this.contentActionMenus.push({
@@ -114,15 +117,17 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 				id: "status",
 				name: Util.translate("status"),
 				width: "6rem"
-			},
-			{
-				id: "actions",
-				name: "actions",
-				width: "3.5rem"
 			}
 		];
 		if (this.permissions.includes(ActionKeys.UPDATE)) {
-			this.tableColumns.unshift({ id: "checkbox", name: "", width: "2.5rem" });
+			if (this.enableCheckbox) {
+				this.tableColumns.unshift({ id: "checkbox", name: "", width: "2.5rem" });
+				this.tableColumns.push({
+					id: "actions",
+					name: "actions",
+					width: "3.5rem"
+				});
+			}
 		}
 	}
 
@@ -136,7 +141,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 
 		console.log("[DataCollectionExplorer] listenerSelectAll: ", dataPacket);
 
-		this.selectedResults = dataPacket.selectAll ? [...this.searchedResults] : [];
+		this.selectedResults = dataPacket.selectAll ? [...this.searchResults] : [];
 
 		this.setState({ searchContainerKey: Util.randomKey() });
 	};
@@ -177,26 +182,28 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 			return;
 		}
 
-		const selectedResultId = this.searchedResults[dataPacket.data][0].value;
-		console.log(
-			"[DataCollectionExplorer] listenerPopActionClicked: ",
-			dataPacket,
-			this.searchedResults,
-			selectedResultId
-		);
+		//console.log("[DataCollectionExplorer] listenerPopActionClicked: ", dataPacket, this.searchResults);
 
 		switch (dataPacket.action) {
 			case "update": {
+				const selectedDataCollectionId = this.searchResults[dataPacket.data][0].value;
+
 				this.fireLoadPortlet({
 					portletName: PortletKeys.DATACOLLECTION_EDITOR,
 					params: {
-						dataCollectionId: this.dataCollectionId
+						dataCollectionId: selectedDataCollectionId
 					}
 				});
 
 				break;
 			}
 			case "delete": {
+				this.fireRequest({
+					requestId: Workbench.RequestIDs.deleteDataCollections,
+					params: {
+						dataCollectionIds: this.selectedResults
+					}
+				});
 				break;
 			}
 		}
@@ -228,6 +235,30 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
 
 		this.setState({ confirmDeleteDialog: true });
+	};
+
+	listenerTableColumnClicked = (event) => {
+		const dataPacket = event.dataPacket;
+		if (dataPacket.targetPortlet !== this.namespace) {
+			return;
+		}
+
+		console.log("[DataCollectionExplorer] SX_TABLE_COLUMN_CLICKED: ", dataPacket);
+
+		let dataCollectionId;
+		dataPacket.row.every((column) => {
+			if (column.id === "dataCollectionId") {
+				dataCollectionId = column.value;
+			}
+
+			return dataCollectionId ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
+		});
+
+		if (dataCollectionId > 0) {
+			Event.fire(Event.SX_DATACOLLECTION_SELECTED, this.namespace, this.workbenchNamespace, {
+				dataCollectionId: dataCollectionId
+			});
+		}
 	};
 
 	listenerWorkbenchReady = (event) => {
@@ -267,38 +298,30 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 
 		switch (dataPacket.requestId) {
 			case Workbench.RequestIDs.searchDataCollections: {
-				if (dataPacket.status === LoadingStatus.COMPLETE) {
-					this.convertSearchResultsToContent(dataPacket.data);
-				}
+				this.convertSearchResultsToContent(dataPacket.data);
 
 				break;
 			}
 			case Workbench.RequestIDs.loadDataCollection: {
-				if (dataPacket.status === LoadingStatus.COMPLETE) {
-					this.convertSearchResultsToContent(dataPacket.data);
-				}
+				this.convertSearchResultsToContent(dataPacket.data);
 
 				break;
 			}
 			case Workbench.RequestIDs.deleteDataCollections: {
-				if (dataPacket.status === LoadingStatus.COMPLETE) {
-					state.infoDialog = true;
-					this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
-					this.dialogBody = Util.translate("datacollections-deleted-successfully");
+				state.infoDialog = true;
+				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dialogBody = Util.translate("datacollections-deleted-successfully");
 
-					this.fireRequest({
-						requestId: Workbench.RequestIDs.searchDataCollections,
-						params: this.params
-					});
+				this.fireRequest({
+					requestId: Workbench.RequestIDs.searchDataCollections,
+					params: this.params
+				});
 
-					this.setState({
-						infoDialog: true
-					});
+				this.setState({
+					infoDialog: true
+				});
 
-					return;
-				}
-
-				break;
+				return;
 			}
 		}
 
@@ -324,6 +347,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.on(Event.SX_RESPONSE, this.listenerResponse);
 		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+		Event.on(Event.SX_TABLE_COLUMN_CLICKED, this.listenerTableColumnClicked);
 		Event.on(Event.SX_SELECT_ALL, this.listenerSelectAll);
 		Event.on(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
 		Event.on(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
@@ -338,6 +362,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.off(Event.SX_RESPONSE, this.listenerResponse);
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+		Event.off(Event.SX_TABLE_COLUMN_CLICKED, this.listenerTableColumnClicked);
 		Event.off(Event.SX_SELECT_ALL, this.listenerSelectAll);
 		Event.off(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
 		Event.off(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
@@ -350,14 +375,16 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	};
 
 	selectedResultsToDataCollectionIds = () => {
-		return this.selectedResults.map((result) => result[0].value);
+		return this.selectedResults.map((result) => Number(result[0].value));
 	};
 
 	convertSearchResultsToContent(results) {
+		this.searchedData = results;
+
 		this.searchResults = results.map((result, index) => {
 			const { dataCollectionId, dataCollectionCode, dataCollectionVersion, displayName } = result;
 
-			//console.log("convertSearchResultsToContent: ", result, dataType, Util.isNotEmpty(typeStructureLink));
+			console.log("convertSearchResultsToContent: ", results, this.searchResults);
 			const contentActionMenus = [];
 
 			if (this.permissions.includes(ActionKeys.UPDATE)) {
@@ -380,7 +407,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 				},
 				{
 					id: "displayName",
-					value: displayName
+					value: displayName[this.languageId]
 				},
 				{
 					id: "dataCollectionVersion",
@@ -389,6 +416,10 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 				{
 					id: "dataCollectionCode",
 					value: dataCollectionCode
+				},
+				{
+					id: "status",
+					value: <SXFreezeIcon freezed={true} />
 				},
 				{
 					id: "actions",
@@ -407,7 +438,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.deleteDataCollections,
 			params: {
-				dataCollectionIds: JSON.stringify(this.selectedResultsToDataCollectionIds())
+				dataCollectionIds: this.selectedResultsToDataCollectionIds()
 			}
 		});
 	};
@@ -418,6 +449,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		} else if (this.state.loadingStatus == LoadingStatus.FAIL) {
 			return <SXErrorModal imageURL={this.imagePath + "/ajax-error.gif"} />;
 		} else {
+			console.log("DataCollectionExplorer render: ", this.enableCheckbox);
 			return (
 				<div>
 					{this.managementBar && (
@@ -430,7 +462,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 							filterBy={this.state.filterBy}
 							actionButtons={this.actionButtons}
 							actionMenus={this.actionMenus}
-							checkbox={this.checkboxEnabled}
+							checkbox={this.enableCheckbox}
 							checkboxChecked={this.checkAllResultsSelected()}
 							start={this.state.start}
 							delta={this.state.delta}
@@ -442,7 +474,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 						key={this.state.searchContainerKey}
 						namespace={this.namespace}
 						formId={this.formId}
-						checkbox={this.checkboxEnabled}
+						checkbox={this.enableCheckbox}
 						checkAll={this.checkAllResultsSelected()}
 						index={true}
 						columns={this.tableColumns}
@@ -450,27 +482,6 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 						selectedResults={this.selectedResults}
 						spritemap={this.spritemap}
 					/>
-					{this.state.confirmDeleteDialog && (
-						<SXModalDialog
-							header={this.dialogHeader}
-							body={this.dialogBody}
-							buttons={[
-								{
-									label: Util.translate("confirm"),
-									onClick: (e) => {
-										this.deleteDataTypes();
-										this.setState({ confirmDeleteDialog: false });
-									}
-								},
-								{
-									label: Util.translate("cancel"),
-									onClick: (e) => {
-										this.setState({ confirmDeleteDialog: false });
-									}
-								}
-							]}
-						/>
-					)}
 					{this.state.infoDialog && (
 						<SXModalDialog
 							header={this.dialogHeader}
@@ -487,8 +498,8 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 					)}
 					{this.state.confirmDeleteDialog && (
 						<SXModalDialog
-							header={this.state.dlgHeader}
-							body={this.state.dlgBody}
+							header={this.dialogHeader}
+							body={this.dialogBody}
 							buttons={[
 								{
 									label: Util.translate("confirm"),

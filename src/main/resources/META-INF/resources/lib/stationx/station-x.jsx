@@ -274,8 +274,10 @@ export const ResourceIds = {
 	CHECK_DATATYPE_UNIQUE: "/ajax/DataType/check-datatype-unique",
 	CREATE_PORTLET_INSTANCE: "/ajax/workbench/create-portlet-instance",
 	DELETE_DATASTRUCTURE: "/ajax/DataStructure/delete-datastructure",
+	DELETE_DATASTRUCTURES: "/ajax/DataStructure/delete-datastructures",
 	DELETE_DATATYPE: "/ajax/DataType/delete-datatype",
 	DELETE_DATATYPES: "/ajax/DataType/delete-datatypes",
+	DELETE_DATACOLLECTIONS: "/ajax/DataCollection/delete-datacollections",
 	DELETE_DATASETS: "/ajax/DataSet/delete-datasets",
 	DELETE_TEMP_STRUCTURED_DATA: "/ajax/StructuredData/delete-temp-file",
 	DELETE_TYPE_STRUCTURE_LINK: "/ajax/DataType/delete-type-structure-link",
@@ -291,6 +293,7 @@ export const ResourceIds = {
 	SAVE_DATASTRUCTURE: "/ajax/DataStructure/save-datastructure",
 	SAVE_TYPE_STRUCTURE_LINK: "/ajax/DataType/save-type-structure-link",
 	SEARCH_DATASETS: "/ajax/DataSet/search-datasets",
+	SEARCH_DATASTRUCTURES: "/ajax/DataStructure/search-datastructures",
 	SEARCH_DATATYPES: "/ajax/DataType/search-datatypes",
 	SEARCH_DATACOLLECTIONS: "/ajax/DataCollection/search-datacollections",
 	SEARCH_STRUCTUED_DATA: "/ajax/StructuredData/search-structured-data",
@@ -523,6 +526,7 @@ export const Event = {
 	SX_CLOSE_VERTICAL_NAV: "SX_CLOSE_VERTICAL_NAV",
 	SX_COMPONENT_WILL_UNMOUNT: "SX_COMPONENT_WILL_UNMOUNT",
 	SX_COPY_PARAMETER: "SX_COPY_PARAMETER",
+	SX_DATACOLLECTION_SELECTED: "SX_DATACOLLECTION_SELECTED",
 	SX_DELETE_DATATYPES: "SX_DELETE_DATATYPES",
 	SX_DELETE_PARAMETER: "SX_DELETE_PARAMETER",
 	SX_DELETE_SELECTED: "SX_DELETE_SELECTED",
@@ -572,6 +576,7 @@ export const Event = {
 	SX_SELECT_GROUP: "SX_SELECT_GROUP",
 	SX_SET_SELECTED_MEMBER: "SX_SET_SELECTED_MEMBER",
 	SX_TABLE_COLUMN_CLICKED: "SX_TABLE_COLUMN_CLICKED",
+	SX_TABLE_ROW_CLICKED: "SX_TABLE_ROW_CLICKED",
 	SX_TYPE_STRUCTURE_LINK_INFO_CHANGED: "SX_TYPE_STRUCTURE_LINK_INFO_CHANGED",
 	SX_UPDATE_PARAMETER: "SX_UPDATE_PARAMETER",
 	SX_REMOVE_SLAVE_PARAMS: "SX_REMOVE_SLAVE_PARAMS",
@@ -787,7 +792,7 @@ export const ParamType = {
 	/*02.*/ NUMERIC: "Numeric",
 	/*03.*/ BOOLEAN: "Boolean",
 	/*04.*/ SELECT: "Select",
-	/*05. DUALLIST: "DualList",*/
+	/*05. DUALLIST: "DualList", */
 	/*06. MATRIX: "Matrix",*/
 	/*07.*/ FILE: "File",
 	/*08.*/ ADDRESS: "Address",

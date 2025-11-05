@@ -29,6 +29,20 @@ export class DataType {
 		}
 	}
 
+	get title() {
+		const locales = Object.keys(this.displayName);
+		let title = {};
+		locales.forEach((locale) => {
+			title[locale] = this.displayName[locale] + " v." + this.paramVersion;
+		});
+
+		return title;
+	}
+	get localizedTitle() {
+		const title = this.displayName[this.languageId];
+		return title ? "" : title + " v." + this.dataTypeVersion;
+	}
+
 	getDisplayName() {
 		return this.displayName[this.languageId];
 	}
@@ -122,6 +136,20 @@ export class DataType {
 
 		json.languageId = this.languageId;
 		json.availableLanguageIds = this.availableLanguageIds;
+
+		return json;
+	}
+
+	toData() {
+		let json = {};
+
+		json.dataTypeId = this.dataTypeId;
+		json.dataTypeCode = this.dataTypeCode;
+		json.dataTypeVersion = this.dataTypeVersion;
+		json.extension = this.extension;
+		json.displayName = JSON.stringify(this.displayName);
+		if (Util.isNotEmpty(this.description)) json.description = JSON.stringify(this.description);
+		if (Util.isNotEmpty(this.tooltip)) json.tooltip = JSON.stringify(this.tooltip);
 
 		return json;
 	}

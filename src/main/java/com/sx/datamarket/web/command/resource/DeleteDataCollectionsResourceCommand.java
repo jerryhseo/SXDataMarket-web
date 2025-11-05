@@ -20,6 +20,7 @@ import com.sx.constant.StationXConstants;
 import com.sx.constant.StationXWebKeys;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataType;
+import com.sx.icecap.service.DataCollectionLocalService;
 import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
 
@@ -42,32 +43,32 @@ import org.osgi.service.component.annotations.Reference;
 	    immediate = true,
 	    property = {
 	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
-	        "javax.portlet.name=" + WebPortletKey.SXDataSetExplorerPortlet,
-	        "javax.portlet.name=" + WebPortletKey.SXDataSetEditorPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_DELETE_DATASETS
+	        "javax.portlet.name=" + WebPortletKey.SXDataCollectionExplorerPortlet,
+	        "javax.portlet.name=" + WebPortletKey.SXDataCollectionEditorPortlet,
+	        "mvc.command.name="+MVCCommand.RESOURCE_DELETE_DATACOLLECTIONS
 	    },
 	    service = MVCResourceCommand.class
 )
-public class DeleteDataSetsResourceCommand extends BaseMVCResourceCommand{
+public class DeleteDataCollectionsResourceCommand extends BaseMVCResourceCommand{
 
 	@Override
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
 
-		System.out.println("DeleteDataSetsResourceCommand");
-		String strDataSetIds = ParamUtil.getString(resourceRequest, "dataSetIds", "");
-		System.out.println("strDataSetIds: " + strDataSetIds);
+		System.out.println("DeleteDataCollectionsResourceCommand");
+		String strDataCollectionIds = ParamUtil.getString(resourceRequest, "dataCollectionIds", "");
+		System.out.println("strDataCollectionIds: " + strDataCollectionIds);
 		
-		String[] strAryDataSetIds = strDataSetIds.split(",");
-		long[] longAryDataSetIds = Arrays.stream(strAryDataSetIds).mapToLong(Long::parseLong).toArray();
+		String[] strAryDataCollectionIds = strDataCollectionIds.split(",");
+		long[] longAryDataCollectionIds = Arrays.stream(strAryDataCollectionIds).mapToLong(Long::parseLong).toArray();
 		
-		_dataSetLocalService.removeDataSets(longAryDataSetIds);
+		_dataCollectionLocalService.removeDataCollections(longAryDataCollectionIds);
 		
 		PrintWriter pw = resourceResponse.getWriter();
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
-		result.put("dataSetIds", longAryDataSetIds);
+		result.put("dataCollectionIds", longAryDataCollectionIds);
 		
 		pw.write(result.toJSONString());
 		pw.flush();
@@ -75,6 +76,6 @@ public class DeleteDataSetsResourceCommand extends BaseMVCResourceCommand{
 	}
 	
 	@Reference
-	private DataSetLocalService _dataSetLocalService;
+	private DataCollectionLocalService _dataCollectionLocalService;
 	
 }

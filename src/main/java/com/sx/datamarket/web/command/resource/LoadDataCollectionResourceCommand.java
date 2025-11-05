@@ -73,7 +73,7 @@ public class LoadDataCollectionResourceCommand extends BaseMVCResourceCommand{
 		if( dataCollectionId > 0 ) {
 			result = _dataCollectionLocalService.getDataCollectionInfo(dataCollectionId, themeDisplay.getLocale());
 		}
-			
+
 		if(loadAvailableDataSets == true) {
 			List<DataSet> availableDataSetList = _dataSetLocalService.getDataSetsByGroupId(themeDisplay.getScopeGroupId());
 			JSONArray availableDataSetJSONArray = JSONFactoryUtil.createJSONArray();
@@ -87,8 +87,7 @@ public class LoadDataCollectionResourceCommand extends BaseMVCResourceCommand{
 				jsonDataSet.put("dataSetId", dataSet.getDataSetId());
 				jsonDataSet.put("dataSetCode", dataSet.getDataSetCode());
 				jsonDataSet.put("dataSetVersion", dataSet.getDataSetVersion());
-				jsonDataSet.put("displayName", 
-						SXLocalizationUtil.mapToLocalizedJSON(dataSet.getDisplayNameMap()));
+				jsonDataSet.put("displayName", dataSet.getDisplayName(themeDisplay.getLocale()));
 				
 				availableDataSetJSONArray.put(jsonDataSet);
 			}

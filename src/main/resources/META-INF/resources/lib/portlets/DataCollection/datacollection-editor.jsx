@@ -1,12 +1,13 @@
 import React from "react";
 import { Util } from "../../stationx/util";
 import { EditStatus, ErrorClass, Event, LoadingStatus, ParamType, ValidationRule } from "../../stationx/station-x";
-import { GroupParameter, Parameter, SelectParameter } from "../../stationx/parameter";
+import { DualListParameter, GroupParameter, Parameter, SelectParameter } from "../../stationx/parameter";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import { Workbench } from "../DataWorkbench/workbench";
+import { SXLabeledText } from "../../stationx/form";
 
 class DataCollectionEditor extends SXBaseVisualizer {
 	constructor(props) {
@@ -166,19 +167,12 @@ class DataCollectionEditor extends SXBaseVisualizer {
 			this.formId,
 			this.languageId,
 			this.availableLanguageIds,
-			ParamType.SELECT,
+			"DualList",
 			{
 				paramCode: "dataSets",
 				displayName: Util.getTranslationObject(this.languageId, "associated-datasets"),
 				tooltip: Util.getTranslationObject(this.languageId, "associated-datasets-tooltip"),
-				viewType: SelectParameter.ViewTypes.CHECKBOX,
-				validation: {
-					required: {
-						value: true,
-						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
-						errorClass: ErrorClass.ERROR
-					}
-				}
+				viewType: DualListParameter.ViewTypes.ORDERED
 			}
 		);
 	}
@@ -202,7 +196,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		});
 	};
 
-	listenerResponce = (event) => {
+	listenerResponse = (event) => {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
@@ -215,48 +209,77 @@ class DataCollectionEditor extends SXBaseVisualizer {
 			case Workbench.RequestIDs.loadDataCollection: {
 				const {
 					dataCollectionCode,
-					dataCollectionVersion,
+					dataCollectionVersion = "1.0.0",
 					displayName,
 					description,
-					associatedDataSetList,
-					availableDataSetList
+					associatedDataSetList = [],
+					availableDataSetList = []
 				} = dataPacket.data;
 
 				this.dataCollectionCode.setValue({ value: dataCollectionCode });
 				this.dataCollectionVersion.setValue({ value: dataCollectionVersion });
 				this.displayName.setValue({ value: displayName });
 				this.description.setValue({ value: description });
+				this.dataCollectionCode.refreshKey();
+				this.dataCollectionVersion.refreshKey();
+				this.displayName.refreshKey();
+				this.description.refreshKey();
 
-				if (Util.isNotEmpty(associatedDataSetList)) {
-					this.dataSets.setValue({
-						value: associatedDataSetList.map((dataSet) => {
-							return dataSet.dataSetId;
-						})
-					});
-				}
+				console.log("DataCollectionEditor.listenerResponse : associatedDataSetList", associatedDataSetList);
 
 				if (Util.isNotEmpty(availableDataSetList)) {
 					this.availableDataSetList = availableDataSetList;
 					this.dataSets.options = this.availableDataSetList.map((dataSet) => {
 						let label = {};
-						Object.keys(dataSet.displayName).forEach((key) => {
-							label[key] = dataSet.displayName[key] + " v." + dataSet.dataSetVersion;
-						});
+						label[this.languageId] = dataSet.displayName;
 
 						return {
+							key: dataSet.dataSetId,
 							value: dataSet.dataSetId,
 							label: label
 						};
 					});
-
-					this.dataSets.refreshKey();
 				}
+
+				if (Util.isNotEmpty(associatedDataSetList)) {
+					const associatedDataSetIds = associatedDataSetList.map((dataSet) => {
+						const { dataSetCode, dataSetVersion, dataSetId, displayName } = dataSet;
+
+						return {
+							key: dataSetId,
+							label: displayName + " v." + dataSetVersion,
+							value: dataSetId
+						};
+					});
+
+					this.dataSets.setValue({
+						value: associatedDataSetIds
+					});
+				}
+
+				this.dataSets.refreshKey();
+
+				this.setState({
+					loadingStatus: LoadingStatus.COMPLETE
+				});
+
+				break;
+			}
+			case Workbench.RequestIDs.saveDataCollection: {
+				this.dataCollectionId = dataPacket.data.dataCollectionId;
+
+				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dialogBody = Util.translate("datacollection-saved-as", dataPacket.data.dataCollectionId);
+
+				this.setState({
+					infoDialog: true,
+					editStatus: EditStatus.UPDATE,
+					loadingStatus: LoadingStatus.COMPLETE
+				});
 
 				break;
 			}
 		}
-
-		this.setState({ loadingStatus: LoadingStatus.COMPLETE });
 	};
 
 	listenerComponentWillUnmount = (event) => {
@@ -273,7 +296,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 
 	componentDidMount() {
 		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
-		Event.on(Event.SX_RESPONSE, this.listenerResponce);
+		Event.on(Event.SX_RESPONSE, this.listenerResponse);
 		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 
 		this.fireHandshake();
@@ -282,7 +305,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 	componentWillUnmount() {
 		console.log("[DataCollectionEditor] componentWillUnmount");
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
-		Event.off(Event.SX_RESPONSE, this.listenerResponce);
+		Event.off(Event.SX_RESPONSE, this.listenerResponse);
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 	}
 
@@ -296,6 +319,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 			warning = this.dataCollectionCode.error;
 		}
 
+		console.log("dataCollectionVersion: ", this.dataCollectionVersion.getValue());
 		error = this.dataCollectionVersion.validate();
 		if (error === -1) {
 			this.dataCollectionVersion.dirty = true;
@@ -368,14 +392,17 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		data.displayName = this.displayName.getValue();
 		data.description = this.description.getValue();
 
+		//console.log("saveDataCollection: ", this.dataSets.getData());
+
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.saveDataCollection,
 			params: {
 				dataCollectionId: this.dataCollectionId,
 				dataCollectionCode: this.dataCollectionCode.getValue(),
 				dataCollectionVersion: this.dataCollectionVersion.getValue(),
-				displayName: this.displayName.getValue(),
-				description: this.description.getValue()
+				displayName: JSON.stringify(this.displayName.getValue()),
+				description: JSON.stringify(this.description.getValue()),
+				associatedDataSetList: this.dataSets.getData()
 			}
 		});
 	};
@@ -391,99 +418,110 @@ class DataCollectionEditor extends SXBaseVisualizer {
 
 	render() {
 		return (
-			<div style={{ marginTop: "2rem" }}>
-				{this.groupParameter.render({ spritemap: this.spritemap })}
-				{this.description.renderField({ spritemap: this.spritemap })}
-				{this.dataSets.renderField({ spritemap: this.spritemap })}
-				<Button.Group
-					spaced
-					style={{ width: "100%", justifyContent: "center" }}
-				>
-					<Button
-						displayType="primary"
-						onClick={this.handleSaveDataCollection}
-						title={Util.translate("save-datacollection")}
+			<>
+				{this.state.editStatus === EditStatus.UPDATE && (
+					<SXLabeledText
+						label={Util.translate("datacollection-id")}
+						text={this.dataCollectionId}
+						align="left"
+						viewType="INLINE_ATTACH"
+						style={{ marginBottom: "1rem", marginTop: "1.5rem" }}
+					/>
+				)}
+				<div style={{ marginTop: "2rem" }}>
+					{this.groupParameter.render({ spritemap: this.spritemap })}
+					{this.description.renderField({ spritemap: this.spritemap })}
+					{this.dataSets.renderField({ spritemap: this.spritemap })}
+					<Button.Group
+						spaced
+						style={{ width: "100%", justifyContent: "center" }}
 					>
-						<Icon
-							symbol="disk"
-							spritemap={this.spritemap}
-							style={{ marginRight: "5px" }}
-						/>
-						{Util.translate("save")}
-					</Button>
-					<Button
-						title={Util.translate("delete")}
-						onClick={this.handleDeleteClick}
-						displayType="warning"
-					>
-						<span className="inline-item inline-item-before">
+						<Button
+							displayType="primary"
+							onClick={this.handleSaveDataCollection}
+							title={Util.translate("save-datacollection")}
+						>
 							<Icon
-								symbol="trash"
+								symbol="disk"
 								spritemap={this.spritemap}
+								style={{ marginRight: "5px" }}
 							/>
-						</span>
-						{Util.translate("delete")}
-					</Button>
-				</Button.Group>
-				{this.state.infoDialog && (
-					<SXModalDialog
-						header={this.dialogHeader}
-						body={this.dialogBody}
-						buttons={[
-							{
-								label: Util.translate("ok"),
-								onClick: () => {
-									this.setState({ infoDialog: false });
+							{Util.translate("save")}
+						</Button>
+						<Button
+							title={Util.translate("delete")}
+							onClick={this.handleDeleteClick}
+							displayType="warning"
+						>
+							<span className="inline-item inline-item-before">
+								<Icon
+									symbol="trash"
+									spritemap={this.spritemap}
+								/>
+							</span>
+							{Util.translate("delete")}
+						</Button>
+					</Button.Group>
+					{this.state.infoDialog && (
+						<SXModalDialog
+							header={this.dialogHeader}
+							body={this.dialogBody}
+							buttons={[
+								{
+									label: Util.translate("ok"),
+									onClick: () => {
+										this.setState({ infoDialog: false });
+									}
 								}
-							}
-						]}
-					/>
-				)}
-				{this.state.confirmDeleteDialog && (
-					<SXModalDialog
-						header={this.dialogHeader}
-						body={this.dialogBody}
-						buttons={[
-							{
-								label: Util.translate("confirm"),
-								onClick: (e) => {
-									this.deleteDataCollection();
-									this.setState({ confirmDeleteDialog: false });
+							]}
+						/>
+					)}
+					{this.state.confirmDeleteDialog && (
+						<SXModalDialog
+							header={this.dialogHeader}
+							body={this.dialogBody}
+							buttons={[
+								{
+									label: Util.translate("confirm"),
+									onClick: (e) => {
+										this.deleteDataCollection();
+										this.setState({ confirmDeleteDialog: false });
+									},
+									displayType: "secondary"
 								},
-								displayType: "secondary"
-							},
-							{
-								label: Util.translate("cancel"),
-								onClick: (e) => {
-									this.setState({ confirmDeleteDialog: false });
+								{
+									label: Util.translate("cancel"),
+									onClick: (e) => {
+										this.setState({ confirmDeleteDialog: false });
+									}
 								}
-							}
-						]}
-					/>
-				)}
-				{this.state.waringAndSaveDialog && (
-					<SXModalDialog
-						header={this.dialogHeader}
-						body={this.dialogBody}
-						buttons={[
-							{
-								label: Util.translate("confirm"),
-								onClick: (e) => {
-									this.saveDataCollection();
-									this.setState({ waringAndSaveDialog: false });
+							]}
+						/>
+					)}
+					{this.state.waringAndSaveDialog && (
+						<SXModalDialog
+							header={this.dialogHeader}
+							body={this.dialogBody}
+							buttons={[
+								{
+									label: Util.translate("confirm"),
+									onClick: (e) => {
+										this.saveDataCollection();
+										this.setState({ waringAndSaveDialog: false });
+									},
+									displayType: "secondary"
 								},
-								displayType: "secondary"
-							},
-							{
-								label: Util.translate("cancel"),
-								onClick: (e) => {
-									this.setState({ waringAndSaveDialog: false });
+								{
+									label: Util.translate("cancel"),
+									onClick: (e) => {
+										this.setState({ waringAndSaveDialog: false });
+									}
 								}
-							}
-						]}
-					/>
-				)}
-			</div>
+							]}
+						/>
+					)}
+				</div>
+			</>
 		);
 	}
 }

@@ -7,16 +7,20 @@ import Button from "@clayui/button";
 import Icon from "@clayui/icon";
 import { Workbench } from "../DataWorkbench/workbench";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
+import { SXLabeledText } from "../../stationx/form";
 
 class DataSetEditor extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
 		console.log("DataSetEditor: ", props);
+		this.formId = this.namespace + "dataSetEditor";
+
 		this.dataCollectionId = this.params.dataCollectionId ?? 0;
 		this.dataSetId = this.params.dataSetId ?? 0;
 
-		this.availableDataTypes = [];
+		this.dataTypeList = [];
+		this.availableDataTypeList = [];
 
 		this.dataSetCode = Parameter.createParameter(
 			this.namespace,
@@ -152,20 +156,12 @@ class DataSetEditor extends SXBaseVisualizer {
 			this.formId,
 			this.languageId,
 			this.availableLanguageIds,
-			ParamType.SELECT,
+			"DualList",
 			{
 				paramCode: "datatypes",
 				displayName: Util.getTranslationObject(this.languageId, "associated-datatypes"),
 				tooltip: Util.getTranslationObject(this.languageId, "associated-datatypes-tooltip"),
-				viewType: SelectParameter.ViewTypes.CHECKBOX,
-				optionsPerRow: 3,
-				validation: {
-					required: {
-						value: true,
-						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
-						errorClass: ErrorClass.ERROR
-					}
-				}
+				viewType: DualListParameter.ViewTypes.ORDERED
 			}
 		);
 
@@ -173,6 +169,7 @@ class DataSetEditor extends SXBaseVisualizer {
 			editStatus: this.dataSetId > 0 ? EditStatus.UPDATE : EditStatus.ADD,
 			infoDialog: false,
 			confirmDeleteDialog: false,
+			waringAndSaveDialog: false,
 			loadingStatus: LoadingStatus.PENDING
 		};
 
@@ -223,23 +220,15 @@ class DataSetEditor extends SXBaseVisualizer {
 
 		switch (dataPacket.requestId) {
 			case Workbench.RequestIDs.loadDataSet: {
-				const dataSet = dataPacket.data.dataSet;
+				const { dataCollection, dataSet, associatedDataTypeList = [], availableDataTypeList } = dataPacket.data;
 
 				this.dataSetCode.setValue({ value: dataSet.dataSetCode });
 				this.dataSetVersion.setValue({ value: dataSet.dataSetVersion });
 				this.displayName.setValue({ value: dataSet.displayName });
 				this.description.setValue({ value: dataSet.description });
 
-				if (Util.isNotEmpty(dataPacket.data.dataTypeList)) {
-					this.dataTypes.setValue({
-						value: dataPacket.data.dataTypeList.map((dataType) => {
-							return dataType.dataTypeId;
-						})
-					});
-				}
-
-				if (Util.isNotEmpty(dataPacket.data.availableDataTypeList)) {
-					this.availableDataTypeList = dataPacket.data.availableDataTypeList;
+				if (Util.isNotEmpty(availableDataTypeList)) {
+					this.availableDataTypeList = availableDataTypeList;
 					this.dataTypes.options = this.availableDataTypeList.map((dataType) => {
 						let label = {};
 						Object.keys(dataType.displayName).forEach((key) => {
@@ -255,9 +244,52 @@ class DataSetEditor extends SXBaseVisualizer {
 					this.dataTypes.refreshKey();
 				}
 
+				if (Util.isNotEmpty(associatedDataTypeList)) {
+					this.dataTypeList = associatedDataTypeList;
+
+					const dataTypeIds = associatedDataTypeList.map((dataType) => {
+						const { dataTypeVersion, dataTypeId, displayName } = dataType;
+
+						return {
+							key: dataTypeId,
+							label: displayName + " v." + dataTypeVersion,
+							value: dataTypeId
+						};
+					});
+					this.dataTypes.setValue({
+						value: dataTypeIds
+					});
+				}
+
 				console.log("[dataSetEditor] response this.dataTypes: ", this.dataTypes);
 
 				break;
+			}
+			case Workbench.RequestIDs.saveDataSet: {
+				console.log("DataSetEditor.listenerResponse.saveDataSet: ", dataPacket.data);
+
+				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dialogBody = Util.translate("dataset-saved-as", dataPacket.data.dataSetId);
+
+				this.setState({
+					infoDialog: true,
+					editStatus: EditStatus.UPDATE,
+					loadingStatus: LoadingStatus.COMPLETE
+				});
+
+				break;
+			}
+			case Workbench.RequestIDs.deleteDataSets: {
+				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dialogBody = Util.translate("datasets-deleted-successfully");
+
+				this.setState({
+					infoDialog: true
+				});
+
+				this.set;
+
+				return;
 			}
 		}
 
@@ -295,6 +327,14 @@ class DataSetEditor extends SXBaseVisualizer {
 		Event.off(Event.SX_RESPONSE, this.listenerResponse);
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 	}
+
+	initForm = () => {
+		this.dataSetCode.initValue();
+		this.dataSetVersion.initValue();
+		this.displayName.initValue();
+		this.description.initValue();
+		this.dataTypes.initValue();
+	};
 
 	checkFieldError = () => {
 		let error = this.dataSetCode.validate();
@@ -373,22 +413,26 @@ class DataSetEditor extends SXBaseVisualizer {
 	};
 
 	saveDataSet = () => {
-		const associatedDataTypeIds = this.dataTypes.getValue().map((val) => val);
+		const associatedDataTypeIds = this.dataTypes.getValue().map((val) => val.value);
+
+		/*
 		const associatedDataTypes = this.availableDataTypeList.filter((dataType) => {
 			console.log("Filter: ", dataType.dataTypeId, typeof dataType.dataTypeId);
 			return associatedDataTypeIds.includes(dataType.dataTypeId);
 		});
+		*/
 
-		console.log("associatedDataTypes: ", associatedDataTypeIds, associatedDataTypes);
+		console.log("associatedDataTypeIDs: ", associatedDataTypeIds);
 
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.saveDataSet,
 			params: {
+				dataSetId: this.dataSetId,
 				dataSetCode: this.dataSetCode.getValue(),
 				dataSetVersion: this.dataSetVersion.getValue(),
 				displayName: JSON.stringify(this.displayName.getValue()),
 				description: JSON.stringify(this.description.getValue()),
-				associatedDataTypes: JSON.stringify(associatedDataTypes)
+				associatedDataTypes: associatedDataTypeIds
 			}
 		});
 	};
@@ -411,76 +455,111 @@ class DataSetEditor extends SXBaseVisualizer {
 		}
 
 		return (
-			<div style={{ marginTop: "2rem" }}>
-				{this.basicProps.render({ spritemap: this.spritemap })}
-				{this.description.renderField({ spritemap: this.spritemap })}
-				{this.dataTypes.renderField({ spritemap: this.spritemap })}
-				<div style={{ width: "100%", marginTop: "1.5rem", display: "inline-flex", justifyContent: "center" }}>
-					<Button.Group spaced>
-						<Button
-							title={Util.translate("save")}
-							onClick={this.handleSaveClick}
-						>
-							<span className="inline-item inline-item-before">
-								<Icon
-									symbol="disk"
-									spritemap={this.spritemap}
-								/>
-							</span>
-							{Util.translate("save")}
-						</Button>
-						<Button
-							title={Util.translate("delete")}
-							onClick={this.handleDeleteClick}
-							displayType="warning"
-						>
-							<span className="inline-item inline-item-before">
-								<Icon
-									symbol="trash"
-									spritemap={this.spritemap}
-								/>
-							</span>
-							{Util.translate("delete")}
-						</Button>
-					</Button.Group>
-				</div>
-				{this.state.infoDialog && (
-					<SXModalDialog
-						header={this.dialogHeader}
-						body={this.dialogBody}
-						buttons={[
-							{
-								label: Util.translate("ok"),
-								onClick: () => {
-									this.setState({ infoDialog: false });
-								}
-							}
-						]}
+			<>
+				{this.state.editStatus === EditStatus.UPDATE && (
+					<SXLabeledText
+						label={Util.translate("dataset-id")}
+						text={this.dataSetId}
+						align="left"
+						viewType="INLINE_ATTACH"
+						style={{ marginBottom: "1rem", marginTop: "1.5rem" }}
 					/>
 				)}
-				{this.state.confirmDeleteDialog && (
-					<SXModalDialog
-						header={this.dialogHeader}
-						body={this.dialogBody}
-						buttons={[
-							{
-								label: Util.translate("confirm"),
-								onClick: (e) => {
-									this.deleteDataSet();
-									this.setState({ confirmDeleteDialog: false });
+				<div style={{ marginTop: "2rem" }}>
+					{this.basicProps.render({ spritemap: this.spritemap })}
+					{this.description.renderField({ spritemap: this.spritemap })}
+					{this.dataTypes.renderField({ spritemap: this.spritemap })}
+					<div
+						style={{ width: "100%", marginTop: "1.5rem", display: "inline-flex", justifyContent: "center" }}
+					>
+						<Button.Group spaced>
+							<Button
+								title={Util.translate("save")}
+								onClick={this.handleSaveClick}
+							>
+								<span className="inline-item inline-item-before">
+									<Icon
+										symbol="disk"
+										spritemap={this.spritemap}
+									/>
+								</span>
+								{Util.translate("save")}
+							</Button>
+							<Button
+								title={Util.translate("delete")}
+								onClick={this.handleDeleteClick}
+								displayType="warning"
+							>
+								<span className="inline-item inline-item-before">
+									<Icon
+										symbol="trash"
+										spritemap={this.spritemap}
+									/>
+								</span>
+								{Util.translate("delete")}
+							</Button>
+						</Button.Group>
+					</div>
+					{this.state.infoDialog && (
+						<SXModalDialog
+							header={this.dialogHeader}
+							body={this.dialogBody}
+							buttons={[
+								{
+									label: Util.translate("ok"),
+									onClick: () => {
+										this.setState({ infoDialog: false });
+									}
+								}
+							]}
+						/>
+					)}
+					{this.state.confirmDeleteDialog && (
+						<SXModalDialog
+							header={this.dialogHeader}
+							body={this.dialogBody}
+							buttons={[
+								{
+									label: Util.translate("confirm"),
+									onClick: (e) => {
+										this.deleteDataSet();
+										this.setState({ confirmDeleteDialog: false });
+									},
+									displayType: "secondary"
 								},
-								displayType: "secondary"
-							},
-							{
-								label: Util.translate("cancel"),
-								onClick: (e) => {
-									this.setState({ confirmDeleteDialog: false });
+								{
+									label: Util.translate("cancel"),
+									onClick: (e) => {
+										this.setState({ confirmDeleteDialog: false });
+									}
 								}
-							}
-						]}
-					/>
-				)}
-			</div>
+							]}
+						/>
+					)}
+					{this.state.waringAndSaveDialog && (
+						<SXModalDialog
+							header={this.dialogHeader}
+							body={this.dialogBody}
+							buttons={[
+								{
+									label: Util.translate("confirm"),
+									onClick: (e) => {
+										this.saveDataSet();
+										this.setState({ waringAndSaveDialog: false });
+									},
+									displayType: "secondary"
+								},
+								{
+									label: Util.translate("cancel"),
+									onClick: (e) => {
+										this.setState({ waringAndSaveDialog: false });
+									}
+								}
+							]}
+						/>
+					)}
+				</div>
+			</>
 		);
 	}
 }

@@ -111,7 +111,6 @@ class DataTypeEditor extends SXBaseVisualizer {
 		super(props);
 
 		//console.log("DataTypeEditor props: ", props);
-		console.log("LanguageID: ", Liferay.ThemeDisplay.getLanguageId(), SXSystem.getLanguageId(), this.languageId);
 		this.dirty = false;
 
 		this.dataType = new DataType(this.languageId, this.availableLanguageIds);
@@ -645,13 +644,15 @@ class DataTypeEditor extends SXBaseVisualizer {
 		}));
 
 		if (Util.isNotEmpty(data.visualizers)) {
-			//console.log("data.visualizers: ", data.visualizers);
+			console.log("data.visualizers: ", data.visualizers);
 			this.visualizers.setValue({
-				value: data.visualizers.map((v) => ({
-					value: v.id + "",
-					label: v.displayName,
-					typeVisualizerLinkId: v.typeVisualizerLinkId
-				}))
+				value: data.visualizers.map((v) => {
+					if (typeof v === "object") {
+						return this.visualizers.getOptionByValue(v.id);
+					} else {
+						return this.visualizers.getOptionByValue(v);
+					}
+				})
 			});
 			this.visualizers.dirty = false;
 		}
@@ -1014,29 +1015,30 @@ class DataTypeEditor extends SXBaseVisualizer {
 			return;
 		}
 
-		const formValues = {
-			dataType: this.dataType.toJSON()
-		};
+		let formValues = this.dataType.toData();
 
 		if (this.structureLink.dataTypeId > 0) {
-			formValues.structureLink = this.structureLink.toJSON();
+			formValues = {
+				...formValues,
+				...this.structureLink.toJSON()
+			};
 		}
 
 		if (Util.isNotEmpty(this.visualizers.getValue())) {
-			formValues.visualizers = this.visualizers.getValue();
+			formValues.visualizers = this.visualizers.getValue().map((value) => Number(value));
 		}
 
 		const requestId =
 			this.editStatus == EditStatus.UPDATE
 				? Workbench.RequestIDs.updateDataType
 				: Workbench.RequestIDs.addDataType;
-		//console.log("handleBtnSaveClick: ", JSON.stringify(formValues, null, 4), this.fields);
+		console.log("handleBtnSaveClick: ", JSON.stringify(formValues, null, 4), this.fields);
 
 		this.fireRequest({
 			requestId: requestId,
 			params: {
 				dataTypeId: this.dataType.dataTypeId,
-				formData: JSON.stringify(formValues)
+				...formValues
 			},
 			refresh: true
 		});

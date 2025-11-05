@@ -9,7 +9,7 @@ import parse from "html-react-parser";
 
 export class Workbench {
 	static loadWorkingPortlet({ portletSectionId, windowState, workingPortlet, workbench }) {
-		console.log("Workbench.loadWorkingPortlet: ", workingPortlet);
+		//console.log("Workbench.loadWorkingPortlet: ", workingPortlet);
 
 		AUI().use("aui-base, portlet-url", function (A) {
 			let portletURL = Liferay.PortletURL.createURL(workingPortlet.url);
@@ -22,7 +22,7 @@ export class Workbench {
 				portletURL.setParameter(paramKey, workingPortlet.params[paramKey]);
 			}
 
-			console.log("Load working portlet: ", portletURL.toString());
+			//console.log("Load working portlet: ", portletURL.toString());
 
 			$.ajax({
 				url: portletURL.toString(),
@@ -39,6 +39,19 @@ export class Workbench {
 	}
 
 	static BASE_WINDOW_ZINDEX = 10000;
+
+	static WorkflowStatus = {
+		ANY: -1,
+		APPROVED: 0,
+		DENIED: 1,
+		DRAFT: 2,
+		EXPIRED: 3,
+		IN_TRASH: 4,
+		INACTIVE: 5,
+		INCOMPLETE: 6,
+		PENDING: 7,
+		SCHEDULED: 8
+	};
 
 	static WindowState = {
 		MINIMIZE: 0,
@@ -59,7 +72,9 @@ export class Workbench {
 		checkDataStructureUnique: "checkDataStructureUnique",
 		checkDataStructureCodeUnique: "checkDataStructureCodeUnique",
 		deleteDataTypes: "deleteDataTypes",
+		deleteDataCollections: "deleteDataCollections",
 		deleteDataSets: "deleteDataSets",
+		deleteDataStructures: "deleteDataStructures",
 		deleteTypeStructureLink: "deleteTypeStructureLink",
 		deleteTypeStructureLinkAndImportDataStructure: "deleteTypeStructureLinkAndImportDataStructure",
 		importDataType: "importDataType",
@@ -169,14 +184,13 @@ export class Workbench {
 	}
 
 	loadPortlet = async ({ portletRootTag, portletName, params = {}, title = "" }) => {
-		console.log("Workbench loadPortlet: ", portletName, title);
 		const portletInstance = await this.createPortletInfo({
 			resourceId: ResourceIds.CREATE_PORTLET_INSTANCE,
 			portletName: portletName
 		});
 
 		portletInstance.title = title;
-		console.log("Workbench loadPortlet: ", portletInstance);
+		//console.log("Workbench loadPortlet: ", portletInstance);
 
 		params.workbenchNamespace = this.namespace;
 		params.workbenchId = this.workbenchId;
@@ -274,12 +288,11 @@ export class Workbench {
 	};
 
 	createPortletInfo = async ({ resourceId, portletName }) => {
-		console.log("Workbench ResourceId: ", resourceId);
 		let url = await this.createResourceURL({
 			resourceId: resourceId
 		});
 
-		console.log("Workbench URL: ", url);
+		//console.log("Workbench URL: ", url);
 
 		const dataParams = Util.toNamespacedParams(this.namespace, {
 			portletName: portletName
@@ -363,7 +376,7 @@ export class Workbench {
 			const formData = new FormData();
 			Object.keys(params).forEach((key) => {
 				formData.append(this.namespace + key, params[key]);
-				console.log(this.namespace + key + ": " + params[key]);
+				//console.log(this.namespace + key + ": " + params[key]);
 			});
 
 			return new Promise((resolve, reject) => {
@@ -375,7 +388,7 @@ export class Workbench {
 						processData: false,
 						contentType: false,
 						success: (result) => {
-							console.log("Data Ajax finished: ", typeof result, result);
+							//console.log("Data Ajax finished: ", typeof result, result);
 							resolve(JSON.parse(result));
 						}
 					});
@@ -384,7 +397,7 @@ export class Workbench {
 				}
 			});
 		} else {
-			console.log("Ajax get: ", url, params);
+			//console.log("Ajax get: ", url, params);
 			return new Promise((resolve, reject) => {
 				try {
 					$.ajax({
@@ -392,7 +405,6 @@ export class Workbench {
 						type: type,
 						dataType: dataType,
 						success: (result) => {
-							console.log("Data Ajax finished: ", url, params);
 							resolve(result);
 						}
 					});
@@ -418,7 +430,7 @@ export class Workbench {
 			}
 
 			const result = await response.json();
-			console.log(result);
+			//console.log(result);
 		} catch (error) {
 			console.error("Fetch error:", error);
 		}
@@ -457,6 +469,7 @@ export class Workbench {
 				break;
 			}
 			case Workbench.RequestIDs.importDataStructure:
+			case Workbench.RequestIDs.loadDataStructureWithInfo:
 			case Workbench.RequestIDs.loadDataStructure: {
 				resourceId = ResourceIds.LOAD_DATASTRUCTURE;
 				break;
@@ -478,9 +491,12 @@ export class Workbench {
 				resourceId = ResourceIds.LOAD_DATACOLLECTION;
 				break;
 			}
-			case Workbench.RequestIDs.loadDataStructure:
-			case Workbench.RequestIDs.loadDataStructureWithInfo: {
-				resourceId = ResourceIds.LOAD_DATASTRUCTURE;
+			case Workbench.RequestIDs.saveDataCollection: {
+				resourceId = ResourceIds.SAVE_DATACOLLECTION;
+				break;
+			}
+			case Workbench.RequestIDs.deleteDataCollections: {
+				resourceId = ResourceIds.DELETE_DATACOLLECTIONS;
 				break;
 			}
 			case Workbench.RequestIDs.saveDataStructure: {
@@ -509,6 +525,14 @@ export class Workbench {
 			}
 			case Workbench.RequestIDs.deleteDataSets: {
 				resourceId = ResourceIds.DELETE_DATASETS;
+				break;
+			}
+			case Workbench.RequestIDs.deleteDataStructures: {
+				resourceId = ResourceIds.DELETE_DATASTRUCTURES;
+				break;
+			}
+			case Workbench.RequestIDs.searchDataStructures: {
+				resourceId = ResourceIds.SEARCH_DATASTRUCTURES;
 				break;
 			}
 		}

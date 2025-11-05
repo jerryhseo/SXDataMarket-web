@@ -34,8 +34,10 @@ import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
 
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -72,6 +74,7 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 		String associatedDataTypes = ParamUtil.getString(resourceRequest, "associatedDataTypes", "[]");
 		
 		System.out.println("dataSetCode: " + dataSetCode);
+		System.out.println("dataSetId: " + dataSetId);
 		System.out.println("dataSetVersion: " + dataSetVersion);
 		System.out.println("displayName: " + displayName);
 		System.out.println("description: " + description);
@@ -80,7 +83,17 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 		ServiceContext dataSetSC = ServiceContextFactory.getInstance(DataSet.class.getName(), resourceRequest);
 		
 		DataSet dataSet = null;
-		if( dataSetId == 0 ) {
+		if( dataSetId > 0 ) {
+			_dataSetLocalService.updateDataSet(
+					dataSetId,
+					dataSetCode, 
+					dataSetVersion, 
+					SXLocalizationUtil.jsonToLocalizedMap(displayName), 
+					SXLocalizationUtil.jsonToLocalizedMap(description), 
+					WorkflowConstants.STATUS_APPROVED, 
+					dataSetSC);
+		}
+		else {
 			dataSet = _dataSetLocalService.addDataSet (
 					dataSetCode, 
 					dataSetVersion, 
@@ -92,39 +105,43 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 			
 			dataSetId = dataSet.getDataSetId();
 		}
-		else {
-			_dataSetLocalService.updateDataSet(
-					dataSetId,
-					dataSetCode, 
-					dataSetVersion, 
-					SXLocalizationUtil.jsonToLocalizedMap(displayName), 
-					SXLocalizationUtil.jsonToLocalizedMap(description), 
-					WorkflowConstants.STATUS_APPROVED, 
-					dataSetSC);
+		
+		String[] strAryAssociatedDataTypes = associatedDataTypes.split(",");
+		long[] longAryAssoicatedDataTypes = Arrays.stream(strAryAssociatedDataTypes).mapToLong(Long::parseLong).toArray();
+		
+		//Delete SetTypeLink un-selected
+		List<SetTypeLink> setTypeLinkList = _setTypeLinkLocalService.getSetTypeLinkListBySet(dataSetId);
+		
+		Iterator<SetTypeLink> iter = setTypeLinkList.iterator();
+		while( iter.hasNext()) {
+			SetTypeLink setTypeLink = iter.next();
+			
+			boolean selected = Arrays.asList(setTypeLinkList).contains(setTypeLink.getDataTypeId());
+			
+			if( !selected ) {
+				_setTypeLinkLocalService.deleteSetTypeLink(setTypeLink.getPrimaryKey());
+			}
 		}
 		
-		JSONArray associated = JSONFactoryUtil.createJSONArray(associatedDataTypes);
-		JSONArray linkIds = JSONFactoryUtil.createJSONArray();
-		for(int i=0; i<associated.length(); i++) {
-			JSONObject link = associated.getJSONObject(i);
+		//Add SetTypeLink if it is new or update it if it exists.
+		for(int order = 0; order < longAryAssoicatedDataTypes.length; order++) {
+			long dataTypeId = longAryAssoicatedDataTypes[order];
 			
-			long setTypeLinkId = link.getLong("setTypeLinkId", 0);
-			long dataTypeId = link.getLong("dataTypeId");
-			
-			SetTypeLink setTypeLink = null;
-			if( setTypeLinkId > 0 ) {
-				setTypeLink = _setTypeLinkLocalService.updateSetTypeLink(setTypeLinkId, dataSetId, dataTypeId);
+			SetTypeLink setTypeLink = _setTypeLinkLocalService.getSetTypeLink(dataSetId, dataTypeId);
+			if( Validator.isNull(setTypeLink)) {
+				System.out.println("Save DataSet dataSetId: " + dataSetId);
+				System.out.println("Save DataSet dataTypeId: " + dataTypeId);
+				System.out.println("Save DataSet Order: " + order);
+				_setTypeLinkLocalService.addSetTypeLink(dataSetId, dataTypeId, order);
+			} else {
+				System.out.println("Save DataSet Link found dataSetId: " + setTypeLink.getDataSetId());
+				System.out.println("Save DataSet Link found dataTypeId: " + setTypeLink.getDataTypeId());
+				System.out.println("Save DataSet Link found order: " + setTypeLink.getOrder());
 			}
-			else {
-				setTypeLink = _setTypeLinkLocalService.addSetTypeLink(dataSetId, dataTypeId);
-			}
-			
-			linkIds.put(setTypeLink.getPrimaryKey());
 		}
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		result.put("dataSetId", dataSetId);
-		result.put("setTypeLinkIds", linkIds);
 
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(result.toString());

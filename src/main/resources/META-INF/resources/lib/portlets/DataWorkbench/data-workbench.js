@@ -28,6 +28,8 @@ class DataWorkbench extends React.Component {
 		this.params = props.params;
 		this.spritemap = props.spritemapPath;
 
+		this.languageId = SXSystem.getLanguageId();
+
 		this.workingPortletSectionId = this.namespace + "workingPortletSection";
 
 		console.log("DataWorkbench......", props);
@@ -117,50 +119,7 @@ class DataWorkbench extends React.Component {
 			}
 		];
 
-		this.navItems = [
-			{
-				id: "subjectManage",
-				items: [
-					{
-						id: "2",
-						href: "#nested1",
-						label: "Nested1"
-					}
-				],
-				label: Util.translate("subject-manage")
-			},
-			{
-				id: "3",
-				href: "#2",
-				label: "About"
-			},
-			{
-				id: "4",
-				href: "#3",
-				label: "Contact"
-			},
-			{
-				id: "5",
-				items: [
-					{
-						id: "6",
-						href: "#5",
-						label: "Five"
-					},
-					{
-						id: "7",
-						href: "#6",
-						label: "Six"
-					}
-				],
-				label: "Projects"
-			},
-			{
-				id: "8",
-				href: "#7",
-				label: "Seven"
-			}
-		];
+		this.navItems = [];
 	}
 
 	listenerLoadPortlet = (event) => {
@@ -247,7 +206,8 @@ class DataWorkbench extends React.Component {
 				this.deployPortlet({
 					portletName: PortletKeys.DATACOLLECTION_EXPLORER,
 					params: {
-						managementBar: false
+						managementBar: false,
+						checkbox: false
 					},
 					title: Util.translate("open-datacollection")
 				});
@@ -291,6 +251,51 @@ class DataWorkbench extends React.Component {
 		}
 	};
 
+	listenerDataCollectionSelected = (event) => {
+		const dataPacket = event.dataPacket;
+		if (dataPacket.targetPortlet !== this.namespace) {
+			return;
+		}
+
+		console.log("[DataWorkbench] dataCollectionSelected: ", dataPacket);
+		this.workbench.processRequest({
+			requestId: Workbench.RequestIDs.loadDataCollection,
+			requestPortlet: this.namespace,
+			params: {
+				dataCollectionId: dataPacket.dataCollectionId,
+				loadAvailableDataSets: false
+			}
+		});
+	};
+
+	listenerResponse = (event) => {
+		const dataPacket = event.dataPacket;
+
+		if (dataPacket.targetPortlet !== this.namespace) {
+			console.log("[DataWorkbench] listenerResponce rejected: ", dataPacket);
+			return;
+		}
+
+		console.log("[DataWorkbench] listenerResonse: ", dataPacket);
+		switch (dataPacket.requestId) {
+			case Workbench.RequestIDs.loadDataCollection: {
+				this.dataCollection = dataPacket.data;
+
+				this.navItems = this.dataCollection.associatedDataSetList.map((dataSet) => ({
+					id: dataSet.dataSetId,
+					label: dataSet.displayName,
+					type: "dataSet"
+				}));
+
+				console.log("navItems: ", this.navItems);
+				this.setState({ dataCollectionId: this.dataCollection.dataCollectionId });
+				break;
+			}
+		}
+
+		//this.forceUpdate();
+	};
+
 	listenerCloseVerticalNav = (event) => {
 		const dataPacket = event.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace) {
@@ -298,15 +303,6 @@ class DataWorkbench extends React.Component {
 		}
 
 		this.setState({ openVerticalNav: dataPacket.open });
-	};
-
-	listenerSaveDataCollection = (event) => {
-		const dataPacket = event.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace) {
-			return;
-		}
-
-		console.log("SX_SAVE_DATACOLLECTION received: ", dataPacket.data);
 	};
 
 	listenerClosePreviewWindow = (event) => {
@@ -317,9 +313,7 @@ class DataWorkbench extends React.Component {
 		}
 
 		this.workbench.removeWindow(dataPacket.portletId);
-		//console.log("listenerClosePreviewWindow: ", dataPacket, this.workbench);
 
-		//this.setState({ manifestSDE: false });
 		this.forceUpdate();
 	};
 
@@ -330,7 +324,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("SX_REQUEST received: ", dataPacket);
+		//console.log("SX_REQUEST received: ", dataPacket);
 		this.workbench.processRequest({
 			params: dataPacket.params,
 			requestPortlet: dataPacket.sourcePortlet,
@@ -342,11 +336,12 @@ class DataWorkbench extends React.Component {
 		Event.on(Event.SX_HANDSHAKE, this.listenerHandshake);
 		Event.on(Event.SX_MENU_SELECTED, this.listenerMenuItemClick);
 		Event.on(Event.SX_CLOSE_VERTICAL_NAV, this.listenerCloseVerticalNav);
-		Event.on(Event.SX_SAVE_DATACOLLECTION, this.listenerSaveDataCollection);
 		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
 		Event.on(Event.SX_OPEN_PORTLET_WINDOW, this.listenerOpenPortletWindow);
 		Event.on(Event.SX_REQUEST, this.listenerRequest);
+		Event.on(Event.SX_RESPONSE, this.listenerResponse);
 		Event.on(Event.SX_REMOVE_WINDOW, this.listenerClosePreviewWindow);
+		Event.on(Event.SX_DATACOLLECTION_SELECTED, this.listenerDataCollectionSelected);
 
 		window.addEventListener("resize", this.listenerWindowResize);
 
@@ -357,32 +352,23 @@ class DataWorkbench extends React.Component {
 				portletName: PortletKeys.DATACOLLECTION_EXPLORER,
 				title: Util.translate("datacollection-selector"),
 				params: {
-					managementBar: false
+					managementBar: false,
+					checkbox: false
 				},
 				portletState: Workbench.PortletState.NORMAL
 			});
 		}
-
-		//this.forceUpdate();
-
-		/*
-		Workbench.loadWorkingPortlet({
-			portletSectionId: this.workingPortletSectionId,
-			WindowState: WindowState.EXCLUSIVE,
-			workingPortlet: this.workingPortlet,
-			workbench: this.workbenchInfo
-			});
-			*/
 	}
 	componentWillUnmount() {
 		Event.off(Event.SX_HANDSHAKE, this.listenerHandshake);
 		Event.off(Event.SX_MENU_SELECTED, this.listenerMenuItemClick);
 		Event.off(Event.SX_CLOSE_VERTICAL_NAV, this.listenerCloseVerticalNav);
-		Event.off(Event.SX_SAVE_DATACOLLECTION, this.listenerSaveDataCollection);
 		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
 		Event.off(Event.SX_OPEN_PORTLET_WINDOW, this.listenerOpenPortletWindow);
 		Event.off(Event.SX_REQUEST, this.listenerRequest);
+		Event.off(Event.SX_RESPONSE, this.listenerResponse);
 		Event.off(Event.SX_REMOVE_WINDOW, this.listenerClosePreviewWindow);
+		Event.off(Event.SX_DATACOLLECTION_SELECTED, this.listenerDataCollectionSelected);
 
 		window.removeEventListener("resize", this.listenerWindowResize);
 	}
@@ -470,7 +456,8 @@ class DataWorkbench extends React.Component {
 									displayType={this.dataCollection ? "sx-label-outline-3" : "sx-label-outline-4"}
 									style={{
 										margin: "5px 0",
-										height: "40px"
+										height: "40px",
+										width: "100%"
 									}}
 								>
 									<Icon
@@ -479,10 +466,11 @@ class DataWorkbench extends React.Component {
 										style={{ marginRight: "5px" }}
 									/>
 									{this.dataCollection
-										? this.dataCollection.label
+										? this.dataCollection.displayName[this.languageId]
 										: Util.translate("no-datacollection")}
 								</Sticker>
 								<SXDataCollectionNavigator
+									key={this.state.dataCollectionId}
 									namespace={this.namespace}
 									navItems={this.navItems}
 									style={{

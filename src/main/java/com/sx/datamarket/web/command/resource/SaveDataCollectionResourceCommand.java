@@ -31,8 +31,10 @@ import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
 
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -51,6 +53,14 @@ import org.osgi.service.component.annotations.Reference;
 	    service = MVCResourceCommand.class
 )
 public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
+	
+	@Reference
+	private CollectionSetLinkLocalService _collectionSetLinkLocalService;
+	
+	@Reference
+	private DataCollectionLocalService _dataCollectionLocalService;
+	
+
 
 	@Override
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
@@ -64,12 +74,17 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 		String dataCollectionVersion = ParamUtil.getString(resourceRequest, "dataCollectionVersion", "");
 		String strDisplayName = ParamUtil.getString(resourceRequest, "displayName", "{}");
 		String strDescription = ParamUtil.getString(resourceRequest, "description", "{}");
-		String strDataSets = ParamUtil.getString(resourceRequest, "dataSets", "[]");
+		String strDataSets = ParamUtil.getString(resourceRequest, "associatedDataSetList");
 		
-		JSONObject jsonDisplayName = JSONFactoryUtil.createJSONObject(strDisplayName);
-		JSONObject jsonDescription = JSONFactoryUtil.createJSONObject(strDescription);
-
-		JSONArray jsonDataSets = JSONFactoryUtil.createJSONArray(strDataSets);
+		System.out.println("dataCollectionId: " + dataCollectionId);
+		System.out.println("dataCollectionCode: " + dataCollectionCode);
+		System.out.println("dataCollectionVersion: " + dataCollectionVersion);
+		System.out.println("strDisplayName: " + strDisplayName);
+		System.out.println("strDescription: " + strDescription);
+		System.out.println("strDataSets: " + strDataSets);
+		
+		String[] strAryAssociatedDataSets = strDataSets.split(",");
+		long[] assoicatedDataSets = Arrays.stream(strAryAssociatedDataSets).mapToLong(Long::parseLong).toArray();
 		
 		ServiceContext dataCollectionSC = ServiceContextFactory.getInstance(DataCollection.class.getName(), resourceRequest);
 		
@@ -77,8 +92,8 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 			DataCollection dataCollection = _dataCollectionLocalService.addDataCollection(
 					dataCollectionCode, 
 					dataCollectionVersion, 
-					SXLocalizationUtil.jsonToLocalizedMap(jsonDisplayName), 
-					SXLocalizationUtil.jsonToLocalizedMap(jsonDescription), 
+					SXLocalizationUtil.jsonToLocalizedMap(strDisplayName), 
+					SXLocalizationUtil.jsonToLocalizedMap(strDescription), 
 					WorkflowConstants.STATUS_APPROVED, 
 					dataCollectionSC);
 			
@@ -89,21 +104,48 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 					dataCollectionId, 
 					dataCollectionCode, 
 					dataCollectionVersion, 
-					SXLocalizationUtil.jsonToLocalizedMap(jsonDisplayName), 
-					SXLocalizationUtil.jsonToLocalizedMap(jsonDescription), 
+					SXLocalizationUtil.jsonToLocalizedMap(strDisplayName), 
+					SXLocalizationUtil.jsonToLocalizedMap(strDescription), 
 					WorkflowConstants.STATUS_APPROVED, 
 					dataCollectionSC);
 		}
 		
-		if(jsonDataSets.length() > 0) {
-			for( int i=0; i<jsonDataSets.length(); i++) {
-				long dataSetId = jsonDataSets.getLong(i);
+		//Delete CollectionSetLink un-selected
+		List<CollectionSetLink> collectionSetLinkList = 
+				_collectionSetLinkLocalService.getCollectionSetLinkListByCollection(dataCollectionId);
+		
+		Iterator<CollectionSetLink> iter = collectionSetLinkList.iterator();
+		while( iter.hasNext()) {
+			CollectionSetLink collectionSetLink = iter.next();
+			
+			boolean selected = Arrays.asList(collectionSetLinkList).contains(collectionSetLink.getDataSetId());
+			
+			if( !selected ) {
+				_collectionSetLinkLocalService.deleteCollectionSetLink(collectionSetLink.getPrimaryKey());
+			}
+		}
+		
+		//Add CollectionSetLink if it is new or update it if it exists.
+		if(assoicatedDataSets.length > 0) {
+			for( int order=0; order<assoicatedDataSets.length; order++) {
+				long dataSetId = assoicatedDataSets[order];
+				
+				System.out.println("collectionSetLink: " + dataCollectionId + ", "+dataSetId);
 				
 				CollectionSetLink collectionSetLink = 
 						_collectionSetLinkLocalService.getCollectionSetLink(dataCollectionId, dataSetId);
 				
 				if( Validator.isNotNull(collectionSetLink)) {
-					//_collectionSetLinkLocalService.
+					collectionSetLink.setDataCollectionId(dataCollectionId);
+					collectionSetLink.setDataSetId(dataSetId);
+					collectionSetLink.setOrder(order);;
+					
+					_collectionSetLinkLocalService.updateCollectionSetLink(
+							collectionSetLink);
+				}
+				else {
+					collectionSetLink = 
+							_collectionSetLinkLocalService.addCollectionSetLink(dataCollectionId, dataSetId, order);
 				}
 			}
 		}
@@ -116,11 +158,4 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 		pw.flush();
 		pw.close();
 	}
-	
-	@Reference
-	private CollectionSetLinkLocalService _collectionSetLinkLocalService;
-	
-	@Reference
-	private DataCollectionLocalService _dataCollectionLocalService;
-	
 }

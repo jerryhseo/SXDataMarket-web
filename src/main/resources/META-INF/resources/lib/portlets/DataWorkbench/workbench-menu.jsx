@@ -33,7 +33,7 @@ class SXWorkbenchMenu extends React.Component {
 	};
 
 	render() {
-		console.log("SXWorkbenchMenu render: ", this.state.active);
+		//console.log("SXWorkbenchMenu render: ", this.state.active);
 		return (
 			<NavigationBar
 				spritemap={this.spritemap}

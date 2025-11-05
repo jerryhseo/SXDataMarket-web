@@ -11,7 +11,7 @@ class DataSetExplorer extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		console.log("DataSetExplorer props: ", props);
+		//console.log("DataSetExplorer props: ", props);
 		this.dataCollectionId = props.dataCollectionId ?? 0;
 		this.dataSetId = props.dataSetId ?? 0;
 
@@ -164,6 +164,11 @@ class DataSetExplorer extends SXBaseVisualizer {
 				break;
 			}
 			case "delete": {
+				this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+				this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
+
+				this.setState({ confirmDeleteDialog: true });
+
 				break;
 			}
 		}
@@ -233,6 +238,22 @@ class DataSetExplorer extends SXBaseVisualizer {
 			case Workbench.RequestIDs.searchDataSets: {
 				this.convertSearchResultsToContent(dataPacket.data);
 				break;
+			}
+			case Workbench.RequestIDs.deleteDataSets: {
+				console.log("DataSetExplorer.response.deleteDataSets: ", dataPacket.data);
+
+				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dialogBody = Util.translate("datasets-deleted-successfully");
+
+				this.fireRequest({
+					requestId: Workbench.RequestIDs.searchDataSets,
+					params: this.params
+				});
+
+				this.setState({
+					infoDialog: true
+				});
+				return;
 			}
 		}
 
@@ -363,10 +384,17 @@ class DataSetExplorer extends SXBaseVisualizer {
 	}
 
 	deleteDataSets = () => {
+		/*
+		console.log(
+			"deleteDataSets: ",
+			this.selectedDataSets.map((row) => Number(row[0].value))
+		);
+		*/
+
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.deleteDataSets,
 			params: {
-				dataSetIds: this.selectedDataSets
+				dataSetIds: this.selectedDataSets.map((row) => Number(row[0].value))
 			}
 		});
 	};
@@ -409,8 +437,8 @@ class DataSetExplorer extends SXBaseVisualizer {
 				/>
 				{this.state.infoDialog && (
 					<SXModalDialog
-						header={this.infoDlgHeader}
-						body={this.infoDlgBody}
+						header={this.dialogHeader}
+						body={this.dialogBody}
 						buttons={[
 							{
 								label: Util.translate("ok"),

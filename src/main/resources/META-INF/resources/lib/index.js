@@ -12,6 +12,7 @@ import DataCollectionEditor from "./portlets/DataCollection/datacollection-edito
 import DataSetExplorer from "./portlets/DataSet/dataset-explorer";
 import DataCollectionExplorer from "./portlets/DataCollection/datacollection-explorer";
 import DataSetEditor from "./portlets/DataSet/dataset-editor";
+import DataStructureExplorer from "./portlets/DataStructure/datastructure-explorer";
 
 export default function (elementId, portletId, portletParams) {
 	const root = createRoot(document.getElementById(elementId));
@@ -77,6 +78,14 @@ export default function (elementId, portletId, portletParams) {
 			root.render(
 				<ClayModalProvider>
 					<DataStructureBuilder {...portletParams} />
+				</ClayModalProvider>
+			);
+			break;
+		}
+		case PortletKeys.DATASTRUCTURE_EXPLORER: {
+			root.render(
+				<ClayModalProvider>
+					<DataStructureExplorer {...portletParams} />
 				</ClayModalProvider>
 			);
 			break;

@@ -5,11 +5,11 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.sx.icecap.constant.ActionKey;
-import com.sx.icecap.constant.WebKey;
+import com.sx.icecap.constant.JSPPath;
 import com.sx.icecap.constant.WebPortletKey;
+import com.sx.icecap.security.permission.resource.datatype.DataTypeResourcePermissionHelper;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -20,6 +20,7 @@ import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author jerry
@@ -31,25 +32,22 @@ import org.osgi.service.component.annotations.Component;
 		"com.liferay.portlet.header-portlet-css=/css/index.css",
 		"com.liferay.portlet.instanceable=true",
 		"com.liferay.portlet.add-default-resource=true",
-		"javax.portlet.display-name=datacollection-explorer",
+		"javax.portlet.display-name=datastructure-explorer",
 		"javax.portlet.init-param.template-path=/",
-		"javax.portlet.init-param.view-template=/jsp/datacollection-explorer.jsp",
-		"javax.portlet.name=" + WebPortletKey.SXDataCollectionExplorerPortlet,
+		"javax.portlet.init-param.view-template=" + JSPPath.DATA_STRUCTURE_EXPLORER,
+		"javax.portlet.name=" + WebPortletKey.SXDataStructureExplorerPortlet,
 		"javax.portlet.resource-bundle=content.Language",
 		"javax.portlet.security-role-ref=power-user,user"
 	},
 	service = Portlet.class
 )
-public class SXDataCollectionExplorerPortlet extends MVCPortlet {
+public class SXDataStructureExplorerPortlet extends MVCPortlet {
 
 	@Override
 	public void doView(
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
-		
-		System.out.println("SXDataCollectionExplorerPortlet");
 
-		System.out.println("checkbox: " + ParamUtil.getBoolean(renderRequest, "checkbox"));
 		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
 		PermissionChecker permissionChecker = themeDisplay.getPermissionChecker();
@@ -59,7 +57,7 @@ public class SXDataCollectionExplorerPortlet extends MVCPortlet {
 		for(int i=0; i<fields.length; i++) {
 			Field field = fields[i];
 			
-			boolean hasPermission = true; //DataTypeResourcePermissionHelper.contains(permissionChecker, themeDisplay.getScopeGroupId(), field.getName());
+			boolean hasPermission = true; //ResourcePermissionHelper.contains(permissionChecker, themeDisplay.getScopeGroupId(), field.getName());
 			if (hasPermission) {
 				permissions.put(field.getName());
 			}
@@ -67,6 +65,7 @@ public class SXDataCollectionExplorerPortlet extends MVCPortlet {
 		
 		renderRequest.setAttribute("permissions", permissions);
 		
+		System.out.println("SXDataStructureExplorerPortlet");
 		super.doView(renderRequest, renderResponse);
 	}
 }

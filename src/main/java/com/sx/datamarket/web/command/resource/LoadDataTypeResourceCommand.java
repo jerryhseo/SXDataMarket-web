@@ -147,7 +147,7 @@ public class LoadDataTypeResourceCommand extends BaseMVCResourceCommand{
 		if( loadDataStructureAutoCompleteItems == true ) {
 			JSONArray dataStructureAutoCompleteItems = JSONFactoryUtil.createJSONArray();
 			
-			List<DataStructure> dataStructureList = _dataStructureLocalService.getAllDataStructures();
+			List<DataStructure> dataStructureList = _dataStructureLocalService.getAllDataStructureList();
 			Iterator<DataStructure> iterator = dataStructureList.iterator();
 			while(iterator.hasNext()) {
 				DataStructure dataStructure = iterator.next();

@@ -417,6 +417,21 @@ export class Parameter {
 	get focused() {
 		return this.#focused;
 	}
+
+	get title() {
+		const locales = Object.keys(this.displayName);
+		let title = {};
+		locales.forEach((locale) => {
+			title[locale] = this.displayName[locale] + " v." + this.paramVersion;
+		});
+
+		return title;
+	}
+	get localizedTitle() {
+		const title = this.displayName[this.languageId];
+		return title ? "" : title + " v." + this.paramVersion;
+	}
+
 	get tagId() {
 		return this.namespace + this.paramCode + "_" + this.paramVersion;
 	}
@@ -2419,20 +2434,20 @@ export class SelectParameter extends Parameter {
 export class DualListParameter extends Parameter {
 	static ViewTypes = {
 		HORIZONTAL: "horizontal",
-		VERTICAL: "vertical"
+		VERTICAL: "vertical",
+		ORDERED: "ordered"
 	};
+
 	#options = [];
-	#viewType = DualListParameter.ViewTypes.HORIZONTAL;
 
 	constructor(namespace, formId, languageId, availableLanguageIds, paramType = ParamType.DUALLIST) {
 		super(namespace, formId, languageId, availableLanguageIds, paramType);
+
+		this.viewType = DualListParameter.ViewTypes.HORIZONTAL;
 	}
 
 	get options() {
 		return this.#options;
-	}
-	get viewType() {
-		return this.#viewType;
 	}
 
 	get abstract() {
@@ -2445,9 +2460,6 @@ export class DualListParameter extends Parameter {
 
 	set options(val) {
 		this.#options = val;
-	}
-	set viewType(val) {
-		this.#viewType = val;
 	}
 
 	initProperties(json = {}) {
@@ -2462,26 +2474,25 @@ export class DualListParameter extends Parameter {
 		super.setValue({ value: this.defaultValue ?? [], cellIndex: cellIndex });
 	}
 
-	setValue({ value, cellIndex }) {
+	setValue({ value, cellIndex, validate = true }) {
 		const values = value.map((option) => option.value);
 		console.log(
-			"DualList values: ",
+			"DualListParameter.setValue: ",
 			values,
-			this.options,
 			this.options.filter((option) => values.includes(option.value))
 		);
+
 		super.setValue({
 			value: this.options.filter((option) => values.includes(option.value)),
 			cellIndex: cellIndex,
-			validate: true
+			validate: validate
 		});
 	}
 
 	getLeftOptions(cellIndex) {
-		const value = this.getValue(cellIndex) ?? [];
-		//const value = this.getValue(cellIndex).map((val) => ({ displayName: val.displayName, value: val.id })) ?? [];
+		const leftOptions = super.getValue(cellIndex) ?? [];
 
-		return value.map((option) => ({
+		return leftOptions.map((option) => ({
 			key: option.value,
 			label: option.label[this.languageId],
 			value: option.value
@@ -2489,15 +2500,23 @@ export class DualListParameter extends Parameter {
 	}
 
 	getRightOptions(cellIndex) {
-		return this.options
-			? this.options
-					.filter((option) => this.notIncludedInValues(option.value, cellIndex))
-					.map((option) => ({
-						key: option.value,
-						label: option.label[this.languageId],
-						value: option.value
-					}))
+		const rightOptions = this.options
+			? this.options.filter((option) => this.notIncludedInValues(option.value, cellIndex))
 			: [];
+
+		return rightOptions.map((option) => ({
+			key: option.value,
+			label: option.label[this.languageId],
+			value: option.value
+		}));
+	}
+
+	getOptions() {
+		return this.options.map((option) => ({
+			key: option.value,
+			label: option.label[this.languageId],
+			value: option.value
+		}));
 	}
 
 	addValue(val) {
@@ -2520,7 +2539,7 @@ export class DualListParameter extends Parameter {
 			return;
 		}
 
-		this.value = this.value.filter((elem) => elem.value !== val);
+		this.value = this.value.filter((elem) => elem.value !== val.value);
 	}
 	checkDuplicatedOptionValue(optionValue) {
 		if (!this.options) {
@@ -2547,6 +2566,21 @@ export class DualListParameter extends Parameter {
 
 	getOption(index) {
 		return this.option ? this.options[index] : {};
+	}
+
+	getOptionByValue(value) {
+		let foundOption;
+
+		this.options.every((option) => {
+			if (option.value == value) {
+				foundOption = option;
+			}
+
+			return foundOption ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
+		});
+
+		console.log("DualListParameter.getOptionByValue: ", value, foundOption);
+		return foundOption;
 	}
 
 	copyOption(index) {
@@ -2594,10 +2628,17 @@ export class DualListParameter extends Parameter {
 		return index + 1;
 	}
 
+	getData(cellIndex) {
+		const values = this.getValue(cellIndex);
+
+		return values.map((value) => value.value);
+	}
+
 	parse(json) {
 		super.parse(json);
 
 		this.viewType = json.viewType ?? DualListParameter.ViewTypes.HORIZONTAL;
+		this.options = json.options ?? [];
 	}
 
 	toJSON() {

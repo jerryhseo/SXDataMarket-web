@@ -43,7 +43,7 @@ class SXBaseVisualizer extends React.Component {
 		this.defaultLanguageId = SXSystem.getDefaultLanguageId();
 		this.availableLanguageIds = SXSystem.getAvailableLanguages();
 
-		this.params = props.params;
+		this.params = props.params ?? {};
 	}
 
 	fireHandshake() {

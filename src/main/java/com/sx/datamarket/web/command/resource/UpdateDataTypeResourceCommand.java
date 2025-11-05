@@ -10,6 +10,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.sx.icecap.constant.DataTypeProperties;
@@ -24,6 +25,8 @@ import com.sx.icecap.service.TypeVisualizerLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
 
 import java.io.PrintWriter;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -51,6 +54,7 @@ public class UpdateDataTypeResourceCommand extends BaseMVCResourceCommand{
 		System.out.println("UpdateDataTypeResourceCommand");
 		long dataTypeId = ParamUtil.getLong(resourceRequest, DataTypeProperties.DATATYPE_ID, 0);
 		
+		/*
 		JSONObject formData = JSONFactoryUtil.createJSONObject(ParamUtil.getString(resourceRequest, "formData", "{}"));
 		System.out.println("JSON DataType: " + formData.toString(4));
 		
@@ -64,17 +68,34 @@ public class UpdateDataTypeResourceCommand extends BaseMVCResourceCommand{
 		JSONObject tooltip =jsonDataType.getJSONObject((DataTypeProperties.TOOLTIP));
 		//JSONObject visualizers =jsonDataType.getJSONObject((DataTypeProperty.VISUALIZERS));
 		long dataStructureId = jsonDataType.getLong(DataTypeProperties.DATA_STRUCTURE_ID, 0);
+		*/
+		String dataTypeCode = ParamUtil.getString(resourceRequest, DataTypeProperties.DATATYPE_CODE);
+		String dataTypeVersion = ParamUtil.getString(resourceRequest, DataTypeProperties.DATATYPE_VERSION);
+		String extension = ParamUtil.getString(resourceRequest, DataTypeProperties.EXTENSION);
+		String displayName = ParamUtil.getString(resourceRequest, DataTypeProperties.DISPLAY_NAME);
+		String description = ParamUtil.getString(resourceRequest, DataTypeProperties.DESCRIPTION);
+		String tooltip = ParamUtil.getString(resourceRequest, DataTypeProperties.TOOLTIP);
+		String strVisualizers = ParamUtil.getString(resourceRequest, "visualizers");
+		long dataStructureId = ParamUtil.getLong(resourceRequest, DataTypeProperties.DATA_STRUCTURE_ID, 0);
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
 		ServiceContext sc = ServiceContextFactory.getInstance(DataType.class.getName(), resourceRequest);
 		
-		System.out.println("updateDataType code: " + code);
+		System.out.println("dataTypeId: " + dataTypeId);
+		System.out.println("dataTypeCode: " + dataTypeCode);
+		System.out.println("dataTypeVersion: " + dataTypeVersion);
+		System.out.println("extension: " + extension);
+		System.out.println("displayName: " + displayName);
+		System.out.println("description: " + description);
+		System.out.println("tooltip: " + tooltip);
+		System.out.println("visualizers: " + strVisualizers);
+		
 		DataType dataType =_dataTypeLocalService.updateDataType(
 				dataTypeId,
-				code, 
-				version, 
+				dataTypeCode, 
+				dataTypeVersion, 
 				extension, 
 				SXLocalizationUtil.jsonToLocalizedMap(displayName), 
 				SXLocalizationUtil.jsonToLocalizedMap(description), 
@@ -85,7 +106,15 @@ public class UpdateDataTypeResourceCommand extends BaseMVCResourceCommand{
 		
 		result.put("dataTypeId", dataType.getDataTypeId());
 		
+		String[] visualizersStrAry = strVisualizers.split(",");
+		long[] visualizers = Arrays.stream(visualizersStrAry).mapToLong(Long::parseLong).toArray();
+		
+		for( long visualizer : visualizers ) {
+			System.out.println("visualizer ID: " + visualizer);
+		}
+		/*
 		JSONArray selectedVisualizers = formData.getJSONArray("visualizers");
+		*/
 		
 		//Delete TypeVisualizerLink un-selected
 		List<TypeVisualizerLink> visualizerLinkList = _typeVisualizerLinkLocalService.getTypeVisualizerLinkList(dataTypeId);
@@ -94,36 +123,25 @@ public class UpdateDataTypeResourceCommand extends BaseMVCResourceCommand{
 		while(linkIterator.hasNext()) {
 			TypeVisualizerLink link = linkIterator.next();
 			
-			boolean selected = false;
-			for(int i=0; i < selectedVisualizers.length(); i++) {
-				JSONObject visualizer = selectedVisualizers.getJSONObject(i);
-				
-				long selectedLinkId = visualizer.getLong("typeVisualizerLinkId", 0); 
-				if( selectedLinkId == link.getTypeVisualizerLinkId() ) {
-					selected = true;
-					break;
-				}
-			}
+			boolean selected = Arrays.asList(visualizers).contains(link.getVisualizerId());
 			
 			if( !selected ) {
 				_typeVisualizerLinkLocalService.deleteTypeVisualizerLink(link.getTypeVisualizerLinkId());
 			}
 		}
 		
-		//Add TypeVisualizerLink if it is new
-		for(int i=0; i<selectedVisualizers.length(); i++) {
-			JSONObject visualizer = selectedVisualizers.getJSONObject(i);
+		//Add TypeVisualizerLink if it is new or update it if it exists.
+		for(long visualizerId : visualizers) {
+			TypeVisualizerLink typeVisualizerLink = _typeVisualizerLinkLocalService.getTypeVisualizerLink(dataTypeId, visualizerId);
 			
-			long typeVisualizerLinkId = visualizer.getLong("typeVisualizerLinkId", 0); 
-			if( typeVisualizerLinkId == 0) {
-				_typeVisualizerLinkLocalService.addTypeVisualizerLink(dataTypeId, visualizer.getLong("value"));
+			if( Validator.isNull(typeVisualizerLink)) {
+				_typeVisualizerLinkLocalService.addTypeVisualizerLink(dataTypeId, visualizerId);
 			}
 			else {
-				try {
-					_typeVisualizerLinkLocalService.updateTypeVisualizerLink(typeVisualizerLinkId, dataTypeId, visualizer.getLong("value"));
-				} catch( PortalException e) {
-					_typeVisualizerLinkLocalService.addTypeVisualizerLink(dataTypeId, visualizer.getLong("value"));
-				}
+					_typeVisualizerLinkLocalService.updateTypeVisualizerLink(
+							typeVisualizerLink.getPrimaryKey(), 
+							dataTypeId, 
+							visualizerId);
 			}
 		}
 			

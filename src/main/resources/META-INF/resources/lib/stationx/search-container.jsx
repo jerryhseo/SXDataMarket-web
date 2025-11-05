@@ -164,12 +164,14 @@ export class SXManagementToolbar extends React.Component {
 			triggerButtonTitle = Util.translate("groupby");
 		}
 
+		/*
 		console.log(
 			"renderFilterAndGroupBySection: ",
 			triggerButtonTitle,
 			this.filterOptions.length,
 			this.groupByOptions.length > 0
 		);
+		*/
 
 		return (
 			<>
@@ -340,6 +342,7 @@ export class SXSearchResultConainer extends React.Component {
 		this.namespace = props.namespace;
 		this.formId = props.formId;
 		this.columns = props.columns ?? [];
+		this.containerId = props.searchContainerId;
 		this.searchResults = props.searchResults ?? [];
 		this.selectedResults = props.selectedResults ?? [];
 		this.displayStyle = props.displayStyle ?? DisplayStyles.TABLE;
@@ -427,90 +430,109 @@ export class SXSearchResultConainer extends React.Component {
 
 	renderTable() {
 		return (
-			<Table
-				columnsVisibility={false}
-				borderedColumns="true"
-				size="sm"
-				hover="true"
-			>
-				<Head items={this.columns}>
-					{(column) => {
-						if (column.id == "actions") {
+			<div style={{ marginTop: this.checkbox ? "0" : "1.5rem" }}>
+				<Table
+					columnsVisibility={false}
+					borderedColumns="true"
+					size="sm"
+					hover="true"
+				>
+					<Head items={this.columns}>
+						{(column) => {
+							if (column.id == "actions") {
+								return (
+									<Cell
+										key={column.id}
+										textValue="actions"
+										textAlign="center"
+										width={column.width}
+									>
+										<Icon
+											symbol="ellipsis-v"
+											spritemap={this.spritemap}
+										/>
+									</Cell>
+								);
+							} else {
+								return (
+									<Cell
+										key={column.id}
+										textAlign="center"
+										width={column.width}
+									>
+										{column.name}
+									</Cell>
+								);
+							}
+						}}
+					</Head>
+					<Body defaultItems={this.rows}>
+						{(row, index) => {
 							return (
-								<Cell
-									key={column.id}
-									textValue="actions"
-									textAlign="center"
-									width={column.width}
-								>
-									<Icon
-										symbol="ellipsis-v"
-										spritemap={this.spritemap}
-									/>
-								</Cell>
-							);
-						} else {
-							return (
-								<Cell
-									key={column.id}
-									textAlign="center"
-									width={column.width}
-								>
-									{column.name}
-								</Cell>
-							);
-						}
-					}}
-				</Head>
-				<Body defaultItems={this.rows}>
-					{(row, index) => {
-						return (
-							<Row key={index}>
-								{row.map((column) => {
-									if (column.id == "actions") {
-										return (
-											<Cell
-												key={column.id}
-												textAlign="center"
-											>
-												<SXActionDropdown
-													namespace={this.namespace}
-													formId={this.formId}
-													actionItems={column.value}
-													dataKey={index}
-													spritemap={this.spritemap}
-												/>
-											</Cell>
-										);
-									} else {
-										return (
-											<Cell
-												key={column.id}
-												textAlign="center"
-												onClick={(e) => {
-													e.stopPropagation();
+								<Row key={index}>
+									{row.map((column) => {
+										if (column.id == "actions") {
+											return (
+												<Cell
+													key={column.id}
+													textAlign="center"
+													onClick={(e) => {
+														e.stopPropagation();
 
-													Event.fire(
-														Event.SX_TABLE_COLUMN_CLICKED,
-														this.namespace,
-														this.namespace,
-														{
-															targetFormId: this.formId,
-															columnId: column.id
-														}
-													);
-												}}
-											>
-												{column.value}
-											</Cell>
-										);
-									}
-								})}
-							</Row>
-						);
-					}}
-				</Body>
-			</Table>
+														Event.fire(
+															Event.SX_TABLE_COLUMN_CLICKED,
+															this.namespace,
+															this.namespace,
+															{
+																targetFormId: this.formId,
+																containerId: this.containerId,
+																column: column,
+																row: row
+															}
+														);
+													}}
+												>
+													<SXActionDropdown
+														namespace={this.namespace}
+														formId={this.formId}
+														actionItems={column.value}
+														dataKey={index}
+														spritemap={this.spritemap}
+													/>
+												</Cell>
+											);
+										} else {
+											return (
+												<Cell
+													key={column.id}
+													textAlign="center"
+													onClick={(e) => {
+														e.stopPropagation();
+
+														Event.fire(
+															Event.SX_TABLE_COLUMN_CLICKED,
+															this.namespace,
+															this.namespace,
+															{
+																targetFormId: this.formId,
+																containerId: this.containerId,
+																column: column,
+																row: row
+															}
+														);
+													}}
+												>
+													{column.value}
+												</Cell>
+											);
+										}
+									})}
+								</Row>
+							);
+						}}
+					</Body>
+				</Table>
+			</div>
 		);
 	}
 
