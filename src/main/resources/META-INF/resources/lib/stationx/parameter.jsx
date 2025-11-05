@@ -2628,8 +2628,8 @@ export class DualListParameter extends Parameter {
 		return index + 1;
 	}
 
-	getData(cellIndex) {
-		const values = this.getValue(cellIndex);
+	getValue(cellIndex) {
+		const values = super.getValue(cellIndex) ?? [];
 
 		return values.map((value) => value.value);
 	}

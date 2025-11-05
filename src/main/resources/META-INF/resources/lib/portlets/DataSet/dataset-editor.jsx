@@ -413,7 +413,7 @@ class DataSetEditor extends SXBaseVisualizer {
 	};
 
 	saveDataSet = () => {
-		const associatedDataTypeIds = this.dataTypes.getValue().map((val) => val.value);
+		const associatedDataTypeIds = this.dataTypes.getValue();
 
 		/*
 		const associatedDataTypes = this.availableDataTypeList.filter((dataType) => {

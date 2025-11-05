@@ -227,7 +227,8 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		this.workingParam[dataPacket.paramCode] = dataPacket.parameter.getValue();
 
 		if (dataPacket.paramCode == ParamProperty.PARAM_CODE) {
-			if (this.dataStructure.checkDuplicateParamCode(this.workingParam)) {
+			const duplicated = this.dataStructure.checkDuplicateParamCode(this.workingParam);
+			if (duplicated) {
 				this.fields.paramCode.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
 				this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
 				this.fields.paramCode.setDirty(true);

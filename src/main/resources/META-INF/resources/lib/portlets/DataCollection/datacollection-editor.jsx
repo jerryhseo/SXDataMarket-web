@@ -392,7 +392,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		data.displayName = this.displayName.getValue();
 		data.description = this.description.getValue();
 
-		//console.log("saveDataCollection: ", this.dataSets.getData());
+		//console.log("saveDataCollection: ", this.dataSets.getValue());
 
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.saveDataCollection,
@@ -402,7 +402,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 				dataCollectionVersion: this.dataCollectionVersion.getValue(),
 				displayName: JSON.stringify(this.displayName.getValue()),
 				description: JSON.stringify(this.description.getValue()),
-				associatedDataSetList: this.dataSets.getData()
+				associatedDataSetList: this.dataSets.getValue()
 			}
 		});
 	};
