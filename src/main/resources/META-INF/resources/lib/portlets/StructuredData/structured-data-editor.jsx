@@ -1,13 +1,9 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { EditStatus, Event, LoadingStatus, ResourceIds } from "../../stationx/station-x";
-import { DataTypeStructureLink, SXDataTypeStructureLink } from "../DataType/datatype";
-import Toolbar from "@clayui/toolbar";
-import { ClayInput } from "@clayui/form";
-import Button, { ClayButtonWithIcon } from "@clayui/button";
-import Visualizer from "../../stationx/visualizer";
+import { Event, LoadingStatus } from "../../stationx/station-x";
+import Button from "@clayui/button";
 import Icon from "@clayui/icon";
-import { DataStructure } from "../DataStructure/data-structure";
+import DataStructure from "../DataStructure/data-structure";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import { Workbench } from "../DataWorkbench/workbench";
 
@@ -85,13 +81,11 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		this.dataCollection = dataPacket.data.dataCollection;
 		this.dataSet = dataPacket.data.dataSet;
 		this.dataType = dataPacket.data.dataType;
-		this.dataStructure = new DataStructure(
-			this.namespace,
-			this.portletId,
-			this.languageId,
-			this.availableLanguageIds,
-			dataPacket.data.dataStructure ?? {}
-		);
+		this.dataStructure = new DataStructure({
+			namespace: this.namespace,
+			formId: this.portletId,
+			properties: dataPacket.data.dataStructure ?? {}
+		});
 
 		this.typeStructureLink = dataPacket.data.typeStructureLink;
 
@@ -157,26 +151,22 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				this.dataCollection = data.dataCollection;
 				this.dataSet = data.dataSet;
 				this.dataType = data.dataType;
-				this.dataStructure = new DataStructure(
-					this.namespace,
-					this.portletId,
-					this.languageId,
-					this.availableLanguageIds,
-					data.dataStructure ?? {}
-				);
+				this.dataStructure = new DataStructure({
+					namespace: this.namespace,
+					formId: this.portletId,
+					properties: data.dataStructure ?? {}
+				});
 
 				this.typeStructureLink = data.typeStructureLink ?? {};
 
 				break;
 			}
 			case Workbench.RequestIDs.loadDataStructure: {
-				this.dataStructure = new DataStructure(
-					this.namespace,
-					this.portletId,
-					this.languageId,
-					this.availableLanguageIds,
-					data.dataStructure ?? {}
-				);
+				this.dataStructure = new DataStructure({
+					namespace: this.namespace,
+					formId: this.portletId,
+					properties: data.dataStructure ?? {}
+				});
 
 				break;
 			}

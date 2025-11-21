@@ -1,118 +1,19 @@
-import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
+import React from "react";
 import { Util } from "../../stationx/util";
-import Form, { ClayInput, ClayRadio, ClayRadioGroup, ClaySelectWithOption } from "@clayui/form";
+import Form, { ClayInput, ClayRadio, ClaySelectWithOption } from "@clayui/form";
 import ClayMultiStepNav from "@clayui/multi-step-nav";
 import SXDSBuilderBasicPropertiesPanel from "./basic-properties-panel";
-import SXDSBuilderTypeSpecificPanel from "./type-specific-properties-panel";
+import SXDSBuilderTypeSpecificPanel from "./TypeSpecificProperties/type-specific-panel";
 import SXDSBuilderOptionPropertiesPanel from "./option-properties-panel";
 import SXDSBuilderValidationPanel from "./validation-builder-panel";
 import { Event, ParamProperty, ParamType } from "../../stationx/station-x";
-import { SXLabel, SXSelect } from "../../stationx/form";
-import { GroupParameter, Parameter, SelectParameter } from "../../stationx/parameter";
+import { SXLabel } from "../Form/form";
 import Button from "@clayui/button";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
+import ParameterConstants from "../Parameter/parameter-constants";
+import SXBasePropertiesPanelComponent from "./base-properties-panel-component";
 
-class GroupSelectorBody extends React.Component {
-	constructor(props) {
-		super(props);
-
-		this.namespace = props.workingParam.namespace;
-		this.workingParam = props.workingParam;
-		this.dataStructure = props.dataStructure;
-		this.optionType = props.optionType ?? "radio";
-		this.languageId = props.workingParam.languageId;
-		this.availableLanguageIds = props.workingParam.availableLanguageIds;
-		this.spritemap = props.spritemap;
-
-		this.options = this.convertGroupsToOptions();
-
-		this.state = {
-			selected: this.getOption(
-				this.workingParam.parentCode ? this.workingParam.parentCode : this.dataStructure.paramCode
-			)
-		};
-	}
-
-	/**
-	 * Gets groups as select options in the data structure parameters except of the working group parameter.
-	 * "Top Level Group" should be added as first option.
-	 *
-	 * @param {{paramCode: String, paramVersion:String}} param0
-	 * @returns
-	 */
-	convertGroupsToOptions() {
-		return this.dataStructure
-			.getAllGroups({
-				paramCode: this.workingParam.paramCode,
-				paramVersion: this.workingParam.paramVersion
-			})
-			.map((group) => ({
-				label: group.label,
-				paramCode: group.paramCode,
-				paramVersion: group.paramVersion
-			}));
-	}
-
-	getOption(paramCode) {
-		return this.options.filter((option) => option.paramCode == paramCode)[0];
-	}
-
-	handleGroupSelected(option) {
-		const srcGroup =
-			this.dataStructure.findParameter({
-				paramCode: this.workingParam.parentCode,
-				paramVersion: this.workingParam.parentVersion,
-				descendant: true
-			}) ?? this.dataStructure;
-		const targetGroup =
-			this.dataStructure.findParameter({
-				paramCode: option.paramCode,
-				paramVersion: option.paramVersion,
-				descendant: true
-			}) ?? this.dataStructure;
-
-		this.dataStructure.moveParameterGroup(this.workingParam, srcGroup, targetGroup);
-
-		this.setState({ selected: option });
-	}
-
-	render() {
-		if (this.optionType == "radio") {
-			return (
-				<div style={{ width: "100%" }}>
-					{Util.convertArrayToRows(this.options, 2).map((row, index) => (
-						<div
-							key={index}
-							style={{ width: "100%", display: "inline-flex", gap: "1.5rem" }}
-						>
-							{row.map((option) => {
-								//console.log("option: ", option);
-								return (
-									<ClayRadio
-										key={Util.randomKey()}
-										name={this.namespace + "group"}
-										label={option.label}
-										value={option.paramCode}
-										defaultChecked={
-											Util.isNotEmpty(this.state.selected) &&
-											option.paramCode == this.state.selected.paramCode
-										}
-										onChange={(e) => {
-											e.stopPropagation();
-											this.handleGroupSelected(option);
-										}}
-									/>
-								);
-							})}
-						</div>
-					))}
-				</div>
-			);
-		}
-	}
-}
-
-class SXDSBuilderPropertiesPanel extends React.Component {
+class SXDSBuilderPropertiesPanel extends SXBasePropertiesPanelComponent {
 	panelSteps = [
 		{
 			title: Util.translate("basic")
@@ -131,54 +32,37 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 	constructor(props) {
 		super(props);
 
-		this.namespace = props.workingParam.namespace;
-		this.formIds = props.formIds;
-		this.languageId = props.workingParam.languageId;
-		this.availableLanguageIds = props.workingParam.availableLanguageIds;
-		this.spritemap = props.spritemap;
-		this.dataStructure = props.dataStructure;
-		//this.workingParam = props.workingParam;
-
 		this.state = {
 			panelStep: 0,
 			paramType: props.workingParam.paramType,
-			workingParam: props.workingParam,
 			openSelectGroupModal: false,
 			confirmDlgState: false,
 			confirmDlgBody: <></>,
 			confirmDlgHeader: <></>
 		};
 
-		this.formId = this.formIds.propertyPanelId;
+		this.componentId = this.namespacee + "SXDSBuilderPropertiesPanel";
 	}
 
-	selectGroupHandler = (e) => {
-		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
+	listenerRefreshPropertyPanel = (event) => {
+		const { dataPacket } = event;
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
+			console.log("[SXDSBuilderPropertiesPanel] listenerRefreshPropertyPanel rejected: ", dataPacket);
 			return;
 		}
+		console.log("[SXDSBuilderPropertiesPanel] listenerRefreshPropertyPanel: ", dataPacket);
 
-		this.setState({ openSelectGroupModal: true });
-	};
-
-	listenerRefreshPropertyPanel = (e) => {
-		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
-			console.log("PropertyPanel rejected: ", e.dataPacket);
-			return;
-		}
-		console.log("PropertyPanel received: ", e.dataPacket);
-
-		this.setState({ workingParam: e.dataPacket.workingParam, paramType: e.dataPacket.workingParam.paramType });
+		this.workingParam = dataPacket.workingParam;
+		this.setState({ paramType: dataPacket.workingParam.paramType });
 	};
 
 	componentDidMount() {
 		//console.log("componentDidMount: SXDSBuilderPropertiesPanel");
 
-		Event.on(Event.SX_SELECT_GROUP, this.selectGroupHandler);
 		Event.on(Event.SX_REFRESH_PROPERTY_PANEL, this.listenerRefreshPropertyPanel);
 	}
 
 	componentWillUnmount() {
-		Event.off(Event.SX_SELECT_GROUP, this.selectGroupHandler);
 		Event.off(Event.SX_REFRESH_PROPERTY_PANEL, this.listenerRefreshPropertyPanel);
 	}
 
@@ -200,7 +84,7 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 		this.setState({ paramType: value });
 
 		Event.fire(Event.SX_PARAM_TYPE_CHANGED, this.namespace, this.namespace, {
-			targetFormId: this.formIds.dsbuilderId,
+			targetFormId: this.formId,
 			paramType: value
 		});
 	}
@@ -210,16 +94,17 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 	}
 
 	renderPanelContent = () => {
-		//console.log("renderPanelContent: ", this.state.workingParam);
+		//console.log("renderPanelContent: ", this.workingParam);
 
 		switch (this.state.panelStep) {
 			case 0: {
 				return (
 					<SXDSBuilderBasicPropertiesPanel
-						key={this.state.workingParam.key}
-						formIds={this.formIds}
+						key={this.workingParam.key}
+						namespace={this.namespace}
+						formId={this.componentId}
 						dataStructure={this.dataStructure}
-						workingParam={this.state.workingParam}
+						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>
 				);
@@ -227,10 +112,11 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			case 1: {
 				return (
 					<SXDSBuilderTypeSpecificPanel
-						key={this.state.workingParam.key}
-						formIds={this.formIds}
+						key={this.workingParam.key}
+						namespace={this.namespace}
+						formId={this.componentId}
 						dataStructure={this.dataStructure}
-						workingParam={this.state.workingParam}
+						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>
 				);
@@ -238,10 +124,11 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			case 2: {
 				return (
 					<SXDSBuilderOptionPropertiesPanel
-						key={this.state.workingParam.key}
+						key={this.workingParam.key}
+						namespace={this.namespace}
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
-						workingParam={this.state.workingParam}
+						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>
 				);
@@ -249,10 +136,11 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 			case 3: {
 				return (
 					<SXDSBuilderValidationPanel
-						key={this.state.workingParam.key}
+						key={this.workingParam.key}
+						namespace={this.namespace}
 						formIds={this.formIds}
 						dataStructure={this.dataStructure}
-						workingParam={this.state.workingParam}
+						workingParam={this.workingParam}
 						spritemap={this.spritemap}
 					/>
 				);
@@ -261,15 +149,15 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 	};
 
 	render() {
-		//console.log("SXDSBuilderPropertiesPanel rendered: ", this.state.workingParam);
+		//console.log("SXDSBuilderPropertiesPanel rendered: ", this.workingParam);
 
-		const parentGroup = Util.isNotEmpty(this.state.workingParam.parent)
+		const parentGroup = Util.isNotEmpty(this.workingParam.parent)
 			? this.dataStructure.findParameter({
-					paramCode: this.state.workingParam.parent.code,
-					paramVersion: this.state.workingParam.parent.version
+					paramCode: this.workingParam.parent.code,
+					paramVersion: this.workingParam.parent.version
 			  })
 			: this.dataStructure;
-		//console.log("Group selector parentGroup: ", parentGroup);
+		console.log("Group selector parentGroup: ", parentGroup, this.options);
 
 		return (
 			<>
@@ -293,13 +181,13 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 							onChange={(e) => {
 								this.handleParamTypeSelect(e.target.value);
 							}}
-							disabled={this.state.workingParam.order > 0}
+							disabled={this.workingParam.order > 0}
 							style={{ paddingLeft: "10px" }}
 							spritemap={this.spritemap}
 						/>
 					</div>
 				</Form.Group>
-				{parentGroup && this.state.workingParam.displayType !== Parameter.DisplayTypes.GRID_CELL && (
+				{parentGroup && this.workingParam.displayType !== ParameterConstants.DisplayTypes.GRID_CELL && (
 					<Form.Group style={{ marginBottom: "1.5rem" }}>
 						<SXLabel
 							label={Util.translate("group")}
@@ -335,11 +223,11 @@ class SXDSBuilderPropertiesPanel extends React.Component {
 						header={Util.translate("select-group")}
 						body={
 							<GroupSelectorBody
-								key={this.state.workingParam}
+								key={this.workingParam}
 								namespace={this.namespace}
 								formIds={this.formIds}
 								dataStructure={this.dataStructure}
-								workingParam={this.state.workingParam}
+								workingParam={this.workingParam}
 								optionType="radio"
 								spritemap={this.spritemap}
 							/>

@@ -1,19 +1,6 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import {
-	ActionKeys,
-	Constant,
-	ErrorClass,
-	Event,
-	FilterOptions,
-	LoadingStatus,
-	ParamType,
-	PortletKeys,
-	ValidationRule
-} from "../../stationx/station-x";
-import { GroupParameter, Parameter } from "../../stationx/parameter";
-import Button from "@clayui/button";
-import Icon from "@clayui/icon";
+import { ActionKeys, Constant, Event, FilterOptions, LoadingStatus, PortletKeys } from "../../stationx/station-x";
 import { SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
@@ -25,7 +12,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		console.log("DataCollectionExplorer props: ", props, this.params);
+		//console.log("DataCollectionExplorer props: ", props, this.params);
 
 		this.checkboxEnabled =
 			this.permissions.includes(ActionKeys.UPDATE) || this.permissions.includes(ActionKeys.DELETE);
@@ -135,11 +122,11 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataCollectionExplorer] listenerSelectAll event rejected: ", dataPacket);
+			//console.log("[DataCollectionExplorer] listenerSelectAll event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataCollectionExplorer] listenerSelectAll: ", dataPacket);
+		//console.log("[DataCollectionExplorer] listenerSelectAll: ", dataPacket);
 
 		this.selectedResults = dataPacket.selectAll ? [...this.searchResults] : [];
 
@@ -150,22 +137,22 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
 
 		if (!dataPacket) {
-			console.log("[DataCollectionExplorer] listenerFieldValueChanged rejected: ", dataPacket);
+			//console.log("[DataCollectionExplorer] listenerFieldValueChanged rejected: ", dataPacket);
 
 			return;
 		}
 
-		console.log("[DataCollectionExplorer] listenerFieldValueChanged received: ", dataPacket);
+		//console.log("[DataCollectionExplorer] listenerFieldValueChanged received: ", dataPacket);
 	};
 
 	listenerAddButtonClicked = (event) => {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataCollectionExplorer] listenerAddButtonClicked event rejected: ", dataPacket);
+			//console.log("[DataCollectionExplorer] listenerAddButtonClicked event rejected: ", dataPacket);
 			return;
 		}
-		console.log("[DataCollectionExplorer] listenerAddButtonClicked: ", dataPacket);
+		//console.log("[DataCollectionExplorer] listenerAddButtonClicked: ", dataPacket);
 
 		this.fireLoadPortlet({
 			portletName: PortletKeys.DATACOLLECTION_EDITOR,
@@ -178,7 +165,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataCollectionExplorer] listenerPopActionClicked event rejected: ", dataPacket);
+			//console.log("[DataCollectionExplorer] listenerPopActionClicked event rejected: ", dataPacket);
 			return;
 		}
 
@@ -213,10 +200,10 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataCollectionExplorer] listenerSelectedResultsChanged event rejected: ", dataPacket);
+			//console.log("[DataCollectionExplorer] listenerSelectedResultsChanged event rejected: ", dataPacket);
 			return;
 		}
-		console.log("[DataCollectionExplorer] listenerSelectedResultsChanged: ", dataPacket);
+		//console.log("[DataCollectionExplorer] listenerSelectedResultsChanged: ", dataPacket);
 		this.selectedResults = dataPacket.selectedResults;
 
 		this.setState({ searchContainerKey: Util.randomKey() });
@@ -229,7 +216,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 			//console.log("[DataCollectionExplorer] listenerDeleteSelected rejected: ", dataPacket);
 			return;
 		}
-		console.log("[DataCollectionExplorer] listenerDeleteSelected: ", dataPacket);
+		//console.log("[DataCollectionExplorer] listenerDeleteSelected: ", dataPacket);
 
 		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
@@ -243,7 +230,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 			return;
 		}
 
-		console.log("[DataCollectionExplorer] SX_TABLE_COLUMN_CLICKED: ", dataPacket);
+		//console.log("[DataCollectionExplorer] SX_TABLE_COLUMN_CLICKED: ", dataPacket);
 
 		let dataCollectionId;
 		dataPacket.row.every((column) => {
@@ -265,11 +252,11 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataCollectionExplorer] listenerWorkbenchReady event rejected: ", dataPacket);
+			//console.log("[DataCollectionExplorer] listenerWorkbenchReady event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataCollectionExplorer] listenerWorkbenchReady received: ", dataPacket);
+		//console.log("[DataCollectionExplorer] listenerWorkbenchReady received: ", dataPacket);
 
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.searchDataCollections,
@@ -289,11 +276,11 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataCollectionExplorer] listenerResponse event rejected: ", dataPacket);
+			//console.log("[DataCollectionExplorer] listenerResponse event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataCollectionExplorer] listenerResponse received: ", dataPacket);
+		//console.log("[DataCollectionExplorer] listenerResponse received: ", dataPacket);
 		let state = {};
 
 		switch (dataPacket.requestId) {
@@ -335,11 +322,11 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataCollectionExplorer] listenerComponentWillUnmount rejected: ", dataPacket);
+			//console.log("[DataCollectionExplorer] listenerComponentWillUnmount rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataCollectionExplorer] listenerComponentWillUnmount received: ", dataPacket);
+		//console.log("[DataCollectionExplorer] listenerComponentWillUnmount received: ", dataPacket);
 		this.componentWillUnmount();
 	};
 
@@ -358,7 +345,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	}
 
 	componentWillUnmount() {
-		console.log("[DataCollectionExplorer] componentWillUnmount");
+		//console.log("[DataCollectionExplorer] componentWillUnmount");
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.off(Event.SX_RESPONSE, this.listenerResponse);
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
@@ -384,7 +371,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		this.searchResults = results.map((result, index) => {
 			const { dataCollectionId, dataCollectionCode, dataCollectionVersion, displayName } = result;
 
-			console.log("convertSearchResultsToContent: ", results, this.searchResults);
+			//console.log("convertSearchResultsToContent: ", results, this.searchResults);
 			const contentActionMenus = [];
 
 			if (this.permissions.includes(ActionKeys.UPDATE)) {
@@ -434,7 +421,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	}
 
 	deleteDataCollections = () => {
-		console.log("Selected DataTypes: ", this.selectedResults, this.selectedResultsToDataCollectionIds());
+		//console.log("Selected DataTypes: ", this.selectedResults, this.selectedResultsToDataCollectionIds());
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.deleteDataCollections,
 			params: {
@@ -449,7 +436,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		} else if (this.state.loadingStatus == LoadingStatus.FAIL) {
 			return <SXErrorModal imageURL={this.imagePath + "/ajax-error.gif"} />;
 		} else {
-			console.log("DataCollectionExplorer render: ", this.enableCheckbox);
+			//console.log("DataCollectionExplorer render: ", this.enableCheckbox);
 			return (
 				<div>
 					{this.managementBar && (

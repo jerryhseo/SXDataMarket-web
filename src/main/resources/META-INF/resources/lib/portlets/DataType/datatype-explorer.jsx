@@ -1,32 +1,12 @@
 import React, { useState, useLayoutEffect, useContext, useRef, useCallback } from "react";
-import {
-	ActionKeys,
-	LoadingStatus,
-	PortletKeys,
-	ResourceIds,
-	WindowState,
-	DisplayType,
-	DisplayStyles,
-	Event,
-	Constant
-} from "../../stationx/station-x";
+import { ActionKeys, LoadingStatus, PortletKeys, Event } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
-import { Context } from "@clayui/modal";
-import { openConfirmModal, SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
-import { Body, Cell, Head, Row, Table } from "@clayui/core";
-import { ClayCheckbox, ClayInput } from "@clayui/form";
-import { ClayDropDownWithItems } from "@clayui/drop-down";
-import Button, { ClayButtonWithIcon } from "@clayui/button";
-import { NotFound, UnderConstruction } from "../../stationx/common";
-import Toolbar from "@clayui/toolbar";
+import { SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
+import { UnderConstruction } from "../../stationx/common";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
-import { FilterOptions } from "../../stationx/search-container";
-import SXActionDropdown from "../../stationx/dropdown";
 import { SXFreezeIcon, SXLinkIcon, SXVerifyIcon } from "../../stationx/icon";
-import SXBaseVisualizer, { Visualizer } from "../../stationx/visualizer";
+import SXBaseVisualizer from "../../stationx/visualizer";
 import { Workbench } from "../DataWorkbench/workbench";
-import { SXInputGroup } from "../../stationx/form";
-import { StringParameter } from "../../stationx/parameter";
 
 class DataTypeExplorer extends SXBaseVisualizer {
 	constructor(props) {

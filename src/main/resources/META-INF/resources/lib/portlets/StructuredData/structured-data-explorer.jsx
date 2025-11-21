@@ -3,7 +3,7 @@ import { ActionKeys, Event, LoadingStatus, PortletKeys, ResourceIds, WindowState
 import { SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { Util } from "../../stationx/util";
-import { DataType, SXInstanceInfo } from "../DataType/datatype";
+import { SXInstanceInfo } from "../DataType/datatype";
 import SXBaseVisualizer from "../../stationx/visualizer";
 
 class StructuredDataExplorer extends SXBaseVisualizer {

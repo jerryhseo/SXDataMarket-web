@@ -5,7 +5,7 @@ import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/sear
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { Util } from "../../stationx/util";
 import { Workbench } from "../DataWorkbench/workbench";
-import { SXCommentIcon, SXFreezeIcon, SXLinkIcon, SXVerifyIcon } from "../../stationx/icon";
+import { SXCommentIcon, SXFreezeIcon, SXVerifyIcon } from "../../stationx/icon";
 
 class DataSetExplorer extends SXBaseVisualizer {
 	constructor(props) {

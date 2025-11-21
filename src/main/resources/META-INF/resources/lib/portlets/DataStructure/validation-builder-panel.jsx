@@ -1,23 +1,15 @@
-import React, { useContext, useRef, useState } from "react";
+import React from "react";
 import { Util } from "../../stationx/util";
 import { ErrorClass, Event, ParamType, ValidationKeys } from "../../stationx/station-x";
-import { ClayCheckbox, ClayInput, ClaySelectWithOption, ClayToggle } from "@clayui/form";
-import LocalizedInput from "@clayui/localized-input";
-import { Context } from "@clayui/modal";
-import { openConfirmModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
-import { BooleanParameter, Parameter, SelectParameter } from "../../stationx/parameter";
+import { ClaySelectWithOption, ClayToggle } from "@clayui/form";
+import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
+import SXBasePropertiesPanelComponent from "./base-properties-panel-component.jsx";
+import ParameterConstants from "../Parameter/parameter-constants.jsx";
+import { ParameterUtil } from "../Parameter/parameters.jsx";
 
-class SXDSBuilderValidationPanel extends React.Component {
+class SXDSBuilderValidationPanel extends SXBasePropertiesPanelComponent {
 	constructor(props) {
 		super(props);
-
-		this.namespace = props.workingParam.namespace;
-		this.formIds = props.formIds;
-		this.languageId = props.workingParam.languageId;
-		this.availableLanguageIds = props.workingParam.availableLanguageIds;
-		this.workingParam = props.workingParam;
-		this.dataStructure = props.dataStructure;
-		this.spritemap = props.spritemap;
 
 		this.locales = this.availableLanguageIds.map((locale) => ({
 			label: locale,
@@ -48,7 +40,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 			confirmDlgBody: <></>
 		};
 
-		this.formId = this.namespace + "validationBulder";
+		this.componentId = this.namespace + "SXDSBuilderValidationPanel";
 
 		const errorOptions = [
 			{
@@ -61,66 +53,56 @@ class SXDSBuilderValidationPanel extends React.Component {
 			}
 		];
 
-		const baseValueString = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		const baseValueString = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				displayName: Util.getTranslationObject(this.languageId, "value"),
 				placeholder: Util.getTranslationObject(this.languageId, "error-message")
 			}
-		);
-		const baseValueNumeric = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.NUMERIC,
-			{
+		});
+		const baseValueNumeric = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.NUMERIC,
+			properties: {
 				displayName: Util.getTranslationObject(this.languageId, "value"),
 				placeholder: Util.getTranslationObject(this.languageId, "error-message"),
 				decimalPlaces: 32
 			}
-		);
-		const baseBoundary = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.BOOLEAN,
-			{
-				viewType: BooleanParameter.ViewTypes.CHECKBOX,
+		});
+		const baseBoundary = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.BOOLEAN,
+			properties: {
+				viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
 				displayName: Util.getTranslationObject(this.languageId, "boundary")
 			}
-		);
-		const baseMessage = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		});
+		const baseMessage = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "message"),
 				placeholder: Util.getTranslationObject(this.languageId, "error-message")
 			}
-		);
-		const baseErrorLevel = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.SELECT,
-			{
-				viewType: SelectParameter.ViewTypes.RADIO,
+		});
+		const baseErrorLevel = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.SELECT,
+			properties: {
+				viewType: ParameterConstants.SelectViewTypes.RADIO,
 				displayName: Util.getTranslationObject(this.languageId, "error-level"),
 				optionsPerRow: 2,
 				options: errorOptions,
 				defaultValue: ErrorClass.ERROR
 			}
-		);
+		});
 
 		const requiredMessage = baseMessage.copy();
 		requiredMessage.paramCode = "requiredMessage";
@@ -285,7 +267,7 @@ class SXDSBuilderValidationPanel extends React.Component {
 	listenerFieldValueChanged = (event) => {
 		const dataPacket = event.dataPacket;
 
-		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.formId)) {
+		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.componentId)) {
 			return;
 		}
 

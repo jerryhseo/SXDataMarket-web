@@ -1,5 +1,4 @@
 import { ButtonWithIcon } from "@clayui/core";
-import Icon from "@clayui/icon";
 import React from "react";
 import { Util } from "./util";
 import { Event } from "./station-x";

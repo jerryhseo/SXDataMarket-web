@@ -1,13 +1,14 @@
 import React from "react";
 import { Util } from "../../stationx/util";
 import { EditStatus, ErrorClass, Event, LoadingStatus, ParamType, ValidationRule } from "../../stationx/station-x";
-import { DualListParameter, GroupParameter, Parameter, SelectParameter } from "../../stationx/parameter";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import { Workbench } from "../DataWorkbench/workbench";
-import { SXLabeledText } from "../../stationx/form";
+import { SXLabeledText } from "../Form/form";
+import ParameterConstants from "../Parameter/parameter-constants";
+import { ParameterUtil } from "../Parameter/parameters";
 
 class DataCollectionEditor extends SXBaseVisualizer {
 	constructor(props) {
@@ -28,13 +29,11 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		this.dialogHeader = <></>;
 		this.dialogBody = <></>;
 
-		this.dataCollectionCode = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.dataCollectionCode = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "dataCollectionCode",
 				displayName: Util.getTranslationObject(this.languageId, "datacollection-code"),
 				placeholder: Util.getTranslationObject(this.languageId, "datacollection-code"),
@@ -65,15 +64,13 @@ class DataCollectionEditor extends SXBaseVisualizer {
 					width: "250px"
 				}
 			}
-		);
+		});
 
-		this.dataCollectionVersion = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.dataCollectionVersion = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "dataCollectionVersion",
 				displayName: Util.getTranslationObject(this.languageId, "version"),
 				placeholder: Util.getTranslationObject(this.languageId, "1.0.0"),
@@ -95,15 +92,13 @@ class DataCollectionEditor extends SXBaseVisualizer {
 					width: "150px"
 				}
 			}
-		);
+		});
 
-		this.displayName = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.displayName = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "displayName",
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "display-name"),
@@ -128,15 +123,13 @@ class DataCollectionEditor extends SXBaseVisualizer {
 				},
 				className: "autofit-col-expand"
 			}
-		);
+		});
 
-		this.description = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.description = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "description",
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "description"),
@@ -144,37 +137,33 @@ class DataCollectionEditor extends SXBaseVisualizer {
 				tooltip: Util.getTranslationObject(this.languageId, "description-tooltip"),
 				multipleLine: true
 			}
-		);
+		});
 
-		this.groupParameter = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.GROUP,
-			{
+		this.groupParameter = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: ParamType.GROUP,
+			properties: {
 				paramCode: "requiredProps",
 				paramVersion: "1.0.0",
 				displayName: Util.getTranslationObject(this.languageId, "required-properties"),
-				viewType: GroupParameter.ViewTypes.FIELDSET,
+				viewType: ParameterConstants.GroupViewTypes.FIELDSET,
 				members: [this.dataCollectionCode, this.dataCollectionVersion, this.displayName],
 				membersPerRow: 3
 			}
-		);
+		});
 
-		this.dataSets = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			"DualList",
-			{
+		this.dataSets = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: "DualList",
+			properties: {
 				paramCode: "dataSets",
 				displayName: Util.getTranslationObject(this.languageId, "associated-datasets"),
 				tooltip: Util.getTranslationObject(this.languageId, "associated-datasets-tooltip"),
-				viewType: DualListParameter.ViewTypes.ORDERED
+				viewType: ParameterConstants.DualListViewTypes.ORDERED
 			}
-		);
+		});
 	}
 
 	listenerWorkbenchReady = (event) => {

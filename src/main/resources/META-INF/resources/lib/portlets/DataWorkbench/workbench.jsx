@@ -1,11 +1,9 @@
-import React, { createRef, useEffect, useRef } from "react";
-import { createRoot } from "react-dom/client";
+import React, { createRef } from "react";
 import Button, { ClayButtonWithIcon } from "@clayui/button";
 import Panel from "@clayui/panel";
 import { Rnd } from "react-rnd";
 import { Util } from "../../stationx/util";
-import { Constant, Event, LoadingStatus, ResourceIds, WindowState } from "../../stationx/station-x";
-import parse from "html-react-parser";
+import { Event, LoadingStatus, ResourceIds, WindowState } from "../../stationx/station-x";
 
 export class Workbench {
 	static loadWorkingPortlet({ portletSectionId, windowState, workingPortlet, workbench }) {
@@ -183,7 +181,7 @@ export class Workbench {
 		delete this.windows[portletId];
 	}
 
-	loadPortlet = async ({ portletRootTag, portletName, params = {}, title = "" }) => {
+	loadPortlet = async ({ portletName, params = {}, title = "" }) => {
 		const portletInstance = await this.createPortletInfo({
 			resourceId: ResourceIds.CREATE_PORTLET_INSTANCE,
 			portletName: portletName

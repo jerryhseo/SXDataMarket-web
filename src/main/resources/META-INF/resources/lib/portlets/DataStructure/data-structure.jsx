@@ -1,9 +1,9 @@
 import React from "react";
-import { Constant, ParamType } from "../../stationx/station-x";
-import { GroupParameter } from "../../stationx/parameter";
+import { Constant } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
+import { GroupParameter } from "../Parameter/parameters";
 
-export class DataStructure extends GroupParameter {
+class DataStructure extends GroupParameter {
 	static ViewTypes = {
 		BAREBONE: "barebone"
 	};
@@ -35,10 +35,15 @@ export class DataStructure extends GroupParameter {
 	#paramValueDelimiter = "=";
 	#hierarchicalData = false;
 
-	constructor(namespace, formId, languageId, availableLanguageIds, json = {}) {
-		super(namespace, formId, languageId, availableLanguageIds);
+	constructor({ namespace, formId, properties = {} }) {
+		super({
+			namespace: namespace,
+			formId: formId
+		});
 
-		this.parse(json);
+		if (Util.isNotEmpty(properties)) {
+			this.parse(properties);
+		}
 	}
 
 	get paramDelimiter() {
@@ -313,18 +318,21 @@ export class DataStructure extends GroupParameter {
 		return json;
 	}
 
-	renderPreview({ dsbuilderId, propertyPanelId, previewCanvasId, className, style, spritemap }) {
+	renderPreview({ formId = this.formId, spritemap }) {
+		//console.log("DataStructure.renderPreview: ", formId, this.formId);
 		return (
 			<>
-				{this.members.map((parameter) => {
-					parameter.position = this.getMemberPosition(parameter);
+				{this.members.map((parameter, order) => {
+					let actionItems = this.getPreviewActionItems(order);
+
+					parameter.formId = formId;
+					parameter.commentable = true;
+					parameter.verifiable = true;
+					parameter.freezable = true;
 
 					return parameter.renderPreview({
-						dsbuilderId: dsbuilderId,
-						propertyPanelId: propertyPanelId,
-						previewCanvasId: previewCanvasId,
-						className: className,
-						style: style,
+						formId: formId,
+						actionItems: actionItems,
 						spritemap: spritemap
 					});
 				})}
@@ -347,3 +355,5 @@ export class DataStructure extends GroupParameter {
 		);
 	}
 }
+
+export default DataStructure;

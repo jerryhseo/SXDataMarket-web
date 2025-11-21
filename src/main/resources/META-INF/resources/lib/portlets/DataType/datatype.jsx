@@ -1,14 +1,15 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { BooleanParameter, GroupParameter, Parameter } from "../../stationx/parameter";
-import { DataTypeProperty, ErrorClass, Event, ParamType, ValidationRule } from "../../stationx/station-x";
-import { SXLabeledText } from "../../stationx/form";
-import { Body, Cell, Head, Row, Table, Text } from "@clayui/core";
-import { DataStructure } from "../DataStructure/data-structure";
+import { Event, ParamType } from "../../stationx/station-x";
+import { SXLabeledText } from "../Form/form";
+import DataStructure from "../DataStructure/data-structure";
+import ParameterConstants from "../Parameter/parameter-constants";
+import { ParameterUtil } from "../Parameter/parameters";
 
 export class DataType {
-	languageId;
-	availableLanguageIds;
+	languageId = SXSystem.getLanguageId();
+	defaultLanguageId = SXSystem.getDefaultLanguageId();
+	availableLanguageIds = SXSystem.getAvailableLanguages();
 
 	dataTypeId = 0;
 	dataTypeCode = "";
@@ -20,10 +21,7 @@ export class DataType {
 
 	dirty = false;
 
-	constructor(languageId, availableLanguageIds, json) {
-		this.languageId = languageId;
-		this.availableLanguageIds = availableLanguageIds;
-
+	constructor(json) {
 		if (json) {
 			this.parse(json);
 		}
@@ -85,7 +83,7 @@ export class DataType {
 		json.languageId = this.languageId;
 		json.availableLanguageIds = this.availableLanguageIds;
 
-		return new DataType(this.languageId, this.availableLanguageIds, json);
+		return new DataType(json);
 	}
 
 	parse(json) {
@@ -161,6 +159,9 @@ export class DataTypeStructureLink {
 		EDIT: "edit",
 		NONE: "none"
 	};
+	languageId = SXSystem.getLanguageId();
+	defaultLanguageId = SXSystem.getDefaultLanguageId();
+	availableLanguageIds = SXSystem.getAvailableLanguages();
 
 	dataTypeId = 0;
 	dataStructureId = 0;
@@ -180,17 +181,14 @@ export class DataTypeStructureLink {
 	dirty = false;
 	fromDB = false;
 
-	constructor(languageId, availableLanguageIds, json) {
-		this.languageId = languageId;
-		this.availableLanguageIds = availableLanguageIds;
-
+	constructor(json) {
 		if (json) {
 			this.parse(json);
 		}
 	}
 
 	copy() {
-		return new DataTypeStructureLink(this.languageId, this.availableLanguageIds, this.toJSON());
+		return new DataTypeStructureLink(this.toJSON());
 	}
 
 	parse(json) {
@@ -334,19 +332,22 @@ export class SXDataTypeStructureLink extends React.Component {
 
 		this.namespace = props.namespace;
 		this.formId = props.formId;
-		this.languageId = props.languageId ?? SXSystem.getLanguageId();
-		this.defaultLanguageId = props.languageId ?? SXSystem.getDefaultLanguageId();
-		this.availableLanguageIds = props.availableLanguageIds ?? SXSystem.getAvailableLanguages();
+		this.languageId = SXSystem.getLanguageId();
+		this.defaultLanguageId = SXSystem.getDefaultLanguageId();
+		this.availableLanguageIds = SXSystem.getAvailableLanguages();
 
 		this.spritemap = props.spritemap;
 
-		this.dataType = props.dataType ?? new DataType(this.languageId, this.availableLanguageIds);
-		this.typeStructureLink =
-			props.typeStructureLink ?? new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
+		this.dataType = props.dataType ?? new DataType();
+		this.typeStructureLink = props.typeStructureLink ?? new DataTypeStructureLink();
 
 		this.dataStructure =
 			props.dataStructure ??
-			new DataStructure(this.namespace, this.formId, this.languageId, this.availableLanguageIds);
+			new DataStructure({
+				namespace: this.namespace,
+				formId: this.formId,
+				properties: {}
+			});
 
 		this.dataTypeViewMode = props.dataTypeViewMode ?? DataTypeStructureLink.ViewTypes.NONE;
 		this.typeStructureLinkViewMode = props.typeStructureLinkViewMode ?? DataTypeStructureLink.ViewTypes.NONE;
@@ -364,110 +365,96 @@ export class SXDataTypeStructureLink extends React.Component {
 
 		this.componentId = this.namespace + "dataTypeStructureLink";
 
-		this.commentable = Parameter.createParameter(
-			this.namespace,
-			this.componentId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.BOOLEAN,
-			{
+		this.commentable = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.BOOLEAN,
+			properties: {
 				paramCode: "commentable",
-				viewType: BooleanParameter.ViewTypes.TOGGLE,
+				viewType: ParameterConstants.BooleanViewTypes.TOGGLE,
 				displayName: Util.getTranslationObject(this.languageId, "commentable"),
 				tooltip: Util.getTranslationObject(this.languageId, "commentable-tooltip"),
 				defaultValue: this.typeStructureLink.commentable
 			}
-		);
+		});
 
-		this.verifiable = Parameter.createParameter(
-			this.namespace,
-			this.componentId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.BOOLEAN,
-			{
+		this.verifiable = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.BOOLEAN,
+			properties: {
 				paramCode: "verifiable",
-				viewType: BooleanParameter.ViewTypes.TOGGLE,
+				viewType: ParameterConstants.BooleanViewTypes.TOGGLE,
 				displayName: Util.getTranslationObject(this.languageId, "verifiable"),
 				tooltip: Util.getTranslationObject(this.languageId, "verifiable-tooltip"),
 				defaultValue: this.typeStructureLink.verifiable
 			}
-		);
+		});
 
-		this.freezable = Parameter.createParameter(
-			this.namespace,
-			this.componentId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.BOOLEAN,
-			{
+		this.freezable = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.BOOLEAN,
+			properties: {
 				paramCode: "freezable",
-				viewType: BooleanParameter.ViewTypes.TOGGLE,
+				viewType: ParameterConstants.BooleanViewTypes.TOGGLE,
 				displayName: Util.getTranslationObject(this.languageId, "freezable"),
 				tooltip: Util.getTranslationObject(this.languageId, "freezable-tooltip"),
 				defaultValue: this.typeStructureLink.freezable
 			}
-		);
+		});
 
-		this.inputStatus = Parameter.createParameter(
-			this.namespace,
-			this.componentId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.BOOLEAN,
-			{
+		this.inputStatus = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.BOOLEAN,
+			properties: {
 				paramCode: "inputStatus",
-				viewType: BooleanParameter.ViewTypes.TOGGLE,
+				viewType: ParameterConstants.BooleanViewTypes.TOGGLE,
 				displayName: Util.getTranslationObject(this.languageId, "enable-input-status"),
 				tooltip: Util.getTranslationObject(this.languageId, "enable-input-status-tooltip"),
 				defaultValue: this.typeStructureLink.inputStatus
 			}
-		);
+		});
 
-		this.jumpTo = Parameter.createParameter(
-			this.namespace,
-			this.componentId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.BOOLEAN,
-			{
+		this.jumpTo = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.BOOLEAN,
+			properties: {
 				paramCode: "jumpTo",
-				viewType: BooleanParameter.ViewTypes.TOGGLE,
+				viewType: ParameterConstants.BooleanViewTypes.TOGGLE,
 				displayName: Util.getTranslationObject(this.languageId, "enable-jump-to"),
 				tooltip: Util.getTranslationObject(this.languageId, "enable-jump-to-tooltip"),
 				defaultValue: this.typeStructureLink.jumpTo
 			}
-		);
+		});
 
-		this.verified = Parameter.createParameter(
-			this.namespace,
-			this.componentId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.BOOLEAN,
-			{
+		this.verified = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.BOOLEAN,
+			properties: {
 				paramCode: "verified",
-				viewType: BooleanParameter.ViewTypes.TOGGLE,
+				viewType: ParameterConstants.BooleanViewTypes.TOGGLE,
 				displayName: Util.getTranslationObject(this.languageId, "verified"),
 				tooltip: Util.getTranslationObject(this.languageId, "verified-tooltip"),
 				defaultValue: this.typeStructureLink.verified
 			}
-		);
+		});
 
-		this.freezed = Parameter.createParameter(
-			this.namespace,
-			this.componentId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.BOOLEAN,
-			{
+		this.freezed = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.BOOLEAN,
+			properties: {
 				paramCode: "freezed",
-				viewType: BooleanParameter.ViewTypes.TOGGLE,
+				viewType: ParameterConstants.BooleanViewTypes.TOGGLE,
 				displayName: Util.getTranslationObject(this.languageId, "freezed"),
 				tooltip: Util.getTranslationObject(this.languageId, "freezed-tooltip"),
 				defaultValue: this.typeStructureLink.freezed
 			}
-		);
+		});
 	}
 
 	listenerValueChanged = (event) => {

@@ -1,28 +1,17 @@
-import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
+import React from "react";
 import { Util } from "../../stationx/util";
-import { ErrorClass, Event, ParamProperty, ParamType, ValidationRule } from "../../stationx/station-x";
-import SXFormField from "../../stationx/form";
-import {
-	BooleanParameter,
-	GroupParameter,
-	Parameter,
-	SelectParameter,
-	StringParameter
-} from "../../stationx/parameter";
+import { ErrorClass, Event, ParamProperty, ParamType } from "../../stationx/station-x";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
-import { DataStructure } from "./data-structure";
+import DataStructure from "./data-structure";
+import SXBasePropertiesPanelComponent from "./base-properties-panel-component.jsx";
+import ParameterConstants from "../Parameter/parameter-constants.jsx";
+import { ParameterUtil } from "../Parameter/parameters.jsx";
 
-class SXDSBuilderOptionPropertiesPanel extends React.Component {
+class SXDSBuilderOptionPropertiesPanel extends SXBasePropertiesPanelComponent {
 	constructor(props) {
 		super(props);
 
-		this.formIds = props.formIds;
-		this.namespace = props.workingParam.namespace;
-		this.languageId = props.workingParam.languageId;
-		this.availableLanguageIds = props.workingParam.availableLanguageIds;
-		this.spritemap = props.spritemap;
-		this.workingParam = props.workingParam;
-		this.dataStructure = props.dataStructure;
+		this.componentId = this.namespace + "SXDSBuilderOptionPropertiesPanel";
 
 		this.state = {
 			confirmDlgState: false,
@@ -31,85 +20,112 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 		};
 
 		this.toggleFields = {
-			abstractKey: Parameter.createParameter(
-				this.namespace,
-				this.formIds.optionsFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.BOOLEAN,
-				{
+			abstractKey: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.BOOLEAN,
+				properties: {
 					paramCode: ParamProperty.ABSTRACT_KEY,
-					viewType: BooleanParameter.ViewTypes.TOGGLE,
+					viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "abstract-key"),
 					tooltip: Util.getTranslationObject(this.languageId, "abstract-key-tooltip"),
 					value: this.workingParam.abstractKey
 				}
-			),
-			downloadable: Parameter.createParameter(
-				this.namespace,
-				this.formIds.optionsFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.BOOLEAN,
-				{
+			}),
+			downloadable: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.BOOLEAN,
+				properties: {
 					paramCode: ParamProperty.DOWNLOADABLE,
-					viewType: BooleanParameter.ViewTypes.TOGGLE,
+					viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "downloadable"),
 					tooltip: Util.getTranslationObject(this.languageId, "downloadable-tooltip"),
 					value: this.workingParam.downloadable
 				}
-			),
-			searchable: Parameter.createParameter(
-				this.namespace,
-				this.formIds.optionsFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.BOOLEAN,
-				{
+			}),
+			searchable: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.BOOLEAN,
+				properties: {
 					paramCode: ParamProperty.SEARCHABLE,
-					viewType: BooleanParameter.ViewTypes.TOGGLE,
+					viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "searchable"),
 					tooltip: Util.getTranslationObject(this.languageId, "searchable-tooltip"),
 					value: this.workingParam.searchable
 				}
-			),
-			disabled: Parameter.createParameter(
-				this.namespace,
-				this.formIds.optionsFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.BOOLEAN,
-				{
+			}),
+			disabled: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.BOOLEAN,
+				properties: {
 					paramCode: ParamProperty.DISABLED,
-					viewType: BooleanParameter.ViewTypes.TOGGLE,
+					viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "disabled"),
 					tooltip: Util.getTranslationObject(this.languageId, "disabled-tooltip"),
 					value: this.workingParam.getDisabled()
 				}
-			)
+			}),
+			commentable: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.BOOLEAN,
+				properties: {
+					paramCode: "commentable",
+					viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
+					displayName: Util.getTranslationObject(this.languageId, "commentable"),
+					tooltip: Util.getTranslationObject(this.languageId, "commentable-tooltip"),
+					defaultValue: false,
+					value: this.workingParam.commentable
+				}
+			}),
+			verifiable: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.BOOLEAN,
+				properties: {
+					paramCode: "verifiable",
+					viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
+					displayName: Util.getTranslationObject(this.languageId, "verifiable"),
+					tooltip: Util.getTranslationObject(this.languageId, "verifiable-tooltip"),
+					defaultValue: false,
+					value: this.workingParam.verifiable
+				}
+			}),
+			freezable: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.BOOLEAN,
+				properties: {
+					paramCode: "freezable",
+					viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
+					displayName: Util.getTranslationObject(this.languageId, "freezable"),
+					tooltip: Util.getTranslationObject(this.languageId, "freezable-tooltip"),
+					defaultValue: false,
+					value: this.workingParam.freezable
+				}
+			})
 		};
 
-		this.fieldToggleGroup = Parameter.createParameter(
-			this.namespace,
-			this.formIds.optionsFormId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.GROUP,
-			{
+		this.fieldToggleGroup = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.GROUP,
+			properties: {
 				paramCode: "toggleGroup",
-				viewType: GroupParameter.ViewTypes.ARRANGEMENT,
-				membersPerRow: 1,
+				viewType: ParameterConstants.GroupViewTypes.ARRANGEMENT,
+				membersPerRow: 2,
 				members: Object.values(this.toggleFields)
 			}
-		);
+		});
 
-		this.fieldCssWidth = Parameter.createParameter(
-			this.namespace,
-			this.formIds.optionsFormId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.fieldCssWidth = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: ParamProperty.CSS_WIDTH,
 				displayName: Util.getTranslationObject(this.languageId, "width"),
 				placeholder: Util.getTranslationObject(this.languageId, "20.rem or 100px"),
@@ -129,13 +145,12 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 					}
 				}
 			}
-		);
+		});
 	}
 
-	fieldValueChangedHandler = (e) => {
+	listenerFieldValueChanged = (e) => {
 		const dataPacket = e.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.optionsFormId)
-			return;
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) return;
 
 		/*
 		console.log(
@@ -162,9 +177,11 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 			return;
 		}
 
-		if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
+		if (this.workingParam.displayType == ParameterConstants.DisplayTypes.GRID_CELL) {
 			console.log("Refresh Grid from cell: ", this.workingParam);
 
+			this.workingParam.fireRefreshParent(true);
+			/*
 			const gridParam = this.dataStructure.findParameter({
 				paramCode: this.workingParam.parent.code,
 				paramVersion: this.workingParam.parent.version,
@@ -172,17 +189,18 @@ class SXDSBuilderOptionPropertiesPanel extends React.Component {
 			});
 
 			gridParam.fireRefreshPreview();
+			*/
 		} else {
 			this.workingParam.fireRefreshPreview();
 		}
 	};
 
 	componentDidMount() {
-		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 	}
 
 	componentWillUnmount() {
-		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
+		Event.detach(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 	}
 
 	checkError() {

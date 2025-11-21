@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef } from "react";
+import React from "react";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import { ActionKeys, DisplayStyles, Event, LoadingStatus, PortletKeys } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
@@ -11,7 +11,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		console.log("DataStructureExplorer props: ", props);
+		//console.log("DataStructureExplorer props: ", props);
 		this.dataStructureList = [];
 
 		this.selectedDataStructures = [];
@@ -91,11 +91,11 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataStructureExplorer] listenerSelectAll event rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerSelectAll event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataStructureExplorer] listenerSelectAll: ", dataPacket);
+		//console.log("[DataStructureExplorer] listenerSelectAll: ", dataPacket);
 
 		this.selectedDataStructures = dataPacket.selectAll ? [...this.searchedDataStructures] : [];
 
@@ -106,22 +106,22 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
 
 		if (!dataPacket) {
-			console.log("[DataStructureExplorer] listenerFieldValueChanged rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerFieldValueChanged rejected: ", dataPacket);
 
 			return;
 		}
 
-		console.log("[DataStructureExplorer] listenerFieldValueChanged received: ", dataPacket);
+		//console.log("[DataStructureExplorer] listenerFieldValueChanged received: ", dataPacket);
 	};
 
 	listenerAddButtonClicked = (event) => {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataStructureExplorer] listenerAddButtonClicked event rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerAddButtonClicked event rejected: ", dataPacket);
 			return;
 		}
-		console.log("[DataStructureExplorer] listenerAddButtonClicked: ", dataPacket);
+		//console.log("[DataStructureExplorer] listenerAddButtonClicked: ", dataPacket);
 
 		this.fireLoadPortlet({
 			portletName: PortletKeys.DATASTRUCTURE_BUILDER,
@@ -134,17 +134,17 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataStructureExplorer] listenerPopActionClicked event rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerPopActionClicked event rejected: ", dataPacket);
 			return;
 		}
 
 		const selectedDataStructureId = this.searchedDataStructures[dataPacket.data][0].value;
-		console.log(
+		/*console.log(
 			"[DataStructureExplorer] listenerPopActionClicked: ",
 			dataPacket,
 			this.searchedDataStructures,
 			selectedDataStructureId
-		);
+		);*/
 
 		switch (dataPacket.action) {
 			case "update": {
@@ -173,10 +173,10 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataStructureExplorer] listenerSelectedResultsChanged event rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerSelectedResultsChanged event rejected: ", dataPacket);
 			return;
 		}
-		console.log("[DataStructureExplorer] listenerSelectedResultsChanged: ", dataPacket);
+		//console.log("[DataStructureExplorer] listenerSelectedResultsChanged: ", dataPacket);
 		this.selectedDataStructures = dataPacket.selectedResults;
 
 		this.setState({ searchContainerKey: Util.randomKey() });
@@ -186,10 +186,10 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataStructureExplorer] listenerDeleteSelected rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerDeleteSelected rejected: ", dataPacket);
 			return;
 		}
-		console.log("[DataStructureExplorer] listenerDeleteSelected: ", dataPacket);
+		//console.log("[DataStructureExplorer] listenerDeleteSelected: ", dataPacket);
 
 		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
@@ -201,20 +201,20 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataStructureExplorer] listenerTableRowSelected rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerTableRowSelected rejected: ", dataPacket);
 			return;
 		}
-		console.log("[DataStructureExplorer] listenerTableRowSelected: ", dataPacket);
+		//console.log("[DataStructureExplorer] listenerTableRowSelected: ", dataPacket);
 	};
 
 	listenerTableColumnSelected = (event) => {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataStructureExplorer] listenerTableColumnSelected rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerTableColumnSelected rejected: ", dataPacket);
 			return;
 		}
-		console.log("[DataStructureExplorer] listenerTableColumnSelected: ", dataPacket);
+		//console.log("[DataStructureExplorer] listenerTableColumnSelected: ", dataPacket);
 
 		this.lastSelectedDataStructureId = this.getDataStructureIdFromRow(dataPacket.row);
 	};
@@ -223,11 +223,11 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataStructureExplorer] listenerWorkbenchReady event rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerWorkbenchReady event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataStructureExplorer] listenerWorkbenchReady received: ", dataPacket);
+		//console.log("[DataStructureExplorer] listenerWorkbenchReady received: ", dataPacket);
 
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.searchDataStructures,
@@ -244,11 +244,11 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataStructureExplorer] listenerResponse rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerResponse rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataStructureExplorer] listenerResponse received: ", dataPacket);
+		//console.log("[DataStructureExplorer] listenerResponse received: ", dataPacket);
 
 		switch (dataPacket.requestId) {
 			case Workbench.RequestIDs.searchDataStructures: {
@@ -267,11 +267,11 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataStructureExplorer] listenerComponentWillUnmount rejected: ", dataPacket);
+			//console.log("[DataStructureExplorer] listenerComponentWillUnmount rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataStructureExplorer] listenerComponentWillUnmount received: ", dataPacket);
+		//console.log("[DataStructureExplorer] listenerComponentWillUnmount received: ", dataPacket);
 		this.componentWillUnmount();
 	};
 
@@ -295,7 +295,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 	}
 
 	componentWillUnmount() {
-		console.log("[DataStructureExplorer] componentWillUnmount");
+		//console.log("[DataStructureExplorer] componentWillUnmount");
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.off(Event.SX_RESPONSE, this.listenerResponse);
@@ -311,7 +311,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 
 	getDataStructureIdFromRow(row) {
 		const column = row.filter((column) => column.id === "dataStructureId")[0];
-		console.log("getDataStructureIdFromRow: ", column);
+		//console.log("getDataStructureIdFromRow: ", column);
 		return column.value;
 	}
 

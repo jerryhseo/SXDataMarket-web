@@ -1,23 +1,24 @@
 import React from "react";
 import { Util } from "../../stationx/util";
 import { ErrorClass, Event, ParamProperty, ParamType, ValidationRule } from "../../stationx/station-x";
-import { SXBoolean, SXInput, SXLocalizedInput } from "../../stationx/form";
-import LocalizedInput from "@clayui/localized-input";
-import { BooleanParameter, Parameter, StringParameter } from "../../stationx/parameter";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
-import { DataStructure } from "./data-structure";
+import DataStructure from "./data-structure";
+import ParameterConstants from "../Parameter/parameter-constants";
+import { ParameterUtil } from "../Parameter/parameters";
 
 class SXDSBuilderBasicPropertiesPanel extends React.Component {
 	constructor(props) {
 		super(props);
 
 		this.namespace = props.workingParam.namespace;
-		this.formIds = props.formIds;
+		this.formId = props.formId;
 		this.languageId = props.workingParam.languageId;
 		this.availableLanguageIds = props.workingParam.availableLanguageIds;
 		this.workingParam = props.workingParam;
 		this.dataStructure = props.dataStructure;
 		this.spritemap = props.spritemap;
+
+		this.componentId = this.namespace + "SXDSBuilderBasicPropertiesPanel";
 
 		this.state = {
 			confirmDlgState: false,
@@ -26,13 +27,11 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		};
 
 		this.fields = {
-			paramCode: Parameter.createParameter(
-				this.namespace,
-				this.formIds.basicPropertiesFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.STRING,
-				{
+			paramCode: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING,
+				properties: {
 					paramCode: ParamProperty.PARAM_CODE,
 					displayName: Util.getTranslationObject(this.languageId, "parameter-code"),
 					placeholder: Util.getTranslationObject(this.languageId, "code-of-the-parameter"),
@@ -61,14 +60,12 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					},
 					value: this.workingParam.paramCode
 				}
-			),
-			paramVersion: Parameter.createParameter(
-				this.namespace,
-				this.formIds.basicPropertiesFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.STRING,
-				{
+			}),
+			paramVersion: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING,
+				properties: {
 					paramCode: ParamProperty.PARAM_VERSION,
 					displayName: Util.getTranslationObject(this.languageId, "version"),
 					placeholder: Util.getTranslationObject(this.languageId, "version-of-the-parameter"),
@@ -88,14 +85,12 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					},
 					value: this.workingParam.paramVersion
 				}
-			),
-			displayName: Parameter.createParameter(
-				this.namespace,
-				this.formIds.basicPropertiesFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.STRING,
-				{
+			}),
+			displayName: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING,
+				properties: {
 					paramCode: ParamProperty.DISPLAY_NAME,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "display-name"),
@@ -120,14 +115,12 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					},
 					value: this.workingParam.displayName ?? {}
 				}
-			),
-			definition: Parameter.createParameter(
-				this.namespace,
-				this.formIds.basicPropertiesFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.STRING,
-				{
+			}),
+			definition: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING,
+				properties: {
 					paramCode: ParamProperty.DEFINITION,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "definition"),
@@ -143,32 +136,28 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					},
 					value: this.workingParam.definition
 				}
-			),
-			showDefinition: Parameter.createParameter(
-				this.namespace,
-				this.formIds.basicPropertiesFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.BOOLEAN,
-				{
+			}),
+			showDefinition: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.BOOLEAN,
+				properties: {
 					paramCode: ParamProperty.SHOW_DEFINITION,
-					viewType: BooleanParameter.ViewTypes.CHECKBOX,
+					viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
 					displayName: Util.getTranslationObject(this.languageId, "show-definition"),
 					tooltip: Util.getTranslationObject(this.languageId, "show-description-tooltip"),
 					value: this.workingParam.showDefinition,
 					disabled:
 						this.workingParam.paramType == ParamType.BOOLEAN &&
-						(this.workingParam.viewType == BooleanParameter.ViewTypes.CHECKBOX ||
-							this.workingParam.viewType == BooleanParameter.ViewTypes.TOGGLE)
+						(this.workingParam.viewType == ParameterConstants.BooleanViewTypes.CHECKBOX ||
+							this.workingParam.viewType == ParameterConstants.BooleanViewTypes.TOGGLE)
 				}
-			),
-			tooltip: Parameter.createParameter(
-				this.namespace,
-				this.formIds.basicPropertiesFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.STRING,
-				{
+			}),
+			tooltip: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING,
+				properties: {
 					paramCode: ParamProperty.TOOLTIP,
 					localized: true,
 					displayName: Util.getTranslationObject(this.languageId, "tooltip"),
@@ -176,33 +165,28 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					tooltip: Util.getTranslationObject(this.languageId, "tooltip-tooltip"),
 					value: this.workingParam.tooltip
 				}
-			),
-			synonyms: Parameter.createParameter(
-				this.namespace,
-				this.formIds.basicPropertiesFormId,
-				this.languageId,
-				this.availableLanguageIds,
-				ParamType.STRING,
-				{
+			}),
+			synonyms: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING,
+				properties: {
 					paramCode: ParamProperty.SYNONYMS,
 					displayName: Util.getTranslationObject(this.languageId, "synonyms"),
 					placeholder: Util.getTranslationObject(this.languageId, "code1, code2"),
 					tooltip: Util.getTranslationObject(this.languageId, "synonyms-tooltip"),
 					value: this.workingParam.synonyms
 				}
-			)
+			})
 		};
 
-		//console.log("SXDSBuilderBasicPropertiesPanel: ", props);
+		console.log("[SXDSBuilderBasicPropertiesPanel constructor] ", props);
 	}
 
-	valueChangedHandler = (e) => {
+	listenerValueChanged = (e) => {
 		const dataPacket = e.dataPacket;
 
-		if (
-			dataPacket.targetPortlet !== this.namespace ||
-			dataPacket.targetFormId !== this.formIds.basicPropertiesFormId
-		) {
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
 			return;
 		}
 
@@ -273,11 +257,11 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 	};
 
 	componentDidMount() {
-		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.valueChangedHandler);
+		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerValueChanged);
 	}
 
 	componentWillUnmount() {
-		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.valueChangedHandler);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerValueChanged);
 	}
 
 	checkError() {
@@ -312,7 +296,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 	}
 
 	render() {
-		//console.log("SXDSBuilderBasicPropertiesPanel: ", this.workingParam, this.formIds);
+		//console.log("SXDSBuilderBasicPropertiesPanel: ", this.workingParam);
 		const fields = Object.values(this.fields);
 
 		//this.setPropertiesValue();

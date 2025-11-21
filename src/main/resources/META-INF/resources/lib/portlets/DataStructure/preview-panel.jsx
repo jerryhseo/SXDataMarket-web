@@ -1,35 +1,52 @@
 import React from "react";
-import { Event, PortletKeys } from "../../stationx/station-x";
+import { ErrorClass, Event, ParamType, PortletKeys } from "../../stationx/station-x";
 import Toolbar from "@clayui/toolbar";
 import { ClayInput } from "@clayui/form";
 import Button, { ClayButtonWithIcon } from "@clayui/button";
-import { Autocomplete } from "@clayui/autocomplete";
+import Autocomplete from "@clayui/autocomplete";
 import { Util } from "../../stationx/util";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
+import SXBasePropertiesPanelComponent from "./base-properties-panel-component";
+import { ParameterUtil } from "../Parameter/parameters";
+import { SXLabeledText } from "../Form/form";
+import { Icon, Text, TreeView } from "@clayui/core";
 
-class SXDataStructurePreviewer extends React.Component {
+class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 	constructor(props) {
 		super(props);
-		//console.log("Previewer props: ", props);
+		console.log("Previewer props: ", props);
 
-		this.namespace = props.dataStructure.namespace;
-		this.formIds = props.formIds;
-		this.dataStructure = props.dataStructure;
 		this.typeStructureLink = props.typeStructureLink;
-		this.spritemap = props.spritemap;
 
-		this.formId = this.formIds.previewCanvasId;
+		this.componentId = this.namespace + "SXDataStructurePreviewer";
 
 		this.state = {
 			confirmDlgState: false,
 			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-			confirmDlgBody: <></>
+			confirmDlgBody: <></>,
+			childRefreshKey: Util.randomKey(),
+			addCommentModal: false
 		};
+
+		this.commentField = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
+				paramCode: "comment",
+				displayName: Util.getTranslationObject(this.languageId, "comment"),
+				tooltip: Util.getTranslationObject(this.languageId, "member-code-tooltip"),
+				multipleLine: true
+			}
+		});
+
+		this.addCommentDlgHeader = Util.translate("add-comment");
+		this.commentParam = null;
 	}
 
-	fieldValueChangedHandler = (e) => {
-		const dataPacket = e.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) return;
+	listenerFieldValueChanged = (event) => {
+		const dataPacket = event.dataPacket;
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) return;
 
 		console.log(
 			"[SXDataStructurePreviewer] SX_FIELD_VALUE_CHANGED RECEIVED: ",
@@ -43,12 +60,12 @@ class SXDataStructurePreviewer extends React.Component {
 		}
 	};
 
-	moveParameterUpHandler = (e) => {
-		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
+	listenerMoveParameterUp = (event) => {
+		if (event.dataPacket.targetPortlet !== this.namespace || event.dataPacket.targetFormId !== this.componentId) {
 			return;
 		}
 
-		const parameter = e.dataPacket.parameter;
+		const parameter = event.dataPacket.parameter;
 		const group =
 			this.dataStructure.findParameter({
 				paramCode: parameter.parentCode,
@@ -61,12 +78,15 @@ class SXDataStructurePreviewer extends React.Component {
 		this.forceUpdate();
 	};
 
-	moveParameterDownHandler = (e) => {
-		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
+	listenerMoveParameterDown = (event) => {
+		const { dataPacket } = event;
+
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
 			return;
 		}
+		//console.log("[SXDataStructurePreviewer] listenerMoveParameterDown: ", dataPacket);
 
-		const parameter = e.dataPacket.parameter;
+		const parameter = event.dataPacket.parameter;
 
 		const group =
 			this.dataStructure.findParameter({
@@ -80,48 +100,161 @@ class SXDataStructurePreviewer extends React.Component {
 		this.forceUpdate();
 	};
 
-	refreshFormHandler = (e) => {
-		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
+	listenerCopyParameter = (event) => {
+		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
 			return;
 		}
 
-		this.forceUpdate();
+		//console.log("[SXDataStructurePreviewer] listenerCopyParameter: ", parameter);
+
+		Event.fire(Event.SX_COPY_PARAMETER, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			parameter: parameter
+		});
 	};
 
-	listenerParameterSelected = (e) => {
-		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.formId) {
-			//console.log("[REJECTED] DataStructurePreviewer SX_PARAMETER_SELECTED: ", e.dataPacket);
+	listenerRefeshForm = (e) => {
+		if (e.dataPacket.targetPortlet !== this.namespace || e.dataPacket.targetFormId !== this.componentId) {
 			return;
 		}
 
-		//console.log("DataStructurePreviewer SX_PARAMETER_SELECTED: ", e.dataPacket);
-		if (this.dataStructure.hasError()) {
-			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
+		this.setState({
+			childRefreshKey: Util.randomKey()
+		});
+	};
+
+	listenerParameterSelected = (event) => {
+		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			//console.log("[DataStructurePreviewer] SX_PARAMETER_SELECTED Rejected: ", parameter);
 			return;
 		}
 
-		if (!e.dataPacket.parameter.focused) {
+		//console.log("[DataStructurePreviewer] SX_PARAMETER_SELECTED: ", parameter);
+
+		if (!parameter.focused) {
 			Event.fire(Event.SX_PARAMETER_SELECTED, this.namespace, this.namespace, {
-				targetFormId: this.formIds.dsbuilderId,
-				parameter: e.dataPacket.parameter
+				targetFormId: this.formId,
+				parameter: parameter
 			});
 		}
 	};
 
+	listenerDeleteParameter = (event) => {
+		const dataPacket = event.dataPacket;
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
+			return;
+		}
+
+		//console.log("[DataStructurePreviewer] SX_DELETE_PARAMETER received: ", dataPacket);
+
+		Event.fire(Event.SX_DELETE_PARAMETER, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			parameter: dataPacket.parameter
+		});
+	};
+
+	listenerSelectGroup = (event) => {
+		const { targetPortlet, sourcePortlet, targetFormId, parameter } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			//console.log("[SXDataStructurePreviewer] listenerSelectGroup rejected:", event.dataPacket);
+			return;
+		}
+
+		//console.log("[SXDataStructurePreviewer] listenerSelectGroup:", event.dataPacket);
+
+		Event.fire(Event.SX_SELECT_GROUP, sourcePortlet, this.namespace, {
+			targetFormId: this.formId,
+			parameter: parameter
+		});
+	};
+
+	listenerUpdateParameterComments = (event) => {
+		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			console.log("[SXDataStructurePreviewer] listenerUpdateParameterComments rejected:", event.dataPacket);
+			return;
+		}
+
+		console.log("[SXDataStructurePreviewer] listenerUpdateParameterComments:", event.dataPacket);
+		if (parameter.hasComments()) {
+			this.comments = (
+				<div>
+					<TreeView
+						defaultItems={parameter.comments}
+						nestedKey="replies"
+					>
+						{(item) => {
+							<TreeView.item>
+								<TreeView.ItemStack>
+									<Icon
+										symbol="reply"
+										spritemap={this.spritemap}
+									/>
+								</TreeView.ItemStack>
+							</TreeView.item>;
+						}}
+					</TreeView>
+				</div>
+			);
+		}
+
+		this.commentParam = parameter;
+
+		let value = this.commentParam.getValue();
+		let error = this.commentParam.error;
+
+		this.addCommentDlgBody = (
+			<div>
+				<Text
+					size={6}
+					style={{ marginBottom: "1.5rem" }}
+				>
+					{this.commentParam.label}
+				</Text>
+				{error.errorClass !== ErrorClass.SUCCESS && (
+					<div style={{ color: "red", marginBottom: "1.0rem" }}>{this.commentParam.errorMessage}</div>
+				)}
+				{this.commentParam.hasValue() && (
+					<pre style={{ marginBottom: "1.5rem" }}>
+						{JSON.stringify(this.commentParam.getValue(), null, 4)}
+					</pre>
+				)}
+				{this.commentField.renderField({
+					spritemap: this.spritemap
+				})}
+			</div>
+		);
+
+		this.setState({ addCommentModal: true });
+	};
+
 	componentDidMount() {
-		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
-		Event.on(Event.SX_MOVE_PARAMETER_UP, this.moveParameterUpHandler);
-		Event.on(Event.SX_MOVE_PARAMETER_DOWN, this.moveParameterDownHandler);
-		Event.on(Event.SX_REFRESH_FORM, this.refreshFormHandler);
+		Event.on(Event.SX_COPY_PARAMETER, this.listenerCopyParameter);
+		Event.on(Event.SX_DELETE_PARAMETER, this.listenerDeleteParameter);
+		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+		Event.on(Event.SX_MOVE_PARAMETER_DOWN, this.listenerMoveParameterDown);
+		Event.on(Event.SX_MOVE_PARAMETER_UP, this.listenerMoveParameterUp);
 		Event.on(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
+		Event.on(Event.SX_REFRESH_FORM, this.listenerRefeshForm);
+		Event.on(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
+		Event.on(Event.SX_ADD_PARAMETER_COMMENT, this.listenerUpdateParameterComments);
 	}
 
 	componentWillUnmount() {
-		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.fieldValueChangedHandler);
-		Event.on(Event.SX_MOVE_PARAMETER_UP, this.moveParameterUpHandler);
-		Event.on(Event.SX_MOVE_PARAMETER_DOWN, this.moveParameterDownHandler);
-		Event.on(Event.SX_REFRESH_FORM, this.refreshFormHandler);
+		Event.off(Event.SX_COPY_PARAMETER, this.listenerCopyParameter);
+		Event.off(Event.SX_DELETE_PARAMETER, this.listenerDeleteParameter);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+		Event.off(Event.SX_MOVE_PARAMETER_DOWN, this.listenerMoveParameterDown);
+		Event.off(Event.SX_MOVE_PARAMETER_UP, this.listenerMoveParameterUp);
 		Event.off(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
+		Event.off(Event.SX_REFRESH_FORM, this.listenerRefeshForm);
+		Event.off(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
+		Event.off(Event.SX_ADD_PARAMETER_COMMENT, this.listenerUpdateParameterComments);
 	}
 
 	openErrorDlg(message) {
@@ -134,7 +267,7 @@ class SXDataStructurePreviewer extends React.Component {
 
 	handleManifestSDE = async () => {
 		Event.fire(Event.SX_LOAD_PORTLET, this.namespace, this.namespace, {
-			targetFormId: this.formIds.dsbuilderId,
+			targetFormId: this.formId,
 			portletName: PortletKeys.STRUCTURED_DATA_EDITOR
 		});
 
@@ -154,6 +287,7 @@ class SXDataStructurePreviewer extends React.Component {
 	};
 
 	render() {
+		//console.log("[SXDataStructurePreviewer] render(): ", this.dataStructure);
 		return (
 			<>
 				<Toolbar
@@ -250,9 +384,7 @@ class SXDataStructurePreviewer extends React.Component {
 				</Toolbar>
 				<div style={{ maxHeight: "1000px", overflowY: "auto", overflowX: "hidden" }}>
 					{this.dataStructure.renderPreview({
-						dsbuilderId: this.formIds.dsbuilderId,
-						propertyPanelId: this.formIds.propertyPanelId,
-						previewCanvasId: this.formIds.previewCanvasId,
+						formId: this.componentId,
 						spritemap: this.spritemap
 					})}
 				</div>
@@ -266,6 +398,37 @@ class SXDataStructurePreviewer extends React.Component {
 									this.setState({ confirmDlgState: false });
 								},
 								label: Util.translate("ok"),
+								displayType: "primary"
+							}
+						]}
+						status="info"
+						spritemap={this.spritemap}
+					/>
+				)}
+				{this.state.addCommentModal && (
+					<SXModalDialog
+						header={this.addCommentDlgHeader}
+						body={this.addCommentDlgBody}
+						buttons={[
+							{
+								onClick: (event) => {
+									this.setState({ addCommentModal: false });
+
+									Event.fire(Event.SX_SAVE_COMMENT, this.namespace, this.formId, {
+										modelType: "parameter",
+										paramCode: this.commentParam.paramCode,
+										paramVersion: this.commentParam.paramVersion,
+										comment: this.commentField.getValue()
+									});
+								},
+								label: Util.translate("save"),
+								displayType: "primary"
+							},
+							{
+								onClick: (event) => {
+									this.setState({ addCommentModal: false });
+								},
+								label: Util.translate("cancel"),
 								displayType: "primary"
 							}
 						]}

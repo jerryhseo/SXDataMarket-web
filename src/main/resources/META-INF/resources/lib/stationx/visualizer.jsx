@@ -31,7 +31,7 @@ class SXBaseVisualizer extends React.Component {
 		this.workbenchNamespace = props.workbenchNamespace;
 		this.workbenchId = props.workbenchPortletId;
 		this.portletId = props.portletId;
-		this.formId = this.portletId;
+		this.formId = props.portletId;
 
 		this.permissions = props.permissions;
 		this.spritemap = props.spritemapPath;

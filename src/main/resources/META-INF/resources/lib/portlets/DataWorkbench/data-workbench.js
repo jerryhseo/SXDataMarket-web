@@ -1,14 +1,10 @@
 import React, { createRef } from "react";
-import ReactDom from "react-dom";
-import { createRoot } from "react-dom/client";
-import { Event, FilterOptions, LoadingStatus, PortletKeys, ResourceIds, WindowState } from "../../stationx/station-x";
+import { Event, PortletKeys } from "../../stationx/station-x";
 import { SXPortlet, Workbench } from "./workbench";
 import { Rnd } from "react-rnd";
 import SXWorkbenchMenu from "./workbench-menu";
 import SXDataCollectionNavigator from "../DataCollection/datacollection-navigationbar";
-import { ClayInput } from "@clayui/form";
 import { Util } from "../../stationx/util";
-import { ClayButtonWithIcon } from "@clayui/button";
 import Sticker from "@clayui/sticker";
 import SXApplicationBar from "../../stationx/application-bar";
 import Icon from "@clayui/icon";
@@ -32,7 +28,7 @@ class DataWorkbench extends React.Component {
 
 		this.workingPortletSectionId = this.namespace + "workingPortletSection";
 
-		console.log("DataWorkbench......", props);
+		//console.log("DataWorkbench......", props);
 
 		this.workbench = new Workbench({
 			namespace: this.namespace,
@@ -129,7 +125,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("SX_LOAD_PORTLET received: ", dataPacket);
+		//console.log("SX_LOAD_PORTLET received: ", dataPacket);
 
 		this.deployPortlet({
 			portletName: dataPacket.portletName,
@@ -145,7 +141,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("SX_OPEN_PORTLET_WINDOW received: ", dataPacket);
+		//console.log("SX_OPEN_PORTLET_WINDOW received: ", dataPacket);
 
 		this.workbench
 			.openPortletWindow({
@@ -175,7 +171,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("Workbench HANDSHAKE received: ", dataPacket);
+		//console.log("Workbench HANDSHAKE received: ", dataPacket);
 
 		Event.fire(Event.SX_WORKBENCH_READY, this.namespace, dataPacket.sourcePortlet, {});
 	};
@@ -192,7 +188,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("Workbench SX_MENU_SELECTED received: ", dataPacket);
+		//console.log("Workbench SX_MENU_SELECTED received: ", dataPacket);
 		const menuId = dataPacket.menuId;
 		switch (menuId) {
 			case "newDataCollection": {
@@ -257,7 +253,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("[DataWorkbench] dataCollectionSelected: ", dataPacket);
+		//console.log("[DataWorkbench] dataCollectionSelected: ", dataPacket);
 		this.workbench.processRequest({
 			requestId: Workbench.RequestIDs.loadDataCollection,
 			requestPortlet: this.namespace,
@@ -272,11 +268,11 @@ class DataWorkbench extends React.Component {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataWorkbench] listenerResponce rejected: ", dataPacket);
+			//console.log("[DataWorkbench] listenerResponce rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataWorkbench] listenerResonse: ", dataPacket);
+		//console.log("[DataWorkbench] listenerResonse: ", dataPacket);
 		switch (dataPacket.requestId) {
 			case Workbench.RequestIDs.loadDataCollection: {
 				this.dataCollection = dataPacket.data;
@@ -287,7 +283,7 @@ class DataWorkbench extends React.Component {
 					type: "dataSet"
 				}));
 
-				console.log("navItems: ", this.navItems);
+				//console.log("navItems: ", this.navItems);
 				this.setState({ dataCollectionId: this.dataCollection.dataCollectionId });
 				break;
 			}
@@ -381,7 +377,6 @@ class DataWorkbench extends React.Component {
 
 	deployPortlet = async ({ portletName, params = {}, title = "", portletState = Workbench.PortletState.NORMAL }) => {
 		const portletInstance = await this.workbench.loadPortlet({
-			portletRootTag: this.workingPortletRef.current,
 			portletName: portletName,
 			params: params,
 			title: title

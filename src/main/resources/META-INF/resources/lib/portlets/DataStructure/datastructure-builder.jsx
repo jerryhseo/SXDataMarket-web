@@ -6,12 +6,10 @@ import {
 	LoadingStatus,
 	ParamProperty,
 	ParamType,
-	ResourceIds,
 	ValidationRule
 } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
-import { DataStructure } from "./data-structure";
-import { GroupParameter, Parameter } from "../../stationx/parameter";
+import DataStructure from "./data-structure";
 import { Button, Icon } from "@clayui/core";
 import { ClayButtonWithIcon } from "@clayui/button";
 import SXDSBuilderPropertiesPanel from "./properties-panel";
@@ -19,9 +17,12 @@ import SXDataStructurePreviewer from "./preview-panel";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { UnderConstruction } from "../../stationx/common";
 import { DataType, DataTypeStructureLink, SXDataTypeStructureLink } from "../DataType/datatype";
-import { SXLabeledText } from "../../stationx/form";
-import { SXPortletWindow, Workbench } from "../DataWorkbench/workbench";
+import { SXLabeledText } from "../Form/form";
+import { Workbench } from "../DataWorkbench/workbench";
 import SXBaseVisualizer from "../../stationx/visualizer";
+import ParameterConstants from "../Parameter/parameter-constants";
+import { ParameterUtil } from "../Parameter/parameters";
+import SXGroupSelector from "./group-selector";
 
 class DataStructureBuilder extends SXBaseVisualizer {
 	rerenderProperties = [
@@ -78,7 +79,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		console.log("DataStructureBuilder props: ", props);
+		//console.log("DataStructureBuilder props: ", props);
 
 		this.typeStructureLink = null;
 		this.dataType = null;
@@ -88,16 +89,8 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		this.dataStructureId = this.params.dataStructureId ?? 0;
 
 		this.editPhase = this.params.editPhase ?? EditStatus.ADD;
-
-		this.formIds = {
-			dsbuilderId: this.namespace + "dataStructureBuilder",
-			propertyPanelId: this.namespace + "propertyPanel",
-			basicPropertiesFormId: this.namespace + "basicPropertiesForm",
-			typeOptionsFormId: this.namespace + "typeOptionsForm",
-			optionsFormId: this.namespace + "optionsForm",
-			validationFormId: this.namespace + "validationForm",
-			previewCanvasId: this.namespace + "previewCanvas"
-		};
+		this.componentId = this.namespace + "DataStructureBuilder";
+		this.previewerId = this.namespace + "SXDataStructurePreviewer";
 
 		this.saveResult = "";
 
@@ -106,22 +99,23 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 		this.state = {
 			paramType: ParamType.STRING,
+			dataTypeStructureLinkReloadKey: Util.randomKey(),
+			dataStructurePreviewerReloadKey: Util.randomKey(),
 			loadingStatus: LoadingStatus.PENDING,
 			confirmDlgState: false,
 			confirmParamDeleteDlg: false,
 			confirmDlgBody: <></>,
 			confirmDlgHeader: <></>,
 			manifestSDE: false,
+			openSelectGroupModal: false,
 			underConstruction: false
 		};
 
-		this.structureCode = Parameter.createParameter(
-			this.namespace,
-			this.formIds.dsbuilderId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.structureCode = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "structureCode",
 				displayName: Util.getTranslationObject(this.languageId, "datastructure-code"),
 				placeholder: Util.getTranslationObject(this.languageId, "datastructure-code"),
@@ -149,15 +143,13 @@ class DataStructureBuilder extends SXBaseVisualizer {
 					}
 				}
 			}
-		);
+		});
 
-		this.structureVersion = Parameter.createParameter(
-			this.namespace,
-			this.formIds.dsbuilderId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.structureVersion = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "structureVersion",
 				displayName: Util.getTranslationObject(this.languageId, "datastructure-version"),
 				placeholder: Util.getTranslationObject(this.languageId, "ex) 1.0.0"),
@@ -187,15 +179,13 @@ class DataStructureBuilder extends SXBaseVisualizer {
 				},
 				defaultValue: "1.0.0"
 			}
-		);
+		});
 
-		this.structureDisplayName = Parameter.createParameter(
-			this.namespace,
-			this.formIds.dsbuilderId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.structureDisplayName = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "structureDisplayName",
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "display-name"),
@@ -219,15 +209,13 @@ class DataStructureBuilder extends SXBaseVisualizer {
 					}
 				}
 			}
-		);
+		});
 
-		this.structureDescription = Parameter.createParameter(
-			this.namespace,
-			this.formIds.dsbuilderId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.structureDescription = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "structureDescription",
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "description"),
@@ -241,22 +229,23 @@ class DataStructureBuilder extends SXBaseVisualizer {
 					}
 				}
 			}
-		);
+		});
 	}
 
-	parameterSelectedHandler = (e) => {
-		const dataPacket = e.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) {
-			console.log("SX_PARAMETER_SELECTED rejected: ", dataPacket);
+	listenerParameterSelected = (event) => {
+		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			//console.log("SX_PARAMETER_SELECTED rejected: ", dataPacket);
 			return;
 		}
 
-		const selectedParam = dataPacket.parameter;
+		const selectedParam = parameter;
 		if (selectedParam == this.workingParam) {
 			return;
 		}
 
-		console.log("SX_PARAMETER_SELECTED received: ", dataPacket);
+		console.log("[DataStructureBuilder] SX_PARAMETER_SELECTED received: ", parameter);
 
 		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
 			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
@@ -267,38 +256,14 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 		this.workingParam.focused = false;
 
-		if (this.workingParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
-			const gridParam = this.dataStructure.findParameter({
-				paramCode: this.workingParam.parent.code,
-				paramVersion: this.workingParam.parent.version,
-				descendant: true
-			});
-
-			gridParam.fireRefreshPreview();
-		} else {
-			this.workingParam.fireRefreshPreview();
-		}
-
-		if (selectedParam.displayType == Parameter.DisplayTypes.GRID_CELL) {
-			const gridParam = this.dataStructure.findParameter({
-				paramCode: selectedParam.parent.code,
-				paramVersion: selectedParam.parent.version,
-				descendant: true
-			});
-
-			gridParam.fireRefreshPreview();
-		} else {
-			selectedParam.fireRefreshPreview();
-		}
-
 		this.workingParam = selectedParam;
-		//this.fireRefreshPropertyPanel();
+
 		this.forceUpdate();
 	};
 
-	parameterTypeChangedHandler = (e) => {
+	listenerParameterTypeChanged = (e) => {
 		const dataPacket = e.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) return;
 
 		if (
 			dataPacket.paramType == ParamType.MATRIX ||
@@ -313,22 +278,20 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			return;
 		}
 
-		this.workingParam = Parameter.createParameter(
-			this.namespace,
-			this.formIds.dsbuilderId,
-			this.languageId,
-			this.availableLanguageIds,
-			dataPacket.paramType
-		);
-
-		//this.fireRefreshPropertyPanel();
+		this.workingParam = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.previewerId,
+			paramType: dataPacket.paramType
+		});
 
 		this.forceUpdate();
 	};
 
-	copyParameterHandler = (e) => {
+	listenerCopyParameter = (e) => {
 		const dataPacket = e.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
+			return;
+		}
 
 		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
 			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
@@ -356,9 +319,12 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		this.forceUpdate();
 	};
 
-	deleteParameterHandler = (e) => {
-		const dataPacket = e.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formIds.dsbuilderId) return;
+	listenerDeleteParameter = (event) => {
+		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			return;
+		}
 
 		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
 			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
@@ -371,14 +337,41 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		});
 	};
 
-	listenerFieldValueChanged = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.formIds.dsbuilderId)) {
+	listenerSelectGroup = (event) => {
+		const { dataPacket } = event;
+		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
+			//console.log("[DataStructureBuilder] listenerSelectGroup rejected:", dataPacket);
 			return;
 		}
 
-		switch (dataPacket.paramCode) {
+		//console.log("[DataStructureBuilder] listenerSelectGroup:", dataPacket);
+
+		this.setState({ openSelectGroupModal: true });
+	};
+
+	listenerGroupChanged = (event) => {
+		const { dataPacket } = event;
+		const { targetPortlet, targetFormId, parameter } = dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			//console.log("[DataStructureBuilder] listenerGroupChanged rejected:", dataPacket);
+			return;
+		}
+
+		//console.log("[DataStructureBuilder] listenerGroupChanged:", parameter);
+
+		this.setState({ openSelectGroupModal: false });
+	};
+
+	listenerFieldValueChanged = (event) => {
+		const { dataPacket } = event;
+		const { targetPortlet, targetFormId, parameter, paramCode } = dataPacket;
+
+		if (!(targetPortlet == this.namespace && targetFormId == this.componentId)) {
+			return;
+		}
+
+		switch (paramCode) {
 			case "structureCode": {
 				if (this.structureCode.hasError()) {
 					return;
@@ -420,28 +413,45 @@ class DataStructureBuilder extends SXBaseVisualizer {
 				break;
 			}
 			default: {
-				console.log("listenerFieldValueChanged: ", dataPacket);
+				console.log("listenerFieldValueChanged: ", parameter);
 			}
 		}
 	};
 
 	listenerLinkInfoChanged = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId } = event.dataPacket;
 
-		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.formIds.dsbuilderId)) {
+		if (!(targetPortlet == this.namespace && targetFormId == this.componentId)) {
 			return;
 		}
 
-		console.log("listenerLinkInfoChanged: ", dataPacket);
+		//console.log("[DataStructureBuilder] listenerLinkInfoChanged: ", event.dataPacket);
 		this.dataStructure.setTitleBarInfos(this.typeStructureLink.inputStatus);
 
 		this.forceUpdate();
 	};
 
+	listenerSaveComment = (event) => {
+		const { targetPortlet, targetFormId, modelType, parentCode, parentVersion, paramCode, paramVersion, comment } =
+			event.dataPacket;
+
+		console.log("[DataStructureBuilder] listenerSaveComment: ", event.dataPacket);
+		/*
+		Event.fire(Event.SX_SAVE_COMMENT, this.namespace, this.formId, {
+			modelType: "parameter",
+			parentCode: parentCode,
+			parentVersion: parentVersion,
+			paramCode: paramCode,
+			paramVersion: paramVersion,
+			comment: comment
+		});
+		*/
+	};
+
 	listenerLoadPortlet = async (event) => {
 		const dataPacket = event.dataPacket;
 
-		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.formIds.dsbuilderId)) {
+		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.componentId)) {
 			return;
 		}
 
@@ -462,10 +472,10 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	listenerWorkbenchReady = (event) => {
 		const dataPacket = event.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataStructureBuilder] listenerWorkbenchReady rejected: ", dataPacket);
+			//console.log("[DataStructureBuilder] listenerWorkbenchReady rejected: ", dataPacket);
 			return;
 		}
-		console.log("[DataStructureBuilder] listenerWorkbenchReady received: ", dataPacket);
+		//console.log("[DataStructureBuilder] listenerWorkbenchReady received: ", dataPacket);
 
 		this.loadDataStructure();
 	};
@@ -474,11 +484,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataStructureBuilder] listenerComponentWillUnmount rejected: ", dataPacket);
+			//console.log("[DataStructureBuilder] listenerComponentWillUnmount rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataStructureBuilder] listenerComponentWillUnmount received: ", dataPacket);
+		//console.log("[DataStructureBuilder] listenerComponentWillUnmount received: ", dataPacket);
 		this.componentWillUnmount();
 	};
 
@@ -486,11 +496,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataStructureBuilder] listenerResponce rejected: ", dataPacket);
+			//console.log("[DataStructureBuilder] listenerResponce rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataStructureBuilder] listenerResonse: ", dataPacket);
+		//console.log("[DataStructureBuilder] listenerResonse: ", dataPacket);
 		const state = {};
 		const result = dataPacket.data;
 
@@ -503,23 +513,21 @@ class DataStructureBuilder extends SXBaseVisualizer {
 					this.typeStructureLink.dataTypeId = this.dataType.dataTypeId;
 				}
 
-				this.dataStructure = new DataStructure(
-					this.namespace,
-					this.formIds.dsbuilderId,
-					this.languageId,
-					this.availableLanguageIds,
-					result.dataStructure ?? {
+				this.dataStructure = new DataStructure({
+					namespace: this.namespace,
+					formId: this.componentId,
+					properties: result.dataStructure ?? {
 						dataStructureCode: this.dataType.dataTypeCode,
 						dataStructureVersion: "1.0.0",
 						displayName: { ...this.dataType.displayName },
 						description: { ...this.dataType.description }
 					}
-				);
+				});
 
 				//set type-structure link info to dataStructure.
 				this.dataStructure.setTitleBarInfos(this.typeStructureLink.toJSON());
 
-				console.log("TypeStructureLink: ", JSON.stringify(this.typeStructureLink, null, 4));
+				//console.log("TypeStructureLink: ", JSON.stringify(this.typeStructureLink, null, 4));
 				this.structureCode.setValue({ value: this.dataStructure.dataStructureCode });
 				this.structureVersion.setValue({ value: this.dataStructure.dataStructureVersion });
 				this.structureDisplayName.setValue({ value: this.dataStructure.displayName });
@@ -529,13 +537,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 				this.workingParam = this.dataStructure.hasMembers()
 					? this.dataStructure.members[0]
-					: Parameter.createParameter(
-							this.namespace,
-							this.formIds.dsbuilderId,
-							this.languageId,
-							this.availableLanguageIds,
-							ParamType.STRING
-					  );
+					: ParameterUtil.createParameter({
+							namespace: this.namespace,
+							formId: this.componentId,
+							paramType: ParamType.STRING
+					  });
 
 				if (this.workingParam.isRendered()) {
 					this.workingParam.focused = true;
@@ -593,32 +599,36 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	componentDidMount() {
 		//this.loadDataStructure();
 
-		Event.on(Event.SX_PARAMETER_SELECTED, this.parameterSelectedHandler);
-		Event.on(Event.SX_PARAM_TYPE_CHANGED, this.parameterTypeChangedHandler);
-		Event.on(Event.SX_COPY_PARAMETER, this.copyParameterHandler);
-		Event.on(Event.SX_DELETE_PARAMETER, this.deleteParameterHandler);
-		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
-		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
-		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
-		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
-		Event.on(Event.SX_RESPONSE, this.listenerResponce);
 		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+		Event.on(Event.SX_COPY_PARAMETER, this.listenerCopyParameter);
+		Event.on(Event.SX_DELETE_PARAMETER, this.listenerDeleteParameter);
+		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+		Event.on(Event.SX_GROUP_CHANGED, this.listenerGroupChanged);
+		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
+		Event.on(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
+		Event.on(Event.SX_PARAM_TYPE_CHANGED, this.listenerParameterTypeChanged);
+		Event.on(Event.SX_RESPONSE, this.listenerResponce);
+		Event.on(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
+		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
+		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 
 		this.fireHandshake();
 	}
 
 	componentWillUnmount() {
-		console.log("[DataStructureBuilder] componentWillUnmount");
-		Event.off(Event.SX_PARAMETER_SELECTED, this.parameterSelectedHandler);
-		Event.off(Event.SX_PARAM_TYPE_CHANGED, this.parameterTypeChangedHandler);
-		Event.off(Event.SX_COPY_PARAMETER, this.copyParameterHandler);
-		Event.off(Event.SX_DELETE_PARAMETER, this.deleteParameterHandler);
-		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
-		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
-		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
-		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
-		Event.off(Event.SX_RESPONSE, this.listenerResponce);
+		//console.log("[DataStructureBuilder] componentWillUnmount");
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+		Event.off(Event.SX_COPY_PARAMETER, this.listenerCopyParameter);
+		Event.off(Event.SX_DELETE_PARAMETER, this.listenerDeleteParameter);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+		Event.off(Event.SX_GROUP_CHANGED, this.listenerGroupChanged);
+		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
+		Event.off(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
+		Event.off(Event.SX_PARAM_TYPE_CHANGED, this.listenerParameterTypeChanged);
+		Event.off(Event.SX_RESPONSE, this.listenerResponce);
+		Event.off(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
+		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
+		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 	}
 
 	loadDataStructure() {
@@ -626,19 +636,21 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		//console.log("dataStructureId: " + this.dataStructureId);
 
 		if (this.dataTypeId == 0 && this.dataStructureId == 0) {
-			this.dataType = new DataType(this.languageId, this.availableLanguageIds);
-			this.typeStructureLink = new DataTypeStructureLink(
-				this.languageId,
-				this.availableLanguageIds,
-				result.typeStructureLink
-			);
-			this.dataStructure = new DataStructure(
-				this.namespace,
-				this.formIds.dsbuilderId,
-				this.languageId,
-				this.availableLanguageIds,
-				{}
-			);
+			this.dataType = new DataType();
+			this.typeStructureLink = new DataTypeStructureLink();
+			this.dataStructure = new DataStructure({
+				namespace: this.namespace,
+				formId: this.componentId,
+				properties: {}
+			});
+			this.workingParam = ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING
+			});
+			this.editPhase = EditStatus.ADD;
+
+			this.setState({ loadingStatus: LoadingStatus.COMPLETE });
 		} else {
 			this.fireRequest({
 				requestId: Workbench.RequestIDs.loadDataStructure,
@@ -676,13 +688,6 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		});
 	}
 
-	fireRefreshPropertyPanel() {
-		Event.fire(Event.SX_REFRESH_PROPERTY_PANEL, this.namespace, this.namespace, {
-			targetFormId: this.formIds.propertyPanelId,
-			workingParam: this.workingParam
-		});
-	}
-
 	handleEnableInputStatusChange(val) {
 		this.dataStructure.enableInputStatus = val;
 
@@ -704,17 +709,13 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		this.workingParam.focused = false;
 		this.workingParam.fireRefreshPreview();
 
-		this.workingParam = Parameter.createParameter(
-			this.namespace,
-			this.formIds.dsbuilderId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING
-		);
+		this.workingParam = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING
+		});
 
 		//this.dataStructure.focus();
-
-		//this.fireRefreshPropertyPanel();
 
 		this.forceUpdate();
 	};
@@ -743,7 +744,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			this.dataStructure.focus(this.workingParam.paramCode, this.workingParam.paramVersion);
 			this.forceUpdate();
 		} else {
-			console.log("checkIntegrity fail: ", this.workingParam);
+			//console.log("checkIntegrity fail: ", this.workingParam);
 			this.openErrorDlg(<h4>{Util.translate(this.workingParam.errorMessage)}</h4>);
 		}
 	};
@@ -759,19 +760,20 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 		return (
 			<>
-				<SXDataTypeStructureLink
-					namespace={this.namespace}
-					formId={this.formIds.dsbuilderId}
-					languageId={this.languageId}
-					availableLanguageIds={this.availableLanguageIds}
-					dataType={this.dataType}
-					dataTypeViewMode={DataTypeStructureLink.ViewTypes.VIEW}
-					typeStructureLink={this.typeStructureLink}
-					typeStructureLinkViewMode={DataTypeStructureLink.ViewTypes.EDIT}
-					dataStructure={this.dataStructure}
-					dataStructureViewMode={DataTypeStructureLink.ViewTypes.EDIT}
-					spritemap={this.spritemap}
-				/>
+				{this.editPhase !== EditStatus.ADD && (
+					<SXDataTypeStructureLink
+						key={this.state.dataTypeStructureLinkReloadKey}
+						namespace={this.namespace}
+						formId={this.componentId}
+						dataType={this.dataType}
+						dataTypeViewMode={DataTypeStructureLink.ViewTypes.VIEW}
+						typeStructureLink={this.typeStructureLink}
+						typeStructureLinkViewMode={DataTypeStructureLink.ViewTypes.EDIT}
+						dataStructure={this.dataStructure}
+						dataStructureViewMode={DataTypeStructureLink.ViewTypes.EDIT}
+						spritemap={this.spritemap}
+					/>
+				)}
 				{/*Header*/}
 				<div
 					className="autofit-float autofit-padded-no-gutters-x autofit-row"
@@ -890,7 +892,8 @@ class DataStructureBuilder extends SXBaseVisualizer {
 							</Button.Group>
 							<SXDSBuilderPropertiesPanel
 								key={this.workingParam.key}
-								formIds={this.formIds}
+								namespace={this.namespace}
+								formId={this.componentId}
 								workingParam={this.workingParam}
 								dataStructure={this.dataStructure}
 								spritemap={this.spritemap}
@@ -950,7 +953,9 @@ class DataStructureBuilder extends SXBaseVisualizer {
 						</div>
 						<div style={this.previewPanelStyles}>
 							<SXDataStructurePreviewer
-								formIds={this.formIds}
+								key={this.state.dataStructurePreviewerReloadKey}
+								namespace={this.namespace}
+								formId={this.componentId}
 								dataStructure={this.dataStructure}
 								typeStructureLink={this.typeStructureLink}
 								spritemap={this.spritemap}
@@ -985,6 +990,15 @@ class DataStructureBuilder extends SXBaseVisualizer {
 							</Button>
 						)}
 					</Button.Group>
+					{this.state.openSelectGroupModal && (
+						<SXGroupSelector
+							title={Util.translate("select-group")}
+							formId={this.componentId}
+							dataStructure={this.dataStructure}
+							workingParam={this.workingParam}
+							spritemap={this.spritemap}
+						/>
+					)}
 					{this.state.confirmDlgState && (
 						<SXModalDialog
 							header={this.state.confirmDlgHeader}
@@ -1022,14 +1036,12 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 										const workingParam =
 											group.firstMember ??
-											(group.paramCode == GroupParameter.ROOT_GROUP
-												? Parameter.createParameter(
-														this.namespace,
-														this.formIds.dsbuilderId,
-														this.languageId,
-														this.availableLanguageIds,
-														ParamType.STRING
-												  )
+											(group.paramCode == ParameterConstants.ROOT_GROUP
+												? ParameterUtil.createParameter({
+														namespace: this.namespace,
+														formId: this.previewerId,
+														paramType: ParamType.STRING
+												  })
 												: group);
 										workingParam.focused = workingParam.isRendered() ? true : false;
 

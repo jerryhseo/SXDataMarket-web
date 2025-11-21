@@ -1,6 +1,5 @@
 import ClayPanel from "@clayui/panel";
 import ClayLayout from "@clayui/layout";
-import { SXText } from "../../form/sxform";
 
 export const SXDataTypeHeader = ({ id, name, displayName, version, spritemap }) => {
 	const panelStyle = {

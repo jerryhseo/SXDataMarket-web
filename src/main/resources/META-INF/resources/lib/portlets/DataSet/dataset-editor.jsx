@@ -2,12 +2,13 @@ import React from "react";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import { EditStatus, ErrorClass, Event, LoadingStatus, ParamType, ValidationRule } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
-import { DualListParameter, GroupParameter, Parameter, SelectParameter } from "../../stationx/parameter";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
 import { Workbench } from "../DataWorkbench/workbench";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
-import { SXLabeledText } from "../../stationx/form";
+import { SXLabeledText } from "../Form/form";
+import ParameterConstants from "../Parameter/parameter-constants";
+import { ParameterUtil } from "../Parameter/parameters";
 
 class DataSetEditor extends SXBaseVisualizer {
 	constructor(props) {
@@ -22,13 +23,11 @@ class DataSetEditor extends SXBaseVisualizer {
 		this.dataTypeList = [];
 		this.availableDataTypeList = [];
 
-		this.dataSetCode = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.dataSetCode = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "dataSetCode",
 				displayName: Util.getTranslationObject(this.languageId, "dataset-code"),
 				placeholder: Util.getTranslationObject(this.languageId, "dataset-code"),
@@ -56,17 +55,15 @@ class DataSetEditor extends SXBaseVisualizer {
 					}
 				}
 			}
-		);
+		});
 
 		const versionPlaceholder = {};
 		versionPlaceholder[this.languageId] = "1.0.0";
-		this.dataSetVersion = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.dataSetVersion = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "dataSetVersion",
 				displayName: Util.getTranslationObject(this.languageId, "version"),
 				placeholder: versionPlaceholder,
@@ -85,15 +82,13 @@ class DataSetEditor extends SXBaseVisualizer {
 				},
 				defaultValue: "1.0.0"
 			}
-		);
+		});
 
-		this.displayName = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.displayName = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramtype: ParamType.STRING,
+			properties: {
 				paramCode: "displayName",
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "display-name"),
@@ -117,15 +112,13 @@ class DataSetEditor extends SXBaseVisualizer {
 					}
 				}
 			}
-		);
+		});
 
-		this.description = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.description = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: "description",
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "description"),
@@ -133,37 +126,33 @@ class DataSetEditor extends SXBaseVisualizer {
 				tooltip: Util.getTranslationObject(this.languageId, "description-tooltip"),
 				multipleLine: true
 			}
-		);
+		});
 
-		this.basicProps = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.GROUP,
-			{
+		this.basicProps = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: ParamType.GROUP,
+			properties: {
 				paramCode: "basicProps",
 				paramVersion: "1.0.0",
 				displayName: Util.getTranslationObject(this.languageId, "required-properties"),
-				viewType: GroupParameter.ViewTypes.FIELDSET,
+				viewType: ParameterConstants.GroupViewTypes.FIELDSET,
 				members: [this.dataSetCode, this.dataSetVersion, this.displayName],
 				membersPerRow: 3
 			}
-		);
+		});
 
-		this.dataTypes = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			"DualList",
-			{
+		this.dataTypes = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.formId,
+			paramType: "DualList",
+			properties: {
 				paramCode: "datatypes",
 				displayName: Util.getTranslationObject(this.languageId, "associated-datatypes"),
 				tooltip: Util.getTranslationObject(this.languageId, "associated-datatypes-tooltip"),
-				viewType: DualListParameter.ViewTypes.ORDERED
+				viewType: ParameterConstants.DualListViewTypes.ORDERED
 			}
-		);
+		});
 
 		this.state = {
 			editStatus: this.dataSetId > 0 ? EditStatus.UPDATE : EditStatus.ADD,
@@ -222,10 +211,10 @@ class DataSetEditor extends SXBaseVisualizer {
 			case Workbench.RequestIDs.loadDataSet: {
 				const { dataCollection, dataSet, associatedDataTypeList = [], availableDataTypeList } = dataPacket.data;
 
-				this.dataSetCode.setValue({ value: dataSet.dataSetCode });
-				this.dataSetVersion.setValue({ value: dataSet.dataSetVersion });
-				this.displayName.setValue({ value: dataSet.displayName });
-				this.description.setValue({ value: dataSet.description });
+				this.dataSetCode.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.dataSetCode });
+				this.dataSetVersion.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.dataSetVersion });
+				this.displayName.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.displayName });
+				this.description.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.description });
 
 				if (Util.isNotEmpty(availableDataTypeList)) {
 					this.availableDataTypeList = availableDataTypeList;

@@ -84,7 +84,8 @@ export const SXModalDialog = ({
 								<Button
 									key={index + 1}
 									displayType={button.displayType}
-									onClick={() => {
+									onClick={(event) => {
+										event.stopPropagation();
 										button.onClick();
 										onOpenChange(false);
 									}}

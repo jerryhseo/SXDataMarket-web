@@ -2,7 +2,7 @@ import React from "react";
 import { Text } from "@clayui/core";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
-import { SXAutoComplete, SXButtonWithIcon, SXLabeledText } from "../../stationx/form";
+import { SXButtonWithIcon, SXLabeledText } from "../Form/form";
 import { Util } from "../../stationx/util";
 import {
 	EditStatus,
@@ -10,28 +10,20 @@ import {
 	Event,
 	DataTypeProperty,
 	ValidationRule,
-	ResourceIds,
 	PortletKeys,
-	WindowState,
 	Constant,
 	ErrorClass,
 	ParamType
 } from "../../stationx/station-x";
-import {
-	BooleanParameter,
-	DualListParameter,
-	GroupParameter,
-	Parameter,
-	StringParameter
-} from "../../stationx/parameter";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
-import { ClaySelect } from "@clayui/form";
 import { DataType, DataTypeStructureLink, SXDataTypeStructureLink } from "./datatype";
-import { Autocomplete } from "@clayui/autocomplete";
-import { DataStructure } from "../DataStructure/data-structure";
-import { SXBroomIcon, SXEditIcon, SXUpgradeIcon } from "../../stationx/icon";
+import DataStructure from "../DataStructure/data-structure";
+import { SXBroomIcon, SXEditIcon } from "../../stationx/icon";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import { Workbench } from "../DataWorkbench/workbench";
+import SXAutoComplete from "../Form/auto-complete";
+import ParameterConstants from "../Parameter/parameter-constants";
+import { ParameterUtil } from "../Parameter/parameters";
 
 export const DataTypeInfo = ({ title, abstract, items, colsPerRow = 1 }) => {
 	let sectionContent;
@@ -110,27 +102,30 @@ class DataTypeEditor extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		//console.log("DataTypeEditor props: ", props);
+		console.log("DataTypeEditor props: ", props);
 		this.dirty = false;
 
 		this.dataType = new DataType(this.languageId, this.availableLanguageIds);
 		this.dataType.dataTypeId = this.params.dataTypeId ?? 0;
 		this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
-		this.dataStructure = new DataStructure(this.namespace, this.formId, this.languageId, this.availableLanguageIds);
+		this.dataStructure = new DataStructure({
+			namespace: this.namespace,
+			formId: this.componentId,
+			properties: {}
+		});
 
 		this.loadingFailMessage = "";
 		this.prevVersion = "";
 
-		this.dataTypeCode = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.componentId = this.namespace + "DataTypeEditor";
+
+		this.dataTypeCode = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: DataTypeProperty.CODE,
 				displayName: Util.getTranslationObject(this.languageId, "datatype-code"),
-				required: true,
 				placeholder: Util.getTranslationObject(this.languageId, "datatype-code"),
 				tooltip: Util.getTranslationObject(this.languageId, "code-tooltip"),
 				validation: {
@@ -156,20 +151,17 @@ class DataTypeEditor extends SXBaseVisualizer {
 					}
 				}
 			}
-		);
+		});
 
 		const versionPlaceholder = {};
 		versionPlaceholder[this.languageId] = "1.0.0";
-		this.dataTypeVersion = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.dataTypeVersion = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: DataTypeProperty.VERSION,
 				displayName: Util.getTranslationObject(this.languageId, "version"),
-				required: true,
 				placeholder: versionPlaceholder,
 				tooltip: Util.getTranslationObject(this.languageId, "version-tooltip"),
 				validation: {
@@ -186,20 +178,17 @@ class DataTypeEditor extends SXBaseVisualizer {
 				},
 				defaultValue: "1.0.0"
 			}
-		);
+		});
 
 		const versionExt = {};
 		versionExt[this.languageId] = "ext";
-		this.extension = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.extension = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: DataTypeProperty.EXTENSION,
 				displayName: Util.getTranslationObject(this.languageId, "extension"),
-				required: true,
 				placeholder: versionExt,
 				tooltip: Util.getTranslationObject(this.languageId, "extension-tooltip"),
 				validation: {
@@ -225,19 +214,16 @@ class DataTypeEditor extends SXBaseVisualizer {
 					}
 				}
 			}
-		);
+		});
 
-		this.displayName = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.displayName = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: DataTypeProperty.DISPLAY_NAME,
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "display-name"),
-				required: true,
 				placeholder: Util.getTranslationObject(this.languageId, "display-name"),
 				tooltip: Util.getTranslationObject(this.languageId, "display-name-tooltip"),
 				validation: {
@@ -258,15 +244,13 @@ class DataTypeEditor extends SXBaseVisualizer {
 					}
 				}
 			}
-		);
+		});
 
-		this.description = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.description = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: DataTypeProperty.DESCRIPTION,
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "description"),
@@ -274,15 +258,13 @@ class DataTypeEditor extends SXBaseVisualizer {
 				tooltip: Util.getTranslationObject(this.languageId, "description-tooltip"),
 				multipleLine: true
 			}
-		);
+		});
 
-		this.tooltip = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.STRING,
-			{
+		this.tooltip = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
 				paramCode: DataTypeProperty.TOOLTIP,
 				localized: true,
 				displayName: Util.getTranslationObject(this.languageId, "tooltip"),
@@ -296,19 +278,17 @@ class DataTypeEditor extends SXBaseVisualizer {
 					}
 				}
 			}
-		);
+		});
 
-		this.visualizers = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			"DualList",
-			{
+		this.visualizers = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: "DualList",
+			properties: {
 				paramCode: DataTypeProperty.VISUALIZERS,
 				displayName: Util.getTranslationObject(this.languageId, "associated-visualizers"),
 				tooltip: Util.getTranslationObject(this.languageId, "associated-visualizers-tooltip"),
-				viewType: DualListParameter.ViewTypes.HORIZONTAL,
+				viewType: ParameterConstants.DualListViewTypes.HORIZONTAL,
 				validation: {
 					required: {
 						value: true,
@@ -318,22 +298,20 @@ class DataTypeEditor extends SXBaseVisualizer {
 				},
 				options: []
 			}
-		);
+		});
 
-		this.groupParameter = Parameter.createParameter(
-			this.namespace,
-			this.formId,
-			this.languageId,
-			this.availableLanguageIds,
-			ParamType.GROUP,
-			{
+		this.groupParameter = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.GROUP,
+			properties: {
 				paramCode: "basicProps",
 				paramVersion: "1.0.0",
-				viewType: GroupParameter.ViewTypes.ARRANGEMENT,
+				viewType: ParameterConstants.GroupViewTypes.ARRANGEMENT,
 				members: [this.dataTypeCode, this.dataTypeVersion, this.extension],
 				membersPerRow: 3
 			}
-		);
+		});
 
 		this.fields = [this.groupParameter, this.displayName, this.description, this.tooltip, this.visualizers];
 
@@ -363,7 +341,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 	 *  Event Listers from other components.
 	 ***********************/
 	listenerFieldValueChanged = (event) => {
-		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
+		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.componentId);
 		//console.log("SX_FIELD_VALUE_CHANGED Before: ", dataPacket);
 
 		if (!dataPacket) {
@@ -376,7 +354,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 	};
 
 	listenerAutocompleteSelected = (event) => {
-		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
+		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.componentId);
 		//console.log("SX_AUTOCOMPLETE_SELECTED: ", event.dataPacket);
 
 		if (!dataPacket) {
@@ -413,7 +391,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 	};
 
 	listenerTypeStructureLinkInfoChanged = (event) => {
-		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
+		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.componentId);
 		//console.log("SX_AUTOCOMPLETE_SELECTED: ", event.dataPacket);
 
 		if (!dataPacket) {
@@ -501,13 +479,12 @@ class DataTypeEditor extends SXBaseVisualizer {
 				break;
 			}
 			case Workbench.RequestIDs.deleteTypeStructureLinkAndImportDataStructure: {
-				this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
-				this.dataStructure = new DataStructure(
-					this.namespace,
-					this.formId,
-					this.languageId,
-					this.availableLanguageIds
-				);
+				this.structureLink = new DataTypeStructureLink();
+				this.dataStructure = new DataStructure({
+					namespace: this.namespace,
+					formId: this.componentId,
+					properties: {}
+				});
 
 				this.importDataStructure();
 
@@ -1044,7 +1021,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		});
 	}
 
-	handleBtnUpgradeDataTypeClick() {
+	handleBtnUpgradeDataTypeClick = (event) => {
 		this.prevVersion = this.dataTypeVersion.getValue();
 
 		this.dataTypeCode.disabled = true;
@@ -1056,9 +1033,9 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.editStatus = EditStatus.UPGRADE;
 
 		this.forceUpdate();
-	}
+	};
 
-	handleBtnCopyDataTypeClick() {
+	handleBtnCopyDataTypeClick = (event) => {
 		this.dataType = this.dataType.copy();
 		this.structureLink.dataTypeId = 0;
 
@@ -1070,7 +1047,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.editStatus = EditStatus.ADD;
 
 		this.forceUpdate();
-	}
+	};
 
 	handleNewDataStructureBtnClick = () => {
 		//console.log("redirectTo: ", this.workbench.portletId, this.state);
@@ -1084,19 +1061,19 @@ class DataTypeEditor extends SXBaseVisualizer {
 		}
 	};
 
-	handleDeleteDataTypeBtnClick(e) {
+	handleDeleteDataTypeBtnClick = (event) => {
 		this.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.dlgBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-datatype");
 
 		this.setState({ dlgWarningDeleteDataType: true });
-	}
+	};
 
-	handleClearButtonClick = () => {
+	handleClearButtonClick = (event) => {
 		this.dataTypeCode.setValue({ value: "" });
 		this.dataTypeVersion.setValue({ value: "" });
 	};
 
-	handleUpdateStructure = () => {
+	handleUpdateStructure = (event) => {
 		if (this.structureLink.dirty) {
 			this.setState({ dlgSaveLinkInfoAndRedirectToBuilder: true });
 		} else {
@@ -1104,7 +1081,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		}
 	};
 
-	handleSaveLinkInfoBtnClick = () => {
+	handleSaveLinkInfoBtnClick = (event) => {
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.saveTypeStructureLink,
 			params: this.structureLink.toJSON(),
@@ -1112,7 +1089,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		});
 	};
 
-	handleSaveLinkInfoAndRedirectToBuilder = () => {
+	handleSaveLinkInfoAndRedirectToBuilder = (event) => {
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.saveLinkInfoAndRedirectToBuilder,
 			params: this.structureLink.toJSON(),
@@ -1120,7 +1097,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		});
 	};
 
-	handleRemoveLinkInfoBtnClick = () => {
+	handleRemoveLinkInfoBtnClick = (event) => {
 		this.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.dlgBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-link-info");
 
@@ -1129,12 +1106,11 @@ class DataTypeEditor extends SXBaseVisualizer {
 			this.setState({ dlgWarningRemoveLinkInfo: true });
 		} else {
 			this.structureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
-			this.dataStructure = new DataStructure(
-				this.namespace,
-				this.formId,
-				this.languageId,
-				this.availableLanguageIds
-			);
+			this.dataStructure = new DataStructure({
+				namespace: this.namespace,
+				formId: this.componentId,
+				properties: {}
+			});
 
 			this.forceUpdate();
 		}
@@ -1168,7 +1144,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 								<SXAutoComplete
 									id={this.dataTypeImportId}
 									namespace={this.namespace}
-									formId={this.formId}
+									formId={this.componentId}
 									label={Util.translate("import-datatype")}
 									items={this.dataTypeAutoCompleteItems}
 									itemLabelKey="displayName"
@@ -1196,14 +1172,14 @@ class DataTypeEditor extends SXBaseVisualizer {
 											label={Util.translate("upgrade")}
 											symbol={"file-template"}
 											displayType={"secondary"}
-											onClick={(e) => this.handleBtnUpgradeDataTypeClick(e)}
+											onClick={this.handleBtnUpgradeDataTypeClick}
 											spritemap={this.spritemap}
 										/>
 										<SXButtonWithIcon
 											label={Util.translate("copy")}
 											symbol={"file-template"}
 											displayType={"secondary"}
-											onClick={() => this.handleBtnCopyDataTypeClick()}
+											onClick={this.handleBtnCopyDataTypeClick}
 											spritemap={this.spritemap}
 										/>
 										{this.editStatus == EditStatus.UPDATE && (
@@ -1211,7 +1187,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 												label={Util.translate("delete")}
 												symbol={"trash"}
 												displayType={"warning"}
-												onClick={(e) => this.handleDeleteDataTypeBtnClick(e)}
+												onClick={this.handleDeleteDataTypeBtnClick}
 												spritemap={this.spritemap}
 											/>
 										)}
@@ -1273,7 +1249,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 										key={!this.dataType.validate()}
 										id={this.dataStructureImportId}
 										namespace={this.namespace}
-										formId={this.formId}
+										formId={this.componentId}
 										label={Util.translate("import-datastructure")}
 										items={this.dataStructureAutoCompleteItems}
 										itemLabelKey="displayName"
@@ -1322,7 +1298,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 											this.structureLink.dataStructureId > 0 && (
 												<Button
 													title={Util.translate("datastructure-edit")}
-													onClick={() => this.handleUpdateStructure()}
+													onClick={this.handleUpdateStructure}
 													displayType="secondary"
 												>
 													<span className="inline-item inline-item-before">
@@ -1352,7 +1328,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 							{this.structureLink.dataTypeId > 0 && (
 								<SXDataTypeStructureLink
 									namespace={this.namespace}
-									formId={this.formId}
+									formId={this.componentId}
 									languageId={this.languageId}
 									availableLanguageIds={this.availableLanguageIds}
 									typeStructureLink={this.structureLink}
@@ -1446,7 +1422,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 								{
 									label: Util.translate("save"),
 									onClick: (e) => {
-										this.handleSaveLinkInfoAndRedirectToBuilder();
+										this.handleSaveLinkInfoAndRedirectToBuilder(e);
 										this.setState({ dlgSaveLinkInfoAndRedirectToBuilder: false });
 									},
 									displayType: "secondary"

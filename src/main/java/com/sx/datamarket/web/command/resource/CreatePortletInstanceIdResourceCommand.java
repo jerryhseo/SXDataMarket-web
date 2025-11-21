@@ -62,7 +62,7 @@ public class CreatePortletInstanceIdResourceCommand extends BaseMVCResourceComma
 		portletInstance.put( "displayName", portlet.getDisplayName());
 		portletInstance.put( "namespace", "_"+portletId+"_" );
 		
-		System.out.println("CreatePortletInstanceIdResourceCommand PortletInstance: " + portletInstance.toString(4));
+		//System.out.println("CreatePortletInstanceIdResourceCommand PortletInstance: " + portletInstance.toString(4));
 		
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(portletInstance.toString());
