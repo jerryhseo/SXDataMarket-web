@@ -2,6 +2,7 @@ import React from "react";
 import SXBaseParameterComponent from "./base-parameter-component";
 import { ClayInput } from "@clayui/form";
 import ParameterConstants from "../Parameter/parameter-constants";
+import SXCommentDisplayer from "../../stationx/comment";
 
 class SXInput extends SXBaseParameterComponent {
 	constructor(props) {
@@ -10,6 +11,7 @@ class SXInput extends SXBaseParameterComponent {
 		this.initValue = this.parameter.getValue(this.cellIndex);
 
 		this.state = {
+			...this.state,
 			value: this.initValue
 		};
 
@@ -91,7 +93,7 @@ class SXInput extends SXBaseParameterComponent {
 		const component = this.parameter.multipleLine ? "textarea" : "input";
 		let textareaStyle = {};
 		if (component === "textarea" && this.inputRef.current) {
-			console.log("Input Render: ", this.inputRef.current.style.height, this.inputRef.current.scrollHeight);
+			//console.log("Input Render: ", this.inputRef.current.style.height, this.inputRef.current.scrollHeight);
 			textareaStyle.height = "5rem";
 		}
 
@@ -129,7 +131,7 @@ class SXInput extends SXBaseParameterComponent {
 	}
 
 	render() {
-		//console.log("[SXInput] render", this.parameter);
+		//console.log("[SXInput] render", this.parameter.paramCode, this.parameter);
 
 		if (this.displayType == ParameterConstants.DisplayTypes.TABLE_ROW) {
 			return this.renderTableRow();
@@ -146,6 +148,7 @@ class SXInput extends SXBaseParameterComponent {
 							{this.parameter.displayType == ParameterConstants.DisplayTypes.GRID_CELL &&
 								this.renderGridCell()}
 							{this.parameter.renderFormFieldFeedback(this.spritemap, this.cellIndex)}
+							{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
 						</div>
 					)}
 				</>

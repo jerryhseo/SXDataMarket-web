@@ -431,21 +431,22 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		this.forceUpdate();
 	};
 
-	listenerSaveComment = (event) => {
-		const { targetPortlet, targetFormId, modelType, parentCode, parentVersion, paramCode, paramVersion, comment } =
-			event.dataPacket;
+	listenerRequest = (event) => {
+		const { targetPortlet, targetFormId, sourceFormId, requestId, params } = event.dataPacket;
 
-		console.log("[DataStructureBuilder] listenerSaveComment: ", event.dataPacket);
-		/*
-		Event.fire(Event.SX_SAVE_COMMENT, this.namespace, this.formId, {
-			modelType: "parameter",
-			parentCode: parentCode,
-			parentVersion: parentVersion,
-			paramCode: paramCode,
-			paramVersion: paramVersion,
-			comment: comment
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			console.log("[DataStructureBuilder] listenerRequest rejected:", event.dataPacket);
+			return;
+		}
+
+		console.log("[DataStructureBuilder] listenerRequest:", event.dataPacket);
+		this.fireRequest({
+			targetFormId: this.formId,
+			sourceFormId: sourceFormId,
+			requestId: requestId,
+			params: params,
+			refresh: false
 		});
-		*/
 	};
 
 	listenerLoadPortlet = async (event) => {
@@ -607,6 +608,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
 		Event.on(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 		Event.on(Event.SX_PARAM_TYPE_CHANGED, this.listenerParameterTypeChanged);
+		Event.on(Event.SX_REQUEST, this.listenerRequest);
 		Event.on(Event.SX_RESPONSE, this.listenerResponce);
 		Event.on(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
 		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
@@ -625,6 +627,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
 		Event.off(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 		Event.off(Event.SX_PARAM_TYPE_CHANGED, this.listenerParameterTypeChanged);
+		Event.off(Event.SX_REQUEST, this.listenerRequest);
 		Event.off(Event.SX_RESPONSE, this.listenerResponce);
 		Event.off(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
 		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);

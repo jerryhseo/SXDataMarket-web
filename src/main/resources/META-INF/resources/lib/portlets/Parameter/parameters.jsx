@@ -20,6 +20,7 @@ import SXGroup from "../Form/group";
 import SXMatrix from "../Form/matrix";
 import SXNumeric from "../Form/numeric";
 import SXPhone from "../Form/phone";
+import SXCommentDisplayer from "../../stationx/comment";
 
 export class ParameterUtil {
 	static createParameter({ namespace, formId, paramType, properties = {} }) {
@@ -148,6 +149,7 @@ export class ParameterUtil {
 }
 
 class Parameter {
+	#paramId = 0;
 	#paramType;
 	#paramCode = "";
 	#paramVersion = ParameterConstants.DEFAULT_VERSION;
@@ -165,7 +167,6 @@ class Parameter {
 	#order = 0;
 	#defaultValue = null;
 	#parent = {};
-	#paramId = 0;
 	#standard = false;
 	#status = Constant.Status.PENDING;
 	#state = Constant.State.ACTIVE;
@@ -180,6 +181,7 @@ class Parameter {
 	#style = {};
 
 	#value;
+	dataId = 0;
 
 	/**
 	 * volatile variables from here
@@ -201,7 +203,100 @@ class Parameter {
 	modifedDate = null;
 
 	inputStatus = false;
-	comments = [];
+	comments = [
+		{
+			id: "1",
+			userId: 12345,
+			userName: "user 01",
+			comment: "comment 1",
+			parentId: 0,
+			date: "11/15/2025, 4:01:00 PM",
+			replies: [
+				{
+					id: "1-1",
+					userId: 23456,
+					userName: "user 2",
+					comment: "reply to comment 1",
+					parentId: "1",
+					date: "11/16/2025, 6:01:00 AM",
+					replies: [
+						{
+							id: "1-1-1",
+							userId: 12345,
+							userName: "user 01",
+							comment: "reply to comment 1-1",
+							date: "11/16/2025, 1:01:00 PM",
+							parentId: "1"
+						},
+						{
+							id: "1-1-2",
+							userId: 34567,
+							userName: "user 03",
+							comment: "another reply to comment 1-1",
+							date: "11/16/2025, 2:01:00 PM",
+							parentId: "1"
+						}
+					]
+				},
+				{
+					id: "1-2",
+					userId: 45678,
+					userName: "user 04",
+					comment: "another reply to comment 1",
+					date: "11/17/2025, 4:01:00 PM",
+					parentId: "1"
+				}
+			]
+		},
+		{
+			id: "2",
+			userId: 56789,
+			userName: "user 05",
+			comment: "comment 2",
+			parentId: 0,
+			date: "11/16/2025, 6:01:00 PM",
+			replies: [
+				{
+					id: "2-1",
+					userId: 12345,
+					userName: "user 01",
+					comment: "reply to comment 2",
+					parentId: "2",
+					date: "11/16/2025, 8:01:00 PM",
+					replies: [
+						{
+							id: "2-1-1",
+							userId: 56789,
+							userName: "user 05",
+							comment: "reply to comment 2-1",
+							date: "11/17/2025, 9:01:00 AM",
+							parentId: "2-1"
+						},
+						{
+							id: "2-1-2",
+							userId: 12345,
+							userName: "user 01",
+							comment: "another reply to comment 2-1",
+							date: "11/17/2025, 11:01:00 AM",
+							parentId: "2-1"
+						}
+					]
+				},
+				{
+					id: "2-2",
+					userId: 45678,
+					userName: "user 04",
+					comment: "another reply to comment 2",
+					date: "11/17/2025, 10:01:00 AM",
+					parentId: "2"
+				}
+			]
+		}
+	];
+	commentFreezed = false;
+	commentFreezeUserId;
+	commentFreezeUserName;
+	commentFreezeDate;
 	actionHistories = [];
 	freezed = false;
 	freezedUserId;
@@ -221,6 +316,9 @@ class Parameter {
 		this.#paramType = paramType;
 	}
 
+	get paramId() {
+		return this.#paramId;
+	}
 	get paramType() {
 		return this.#paramType;
 	}
@@ -1523,7 +1621,7 @@ class Parameter {
 
 	loadData(data) {
 		if (this.commentable) {
-			this.comments = data.comments;
+			//this.comments = data.comments;
 		}
 		this.actionHistories = data.actionHistories;
 
@@ -1549,6 +1647,10 @@ class Parameter {
 
 		if (this.hasValue()) {
 			data[this.paramCode] = {
+				commentFreezed: this.commentFreezed,
+				commentFreezeUserId: this.commentFreezeUserId,
+				commentFreezeUserName: this.commentFreezeUserName,
+				commentFreezeDate: this.commentFreezeDate,
 				freezed: this.freezed,
 				freezedUserId: this.freezedUserId,
 				freezedUserName: this.freezedUserName,
@@ -1565,7 +1667,13 @@ class Parameter {
 	}
 
 	toValue() {
-		return this.toData();
+		let value = {};
+
+		if (this.hasValue()) {
+			value[this.paramCode] = this.value;
+		}
+
+		return value;
 	}
 
 	toJSON() {
@@ -1662,7 +1770,7 @@ class Parameter {
 			<SXTitleBar
 				key={Util.randomKey()}
 				namespace={this.namespace}
-				formId={this.formId}
+				formId={this.componentId}
 				parameter={this}
 				spritemap={spritemap}
 				style={style}
@@ -1697,6 +1805,21 @@ class Parameter {
 
 	getPostfix(languageId = this.languageId) {
 		return this.postfix[languageId];
+	}
+
+	renderCommentDisplayer(spritemap) {
+		return (
+			<SXCommentDisplayer
+				namespace={this.namespace}
+				formId={this.componentId}
+				commentModel="parameter"
+				dataInstance={this}
+				dataId={this.dataId}
+				paramCode={this.paramCode}
+				commentItems={this.comments}
+				spritemap={spritemap}
+			/>
+		);
 	}
 
 	renderPrefix() {

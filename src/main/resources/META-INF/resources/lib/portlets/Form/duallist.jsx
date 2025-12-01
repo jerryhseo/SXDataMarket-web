@@ -302,6 +302,7 @@ class SXDualListBox extends SXBaseParameterComponent {
 						</div>
 					)}
 				</div>
+				{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
 			</>
 		);
 	}

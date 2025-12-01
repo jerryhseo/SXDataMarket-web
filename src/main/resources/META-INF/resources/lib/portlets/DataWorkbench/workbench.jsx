@@ -65,10 +65,12 @@ export class Workbench {
 	};
 
 	static RequestIDs = {
+		addComment: "addComment",
 		addDataType: "addDataType",
 		checkDataTypeUnique: "checkDataTypeUnique",
 		checkDataStructureUnique: "checkDataStructureUnique",
 		checkDataStructureCodeUnique: "checkDataStructureCodeUnique",
+		deleteComment: "deleteComment",
 		deleteDataTypes: "deleteDataTypes",
 		deleteDataCollections: "deleteDataCollections",
 		deleteDataSets: "deleteDataSets",
@@ -434,10 +436,48 @@ export class Workbench {
 		}
 	};
 
-	processRequest = async ({ params, requestPortlet, requestId }) => {
+	processRequest = async ({ requestPortlet, sourceFormId, requestId, params }) => {
 		let resourceId;
 
 		switch (requestId) {
+			case Workbench.RequestIDs.addComment: {
+				//console.log("[processRequest] addComment", requestPortlet, sourceFormId, requestId, params);
+				resourceId = ResourceIds.ADD_COMMENT;
+
+				const user = SXSystem.getUser();
+				const result = {
+					id: 123456,
+					...user,
+					comment: params.comment,
+					parentId: params.parentId,
+					date: new Date().toLocaleString(),
+					replies: []
+				};
+
+				this.fireResponse({
+					targetPortlet: requestPortlet,
+					targetFormId: sourceFormId,
+					requestId: requestId,
+					params: params,
+					data: result
+				});
+
+				return;
+			}
+			case Workbench.RequestIDs.deleteComment: {
+				resourceId = ResourceIds.DELETE_COMMENT;
+
+				this.fireResponse({
+					targetPortlet: requestPortlet,
+					targetFormId: sourceFormId,
+					requestId: requestId,
+					params: params,
+					data: {
+						id: params.commentId
+					}
+				});
+				return;
+			}
 			case Workbench.RequestIDs.addDataType: {
 				resourceId = ResourceIds.ADD_DATATYPE;
 				break;
@@ -547,6 +587,7 @@ export class Workbench {
 
 		this.fireResponse({
 			targetPortlet: requestPortlet,
+			targetFormId: sourceFormId,
 			requestId: requestId,
 			params: params,
 			data: result
@@ -564,8 +605,10 @@ export class Workbench {
 		});
 	};
 
-	fireResponse = ({ targetPortlet, requestId, params, data }) => {
+	fireResponse = ({ targetPortlet, targetFormId, requestId, params, data }) => {
+		console.log("[Workbench fireResponse] ", targetPortlet, targetFormId, requestId, params, data);
 		Event.fire(Event.SX_RESPONSE, this.namespace, targetPortlet, {
+			targetFormId: targetFormId,
 			requestId: requestId,
 			data: data,
 			params: params,

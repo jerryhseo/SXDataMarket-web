@@ -2,7 +2,7 @@
 	"dependencies": {
 		"@clayui/autocomplete": "^3.143.0",
 		"@clayui/button": "^3.143.0",
-		"@clayui/core": "^3.143.0",
+		"@clayui/core": "^3.151.0",
 		"@clayui/css": "^3.127.0",
 		"@clayui/date-picker": "^3.143.0",
 		"@clayui/drop-down": "^3.143.0",
@@ -23,8 +23,8 @@
 		"@clayui/tabs": "^3.143.0",
 		"@clayui/toolbar": "^3.143.0",
 		"@clayui/tooltip": "^3.143.0",
-		"html-react-parser": "^5.2.6",
 		"react-rnd": "^10.5.2",
+		"html-react-parser": "^5.2.6",
 		"react": "18.3.1",
 		"react-dom": "18.3.1"
 	},

@@ -333,6 +333,7 @@ class SXSelect extends SXBaseParameterComponent {
 					{this.parameter.viewType == ParameterConstants.SelectViewTypes.CHECKBOX &&
 						this.renderCheckBoxGroup()}
 					{this.parameter.viewType == ParameterConstants.SelectViewTypes.LISTBOX && this.renderListBox()}
+					{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
 				</div>
 			</>
 		);

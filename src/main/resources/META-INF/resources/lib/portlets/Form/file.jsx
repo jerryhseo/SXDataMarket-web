@@ -192,6 +192,7 @@ class SXFile extends SXBaseParameterComponent {
 					</div>
 				)}
 				{this.renderFileManager()}
+				{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
 			</>
 		);
 	}

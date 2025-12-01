@@ -14,7 +14,7 @@ import { Icon, Text, TreeView } from "@clayui/core";
 class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 	constructor(props) {
 		super(props);
-		console.log("Previewer props: ", props);
+		//console.log("Previewer props: ", props);
 
 		this.typeStructureLink = props.typeStructureLink;
 
@@ -172,6 +172,11 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		});
 	};
 
+	/**
+	 * @deprecated
+	 * @param {JSON} event
+	 * @returns
+	 */
 	listenerUpdateParameterComments = (event) => {
 		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
@@ -195,6 +200,7 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 										symbol="reply"
 										spritemap={this.spritemap}
 									/>
+									{item.name}
 								</TreeView.ItemStack>
 							</TreeView.item>;
 						}}
@@ -233,6 +239,34 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		this.setState({ addCommentModal: true });
 	};
 
+	listenerFreezeComments = (event) => {
+		const { targetPortlet, targetFormId, params } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			console.log("[SXDataStructurePreviewer] listenerFreezeComments rejected:", event.dataPacket);
+			return;
+		}
+
+		console.log("[SXDataStructurePreviewer] listenerFreezeComments:", params);
+	};
+
+	listenerRequest = (event) => {
+		const { targetPortlet, targetFormId, sourceFormId, requestId, params } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			console.log("[SXDataStructurePreviewer] listenerRequest rejected:", event.dataPacket);
+			return;
+		}
+
+		console.log("[SXDataStructurePreviewer] listenerRequest:", event.dataPacket);
+		Event.fire(Event.SX_REQUEST, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			sourceFormId: sourceFormId,
+			requestId: requestId,
+			params: params
+		});
+	};
+
 	componentDidMount() {
 		Event.on(Event.SX_COPY_PARAMETER, this.listenerCopyParameter);
 		Event.on(Event.SX_DELETE_PARAMETER, this.listenerDeleteParameter);
@@ -242,7 +276,8 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		Event.on(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 		Event.on(Event.SX_REFRESH_FORM, this.listenerRefeshForm);
 		Event.on(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
-		Event.on(Event.SX_ADD_PARAMETER_COMMENT, this.listenerUpdateParameterComments);
+		Event.on(Event.SX_FREEZE_COMMENTS, this.listenerFreezeComments);
+		Event.on(Event.SX_REQUEST, this.listenerRequest);
 	}
 
 	componentWillUnmount() {
@@ -254,7 +289,8 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		Event.off(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 		Event.off(Event.SX_REFRESH_FORM, this.listenerRefeshForm);
 		Event.off(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
-		Event.off(Event.SX_ADD_PARAMETER_COMMENT, this.listenerUpdateParameterComments);
+		Event.off(Event.SX_FREEZE_COMMENTS, this.listenerFreezeComments);
+		Event.off(Event.SX_REQUEST, this.listenerRequest);
 	}
 
 	openErrorDlg(message) {

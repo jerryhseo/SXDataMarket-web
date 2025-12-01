@@ -16,22 +16,6 @@ class SXGroup extends SXBaseParameterComponent {
 		};
 	}
 
-	listenerFieldValueChanged = (event) => {
-		const dataPacket = Event.pickUpDataPacket(
-			event,
-			this.namespace,
-			this.componentId,
-			this.parameter.paramCode,
-			this.parameter.paramVersion
-		);
-
-		if (Util.isEmpty(dataPacket)) {
-			return;
-		}
-
-		this.parameter.fireValueChanged();
-	};
-
 	listenerParameterSelected = (event) => {
 		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
@@ -299,12 +283,13 @@ class SXGroup extends SXBaseParameterComponent {
 	}
 
 	render() {
+		let content;
 		switch (this.parameter.viewType) {
 			case ParameterConstants.GroupViewTypes.ARRANGEMENT: {
-				return this.renderArrangement();
+				content = this.renderArrangement();
 			}
 			case ParameterConstants.GroupViewTypes.FIELDSET: {
-				return (
+				content = (
 					<div className="sx-fieldset form-group">
 						<div className="sx-legend">{this.parameter.label}</div>
 						{this.renderArrangement()}
@@ -312,15 +297,22 @@ class SXGroup extends SXBaseParameterComponent {
 				);
 			}
 			case ParameterConstants.GroupViewTypes.PANEL: {
-				return this.renderPanel();
+				content = this.renderPanel();
 			}
 			case ParameterConstants.GroupViewTypes.TABLE: {
-				return this.renderTable();
+				content = this.renderTable();
 			}
 			default: {
-				return this.renderPanel();
+				content = this.renderPanel();
 			}
 		}
+
+		return (
+			<>
+				{content}
+				{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
+			</>
+		);
 	}
 }
 

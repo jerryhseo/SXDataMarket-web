@@ -120,7 +120,10 @@ class SXEMail extends SXBaseParameterComponent {
 						<pre>{this.parameter.getDefinition()}</pre>
 					</div>
 				)}
-				<div style={{ paddingLeft: "10px" }}>{this.getClayUI()}</div>
+				<div style={{ paddingLeft: "10px" }}>
+					{this.getClayUI()}
+					{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
+				</div>
 			</>
 		);
 	}

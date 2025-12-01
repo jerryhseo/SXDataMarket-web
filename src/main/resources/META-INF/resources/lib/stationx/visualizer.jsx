@@ -72,9 +72,10 @@ class SXBaseVisualizer extends React.Component {
 		});
 	}
 
-	fireRequest({ requestId, params, refresh = true }) {
+	fireRequest({ targetFormId = this.workbenchId, sourceFormId, requestId, params, refresh = true }) {
 		Event.fire(Event.SX_REQUEST, this.namespace, this.workbenchNamespace, {
-			targetFormId: this.workbenchId,
+			targetFormId: targetFormId,
+			sourceFormId: sourceFormId,
 			requestId: requestId,
 			params: params
 		});

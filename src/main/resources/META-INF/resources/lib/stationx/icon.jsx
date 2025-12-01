@@ -337,3 +337,54 @@ export const SXQMarkIcon = ({ width = "0.875rem", height = "0.85rem", onClick })
 		</svg>
 	);
 };
+
+export const SXSendIcon = ({ width = "0.875rem", height = "0.85rem", onClick }) => {
+	return (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			enableBackground="new 0 0 64 64"
+			viewBox="0 0 64 64"
+			width={width}
+			height={height}
+			id="send"
+			onClick={() => (onClick ? onClick() : "")}
+		>
+			<polygon points="20.9 30.6 21.7 56.4 64 9.5"></polygon>
+			<polygon points="0 11.2 20.1 28.7 63.3 7.6"></polygon>
+		</svg>
+	);
+};
+
+export const SXElbowDownRightIcon = ({ width = "0.875rem", height = "0.85rem", onClick }) => {
+	return (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			viewBox="0 0 256 256"
+			width={width}
+			height={height}
+			id="arrow-elbow-down-right"
+		>
+			<rect
+				width="256"
+				height="256"
+				fill="none"
+			></rect>
+			<polyline
+				fill="none"
+				stroke="#000"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				strokeWidth="8"
+				points="160 128 208 176 160 224"
+			></polyline>
+			<polyline
+				fill="none"
+				stroke="#000"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				strokeWidth="8"
+				points="64 32 64 176 208 176"
+			></polyline>
+		</svg>
+	);
+};

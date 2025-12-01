@@ -248,17 +248,18 @@ class DataWorkbench extends React.Component {
 	};
 
 	listenerDataCollectionSelected = (event) => {
-		const dataPacket = event.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace) {
+		const { targetPortlet, sourcePortlet, targetFormId, sourceFormId, dataCollectionId } = event.dataPacket;
+		if (targetPortlet !== this.namespace) {
 			return;
 		}
 
 		//console.log("[DataWorkbench] dataCollectionSelected: ", dataPacket);
 		this.workbench.processRequest({
+			sourceFormId: sourceFormId,
 			requestId: Workbench.RequestIDs.loadDataCollection,
-			requestPortlet: this.namespace,
+			requestPortlet: sourcePortlet,
 			params: {
-				dataCollectionId: dataPacket.dataCollectionId,
+				dataCollectionId: dataCollectionId,
 				loadAvailableDataSets: false
 			}
 		});
@@ -314,17 +315,18 @@ class DataWorkbench extends React.Component {
 	};
 
 	listenerRequest = async (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, sourcePortlet, targetFormId, sourceFormId, requestId, params } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
+		if (targetPortlet !== this.namespace) {
 			return;
 		}
 
-		//console.log("SX_REQUEST received: ", dataPacket);
+		console.log("[DataWorkbench] SX_REQUEST received: ", event.dataPacket);
 		this.workbench.processRequest({
-			params: dataPacket.params,
-			requestPortlet: dataPacket.sourcePortlet,
-			requestId: dataPacket.requestId
+			requestPortlet: sourcePortlet,
+			sourceFormId: sourceFormId,
+			requestId: requestId,
+			params: params
 		});
 	};
 

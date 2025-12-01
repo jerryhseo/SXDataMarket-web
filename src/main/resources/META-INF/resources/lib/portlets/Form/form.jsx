@@ -6,6 +6,7 @@ import Button from "@clayui/button";
 import { Util } from "../../stationx/util";
 import { Text } from "@clayui/core";
 import { SXFreezeIcon, SXLinkIcon, SXQMarkIcon, SXVerifyIcon } from "../../stationx/icon";
+import { Event } from "../../stationx/station-x";
 
 export const SXRequiredMark = ({ spritemap }) => {
 	return (
@@ -77,15 +78,28 @@ export class SXTitleBar extends React.Component {
 		this.refLink = this.parameter.hasReferenceFile();
 		this.inputStatus = this.parameter.inputStatus ?? false;
 		this.commentable = this.parameter.commentable ?? false;
+		this.commentClosed = this.parameter.commentable ?? false;
 		this.verifiable = this.parameter.verifiable ?? false;
 		this.freezable = this.parameter.freezable ?? false;
 		this.verified = this.parameter.verified ?? true;
 		this.freezed = this.parameter.freezed ?? false;
+
+		this.commentInputOpened = false;
+
+		//console.log("[SXTitleBar] props", props);
 	}
 
 	handlerQMarkClicked = () => {
 		console.log("SXTitleBar: QMark clicked");
-		this.parameter.fireAddComment();
+		//this.parameter.fireAddComment();
+
+		this.commentInputOpened = !this.commentInputOpened;
+		console.log("[SXTitleBar] handlerQMarkClicked: ", this.commentInputOpened);
+		Event.fire(Event.SX_OPEN_COMMENTS, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			open: this.commentInputOpened,
+			comentClosed: this.commentClosed
+		});
 	};
 
 	handlerVerifyClicked = () => {

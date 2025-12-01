@@ -11,7 +11,7 @@ class SXBoolean extends SXBaseParameterComponent {
 			value: this.parameter.getValue(this.cellIndex)
 		};
 
-		console.log("SXBoolean Remounted: ", this.parameter.paramCode, this.parameter);
+		//console.log("SXBoolean constructor: ", this.parameter.paramCode, this.parameter, props);
 	}
 
 	setValue(value) {
@@ -240,6 +240,7 @@ class SXBoolean extends SXBaseParameterComponent {
 						ref={this.inputRef}
 					/>
 				)}
+				{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
 			</>
 		);
 	}

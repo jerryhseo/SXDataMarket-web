@@ -143,13 +143,16 @@ class SXPhone extends SXBaseParameterComponent {
 						<pre>{this.parameter.getDefinition()}</pre>
 					</div>
 				)}
-				{this.renderClayUI()}
+				<div style={{ paddingLeft: "10px" }}>
+					{this.renderClayUI()}
+					{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
+				</div>
 			</>
 		);
 	}
 
 	render() {
-		console.log("[SXPhone] render: ", this.parameter);
+		//console.log("[SXPhone] render: ", this.parameter);
 		return (
 			<div
 				className={this.parameter.getClassName(this.className, this.cellIndex)}

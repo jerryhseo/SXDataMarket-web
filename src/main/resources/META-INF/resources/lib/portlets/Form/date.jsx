@@ -49,7 +49,10 @@ class SXDate extends SXBaseParameterComponent {
 						<pre>{this.parameter.getDefinition()}</pre>
 					</div>
 				)}
-				<div style={{ paddingLeft: "10px" }}>{this.renderDatePicker()}</div>
+				<div style={{ paddingLeft: "10px" }}>
+					{this.renderDatePicker()}
+					{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
+				</div>
 			</ClayForm.Group>
 		);
 	}

@@ -252,6 +252,7 @@ class SXAddress extends SXBaseParameterComponent {
 							/>
 						</>
 					)}
+					{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
 				</div>
 			</>
 		);

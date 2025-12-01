@@ -41,18 +41,23 @@ class SXBaseParameterComponent extends React.PureComponent {
 		this.disabledControlStyle = this.parameter.disabled
 			? { backgroundColor: "#fff", borderColor: "#e1ebf6", color: "#7b7c85" }
 			: {};
+
+		this.state = {
+			openComments: false,
+			openActionHistories: false
+		};
 	}
 
 	listenerRefresh = (event) => {
 		const { targetPortlet, targetFormId, paramCode, paramVersion = "1.0.0", cellIndex } = event.dataPacket;
 
 		if (
-			!this.isMyEvent({
-				targetPortlet: targetPortlet,
-				targetFormId: targetFormId,
-				paramCode: paramCode,
-				paramVersion: paramVersion
-			})
+			!(
+				this.namespace === targetPortlet &&
+				this.formId === targetFormId &&
+				paramCode === this.parameter.paramCode &&
+				paramVersion === this.parameter.paramVersion
+			)
 		) {
 			return;
 		}
@@ -66,22 +71,21 @@ class SXBaseParameterComponent extends React.PureComponent {
 	};
 
 	listenerFocus = (event) => {
-		const { dataPacket } = event;
-		const { targetPortlet, targetFormId, paramCode, paramVersion = "1.0.0" } = dataPacket;
+		const { targetPortlet, targetFormId, paramCode, paramVersion = "1.0.0", cellIndex } = event.dataPacket;
 
 		if (
-			!this.isMyEvent({
-				targetPortlet: targetPortlet,
-				targetFormId: targetFormId,
-				paramCode: paramCode,
-				paramVersion: paramVersion
-			})
+			!(
+				this.namespace === targetPortlet &&
+				this.formId === targetFormId &&
+				paramCode === this.parameter.paramCode &&
+				paramVersion === this.parameter.paramVersion
+			)
 		) {
 			return;
 		}
 
 		if (this.parameter.isGridCell()) {
-			if (dataPacket.cellIndex !== this.cellIndex) {
+			if (cellIndex !== this.cellIndex) {
 				return;
 			}
 		}
@@ -95,11 +99,66 @@ class SXBaseParameterComponent extends React.PureComponent {
 		}
 	};
 
+	listenerOpenComments = (event) => {
+		const { targetPortlet, targetFormId, open } = event.dataPacket;
+
+		if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
+			/*
+			console.log(
+				"[SXBaseParameterComponent] listenerOpenComments rejected: ",
+				this.parameter.label,
+				event.dataPacket
+			);
+			*/
+			return;
+		}
+		//console.log("[SXBaseParameterComponent] listenerOpenComments: ", this.parameter.label, event.dataPacket);
+
+		this.setState({ openComments: open });
+	};
+
+	listenerRequest = (event) => {
+		const { targetPortlet, targetFormId, sourceFormId, requestId, params } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			//console.log("[SXBaseParameterComponent] listenerRequest rejected:", this.paramCode, event.dataPacket);
+			return;
+		}
+
+		//console.log("[SXBaseParameterComponent] listenerRequest:", this.paramCode, event.dataPacket);
+		Event.fire(Event.SX_REQUEST, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			sourceFormId: sourceFormId,
+			requestId: requestId,
+			params: params
+		});
+	};
+
+	listenerFreezeComments = (event) => {
+		const { targetPortlet, targetFormId, params } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			/*
+			console.log(
+				"[SXBaseParameterComponent] listenerFreezeComments rejected:",
+				this.parameter.paramCode,
+				event.dataPacket
+			);
+			*/
+			return;
+		}
+
+		//console.log("[SXBaseParameterComponent] listenerFreezeComments:", this.parameter.paramCode, params);
+	};
+
 	componentDidMount() {
 		//console.log("Parameter Component Remounted: ", this.parameter.paramCode, this.parameter);
 
 		Event.on(Event.SX_REFRESH, this.listenerRefresh);
 		Event.on(Event.SX_FOCUS, this.listenerFocus);
+		Event.on(Event.SX_OPEN_COMMENTS, this.listenerOpenComments);
+		Event.on(Event.SX_FREEZE_COMMENTS, this.listenerFreezeComments);
+		Event.on(Event.SX_REQUEST, this.listenerRequest);
 
 		if (this.parameter.focused && this.inputRef.current) {
 			this.inputRef.current.focus();
@@ -109,6 +168,9 @@ class SXBaseParameterComponent extends React.PureComponent {
 	componentWillUnmount() {
 		Event.off(Event.SX_REFRESH, this.listenerRefresh);
 		Event.off(Event.SX_FOCUS, this.listenerFocus);
+		Event.off(Event.SX_OPEN_COMMENTS, this.listenerOpenComments);
+		Event.off(Event.SX_FREEZE_COMMENTS, this.listenerFreezeComments);
+		Event.off(Event.SX_REQUEST, this.listenerRequest);
 	}
 
 	isMyEvent({ targetPortlet, targetFormId, paramCode, paramVersion = "1.0.0" }) {

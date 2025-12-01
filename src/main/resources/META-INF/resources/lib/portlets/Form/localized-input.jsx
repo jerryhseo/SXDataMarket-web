@@ -180,6 +180,7 @@ class SXLocalizedInput extends SXBaseParameterComponent {
 				)}
 				<div style={{ paddingLeft: "10px" }}>
 					{this.getClayUI(this.parameter.tagId, this.parameter.tagName)}
+					{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
 				</div>
 			</>
 		);

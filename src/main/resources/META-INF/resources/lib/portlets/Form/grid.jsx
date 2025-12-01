@@ -332,6 +332,7 @@ class SXGrid extends SXBaseParameterComponent {
 						<tbody key={this.parameter.rowCount}>{this.renderBodyRows()}</tbody>
 					</table>
 				</div>
+				{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
 				{this.state.errorAlert && (
 					<SXModalDialog
 						header={SXModalUtil.errorDlgHeader(this.spritemap)}

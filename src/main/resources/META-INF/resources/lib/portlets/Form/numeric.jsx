@@ -261,6 +261,7 @@ class SXNumeric extends SXBaseParameterComponent {
 						</div>
 					)}
 					{this.renderClayUI()}
+					{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
 				</div>
 			</>
 		);
