@@ -574,8 +574,8 @@ class SXCommentDisplayer extends React.Component {
 							formId={this.componentId}
 							freezed={{
 								freezed: this.dataInstance.commentFreezed,
-								UserId: this.dataInstance.commentFreezed ? this.dataInstance.commentFreezeUserId : 0,
-								UserName: this.dataInstance.commentFreezed
+								userId: this.dataInstance.commentFreezed ? this.dataInstance.commentFreezeUserId : 0,
+								userName: this.dataInstance.commentFreezed
 									? this.dataInstance.commentFreezeUserName
 									: "",
 								date: this.dataInstance.commentFreezed
