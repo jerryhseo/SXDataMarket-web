@@ -606,7 +606,7 @@ export class Workbench {
 	};
 
 	fireResponse = ({ targetPortlet, targetFormId, requestId, params, data }) => {
-		console.log("[Workbench fireResponse] ", targetPortlet, targetFormId, requestId, params, data);
+		//console.log("[Workbench fireResponse] ", targetPortlet, targetFormId, requestId, params, data);
 		Event.fire(Event.SX_RESPONSE, this.namespace, targetPortlet, {
 			targetFormId: targetFormId,
 			requestId: requestId,

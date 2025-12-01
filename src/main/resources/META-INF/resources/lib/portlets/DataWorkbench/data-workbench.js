@@ -321,7 +321,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("[DataWorkbench] SX_REQUEST received: ", event.dataPacket);
+		//console.log("[DataWorkbench] SX_REQUEST received: ", event.dataPacket);
 		this.workbench.processRequest({
 			requestPortlet: sourcePortlet,
 			sourceFormId: sourceFormId,

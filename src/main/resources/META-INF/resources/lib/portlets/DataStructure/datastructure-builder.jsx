@@ -435,11 +435,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		const { targetPortlet, targetFormId, sourceFormId, requestId, params } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
-			console.log("[DataStructureBuilder] listenerRequest rejected:", event.dataPacket);
+			//console.log("[DataStructureBuilder] listenerRequest rejected:", event.dataPacket);
 			return;
 		}
 
-		console.log("[DataStructureBuilder] listenerRequest:", event.dataPacket);
+		//console.log("[DataStructureBuilder] listenerRequest:", event.dataPacket);
 		this.fireRequest({
 			targetFormId: this.formId,
 			sourceFormId: sourceFormId,
