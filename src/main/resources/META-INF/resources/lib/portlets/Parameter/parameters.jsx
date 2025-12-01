@@ -387,9 +387,6 @@ class Parameter {
 	get parentVersion() {
 		return Util.isEmpty(this.parent) ? "" : this.parent.version;
 	}
-	get paramId() {
-		return this.#paramId;
-	}
 	get standard() {
 		return this.#standard;
 	}
@@ -510,6 +507,10 @@ class Parameter {
 		return this.hasValue() ? 1 : 0;
 	}
 
+	set paramId(val) {
+		this.#paramId = val;
+	}
+
 	set paramType(val) {
 		this.#paramType = val;
 	}
@@ -585,9 +586,6 @@ class Parameter {
 			code: this.parent.code,
 			version: val
 		};
-	}
-	set paramId(val) {
-		this.#paramId = val;
 	}
 	set standard(val) {
 		this.#standard = val;

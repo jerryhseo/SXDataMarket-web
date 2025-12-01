@@ -239,17 +239,6 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		this.setState({ addCommentModal: true });
 	};
 
-	listenerFreezeComments = (event) => {
-		const { targetPortlet, targetFormId, params } = event.dataPacket;
-
-		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
-			console.log("[SXDataStructurePreviewer] listenerFreezeComments rejected:", event.dataPacket);
-			return;
-		}
-
-		console.log("[SXDataStructurePreviewer] listenerFreezeComments:", params);
-	};
-
 	listenerRequest = (event) => {
 		const { targetPortlet, targetFormId, sourceFormId, requestId, params } = event.dataPacket;
 
@@ -276,7 +265,6 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		Event.on(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 		Event.on(Event.SX_REFRESH_FORM, this.listenerRefeshForm);
 		Event.on(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
-		Event.on(Event.SX_FREEZE_COMMENTS, this.listenerFreezeComments);
 		Event.on(Event.SX_REQUEST, this.listenerRequest);
 	}
 
@@ -289,7 +277,6 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		Event.off(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 		Event.off(Event.SX_REFRESH_FORM, this.listenerRefeshForm);
 		Event.off(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
-		Event.off(Event.SX_FREEZE_COMMENTS, this.listenerFreezeComments);
 		Event.off(Event.SX_REQUEST, this.listenerRequest);
 	}
 

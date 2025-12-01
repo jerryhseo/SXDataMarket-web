@@ -78,7 +78,7 @@ export class SXTitleBar extends React.Component {
 		this.refLink = this.parameter.hasReferenceFile();
 		this.inputStatus = this.parameter.inputStatus ?? false;
 		this.commentable = this.parameter.commentable ?? false;
-		this.commentClosed = this.parameter.commentable ?? false;
+		this.commentFreezed = this.parameter.commentFreezed ?? false;
 		this.verifiable = this.parameter.verifiable ?? false;
 		this.freezable = this.parameter.freezable ?? false;
 		this.verified = this.parameter.verified ?? true;
@@ -90,15 +90,14 @@ export class SXTitleBar extends React.Component {
 	}
 
 	handlerQMarkClicked = () => {
-		console.log("SXTitleBar: QMark clicked");
+		console.log("SXTitleBar: QMark clicked: " + this.commentInputOpened);
 		//this.parameter.fireAddComment();
 
 		this.commentInputOpened = !this.commentInputOpened;
 		console.log("[SXTitleBar] handlerQMarkClicked: ", this.commentInputOpened);
 		Event.fire(Event.SX_OPEN_COMMENTS, this.namespace, this.namespace, {
 			targetFormId: this.formId,
-			open: this.commentInputOpened,
-			comentClosed: this.commentClosed
+			open: this.commentInputOpened
 		});
 	};
 

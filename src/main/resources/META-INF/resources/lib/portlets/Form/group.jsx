@@ -216,7 +216,7 @@ class SXGroup extends SXBaseParameterComponent {
 					<Panel.Title key={Util.randomKey()}>
 						{this.parameter.renderTitle({
 							spritemap: this.spritemap,
-							style: { fontSize: "1.0rem", fontWeight: "800" }
+							style: { fontSize: "1.0rem", fontWeight: "800", paddingRight: "10px" }
 						})}
 						{this.parameter.showDefinition && this.state.expanded && (
 							<div

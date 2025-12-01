@@ -641,10 +641,17 @@ export class SXPortletWindow extends React.Component {
 
 		this.portletBody = this.namespace + this.windowId;
 
+		const width = props.width ?? 800;
+		const height = props.height ?? 800;
+
 		this.state = {
-			width: props.width ?? 800,
-			height: props.height ?? 800
+			startX: window.innerWidth / 2 - width / 2,
+			startY: window.innerHeight / 2 - height / 2,
+			width: width,
+			height: height
 		};
+
+		this.focusRef = createRef();
 	}
 
 	componentDidMount() {
@@ -664,14 +671,21 @@ export class SXPortletWindow extends React.Component {
 	};
 
 	render() {
+		console.log("[Window render] ", window);
 		return (
 			<Rnd
-				default={{ x: 100, y: 100, width: this.state.width, height: this.state.height }}
+				default={{
+					x: (window.scrollX + window.innerWidth) / 2 - this.state.width / 2,
+					y: (window.scrollY + window.innerHeight) / 2 - this.state.height / 2,
+					width: this.state.width,
+					height: this.state.height
+				}}
 				dragHandleClassName="clay-panel-header"
 				style={{
 					zIndex: this.zIndex
 				}}
 				onResizeStop={(e, direction, ref, delta, newPosition) => {
+					console.log("[SXPortletWindow newPosition] ", e, direction, delta, newPosition);
 					this.setState({
 						width: ref.offsetWidth,
 						height: ref.offsetHeight
@@ -699,7 +713,10 @@ export class SXPortletWindow extends React.Component {
 							borderRadius: "0.5rem 0.5rem 0 0"
 						}}
 					>
-						<div className="autofit-row autofit-padded">
+						<div
+							className="autofit-row autofit-padded"
+							ref={this.focusRef}
+						>
 							<div className="autofit-col autofit-col-expand">
 								<span style={{ fontSize: "1.0rem", fontWeight: "800" }}>{this.title}</span>
 							</div>
