@@ -179,11 +179,11 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[StructuredDataEditor] listenerComponentWillUnmount rejected: ", dataPacket);
+			//console.log("[StructuredDataEditor] listenerComponentWillUnmount rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[StructuredDataEditor] listenerComponentWillUnmount received: ", dataPacket);
+		//console.log("[StructuredDataEditor] listenerComponentWillUnmount received: ", dataPacket);
 		this.componentWillUnmount();
 	};
 

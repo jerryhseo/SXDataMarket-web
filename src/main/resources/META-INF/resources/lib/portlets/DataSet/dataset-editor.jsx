@@ -87,7 +87,7 @@ class DataSetEditor extends SXBaseVisualizer {
 		this.displayName = ParameterUtil.createParameter({
 			namespace: this.namespace,
 			formId: this.formId,
-			paramtype: ParamType.STRING,
+			paramType: ParamType.STRING,
 			properties: {
 				paramCode: "displayName",
 				localized: true,
@@ -138,7 +138,8 @@ class DataSetEditor extends SXBaseVisualizer {
 				displayName: Util.getTranslationObject(this.languageId, "required-properties"),
 				viewType: ParameterConstants.GroupViewTypes.FIELDSET,
 				members: [this.dataSetCode, this.dataSetVersion, this.displayName],
-				membersPerRow: 3
+				membersPerRow: 3,
+				expanded: true
 			}
 		});
 
@@ -170,23 +171,23 @@ class DataSetEditor extends SXBaseVisualizer {
 		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
 
 		if (!dataPacket) {
-			console.log("[dataSetEditor] listenerFieldValueChanged rejected: ", dataPacket);
+			//console.log("[dataSetEditor] listenerFieldValueChanged rejected: ", dataPacket);
 
 			return;
 		}
 
-		console.log("[dataSetEditor] listenerFieldValueChanged received: ", dataPacket);
+		//console.log("[dataSetEditor] listenerFieldValueChanged received: ", dataPacket);
 	};
 
 	listenerWorkbenchReady = (event) => {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[dataSetEditor] listenerWorkbenchReady event rejected: ", dataPacket);
+			//console.log("[dataSetEditor] listenerWorkbenchReady event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[dataSetEditor] listenerWorkbenchReady received: ", dataPacket);
+		//console.log("[dataSetEditor] listenerWorkbenchReady received: ", dataPacket);
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.loadDataSet,
 			params: {
@@ -201,11 +202,11 @@ class DataSetEditor extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[dataSetEditor] listenerResponse rejected: ", dataPacket);
+			//console.log("[dataSetEditor] listenerResponse rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[dataSetEditor] listenerResponse received: ", dataPacket);
+		//console.log("[dataSetEditor] listenerResponse received: ", dataPacket);
 
 		switch (dataPacket.requestId) {
 			case Workbench.RequestIDs.loadDataSet: {
@@ -250,12 +251,12 @@ class DataSetEditor extends SXBaseVisualizer {
 					});
 				}
 
-				console.log("[dataSetEditor] response this.dataTypes: ", this.dataTypes);
+				//console.log("[dataSetEditor] response this.dataTypes: ", this.dataTypes);
 
 				break;
 			}
 			case Workbench.RequestIDs.saveDataSet: {
-				console.log("DataSetEditor.listenerResponse.saveDataSet: ", dataPacket.data);
+				//console.log("DataSetEditor.listenerResponse.saveDataSet: ", dataPacket.data);
 
 				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
 				this.dialogBody = Util.translate("dataset-saved-as", dataPacket.data.dataSetId);
@@ -289,11 +290,11 @@ class DataSetEditor extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataTypeEditor] listenerComponentWillUnmount rejected: ", dataPacket);
+			//console.log("[DataTypeEditor] listenerComponentWillUnmount rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataTypeEditor] listenerComponentWillUnmount received: ", dataPacket);
+		//console.log("[DataTypeEditor] listenerComponentWillUnmount received: ", dataPacket);
 		this.componentWillUnmount();
 	};
 
@@ -310,7 +311,7 @@ class DataSetEditor extends SXBaseVisualizer {
 	}
 
 	componentWillUnmount() {
-		console.log("[DataSetEditor] componentWillUnmount");
+		//console.log("[DataSetEditor] componentWillUnmount");
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.off(Event.SX_RESPONSE, this.listenerResponse);
@@ -372,7 +373,7 @@ class DataSetEditor extends SXBaseVisualizer {
 
 	handleSaveClick = () => {
 		const error = this.checkFieldError();
-		console.log("handleSaveClick: ", error);
+		//console.log("handleSaveClick: ", error);
 		if (Util.isNotEmpty(error)) {
 			if (error.errorClass === ErrorClass.ERROR) {
 				this.dialogHeader = SXModalUtil.errorDlgHeader(this.spritemap);
@@ -402,27 +403,26 @@ class DataSetEditor extends SXBaseVisualizer {
 	};
 
 	saveDataSet = () => {
-		const associatedDataTypeIds = this.dataTypes.getValue();
+		//console.log("associatedDataTypeIDs: ", this.dataTypes.getValue());
 
-		/*
-		const associatedDataTypes = this.availableDataTypeList.filter((dataType) => {
-			console.log("Filter: ", dataType.dataTypeId, typeof dataType.dataTypeId);
-			return associatedDataTypeIds.includes(dataType.dataTypeId);
-		});
-		*/
+		const params = {
+			dataSetId: this.dataSetId,
+			dataSetCode: this.dataSetCode.getValue(),
+			dataSetVersion: this.dataSetVersion.getValue(),
+			associatedDataTypes: this.dataTypes.getValue()
+		};
 
-		console.log("associatedDataTypeIDs: ", associatedDataTypeIds);
+		if (this.displayName.hasValue()) {
+			params.displayName = JSON.stringify(this.displayName.getValue());
+		}
+
+		if (this.description.hasValue()) {
+			params.description = JSON.stringify(this.description.getValue());
+		}
 
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.saveDataSet,
-			params: {
-				dataSetId: this.dataSetId,
-				dataSetCode: this.dataSetCode.getValue(),
-				dataSetVersion: this.dataSetVersion.getValue(),
-				displayName: JSON.stringify(this.displayName.getValue()),
-				description: JSON.stringify(this.description.getValue()),
-				associatedDataTypes: associatedDataTypeIds
-			}
+			params: params
 		});
 	};
 

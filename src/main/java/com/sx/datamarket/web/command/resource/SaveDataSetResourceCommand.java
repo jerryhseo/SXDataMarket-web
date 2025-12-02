@@ -73,12 +73,14 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 		String description = ParamUtil.getString(resourceRequest, "description", "{}");
 		String associatedDataTypes = ParamUtil.getString(resourceRequest, "associatedDataTypes", "[]");
 		
+		/*
 		System.out.println("dataSetCode: " + dataSetCode);
 		System.out.println("dataSetId: " + dataSetId);
 		System.out.println("dataSetVersion: " + dataSetVersion);
 		System.out.println("displayName: " + displayName);
 		System.out.println("description: " + description);
 		System.out.println("associatedDataTypes: " + associatedDataTypes);
+		*/
 		
 		ServiceContext dataSetSC = ServiceContextFactory.getInstance(DataSet.class.getName(), resourceRequest);
 		
@@ -129,15 +131,18 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 			
 			SetTypeLink setTypeLink = _setTypeLinkLocalService.getSetTypeLink(dataSetId, dataTypeId);
 			if( Validator.isNull(setTypeLink)) {
+				/*
 				System.out.println("Save DataSet dataSetId: " + dataSetId);
 				System.out.println("Save DataSet dataTypeId: " + dataTypeId);
-				System.out.println("Save DataSet Order: " + order);
+				System.out.println("Save DataSet Osrder: " + order);
+				*/
 				_setTypeLinkLocalService.addSetTypeLink(dataSetId, dataTypeId, order);
-			} else {
+			} 
+			/* else {
 				System.out.println("Save DataSet Link found dataSetId: " + setTypeLink.getDataSetId());
 				System.out.println("Save DataSet Link found dataTypeId: " + setTypeLink.getDataTypeId());
 				System.out.println("Save DataSet Link found order: " + setTypeLink.getOrder());
-			}
+			} */
 		}
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();

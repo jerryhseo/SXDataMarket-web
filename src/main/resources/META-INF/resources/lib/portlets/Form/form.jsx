@@ -90,11 +90,10 @@ export class SXTitleBar extends React.Component {
 	}
 
 	handlerQMarkClicked = () => {
-		console.log("SXTitleBar: QMark clicked: " + this.commentInputOpened);
-		//this.parameter.fireAddComment();
+		//console.log("SXTitleBar: QMark clicked: " + this.commentInputOpened);
 
 		this.commentInputOpened = !this.commentInputOpened;
-		console.log("[SXTitleBar] handlerQMarkClicked: ", this.commentInputOpened);
+		//console.log("[SXTitleBar] handlerQMarkClicked: ", this.commentInputOpened);
 		Event.fire(Event.SX_OPEN_COMMENTS, this.namespace, this.namespace, {
 			targetFormId: this.formId,
 			open: this.commentInputOpened

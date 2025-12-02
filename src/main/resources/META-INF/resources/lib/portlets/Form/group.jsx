@@ -14,6 +14,8 @@ class SXGroup extends SXBaseParameterComponent {
 		this.state = {
 			expanded: this.parameter.expanded
 		};
+
+		console.log("[SXGroup props] ", this.props);
 	}
 
 	listenerParameterSelected = (event) => {
@@ -283,10 +285,20 @@ class SXGroup extends SXBaseParameterComponent {
 	}
 
 	render() {
+		/*
+		console.log(
+			"[SXGroup render] ",
+			this.parameter.viewType,
+			ParameterConstants.GroupViewTypes,
+			this.parameter.viewType === ParameterConstants.GroupViewTypes.FIELDSET
+		);
+		*/
 		let content;
 		switch (this.parameter.viewType) {
 			case ParameterConstants.GroupViewTypes.ARRANGEMENT: {
 				content = this.renderArrangement();
+
+				break;
 			}
 			case ParameterConstants.GroupViewTypes.FIELDSET: {
 				content = (
@@ -295,12 +307,18 @@ class SXGroup extends SXBaseParameterComponent {
 						{this.renderArrangement()}
 					</div>
 				);
+
+				break;
 			}
 			case ParameterConstants.GroupViewTypes.PANEL: {
 				content = this.renderPanel();
+
+				break;
 			}
 			case ParameterConstants.GroupViewTypes.TABLE: {
 				content = this.renderTable();
+
+				break;
 			}
 			default: {
 				content = this.renderPanel();

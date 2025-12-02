@@ -4659,7 +4659,7 @@ export class StringParameter extends Parameter {
 	getValue(cellIndex) {
 		const value = super.getValue(cellIndex);
 
-		return this.localized ? value ?? {} : value ?? "";
+		return this.localized ? (Util.isNotEmpty(value) ? value : {}) : value ?? "";
 	}
 
 	initValue(cellIndex) {

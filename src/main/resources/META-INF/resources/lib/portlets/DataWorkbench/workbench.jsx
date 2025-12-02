@@ -661,6 +661,14 @@ export class SXPortletWindow extends React.Component {
 		//Util.html(this.portletBody, this.content);
 	}
 
+	componentWillUnmount() {
+		console.log("SXPortletWindow will unmount");
+
+		Event.fire(Event.SX_COMPONENT_WILL_UNMOUNT, this.namespace, this.portletNamespace, {
+			targetPortlet: this.portletNamespace
+		});
+	}
+
 	handleClick = (e) => {
 		e.stopPropagation();
 
