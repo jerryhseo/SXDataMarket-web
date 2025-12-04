@@ -79,7 +79,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		console.log("DataStructureBuilder props: ", props);
+		//console.log("DataStructureBuilder props: ", props);
 
 		this.typeStructureLink = null;
 		this.dataType = null;

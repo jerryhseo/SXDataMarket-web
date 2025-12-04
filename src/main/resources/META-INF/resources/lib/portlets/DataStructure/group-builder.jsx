@@ -16,7 +16,7 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
 		super(props);
 
 		this.groupParam = props.groupParam;
-		console.log("[SXGroupBuilder] constructor: ", this.dataStructure);
+		//console.log("[SXGroupBuilder] constructor: ", this.dataStructure);
 
 		this.availableParamTypes = props.availableParamTypes;
 		this.memberDisplayType = props.memberDisplayType;
@@ -115,6 +115,7 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
 			return;
 		} else {
 			if (dataPacket.targetFormId == this.componentId) {
+				/*
 				console.log(
 					"SXGroupBuilder SX_FIELD_VALUE_CHANGED: ",
 					dataPacket,
@@ -122,6 +123,7 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
 					this.fieldMemberCode,
 					this.fieldMemberDisplayName
 				);
+				*/
 
 				if (dataPacket.parameter.hasError()) {
 					this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
@@ -181,10 +183,10 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
-			console.log("listenerPopActionClicked event rejected: ", dataPacket);
+			//console.log("listenerPopActionClicked event rejected: ", dataPacket);
 			return;
 		}
-		console.log("listenerPopActionClicked: ", dataPacket);
+		//console.log("listenerPopActionClicked: ", dataPacket);
 		const error = this.checkError();
 		if (Util.isNotEmpty(error)) {
 			this.openErrorDlg(Util.translate("fix-the-error-first", error.errorMessage));
@@ -311,6 +313,7 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
 			return;
 		}
 
+		//console.log("[SXGroupBuilder handleMemberTypeSelect] ", this.namespace);
 		const member = ParameterUtil.createParameter({
 			namespace: this.namespace,
 			formId: this.groupParam.componentId,

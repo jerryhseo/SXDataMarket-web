@@ -151,6 +151,8 @@ class SXNumericTypeOptionForm extends SXBasePropertiesPanelComponent {
 				this.workingParam.fireRefreshPreview();
 			}
 		}
+
+		this.forceUpdate();
 	};
 
 	componentDidMount() {

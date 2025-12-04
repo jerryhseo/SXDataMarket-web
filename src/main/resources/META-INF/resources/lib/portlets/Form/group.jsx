@@ -22,11 +22,11 @@ class SXGroup extends SXBaseParameterComponent {
 		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
-			//console.log("[SXGroup]  SX_PARAMETER_SELECTED rejected: ", event.dataPacket);
+			console.log("[SXGroup]  SX_PARAMETER_SELECTED rejected: ", event.dataPacket);
 			return;
 		}
 
-		//console.log("[SXGroup] SX_PARAMETER_SELECTED: ", parameter);
+		console.log("[SXGroup] SX_PARAMETER_SELECTED: ", parameter);
 		this.parameter.fire(Event.SX_PARAMETER_SELECTED, { parameter: parameter });
 	};
 

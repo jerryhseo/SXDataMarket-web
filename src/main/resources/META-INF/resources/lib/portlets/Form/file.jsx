@@ -7,6 +7,7 @@ import DropDown from "@clayui/drop-down";
 import { SXModalDialog } from "../../stationx/modal";
 import { UnderConstruction } from "../../stationx/common";
 import ParameterConstants from "../Parameter/parameter-constants";
+import Icon from "@clayui/icon";
 
 class SXFile extends SXBaseParameterComponent {
 	constructor(props) {

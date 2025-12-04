@@ -15,13 +15,14 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 	constructor(props) {
 		super(props);
 
-		console.log("SXSelectOptionBuilder constructor: ", props);
+		//console.log("SXSelectOptionBuilder constructor: ", props);
 
 		this.selectedOption = this.workingParam.getOption(0) ?? {};
 		this.setWorkingOption();
 
 		this.state = {
 			optionValueDuplicated: false,
+			actionRefreshKey: Util.randomKey(),
 			confirmDlgState: false,
 			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
 			confirmDlgBody: <></>
@@ -166,7 +167,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 			return;
 		}
 
-		console.log("SXSelectOptionBuilder listenerPopActionClicked: ", dataPacket, this.workingParam);
+		//console.log("SXSelectOptionBuilder listenerPopActionClicked: ", dataPacket, this.workingParam);
 		switch (dataPacket.action) {
 			case "copy": {
 				this.copyOption(dataPacket.data);
@@ -190,7 +191,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 			}
 		}
 
-		this.actionRefreshKey = Util.randomKey();
+		this.setState({ actionRefreshKey: Util.randomKey() });
 	};
 
 	componentDidMount() {
@@ -228,7 +229,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 		this.forceUpdate();
 	};
 
-	handleAddOption(event) {
+	handleAddOption = (event) => {
 		//console.log("handleAddOption: ", this.workingOption);
 		event.stopPropagation();
 
@@ -247,31 +248,25 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 
 		this.workingParam.fireRefresh();
 
-		this.forceUpdate();
-	}
+		this.setState({ actionRefreshKey: Util.randomKey() });
+	};
 
 	copyOption = (index) => {
 		this.workingOption = this.selectedOption = this.workingParam.copyOption(index);
 
 		this.workingParam.fireRefresh();
-
-		this.forceUpdate();
 	};
 
 	moveOptionUp = (index) => {
 		this.workingParam.moveOptionUp(index);
 
 		this.workingParam.fireRefresh();
-
-		this.forceUpdate();
 	};
 
 	moveOptionDown = (index) => {
 		this.workingParam.moveOptionDown(index);
 
 		this.workingParam.fireRefresh();
-
-		this.forceUpdate();
 	};
 
 	removeOption = (index) => {
@@ -286,8 +281,6 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 
 		this.selectedOption = {};
 		this.workingOption = {};
-
-		this.forceUpdate();
 	};
 
 	checkError() {
@@ -311,7 +304,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 		});
 	}
 
-	handleOptionSelected(option) {
+	handleOptionSelected = (option) => {
 		const error = this.checkError();
 		if (Util.isNotEmpty(error)) {
 			this.openErrorDlg(Util.translate("fix-the-error-first", error.errorMessage));
@@ -332,7 +325,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 		this.workingOption = this.selectedOption = option;
 
 		this.forceUpdate();
-	}
+	};
 
 	render() {
 		/*
@@ -455,7 +448,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 									<Cell textAlign="center">
 										<div style={{ backgroundColor: selected ? selectedColor : "inherit" }}>
 											<SXActionDropdown
-												key={this.actionRefreshKey}
+												key={this.state.actionRefreshKey}
 												namespace={this.namespace}
 												formId={this.componentId}
 												actionItems={actionItems}

@@ -25,14 +25,18 @@ class SXInput extends SXBaseParameterComponent {
 
 		this.parameter.setValue({ value: value, cellIndex: this.cellIndex, validate: true });
 		this.setState({ value: value });
+
+		this.parameter.fireValueChanged(this.cellIndex);
 	}
 
 	fireValueChanged(value) {
+		/*
 		if (value == this.initValue) {
 			return;
 		}
 
 		this.parameter.fireValueChanged(this.cellIndex);
+		*/
 	}
 
 	renderGridCell() {
@@ -49,7 +53,6 @@ class SXInput extends SXBaseParameterComponent {
 				onClick={(e) => {
 					this.parameter.fireGridCellSelected(this.cellIndex);
 				}}
-				onBlur={(e) => this.fireValueChanged(e.target.value)}
 				sizing="sm"
 				style={{ ...this.disabledControlStyle, border: "none" }}
 				ref={this.inputRef}
@@ -74,7 +77,6 @@ class SXInput extends SXBaseParameterComponent {
 						onClick={(e) => {
 							this.parameter.fireGridCellSelected(this.cellIndex);
 						}}
-						onBlur={(e) => this.fireValueChanged(e.target.value)}
 						sizing="sm"
 						style={{ ...this.disabledControlStyle, border: "none" }}
 						ref={this.inputRef}
@@ -119,7 +121,6 @@ class SXInput extends SXBaseParameterComponent {
 							sizing="sm"
 							rows="3"
 							onChange={(e) => this.handleChange(e.target.value)}
-							onBlur={(e) => this.fireValueChanged(e.target.value)}
 							ref={this.inputRef}
 							style={{ ...textareaStyle, ...this.disabledControlStyle }}
 						/>

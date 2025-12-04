@@ -180,37 +180,37 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 			})
 		};
 
-		console.log("[SXDSBuilderBasicPropertiesPanel constructor] ", props);
+		//console.log("[SXDSBuilderBasicPropertiesPanel constructor] ", props);
 	}
 
-	listenerValueChanged = (e) => {
-		const dataPacket = e.dataPacket;
+	listenerValueChanged = (event) => {
+		const { targetPortlet, targetFormId, parameter, paramCode, paramVersion } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
 			return;
 		}
 
 		/*
 		console.log(
 			"RECEIVED - SXDSBuilderBasicPropertiesPanel SX_FIELD_VALUE_CHANGED: ",
-			dataPacket,
+			event.dataPacket,
 			this.dataStructure,
 			this.workingParam,
-			dataPacket.parameter,
-			dataPacket.parameter.getValue()
+			parameter,
+			parameter.getValue()
 		);
 		*/
 
-		if (dataPacket.parameter.hasError()) {
-			this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+		if (parameter.hasError()) {
+			this.dataStructure.setError(parameter.errorClass, parameter.errorMessage);
 			return;
 		}
 
-		const value = dataPacket.parameter.getValue();
+		const value = parameter.getValue();
 
-		this.workingParam[dataPacket.paramCode] = dataPacket.parameter.getValue();
+		this.workingParam[paramCode] = parameter.getValue();
 
-		if (dataPacket.paramCode == ParamProperty.PARAM_CODE) {
+		if (paramCode == ParamProperty.PARAM_CODE) {
 			const duplicated = this.dataStructure.checkDuplicateParamCode(this.workingParam);
 			if (duplicated) {
 				this.fields.paramCode.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
@@ -220,7 +220,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 
 				return;
 			}
-		} else if (dataPacket.paramCode == ParamProperty.PARAM_VERSION) {
+		} else if (paramCode == ParamProperty.PARAM_VERSION) {
 			if (Util.isEmpty(this.workingParam.paramCode) || this.fields.paramCode.hasError()) {
 				this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-code-is-missing"));
 				this.openErrorDlg(Util.translate("input-parameter-code-first"));
@@ -269,9 +269,11 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 
 		if (Util.isNotEmpty(error)) {
 			this.dataStructure.setError(error.errorClass, error.errorMessage);
+			this.workingParam.setError(error.errorClass, error.errorMessage);
 			return error;
 		} else {
 			this.dataStructure.clearError();
+			this.workingParam.clearError();
 		}
 
 		return error;

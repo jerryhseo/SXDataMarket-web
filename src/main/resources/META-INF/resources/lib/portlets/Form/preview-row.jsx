@@ -60,7 +60,7 @@ class SXPreviewRow extends SXBaseParameterComponent {
 	};
 
 	handleActionClick(actionId) {
-		console.log("SXPreviewRow: ", actionId, this.parameter, this.formId);
+		//console.log("SXPreviewRow: ", actionId, this.parameter, this.formId);
 
 		switch (actionId) {
 			case "group": {

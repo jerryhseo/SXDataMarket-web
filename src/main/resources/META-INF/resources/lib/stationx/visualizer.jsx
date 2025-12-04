@@ -1,5 +1,5 @@
 import React from "react";
-import { Event, LoadingStatus } from "./station-x";
+import { Event, ExecutionMode, LoadingStatus } from "./station-x";
 import { Workbench } from "../portlets/DataWorkbench/workbench";
 
 export class Visualizer {
@@ -32,12 +32,16 @@ class SXBaseVisualizer extends React.Component {
 		this.workbenchId = props.workbenchPortletId;
 		this.portletId = props.portletId;
 		this.formId = props.portletId;
+		this.execMode = props.execMode ?? ExecutionMode.WORKBENCH_BASED;
 
 		this.permissions = props.permissions;
 		this.spritemap = props.spritemapPath;
 		this.imagePath = props.imagePath;
 		this.groupId = props.groupId;
-		this.userId = props.userId;
+
+		const user = SXSystem.getUser();
+		this.userId = user.userId;
+		this.userName = user.userName;
 
 		this.languageId = SXSystem.getLanguageId();
 		this.defaultLanguageId = SXSystem.getDefaultLanguageId();

@@ -20,7 +20,7 @@ class SXWorkbenchMenu extends React.Component {
 			dropDown: false
 		};
 
-		console.log("SXWorkbenchMenu: ", props);
+		//console.log("SXWorkbenchMenu: ", props);
 	}
 
 	handleMenuItemClick = (menuId) => {
@@ -67,7 +67,7 @@ class SXWorkbenchMenu extends React.Component {
 													<DropDown.Item
 														key={item.id}
 														onClick={(event) => {
-															console.log("menu item clicked: ", item);
+															//console.log("menu item clicked: ", item);
 
 															this.handleMenuItemClick(item.id);
 														}}

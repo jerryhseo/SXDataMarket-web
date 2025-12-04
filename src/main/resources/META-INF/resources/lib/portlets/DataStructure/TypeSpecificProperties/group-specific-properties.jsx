@@ -174,6 +174,7 @@ class SXGroupTypeOptionForm extends SXBasePropertiesPanelComponent {
 					this.fieldMembersPerRow.renderField({ spritemap: this.spritemap })}
 				{this.fieldExpanded.renderField({ spritemap: this.spritemap })}
 				<SXGroupBuilder
+					namespace={this.namespace}
 					dataStructure={this.dataStructure}
 					groupParam={this.workingParam}
 					spritemap={this.spritemap}

@@ -5,7 +5,7 @@ class SXDataCollectionNavigationBar extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("SXDataCollectionNavigationBar: ", props);
+		//console.log("SXDataCollectionNavigationBar: ", props);
 		this.namespace = props.namespace;
 		this.spritemap = props.spritemap;
 		this.navItems = props.navItems;

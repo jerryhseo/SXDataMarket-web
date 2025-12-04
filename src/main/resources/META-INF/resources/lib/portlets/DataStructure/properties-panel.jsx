@@ -159,7 +159,7 @@ class SXDSBuilderPropertiesPanel extends SXBasePropertiesPanelComponent {
 					paramVersion: this.workingParam.parent.version
 			  })
 			: this.dataStructure;
-		console.log("Group selector parentGroup: ", parentGroup, this.options);
+		//console.log("Group selector parentGroup: ", parentGroup, this.options);
 
 		return (
 			<>

@@ -1,6 +1,6 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { Event, LoadingStatus } from "../../stationx/station-x";
+import { Event, ExecutionMode, LoadingStatus } from "../../stationx/station-x";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
 import DataStructure from "../DataStructure/data-structure";
@@ -52,8 +52,6 @@ class StructuredDataEditor extends SXBaseVisualizer {
 	}
 
 	setEditState() {
-		this.editState = StructuredDataEditor.EditState.WAIT;
-
 		if (this.structuredDataId > 0) {
 			this.editState = StructuredDataEditor.EditState.UPDATE;
 		} else {
@@ -175,6 +173,30 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		this.setState({ loadingStatus: dataPacket.status });
 	};
 
+	listenerFieldValueChanged = (event) => {
+		const { targetPortlet } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace) {
+			//console.log("[StructuredDataEditor] listenerComponentWillUnmount rejected: ", dataPacket);
+			return;
+		}
+
+		//console.log("[StructuredDataEditor] listenerComponentWillUnmount received: ", dataPacket);
+		if (this.execMode === ExecutionMode.WORKBENCH_BASED) {
+			Event.fire(Event.SX_REQUEST, this.namespace, this.workbenchNamespace, {
+				requestId: Workbench.RequestIDs.saveStructuredData,
+				params: {
+					dataCollectionId: this.dataCollectionId,
+					dataSetId: this.dataSetId,
+					dataTypeId: this.dataTypeId,
+					structuredDataId: this.dataStructureId,
+					data: this.dataStructure.toData()
+				}
+			});
+		} else {
+		}
+	};
+
 	listenerComponentWillUnmount = (event) => {
 		const dataPacket = event.dataPacket;
 
@@ -216,6 +238,17 @@ class StructuredDataEditor extends SXBaseVisualizer {
 
 	handleSaveData = () => {
 		console.log("handleSaveData: ", this.dataStructure.toData());
+
+		Event.fire(Event.SX_REQUEST, this.namespace, this.workbenchNamespace, {
+			requestId: Workbench.RequestIDs.saveStructuredData,
+			params: {
+				dataCollectionId: this.dataCollectionId,
+				dataSetId: this.dataSetId,
+				dataTypeId: this.dataTypeId,
+				structuredDataId: this.dataStructureId,
+				data: this.dataStructure.toData()
+			}
+		});
 	};
 
 	handleCancel = () => {

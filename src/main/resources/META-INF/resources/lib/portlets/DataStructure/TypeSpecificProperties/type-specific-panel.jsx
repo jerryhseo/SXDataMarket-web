@@ -23,6 +23,7 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.STRING: {
 				return (
 					<SXStringTypeOptionForm
+						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -33,6 +34,7 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.NUMERIC: {
 				return (
 					<SXNumericTypeOptionForm
+						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -43,6 +45,7 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.SELECT: {
 				return (
 					<SXSelectTypeOptionForm
+						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -53,6 +56,7 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.DUALLIST: {
 				return (
 					<SXDualListTypeOptionForm
+						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -63,6 +67,7 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.BOOLEAN: {
 				return (
 					<SXBooleanTypeOptionForm
+						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -73,6 +78,7 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.PHONE: {
 				return (
 					<SXPhoneTypeOptionForm
+						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -83,6 +89,7 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.ADDRESS: {
 				return (
 					<SXAddressTypeOptionForm
+						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -93,6 +100,7 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.DATE: {
 				return (
 					<SXDateTypeOptionForm
+						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -103,6 +111,7 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.GROUP: {
 				return (
 					<SXGroupTypeOptionForm
+						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}
@@ -113,6 +122,7 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.GRID: {
 				return (
 					<SXGridTypeOptionForm
+						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}
 						workingParam={this.workingParam}

@@ -48,12 +48,14 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		const dataPacket = event.dataPacket;
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) return;
 
+		/*
 		console.log(
 			"[SXDataStructurePreviewer] SX_FIELD_VALUE_CHANGED RECEIVED: ",
 			dataPacket,
 			this.dataStructure,
 			this.dataStructure.members
 		);
+		*/
 
 		if (this.typeStructureLink.inputStatus) {
 			this.forceUpdate();

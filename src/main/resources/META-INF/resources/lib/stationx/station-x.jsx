@@ -855,3 +855,8 @@ export const IconNames = {
 	COMMENTS: "<%= contextPath %>/asset/images/comments.svg",
 	Q_MARK: "<%= contextPath %>/asset/images/q-mark.svg"
 };
+
+export const ExecutionMode = {
+	STAND_ALONE: 0,
+	WORKBENCH_BASED: 1
+};
