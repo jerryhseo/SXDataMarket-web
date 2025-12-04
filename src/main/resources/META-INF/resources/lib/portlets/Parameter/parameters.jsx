@@ -645,7 +645,7 @@ class Parameter {
 	}
 
 	refreshKey() {
-		console.log("Parameter key refreshed: ", this.paramCode);
+		//console.log("Parameter key refreshed: ", this.paramCode);
 		this.key = Util.randomKey();
 
 		return this.key;
@@ -656,7 +656,7 @@ class Parameter {
 	}
 
 	hasReferenceFile() {
-		return Util.isNotEmpty(this.referenceFile);
+		return Util.isNotEmpty(this.referenceFile) && this.referenceFile.fileId > 0;
 	}
 
 	checkDuplicateParamCode(param) {

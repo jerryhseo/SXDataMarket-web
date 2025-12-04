@@ -330,6 +330,8 @@ export class SXDataTypeStructureLink extends React.Component {
 	constructor(props) {
 		super(props);
 
+		//console.log("[SXDataTypeStructureLink props] ", props);
+
 		this.namespace = props.namespace;
 		this.formId = props.formId;
 		this.languageId = SXSystem.getLanguageId();
@@ -464,7 +466,7 @@ export class SXDataTypeStructureLink extends React.Component {
 			return;
 		}
 
-		console.log("SXDaTypeStructureLink value changed: ", dataPacket);
+		//console.log("SXDaTypeStructureLink value changed: ", dataPacket);
 
 		switch (dataPacket.paramCode) {
 			case "commentable": {
@@ -515,7 +517,7 @@ export class SXDataTypeStructureLink extends React.Component {
 			targetFormId: this.formId,
 			typeStructureLink: this.typeStructureLink
 		});
-		console.log("Component value changed: ", dataPacket, this.typeStructureLink, this.dataStructure);
+		//console.log("Component value changed: ", dataPacket, this.typeStructureLink, this.dataStructure);
 	};
 
 	componentDidMount() {
@@ -527,6 +529,8 @@ export class SXDataTypeStructureLink extends React.Component {
 	}
 
 	render() {
+		//console.log("[SXDataTypeStructureLink.render] ", this.dataType);
+
 		return (
 			<div style={{ marginTop: "2rem" }}>
 				{this.dataTypeViewMode !== DataTypeStructureLink.ViewTypes.NONE && (

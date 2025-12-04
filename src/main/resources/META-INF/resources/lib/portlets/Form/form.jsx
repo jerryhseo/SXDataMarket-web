@@ -6,7 +6,7 @@ import Button from "@clayui/button";
 import { Util } from "../../stationx/util";
 import { Text } from "@clayui/core";
 import { SXFreezeIcon, SXLinkIcon, SXQMarkIcon, SXVerifyIcon } from "../../stationx/icon";
-import { Event } from "../../stationx/station-x";
+import { EditStatus, Event } from "../../stationx/station-x";
 
 export const SXRequiredMark = ({ spritemap }) => {
 	return (
@@ -68,6 +68,7 @@ export class SXTitleBar extends React.Component {
 		this.formId = props.formId;
 		this.spritemap = props.spritemap;
 		this.parameter = props.parameter;
+		this.displayMode = props.displayMode ?? EditStatus.PREVIEW;
 		this.style = props.style ?? { marginBottom: "0.4rem", fontSize: "0.85rem", fontWeight: "600" };
 
 		this.title = this.parameter.label;
@@ -78,6 +79,7 @@ export class SXTitleBar extends React.Component {
 		this.refLink = this.parameter.hasReferenceFile();
 		this.inputStatus = this.parameter.inputStatus ?? false;
 		this.commentable = this.parameter.commentable ?? false;
+		this.hasComments = this.parameter.hasComments();
 		this.commentFreezed = this.parameter.commentFreezed ?? false;
 		this.verifiable = this.parameter.verifiable ?? false;
 		this.freezable = this.parameter.freezable ?? false;
@@ -115,6 +117,17 @@ export class SXTitleBar extends React.Component {
 				: "sx-control-label no-value"
 			: "sx-control-label";
 
+		const commentIconColor = this.hasComments ? (this.commentFreezed ? "#dfdfdf" : "#ffff00") : "#ffff00";
+		const verifyIconColor = this.verified ? "#dfdfdf" : "#ffff00";
+		const freezeIconColor = this.freezed ? "#dfdfdf" : "#ffff00";
+		/*
+		console.log(
+			"[SXTitleBar render] ",
+			this.refLink,
+			this.parameter.hasReferenceFile(),
+			this.parameter.referenceFile
+		);
+		*/
 		return (
 			<div
 				className="autofit-row autofit-padding"
@@ -163,13 +176,16 @@ export class SXTitleBar extends React.Component {
 				>
 					{this.commentable && (
 						<span style={{ marginRight: "0.4rem" }}>
-							<SXQMarkIcon onClick={this.handlerQMarkClicked} />
+							<SXQMarkIcon
+								fillColor={commentIconColor}
+								onClick={this.handlerQMarkClicked}
+							/>
 						</span>
 					)}
 					{this.verifiable && (
 						<span style={{ marginRight: "0.4rem" }}>
 							<SXVerifyIcon
-								verified={this.verified}
+								fillColor={verifyIconColor}
 								onClick={() => this.handlerVerifyClicked()}
 							/>
 						</span>
@@ -177,6 +193,7 @@ export class SXTitleBar extends React.Component {
 					{this.freezable && (
 						<span style={{ marginRight: "0.4rem" }}>
 							<SXFreezeIcon
+								fillColor={freezeIconColor}
 								freezed={this.freezed}
 								onClick={() => this.handlerFreezeClicked()}
 							/>

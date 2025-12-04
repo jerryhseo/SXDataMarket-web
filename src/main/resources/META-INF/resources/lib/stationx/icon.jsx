@@ -21,7 +21,7 @@ export const SXCommentIcon = ({ width = "0.875rem", height = "0.85rem" }) => {
 	);
 };
 
-export const SXFreezeIcon = ({ width = "0.875rem", height = "0.85rem", freezed = false }) => {
+export const SXFreezeIcon = ({ width = "0.875rem", height = "0.85rem", fillColor, freezed = false }) => {
 	if (freezed) {
 		return (
 			<svg
@@ -29,7 +29,7 @@ export const SXFreezeIcon = ({ width = "0.875rem", height = "0.85rem", freezed =
 				width={width}
 				height={height}
 				viewBox="0 0 24 24"
-				fill="#b0adadff"
+				fill={fillColor}
 				stroke="currentColor"
 				strokeWidth="2"
 				strokeLinecap="round"
@@ -60,7 +60,7 @@ export const SXFreezeIcon = ({ width = "0.875rem", height = "0.85rem", freezed =
 				width={width}
 				height={height}
 				viewBox="0 0 24 24"
-				fill="#f1aaaaff"
+				fill={fillColor}
 				stroke="currentColor"
 				strokeWidth="2"
 				strokeLinecap="round"
@@ -87,8 +87,7 @@ export const SXFreezeIcon = ({ width = "0.875rem", height = "0.85rem", freezed =
 	}
 };
 
-export const SXVerifyIcon = ({ width = "0.875rem", height = "0.85rem", verified = false, onClick }) => {
-	const fillColor = verified ? "#1aee36ff" : "#f64223ff";
+export const SXVerifyIcon = ({ width = "0.875rem", height = "0.85rem", fillColor, onClick }) => {
 	return (
 		<svg
 			xmlns="http://www.w3.org/2000/svg"

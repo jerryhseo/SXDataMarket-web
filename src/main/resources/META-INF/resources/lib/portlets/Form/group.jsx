@@ -34,7 +34,7 @@ class SXGroup extends SXBaseParameterComponent {
 		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) return;
 
-		//console.log("[SXGroup] SX_FIELD_VALUE_CHANGED RECEIVED: ", parameter);
+		console.log("[SXGroup] SX_FIELD_VALUE_CHANGED RECEIVED: ", parameter);
 		const groupValue = this.parameter.value;
 		groupValue[parameter.paramCode] = parameter.value;
 		this.parameter.value = groupValue;

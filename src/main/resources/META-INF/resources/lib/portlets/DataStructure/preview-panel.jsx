@@ -288,25 +288,11 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		});
 	}
 
-	handleManifestSDE = async () => {
+	handleManifestSDE = () => {
 		Event.fire(Event.SX_LOAD_PORTLET, this.namespace, this.namespace, {
 			targetFormId: this.formId,
 			portletName: PortletKeys.STRUCTURED_DATA_EDITOR
 		});
-
-		/*
-		try {
-			this.sde = await Workbench.loadPortlet({
-				windowState: WindowState.EXCLUSIVE,
-				portletId: PortletKeys.STRUCTURED_DATA_EDITOR,
-				workbenchNamespace: this.formId
-			});
-
-			this.setState({ manifestSDE: true });
-		} catch (err) {
-			console.log("error whilw manifesting SDE: ", err);
-		}
-			*/
 	};
 
 	render() {

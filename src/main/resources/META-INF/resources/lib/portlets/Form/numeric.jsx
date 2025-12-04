@@ -172,9 +172,6 @@ class SXNumeric extends SXBaseParameterComponent {
 								onChange={(e) => {
 									this.handleValueChanged(e.target.value);
 								}}
-								onBlur={(e) => {
-									this.parameter.fireValueChanged(this.cellIndex);
-								}}
 							/>
 						</ClayInput.GroupItem>
 					</ClayInput.Group>
@@ -199,9 +196,6 @@ class SXNumeric extends SXBaseParameterComponent {
 								max={max}
 								disabled={this.parameter.getDisabled(this.cellIndex)}
 								onChange={(e) => this.handleUncertaintyChanged(e.target.value)}
-								onBlur={(e) => {
-									this.parameter.fireValueChanged(this.cellIndex);
-								}}
 							/>
 						</ClayInput.GroupItem>
 					</>

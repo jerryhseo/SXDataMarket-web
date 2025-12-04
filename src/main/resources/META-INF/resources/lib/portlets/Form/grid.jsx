@@ -33,10 +33,8 @@ class SXGrid extends SXBaseParameterComponent {
 
 		console.log("[SXGrid] SX_FIELD_VALUE_CHANGED RECEIVED: ", parameter);
 
-		const gridValue = this.parameter.value;
-		this.parameter.columns.map((column) => {
-			gridValue[column.paramCode] = column.value;
-		});
+		const gridValue = this.parameter.value ?? {};
+		gridValue[parameter.paramCode] = parameter.value;
 		this.parameter.setValue({ value: gridValue });
 
 		console.log("[SXGrid] value: ", this.parameter.hasValue(), this.parameter.getValue());

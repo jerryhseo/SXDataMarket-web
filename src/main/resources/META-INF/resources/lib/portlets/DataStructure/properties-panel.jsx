@@ -35,7 +35,6 @@ class SXDSBuilderPropertiesPanel extends SXBasePropertiesPanelComponent {
 		this.state = {
 			panelStep: 0,
 			paramType: props.workingParam.paramType,
-			openSelectGroupModal: false,
 			confirmDlgState: false,
 			confirmDlgBody: <></>,
 			confirmDlgHeader: <></>
@@ -90,7 +89,10 @@ class SXDSBuilderPropertiesPanel extends SXBasePropertiesPanelComponent {
 	}
 
 	handleSelectGroup() {
-		this.setState({ openSelectGroupModal: true });
+		Event.fire(Event.SX_SELECT_GROUP, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			parameter: this.workingParam
+		});
 	}
 
 	renderPanelContent = () => {
@@ -217,38 +219,6 @@ class SXDSBuilderPropertiesPanel extends SXBasePropertiesPanelComponent {
 							</ClayInput.GroupItem>
 						</ClayInput.Group>
 					</Form.Group>
-				)}
-				{this.state.openSelectGroupModal && (
-					<SXModalDialog
-						header={Util.translate("select-group")}
-						body={
-							<GroupSelectorBody
-								key={this.workingParam}
-								namespace={this.namespace}
-								formIds={this.formIds}
-								dataStructure={this.dataStructure}
-								workingParam={this.workingParam}
-								optionType="radio"
-								spritemap={this.spritemap}
-							/>
-						}
-						buttons={[
-							{
-								onClick: () => {
-									this.setState({ openSelectGroupModal: false });
-
-									Event.fire(Event.SX_REFRESH_FORM, this.namespace, this.namespace, {
-										targetFormId: this.formIds.previewCanvasId
-									});
-								},
-								label: Util.translate("ok"),
-								displayType: "primary"
-							}
-						]}
-						status="info"
-						disableAutoClose="false"
-						spritemap={this.spritemap}
-					/>
 				)}
 				<ClayMultiStepNav
 					className="sx-multistep"

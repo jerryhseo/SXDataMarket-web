@@ -79,7 +79,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		//console.log("DataStructureBuilder props: ", props);
+		console.log("DataStructureBuilder props: ", props);
 
 		this.typeStructureLink = null;
 		this.dataType = null;
@@ -450,9 +450,9 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	};
 
 	listenerLoadPortlet = async (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, portletName } = event.dataPacket;
 
-		if (!(dataPacket.targetPortlet == this.namespace && dataPacket.targetFormId == this.componentId)) {
+		if (!(targetPortlet == this.namespace && targetFormId == this.componentId)) {
 			return;
 		}
 
@@ -462,10 +462,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		}
 
 		this.fireOpenPortletWindow({
-			portletName: dataPacket.portletName,
-			windowTitle: this.dataStructure.label + " " + Util.translate("preview"),
+			portletName: portletName,
+			windowTitle: Util.translate("preview"),
 			params: {
-				dataStructureId: this.dataStructure.dataStructureId
+				dataStructureId: this.dataStructure.dataStructureId,
+				subject: this.dataStructure.label
 			}
 		});
 	};
@@ -494,20 +495,20 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	};
 
 	listenerResponce = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, requestId, data, status } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
+		if (targetPortlet !== this.namespace) {
 			//console.log("[DataStructureBuilder] listenerResponce rejected: ", dataPacket);
 			return;
 		}
 
-		//console.log("[DataStructureBuilder] listenerResonse: ", dataPacket);
+		//console.log("[DataStructureBuilder] listenerResonse: ", event.dataPacket, requestId, data);
 		const state = {};
-		const result = dataPacket.data;
+		const result = data;
 
-		switch (dataPacket.requestId) {
+		switch (requestId) {
 			case Workbench.RequestIDs.loadDataStructure: {
-				this.dataType = new DataType(this.languageId, this.availableLanguageIds, result.dataType ?? {});
+				this.dataType = new DataType(result.dataType ?? {});
 				this.typeStructureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
 				this.typeStructureLink.parse(result.typeStructureLink ?? {});
 				if (this.dataType.dataTypeId > 0) {
@@ -547,6 +548,8 @@ class DataStructureBuilder extends SXBaseVisualizer {
 				if (this.workingParam.isRendered()) {
 					this.workingParam.focused = true;
 				}
+
+				this.setState({ dataTypeStructureLinkReloadKey: Util.randomKey() });
 
 				break;
 			}
@@ -594,7 +597,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			}
 		}
 
-		this.setState({ ...state, loadingStatus: dataPacket.status });
+		this.setState({ ...state, loadingStatus: status });
 	};
 
 	componentDidMount() {
@@ -759,11 +762,20 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			return <h3>{this.loadingFailMessage}</h3>;
 		}
 
-		//console.log("DataStructureBuilder render: ", this.dataStructure, this.workingParam);
+		/*
+		console.log(
+			"DataStructureBuilder render: ",
+			this.dataTypeId,
+			this.dataType,
+			this.dataStructure,
+			this.typeStructureLink,
+			this.workingParam
+		);
+		*/
 
 		return (
 			<>
-				{this.editPhase !== EditStatus.ADD && (
+				{this.dataTypeId > 0 && (
 					<SXDataTypeStructureLink
 						key={this.state.dataTypeStructureLinkReloadKey}
 						namespace={this.namespace}
