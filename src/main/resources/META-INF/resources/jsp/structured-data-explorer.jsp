@@ -16,8 +16,13 @@
 <%@ include file="./init.jsp" %>
 
 <%
+    long dataCollectionId = ParamUtil.getLong(renderRequest, "dataCollectionId", 0);
+    long dataSetId = ParamUtil.getLong(renderRequest, "dataSetId", 0);
     long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
-    long structuredDataId = ParamUtil.getLong(renderRequest, "structuredDataId", 0);
+    boolean checkbox = ParamUtil.getBoolean(renderRequest, "checkbox", true);
+    boolean breadcrumb = ParamUtil.getBoolean(renderRequest, "breadcrumb", false);
+    boolean addButton = ParamUtil.getBoolean(renderRequest, "addButton", true);
+    
 	JSONArray permissions = (JSONArray)GetterUtil.getObject(renderRequest.getAttribute("permissions"), JSONFactoryUtil.createJSONArray());
 	int start = GetterUtil.getInteger(renderRequest.getAttribute(StationXWebKeys.START), StationXConstants.DEFAULT_START);
 	int end = GetterUtil.getInteger(renderRequest.getAttribute(StationXWebKeys.END), StationXConstants.DEFAULT_END);
@@ -70,8 +75,12 @@
 				workbenchId: '<%= workbenchId %>',
 				workbenchURL: '<%= workbenchId %>',
 				params:{
+					dataCollectionId: Number('<%= dataCollectionId %>'),
+					dataSetId: Number('<%= dataSetId %>'),
 					dataTypeId: Number('<%= dataTypeId %>'),
-					structuredDataId: Number('<%= structuredDataId %>'),
+					checkbox: <%= checkbox %>,
+					addButton: <%= addButton %>,
+					breadcrumb: <%= breadcrumb %>,
 					start: Number('<%= start %>'),
 					delta: Number('<%= delta %>'),
 					status: Number('<%= status %>'),

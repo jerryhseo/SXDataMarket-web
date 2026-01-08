@@ -21,7 +21,7 @@ import org.osgi.service.component.annotations.Reference;
 
 @Component(
 		property = {
-				"javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
+				"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
 				"javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
 				"javax.portlet.name=" + WebPortletKey.SXDataStructureExplorerPortlet,
 				"mvc.command.name=" + MVCCommand.RESOURCE_DELETE_DATASTRUCTURES

@@ -15,18 +15,18 @@ class SXGroup extends SXBaseParameterComponent {
 			expanded: this.parameter.expanded
 		};
 
-		console.log("[SXGroup props] ", this.props);
+		//console.log("[SXGroup props] ", this.props);
 	}
 
 	listenerParameterSelected = (event) => {
 		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
-			console.log("[SXGroup]  SX_PARAMETER_SELECTED rejected: ", event.dataPacket);
+			//console.log("[SXGroup]  SX_PARAMETER_SELECTED rejected: ", event.dataPacket);
 			return;
 		}
 
-		console.log("[SXGroup] SX_PARAMETER_SELECTED: ", parameter);
+		//console.log("[SXGroup] SX_PARAMETER_SELECTED: ", parameter);
 		this.parameter.fire(Event.SX_PARAMETER_SELECTED, { parameter: parameter });
 	};
 
@@ -34,7 +34,7 @@ class SXGroup extends SXBaseParameterComponent {
 		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) return;
 
-		console.log("[SXGroup] SX_FIELD_VALUE_CHANGED RECEIVED: ", parameter);
+		//console.log("[SXGroup] SX_FIELD_VALUE_CHANGED RECEIVED: ", parameter);
 		const groupValue = this.parameter.value;
 		groupValue[parameter.paramCode] = parameter.value;
 		this.parameter.value = groupValue;
@@ -212,7 +212,7 @@ class SXGroup extends SXBaseParameterComponent {
 	renderPanel() {
 		return (
 			<Panel
-				key={Util.randomKey()}
+				key={this.parameter.key}
 				collapsable
 				displayTitle={
 					<Panel.Title key={Util.randomKey()}>

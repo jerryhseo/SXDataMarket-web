@@ -24,7 +24,7 @@ import org.osgi.service.component.annotations.Reference;
 
 @Component(
 		property = {
-				"javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
+				"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
 				"javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
 				"mvc.command.name=" + MVCCommand.RESOURCE_CHECK_DATASTRUCTURE_UNIQUE
 		},

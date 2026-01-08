@@ -1,5 +1,6 @@
 package com.sx.datamarket.web.portlet;
 
+import com.sx.icecap.constant.ActionKey;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.exception.NoSuchDataStructureException;
 import com.sx.icecap.exception.NoSuchTypeStructureLinkException;
@@ -9,6 +10,8 @@ import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.LocalizationUtil;
@@ -16,6 +19,7 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 
 import javax.portlet.Portlet;
 import javax.portlet.PortletException;
@@ -51,11 +55,20 @@ public class SXStructuredDataExplorerPortlet extends MVCPortlet {
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
 		
-		long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
-		long structuredDataId = ParamUtil.getLong(renderRequest, "structuredDataId", 0);
+		System.out.println("SXStructuredDataExplorerPortlet: " );
 		
-		System.out.println("SXStructuredDataExplorerPortlet: " + dataTypeId);
+		JSONArray permissions = JSONFactoryUtil.createJSONArray();
+		Field[] fields = ActionKey.class.getDeclaredFields();
+		for(int i=0; i<fields.length; i++) {
+			Field field = fields[i];
+			
+			boolean hasPermission = true; //DataTypeResourcePermissionHelper.contains(permissionChecker, themeDisplay.getScopeGroupId(), field.getName());
+			if (hasPermission) {
+				permissions.put(field.getName());
+			}
+		}
 		
+		renderRequest.setAttribute("permissions", permissions);
 		
 		super.doView(renderRequest, renderResponse);
 	}

@@ -47,7 +47,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
-	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
+	        "javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXStructuredDataExplorerPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_SEARCH_STRUCTURED_DATA
 	    },
@@ -59,16 +59,28 @@ public class SearchStructuredDataResourceCommand extends BaseMVCResourceCommand{
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
 		
+		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		
 		long dataCollectionId = ParamUtil.getLong(resourceRequest, WebKey.DATACOLLECTION_ID, 0);
 		long dataSetId = ParamUtil.getLong(resourceRequest, WebKey.DATASET_ID, 0);
 		long dataTypeId = ParamUtil.getLong(resourceRequest, WebKey.DATATYPE_ID, 0);
+		
+		int start = ParamUtil.getInteger(resourceRequest, StationXWebKeys.START, StationXConstants.DEFAULT_START);
+		int delta = ParamUtil.getInteger(resourceRequest, StationXWebKeys.DELTA, StationXConstants.DEFAULT_DELTA);
+		int end = start + delta - 1;
+		long groupId = ParamUtil.getLong(resourceRequest, StationXWebKeys.GROUP_ID, themeDisplay.getScopeGroupId());
+		long userId = ParamUtil.getLong(resourceRequest, StationXWebKeys.USER_ID, themeDisplay.getUserId());
+		
+		int status = ParamUtil.getInteger(resourceRequest, StationXWebKeys.STATUS, WorkflowConstants.STATUS_ANY);
+		String filterBy = ParamUtil.getString(resourceRequest, "filterBy", "groupId");
+		String groupBy = ParamUtil.getString(resourceRequest, "groupBy", "groupId");
+		String keywords = ParamUtil.getString(resourceRequest, StationXWebKeys.KEYWORDS, "");
 		
 		System.out.println("--- Start SearchStructuredDataResourceCommand:  " );
 		System.out.println("dataCollectionId: " + dataCollectionId);
 		System.out.println("dataSetId: " + dataSetId);
 		System.out.println("dataTypeId: " + dataTypeId);
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
 		
 		JSONObject dataList = 
 				_structuredDataLocalService.getStructuredDataListWithInfo( 

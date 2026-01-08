@@ -25,6 +25,27 @@ Mapping 7.2.0//EN" "http://www.liferay.com/dtd/liferay-resource-action-mapping_7
 	</portlet-resource>
 	
 	<portlet-resource>
+		<portlet-name>SXCollectionManagementPortlet</portlet-name>
+		<permissions>
+			<supports>
+				<action-key>ADD_TO_PAGE</action-key>
+				<action-key>CONFIGURATION</action-key>
+				<action-key>VIEW</action-key>
+			</supports>
+			<site-member-defaults>
+				<action-key>VIEW</action-key>
+			</site-member-defaults>
+			<guest-defaults>
+				<action-key>VIEW</action-key>
+			</guest-defaults>
+			<guest-unsupported>
+				<action-key>ADD_TO_PAGE</action-key>
+				<action-key>CONFIGURATION</action-key>
+			</guest-unsupported>
+		</permissions>
+	</portlet-resource>
+	
+	<portlet-resource>
 		<portlet-name>SXDataCollectionExplorerPortlet</portlet-name>
 		<permissions>
 			<supports>
@@ -306,9 +327,9 @@ Mapping 7.2.0//EN" "http://www.liferay.com/dtd/liferay-resource-action-mapping_7
 				<action-key>VIEW</action-key>
 			</site-member-defaults>
 			<guest-defaults>
-				<action-key>VIEW</action-key>
 			</guest-defaults>
 			<guest-unsupported>
+				<action-key>VIEW</action-key>
 				<action-key>ADD_TO_PAGE</action-key>
 				<action-key>CONFIGURATION</action-key>
 			</guest-unsupported>

@@ -46,7 +46,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
-	    		"javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
+	    		"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
 	    		"javax.portlet.name=" + WebPortletKey.SXDataCollectionEditorPortlet,
 	    		"mvc.command.name="+MVCCommand.RESOURCE_SAVE_DATACOLLECTION
 	    },
@@ -83,13 +83,16 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 		System.out.println("strDescription: " + strDescription);
 		System.out.println("strDataSets: " + strDataSets);
 		
+		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		
 		String[] strAryAssociatedDataSets = strDataSets.split(",");
 		long[] assoicatedDataSets = Arrays.stream(strAryAssociatedDataSets).mapToLong(Long::parseLong).toArray();
 		
 		ServiceContext dataCollectionSC = ServiceContextFactory.getInstance(DataCollection.class.getName(), resourceRequest);
 		
+		DataCollection dataCollection = null;
 		if( dataCollectionId == 0 ) {
-			DataCollection dataCollection = _dataCollectionLocalService.addDataCollection(
+			dataCollection = _dataCollectionLocalService.addDataCollection(
 					dataCollectionCode, 
 					dataCollectionVersion, 
 					SXLocalizationUtil.jsonToLocalizedMap(strDisplayName), 
@@ -100,6 +103,8 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 			dataCollectionId = dataCollection.getDataCollectionId();
 		}
 		else {
+			dataCollection = _dataCollectionLocalService.getDataCollection(dataCollectionId);
+			
 			_dataCollectionLocalService.updateDataCollection(
 					dataCollectionId, 
 					dataCollectionCode, 
@@ -112,7 +117,7 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 		
 		//Delete CollectionSetLink un-selected
 		List<CollectionSetLink> collectionSetLinkList = 
-				_collectionSetLinkLocalService.getCollectionSetLinkListByCollection(dataCollectionId);
+				_collectionSetLinkLocalService.getCollectionSetLinkListByCollection(themeDisplay.getScopeGroupId(), dataCollectionId);
 		
 		Iterator<CollectionSetLink> iter = collectionSetLinkList.iterator();
 		while( iter.hasNext()) {
@@ -128,12 +133,12 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 		//Add CollectionSetLink if it is new or update it if it exists.
 		if(assoicatedDataSets.length > 0) {
 			for( int order=0; order<assoicatedDataSets.length; order++) {
-				long dataSetId = assoicatedDataSets[order];
+				long dataSetId = assoicatedDataSets[order]; 
 				
 				System.out.println("collectionSetLink: " + dataCollectionId + ", "+dataSetId);
 				
 				CollectionSetLink collectionSetLink = 
-						_collectionSetLinkLocalService.getCollectionSetLink(dataCollectionId, dataSetId);
+						_collectionSetLinkLocalService.getCollectionSetLink(themeDisplay.getScopeGroupId(), dataCollectionId, dataSetId);
 				
 				if( Validator.isNotNull(collectionSetLink)) {
 					collectionSetLink.setDataCollectionId(dataCollectionId);

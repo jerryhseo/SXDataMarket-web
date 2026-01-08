@@ -1,5 +1,5 @@
 import React from "react";
-import { Constant } from "../../stationx/station-x";
+import { Constant, ParamType } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
 import { GroupParameter } from "../Parameter/parameters";
 
@@ -282,6 +282,30 @@ class DataStructure extends GroupParameter {
 			abstract += member.abstract;
 		});
 	}
+
+	getFiles() {
+		let files = [];
+
+		this.members.forEach((param) => {
+			if (param.paramType === ParamType.GROUP || param.paramType === ParamType.GRID) {
+				files = [...files, ...param.getFiles()];
+			} else if (param.paramType === ParamType.FILE && param.hasValue()) {
+				files = [...files, ...param.getFiles()];
+			}
+		});
+
+		return files;
+	}
+
+	/*
+	loadData( data ){
+		Parameter.prototype.loadData.call(this, data);
+
+		this.dataCollectionId = data.dataCollectionId;
+		this.dataSetId = data.dataSetId;
+		this.dataTypeId = data.dataTypeId;
+	}
+		*/
 
 	toData() {
 		let data = {};

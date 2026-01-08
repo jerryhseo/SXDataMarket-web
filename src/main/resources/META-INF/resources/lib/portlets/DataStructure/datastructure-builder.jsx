@@ -245,7 +245,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			return;
 		}
 
-		console.log("[DataStructureBuilder] SX_PARAMETER_SELECTED received: ", parameter);
+		//console.log("[DataStructureBuilder] SX_PARAMETER_SELECTED received: ", parameter);
 
 		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
 			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
@@ -570,6 +570,8 @@ class DataStructureBuilder extends SXBaseVisualizer {
 					this.dataStructure.updateMemberParents();
 					this.dataStructure.clearError();
 					this.structureCode.clearError();
+
+					return;
 				} else {
 					this.structureCode.setError(ErrorClass.ERROR, Util.translate("datastructure-code-is-duplicated"));
 					this.dataStructure.setError(ErrorClass.ERROR, Util.translate("datastructure-code-is-duplicated"));

@@ -177,6 +177,19 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					tooltip: Util.getTranslationObject(this.languageId, "synonyms-tooltip"),
 					value: this.workingParam.synonyms
 				}
+			}),
+			referenceFile: ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.FILE,
+				properties: {
+					paramCode: ParamProperty.REFERENCE_FILE,
+					displayName: Util.getTranslationObject(this.languageId, "reference-file"),
+					tooltip: Util.getTranslationObject(this.languageId, "reference-file-tooltip"),
+					multipleFiles: false,
+					accepts: ".jpg .png .pdf",
+					value: this.workingParam.referenceFile ?? ""
+				}
 			})
 		};
 

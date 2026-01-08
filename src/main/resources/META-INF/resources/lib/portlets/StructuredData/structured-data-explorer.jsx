@@ -3,19 +3,28 @@ import { ActionKeys, Event, LoadingStatus, PortletKeys, ResourceIds, WindowState
 import { SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { Util } from "../../stationx/util";
-import { SXInstanceInfo } from "../DataType/datatype";
+import Breadcrumb from "@clayui/breadcrumb";
 import SXBaseVisualizer from "../../stationx/visualizer";
+import { Workbench } from "../DataWorkbench/workbench";
+import { Text } from "@clayui/core";
+import { SXFreezeIcon, SXVerifyIcon } from "../../stationx/icon";
+import StructuredDataEditor from "./structured-data-editor";
 
 class StructuredDataExplorer extends SXBaseVisualizer {
+	dataCollection = {};
+	dataSet = {};
+	dataType = {};
+
 	constructor(props) {
 		super(props);
 
-		console.log("StructuredDataExplorer props: ", props);
+		//console.log("StructuredDataExplorer props: ", props);
 
-		this.dataTypeId = this.params.dataTypeId;
-
-		this.checkboxEnabled =
-			this.permissions.includes(ActionKeys.UPDATE) || this.permissions.includes(ActionKeys.DELETE);
+		this.checkbox =
+			this.params.checkbox ??
+			(this.permissions.includes(ActionKeys.UPDATE) || this.permissions.includes(ActionKeys.DELETE));
+		this.addButton = this.params.enableAddButton ?? true;
+		this.breadcrumb = this.params.breadcrumb ?? false;
 
 		this.displayStyles = [
 			{
@@ -55,7 +64,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		];
 
 		this.actionButtons = [];
-		if (this.checkboxEnabled) {
+		if (this.checkbox) {
 			this.actionButtons.push({
 				id: "deleteSelected",
 				name: Util.translate("delete-selected"),
@@ -71,17 +80,22 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 
 		this.actionMenus = [];
 
-		this.searchResults = [];
-		this.selectedResults = [];
+		this.searchedResults = [];
+		this.tableRows = [];
+		this.selectedRows = [];
 
-		this.confirmDialogHeader = <></>;
-		this.confirmDialogBody = <></>;
+		this.dialogHeader = <></>;
+		this.dialogBody = <></>;
 		this.state = {
+			dataCollectionId: this.params.dataCollectionId,
+			dataSetId: this.params.dataSetId,
+			dataTypeId: this.params.dataTypeId,
 			displayStyle: props.displayStyle ?? this.displayStyles[0].value, //table
 			filterBy: props.filterBy ?? this.filterOptions[0], //groupId
 			viewMode: "table",
 			loadingStatus: LoadingStatus.PENDING,
 			confirmDeleteDialog: false,
+			noticeDialog: false,
 			errorMessage: "",
 			progressDialog: false,
 			start: props.start ?? 0,
@@ -91,58 +105,87 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 			underConstruction: false
 		};
 
-		this.formId = this.namespace;
+		if (this.state.dataTypeId > 0) {
+			this.scope = "dataType";
+		} else if (this.state.dataSetId > 0) {
+			this.scope = "dataSet";
+		} else if (this.state.dataCollectionId > 0) {
+			this.scope = "dataCollection";
+		}
 
 		this.contentActionMenus = [];
 
 		if (this.permissions.includes(ActionKeys.UPDATE)) {
-			this.contentActionMenus.push({
-				id: "update",
-				name: Util.translate("update"),
-				symbol: "pencil"
-			});
-			this.contentActionMenus.push({
-				id: "delete",
-				name: Util.translate("delete"),
-				symbol: "trash"
-			});
+			this.contentActionMenus = [
+				{
+					id: "update",
+					name: Util.translate("update"),
+					symbol: "pencil"
+				},
+				{
+					id: "delete",
+					name: Util.translate("delete"),
+					symbol: "trash"
+				}
+			];
 		}
 
-		this.tableColumns = [
-			{ id: "index", name: Util.translate("index"), width: "5rem" },
+		this.contentActionMenus.push({
+			id: "dataStatus",
+			name: Util.translate("data-status"),
+			symbol: "polls"
+		});
+
+		this.dataTableColumns = [
+			{ id: "index", name: Util.translate("index"), width: "4rem" },
 			{
 				id: "id",
 				name: Util.translate("id"),
-				width: "8rem"
-			},
-			{
-				id: "datatype",
-				name: Util.translate("datatype"),
-				width: "auto"
-			},
-			{
-				id: "version",
-				name: Util.translate("version"),
-				width: "8rem"
-			},
-			{
-				id: "datatype-code",
-				name: Util.translate("datatype-code"),
-				width: "15rem"
-			},
-			{
-				id: "dataStatus",
-				name: Util.translate("data-status"),
-				width: "10rem"
-			},
-			{
-				id: "actions",
-				name: "actions",
-				width: "3.5rem"
+				width: "5.5rem"
 			}
 		];
+
+		if (this.scope === "dataSet") {
+			this.dataTableColumns.push({
+				id: "dataTypeId",
+				name: Util.translate("datatype"),
+				width: "8rem"
+			});
+		} else if (this.scope === "dataCollection") {
+			this.dataTableColumns.push({
+				id: "dataSetId",
+				name: Util.translate("dataset"),
+				width: "8rem"
+			});
+			this.dataTableColumns.push({
+				id: "dataTypeId",
+				name: Util.translate("datatype"),
+				width: "8rem"
+			});
+		}
+
+		this.dataTableColumns.push({
+			id: "content",
+			name: Util.translate("content"),
+			width: "auto"
+		});
+
+		this.dataTableColumns.push({
+			id: "status",
+			name: Util.translate("status"),
+			width: "4.5rem"
+		});
+
+		this.dataTableColumns.push({
+			id: "actions",
+			name: "actions",
+			width: "3.0rem"
+		});
+
+		this.scopeTableColumns = [];
+
 		if (this.permissions.includes(ActionKeys.UPDATE)) {
-			this.tableColumns.unshift({ id: "checkbox", name: "", width: "2.5rem" });
+			this.dataTableColumns.unshift({ id: "checkbox", name: "", width: "2.5rem" });
 		}
 	}
 
@@ -153,13 +196,13 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerSelectAll event rejected: ", dataPacket);
+			//console.log("listenerSelectAll event rejected: ", dataPacket);
 			return;
 		}
 
 		//console.log("listenerSelectAll: ", dataPacket);
 
-		this.selectedResults = dataPacket.selectAll ? [...this.searchResults] : [];
+		this.selectedRows = dataPacket.selectAll ? [...this.tableRows] : [];
 
 		this.setState({ searchContainerKey: Util.randomKey() });
 	};
@@ -168,7 +211,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerSearchKeywordsChanged event rejected: ", dataPacket);
+			//console.log("listenerSearchKeywordsChanged event rejected: ", dataPacket);
 			return;
 		}
 		//console.log("listenerSearchKeywordsChanged: ", dataPacket);
@@ -182,10 +225,10 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerFilterMenuClicked event rejected: ", dataPacket);
+			//console.log("listenerFilterMenuClicked event rejected: ", dataPacket);
 			return;
 		}
-		console.log("listenerFilterMenuClicked: ", dataPacket);
+		//console.log("listenerFilterMenuClicked: ", dataPacket);
 
 		const isFilterMenu = this.filterOptions.map((option) => option.value).includes(dataPacket.menuItem.value);
 
@@ -196,7 +239,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerAdvancedSearchButtonClicked event rejected: ", dataPacket);
+			//console.log("listenerAdvancedSearchButtonClicked event rejected: ", dataPacket);
 			return;
 		}
 		//console.log("listenerAdvancedSearchButtonClicked: ", dataPacket);
@@ -204,57 +247,69 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 	};
 
 	listenerPopActionClicked = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, action, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerPopActionClicked event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("listenerPopActionClicked event rejected: ", this.formId, event.dataPacket);
 			return;
 		}
-		//console.log("listenerPopActionClicked: ", dataPacket);
+		//console.log("listenerPopActionClicked: ", event.dataPacket);
 
-		const selectedDataId = this.searchResults[dataPacket.data][0].value;
+		//console.log("selectedData: ", action, data, this.selectedRows);
 
-		switch (dataPacket.action) {
+		switch (action) {
 			case "update": {
-				Util.redirectTo(
-					this.workbenchURL,
-					{
-						namespace: this.workbenchNamespace,
-						portletId: this.workbenchId,
-						windowState: WindowState.NORMAL
-					},
-					{
-						workingPortletName: PortletKeys.STRUCTURED_DATA_EDITOR,
-						workingPortletParams: JSON.stringify({
-							structuredDataId: selectedDataId
-						})
+				const selectedData = this.searchResults.structuredDataList[data];
+
+				this.redirectTo({
+					portletName: PortletKeys.STRUCTURED_DATA_EDITOR,
+					params: {
+						editState: StructuredDataEditor.EditState.UPDATE,
+						structuredDataId: selectedData.structuredDataId,
+						titleBar: true,
+						buttons: true
 					}
-				);
+				});
 
 				break;
 			}
 			case "delete": {
-				this.confirmDialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-				this.confirmDialogBody = Util.translate(
+				this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+				this.dialogBody = Util.translate(
 					"selected-data-will-be-deleted-and-unrecoverable-are-you-sure-to-proceed"
 				);
 
-				this.selectedResults = [this.searchResults[dataPacket.data]];
+				this.selectedRows = [this.tableRows[data]];
 				this.setState({ confirmDeleteDialog: true });
+				break;
+			}
+			case "dataStatus": {
 				break;
 			}
 		}
 	};
 
 	listenerAddButtonClicked = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("listenerAddButtonClicked event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("listenerAddButtonClicked event rejected: ", event.dataPacket);
 			return;
 		}
-		//console.log("listenerAddButtonClicked: ", dataPacket);
+		//console.log("[StructuredDataExplorer listenerAddButtonClicked]: ", event.dataPacket);
 
+		this.fireLoadPortlet({
+			portletName: PortletKeys.STRUCTURED_DATA_EDITOR,
+			params: {
+				editState: StructuredDataEditor.EditState.ADD,
+				dataCollectionId: this.state.dataCollectionId,
+				dataSetId: this.state.dataSetId,
+				dataTypeId: this.state.dataTypeId,
+				titleBar: true,
+				buttons: true
+			}
+		});
+		/*
 		Util.redirectTo(
 			this.workbenchURL,
 			{
@@ -265,57 +320,168 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 			{
 				workingPortletName: PortletKeys.STRUCTURED_DATA_EDITOR,
 				workingPortletParams: JSON.stringify({
-					dataCollectionId: this.dataCollectionId,
-					dataSetId: this.dataSetId,
-					dataTypeId: this.dataTypeId
+					dataCollectionId: this.state.dataCollectionId,
+					dataSetId: this.state.dataSetId,
+					dataTypeId: this.state.dataTypeId
 				})
 			}
 		);
+		*/
 	};
 
 	listenerDeleteSelected = (event) => {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerAddButtonClicked event rejected: ", dataPacket);
+			//console.log("listenerAddButtonClicked event rejected: ", dataPacket);
 			return;
 		}
 		//console.log("listenerAddButtonClicked: ", dataPacket);
 
-		this.confirmDialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-		this.confirmDialogBody = Util.translate(
-			"selected-data-will-be-deleted-and-unrecoverable-are-you-sure-to-proceed"
-		);
+		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+		this.dialogBody = Util.translate("selected-data-will-be-deleted-and-unrecoverable-are-you-sure-to-proceed");
 
 		this.setState({ confirmDeleteDialog: true });
 	};
 
 	listenerSelectedResultsChanged = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, selectedResults } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("listenerSelectedResultsChanged event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[StructuredDataExplorer] listenerSelectedResultsChanged event rejected: ", event.dataPacket);
 			return;
 		}
-		//console.log("listenerSelectedResultsChanged: ", dataPacket);
-		this.selectedResults = dataPacket.selectedResults;
+		//console.log("[StructuredDataExplorer] listenerSelectedResultsChanged: ", event.dataPacket);
+		this.selectedRows = selectedResults;
+
+		this.forceUpdate();
+		//this.setState({ searchContainerKey: Util.randomKey() });
+	};
+
+	listenerTableColumnSelected = (event) => {
+		const { targetPortlet, targetFormId, column, row } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[StructuredDataExplorer] listenerTableColumnSelected event rejected: ", event.dataPacket);
+			return;
+		}
+		//console.log("[StructuredDataExplorer] listenerTableColumnSelected: ", event.dataPacket, row, column);
+
+		switch (column.id) {
+			case "checkbox": {
+				break;
+			}
+			case "structuredDataId": {
+				break;
+			}
+			case "dataSetId": {
+				break;
+			}
+			case "dataTypeId": {
+				break;
+			}
+			case "content": {
+				break;
+			}
+			case "status": {
+				break;
+			}
+			default: {
+				break;
+			}
+		}
+	};
+
+	listenerResponse = (event) => {
+		const { targetPortlet, requestId, params, data } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace) {
+			//console.log("[StructuredDataExplorer] listenerResponse event rejected: ", targetPortlet, requestId);
+			return;
+		}
+
+		//console.log("[StructuredDataExplorer] listenerResponse received: ", targetPortlet, requestId, params, data);
+
+		switch (requestId) {
+			case Workbench.RequestIDs.searchStructuredData: {
+				this.searchResults = data;
+
+				this.convertSearchResultsToContent(data);
+
+				this.dataCollection = data.dataCollection;
+				this.dataSet = data.dataSet ?? {};
+				this.dataType = data.dataSet ?? {};
+
+				break;
+			}
+			case Workbench.RequestIDs.deleteStructuredData: {
+				this.dialogHeader = SXModalUtil.successDlgHeader();
+				this.dialogBody = Util.translate("data-is-deleted-successfully");
+
+				this.setState({ noticeDialog: true });
+
+				this.resetSearchResults();
+
+				break;
+			}
+		}
 
 		this.setState({ searchContainerKey: Util.randomKey() });
 	};
 
-	listenerComponentWillUnmount = (event) => {
-		const dataPacket = event.dataPacket;
+	listenerWorkbenchReady = (event) => {
+		const { targetPortlet } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[StructuredDataExplorer] listenerComponentWillUnmount rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace) {
+			//console.log("[StructuredDataExplorer] listenerWorkbenchReady event rejected: ", event.dataPacket);
 			return;
 		}
 
-		console.log("[StructuredDataExplorer] listenerComponentWillUnmount received: ", dataPacket);
+		//console.log("[StructuredDataExplorer] listenerWorkbenchReady received: ", event.dataPacket);
+
+		if (this.state.dataCollectionId > 0) {
+			this.fireRequest({
+				requestId: Workbench.RequestIDs.searchStructuredData,
+				params: {
+					dataCollectionId: this.state.dataCollectionId,
+					dataSetId: this.state.dataSetId,
+					dataTypeId: this.state.dataTypeId
+				}
+			});
+		} else {
+			this.fireRequest({
+				requestId: Workbench.RequestIDs.searchDataCollections,
+				params: {
+					filterBy: this.state.filterBy,
+					groupId: this.groupId,
+					userId: this.userId,
+					status: "all",
+					start: this.state.start,
+					delta: this.state.delta,
+					keywords: this.state.keywords
+				}
+			});
+		}
+
+		this.setState({ loadingStatus: LoadingStatus.COMPLETE });
+	};
+
+	listenerComponentWillUnmount = (event) => {
+		const { targetPortlet } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace) {
+			//console.log("[StructuredDataExplorer] listenerComponentWillUnmount rejected: ", event.dataPacket);
+			return;
+		}
+
+		//console.log("[StructuredDataExplorer] listenerComponentWillUnmount received: ", event.dataPacket);
 		this.componentWillUnmount();
 	};
 
 	componentDidMount() {
+		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+		Event.on(Event.SX_RESPONSE, this.listenerResponse);
 		Event.on(Event.SX_SEARCH_KEYWORDS_CHANGED, this.listenerSearchKeywordsChanged);
 		Event.on(Event.SX_FILTER_MENU_CLICKED, this.listenerFilterMenuClicked);
 		Event.on(Event.SX_ADVANCED_SEARCH_BUTTON_CLICKED, this.listenerAdvancedSearchButtonClicked);
@@ -323,13 +489,17 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		Event.on(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
 		Event.on(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 		Event.on(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
+		Event.on(Event.SX_TABLE_COLUMN_CLICKED, this.listenerTableColumnSelected);
 		Event.on(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
 
-		this.search();
+		this.fireHandshake();
 	}
 
 	componentWillUnmount() {
-		console.log("[StructuredDataExplorer] componentWillUnmount");
+		//console.log("[StructuredDataExplorer] componentWillUnmount");
+		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+		Event.off(Event.SX_RESPONSE, this.listenerResponse);
 		Event.off(Event.SX_SEARCH_KEYWORDS_CHANGED, this.listenerSearchKeywordsChanged);
 		Event.off(Event.SX_FILTER_MENU_CLICKED, this.listenerFilterMenuClicked);
 		Event.off(Event.SX_ADVANCED_SEARCH_BUTTON_CLICKED, this.listenerAdvancedSearchButtonClicked);
@@ -337,137 +507,121 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		Event.off(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
 		Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 		Event.off(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
+		Event.off(Event.SX_TABLE_COLUMN_CLICKED, this.listenerTableColumnSelected);
 		Event.off(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
 	}
 
-	search() {
-		this.state.loadingStatus = LoadingStatus.PENDING;
-
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.SEARCH_STRUCTUED_DATA,
-			params: {
-				dataCollectionId: this.dataCollectionId,
-				dataSetId: this.dataSetId,
-				dataTypeId: this.dataTypeId,
-				filterBy: this.state.filterBy,
-				keywords: this.state.keywords,
-				start: this.state.start,
-				delta: this.state.delta
-			},
-			successFunc: (result) => {
-				//this.convertSearchResultsToContent(result);
-
-				console.log("search results: ", result);
-				this.dataType = result.dataType;
-
-				this.setState({
-					loadingStatus: LoadingStatus.COMPLETE,
-					searchContainerKey: Util.randomKey()
-				});
-			},
-			errorFunc: (e) => {
-				this.setState({
-					errorMessage: "Something wrong while searching data",
-					loadingStatus: LoadingStatus.FAIL
-				});
-			}
-		});
-	}
-
-	/*
 	convertSearchResultsToContent(results) {
-		this.searchResults = results.map((result, index) => {
-			const { structuredData } = result;
+		const { dataCollection, dataSet, dataType, structuredDataList } = results;
 
-            this.dataStructure.loadData(structuredData);
-			//console.log("convertSearchResultsToContent: ", result, dataType, Util.isNotEmpty(typeStructureLink));
-			const contentActionMenus = [];
+		//console.log("[StructuredDataExplorer convertSearchResultsToContent] ", this.scope, results, structuredDataList);
 
-			if (this.permissions.includes(ActionKeys.UPDATE)) {
-				contentActionMenus.push({
-					id: "update",
-					name: Util.translate("update"),
-					symbol: "pencil"
-				});
-				contentActionMenus.push({
-					id: "delete",
-					name: Util.translate("delete"),
-					symbol: "trash"
-				});
-				contentActionMenus.push({
-					id: "dataStatus",
-					name: Util.translate("data-status"),
-					symbol: "polls"
-				});
-			}
+		this.tableRows = structuredDataList.map((result, index) => {
+			const { data, verified, freezed, modifiedDate } = result;
 
 			let row = [
 				{
-					id: "dataStructureId",
-					value: this.dataStructure.dataId
-				},
-				{
-					id: "abstract",
-					value: this.dataStructure.getAbstrction()
-				},
-				{
-					id: "dataStatus",
-					value: (
-						<>
-							<span style={{ marginRight: "5px" }}>
-								<SXLinkIcon linked={Util.isNotEmpty(typeStructureLink)} />
-							</span>
-							{Util.isNotEmpty(typeStructureLink) && (
-								<span style={{ marginRight: "5px" }}>
-									<SXVerifyIcon verified={typeStructureLink.verified} />
-								</span>
-							)}
-							{Util.isNotEmpty(typeStructureLink) && (
-								<span style={{ marginRight: "5px" }}>
-									<SXFreezeIcon freezed={typeStructureLink.freezed} />
-								</span>
-							)}
-						</>
-					)
-				},
-				{
-					id: "actions",
-					value: contentActionMenus
+					id: "structuredDataId",
+					value: result.structuredDataId
 				}
 			];
+
+			if (this.scope === "dataCollection") {
+				row.push({
+					id: "dataSet",
+					value: (
+						<Text
+							size={3}
+							truncate
+						>
+							{result.dataSetLabel}
+						</Text>
+					)
+				});
+				row.push({
+					id: "dataType",
+					value: (
+						<Text
+							size={3}
+							truncate
+						>
+							{result.dataTypeLabel}
+						</Text>
+					)
+				});
+			} else if (this.scope === "dataSet") {
+				row.push({
+					id: "dataType",
+					value: (
+						<Text
+							size={3}
+							truncate
+						>
+							{result.dataTypeLabel}
+						</Text>
+					)
+				});
+			}
+
+			row.push({
+				id: "content",
+				value: (
+					<Text
+						size={3}
+						truncate
+					>
+						{JSON.stringify(data)}
+					</Text>
+				)
+			});
+			row.push({
+				id: "status",
+				value: (
+					<>
+						<span style={{ marginRight: "5px" }}>
+							<SXVerifyIcon verified={result.verified} />
+						</span>
+						<span style={{ marginRight: "5px" }}>
+							<SXFreezeIcon freezed={result.freezed} />
+						</span>
+					</>
+				)
+			});
+			row.push({
+				id: "actions",
+				value: this.contentActionMenus
+			});
 
 			return row;
 		});
 
-		this.selectedResults = [];
+		this.selectedRows = [];
 	}
-        */
 
-	selectedResultsToDataTypeIds = () => {
-		return this.selectedResults.map((result) => result[0].value);
+	removeSearchResults(structuredDataId) {
+		this.searchedResults = this.searchedResults.filter((result) => result.structuredDataId !== structuredDataId);
+	}
+
+	selectedRowsToDataIds = () => {
+		return this.selectedRows.map((result) => result[0].value);
 	};
 
 	checkAllResultsSelected = () => {
-		return this.searchResults.length == this.selectedResults.length;
+		return this.tableRows.length == this.selectedRows.length;
 	};
 
-	deleteDataTypes = () => {
-		this.state.loadingStatus = LoadingStatus.PENDING;
+	resetSearchResults() {
+		this.tableRows = this.tableRows.filter((result) => !this.selectedRows.includes(result));
+		this.selectedRows = [];
+	}
 
-		Util.ajax({
-			namespace: this.namespace,
-			baseResourceURL: this.baseResourceURL,
-			resourceId: ResourceIds.DELETE_DATATYPES,
+	handleDeleteSelectedData = () => {
+		const dataIds = this.selectedRowsToDataIds();
+
+		Event.fire(Event.SX_REQUEST, this.namespace, this.workbenchNamespace, {
+			requestId: Workbench.RequestIDs.deleteStructuredData,
 			params: {
-				dataTypeIds: JSON.stringify(this.selectedResultsToDataTypeIds())
-			},
-			successFunc: (result) => {
-				this.search();
-			},
-			errorFunc: (err) => {
-				this.setState({ loadingStatus: LoadingStatus.FAIL });
+				structuredDataIdList: dataIds
 			}
 		});
 	};
@@ -478,57 +632,60 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		} else if (this.state.loadingStatus == LoadingStatus.FAIL) {
 			return <SXErrorModal imageURL={this.imagePath + "/ajax-error.gif"} />;
 		} else {
-			console.log("SXInstanceInfo.render: ", this.dataType);
+			//console.log("SXInstanceInfo.render: ", this.dataType);
 			return (
 				<div>
-					<SXInstanceInfo
-						key={this.dataType.dataTypeId}
-						title={Util.translate("datatype")}
-						id={this.dataType.dataTypeId}
-						code={this.dataType.dataTypeCode}
-						version={this.dataType.dataTypeVersion}
-						displayName={this.dataType.displayName}
-					/>
-					<SXManagementToolbar
-						key={this.checkAllResultsSelected()}
-						namespace={this.namespace}
-						formId={this.formId}
-						searchBar={true}
-						addButton={true}
-						displayStyleOptions={this.displayStyles}
-						displayStyle={this.state.displayStyle}
-						filterOptions={this.filterOptions}
-						filterBy={this.state.filterBy}
-						actionButtons={this.actionButtons}
-						actionMenus={this.actionMenus}
-						checkbox={this.checkboxEnabled}
-						checkboxChecked={this.checkAllResultsSelected()}
-						start={this.state.start}
-						delta={this.state.delta}
-						keywords={this.state.keywords}
-						spritemap={this.spritemap}
-					/>
+					{(this.state.dataCollectionId > 0 || this.state.dataSetId > 0 || this.state.dataTypeId > 0) && (
+						<>
+							{this.breadcrumb && (
+								<Breadcrumb
+									items={[]}
+									style={{ display: "flex" }}
+									spritemap={this.spritemap}
+								/>
+							)}
+							<SXManagementToolbar
+								key={this.checkAllResultsSelected()}
+								namespace={this.namespace}
+								formId={this.formId}
+								searchBar={true}
+								addButton={this.state.dataTypeId > 0}
+								displayStyleOptions={this.displayStyles}
+								displayStyle={this.state.displayStyle}
+								filterOptions={this.filterOptions}
+								filterBy={this.state.filterBy}
+								actionButtons={this.actionButtons}
+								actionMenus={this.actionMenus}
+								checkbox={this.checkbox}
+								checkboxChecked={this.checkAllResultsSelected()}
+								start={this.state.start}
+								delta={this.state.delta}
+								keywords={this.state.keywords}
+								spritemap={this.spritemap}
+							/>
+						</>
+					)}
 					<SXSearchResultConainer
 						key={this.state.searchContainerKey}
 						namespace={this.namespace}
 						formId={this.formId}
-						checkbox={this.checkboxEnabled}
+						checkbox={this.checkbox}
 						checkAll={this.checkAllResultsSelected()}
 						index={true}
-						columns={this.tableColumns}
-						searchResults={this.searchResults}
-						selectedResults={this.selectedResults}
+						columns={this.dataTableColumns}
+						searchResults={this.tableRows}
+						selectedResults={this.selectedRows}
 						spritemap={this.spritemap}
 					/>
 					{this.state.confirmDeleteDialog && (
 						<SXModalDialog
-							header={this.confirmDialogHeader}
-							body={this.confirmDialogBody}
+							header={this.dialogHeader}
+							body={this.dialogBody}
 							buttons={[
 								{
 									label: Util.translate("confirm"),
 									onClick: (e) => {
-										this.deleteDataTypes();
+										this.handleDeleteSelectedData();
 										this.setState({ confirmDeleteDialog: false });
 									},
 									displayType: "secondary"
@@ -537,6 +694,20 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 									label: Util.translate("cancel"),
 									onClick: (e) => {
 										this.setState({ confirmDeleteDialog: false });
+									}
+								}
+							]}
+						/>
+					)}
+					{this.state.noticeDialog && (
+						<SXModalDialog
+							header={this.dialogHeader}
+							body={this.dialogBody}
+							buttons={[
+								{
+									label: Util.translate("ok"),
+									onClick: (e) => {
+										this.setState({ noticeDialog: false });
 									}
 								}
 							]}

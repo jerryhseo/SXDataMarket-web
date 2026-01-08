@@ -1,4 +1,4 @@
-import React from "react";
+import React, { createRef } from "react";
 import SXBaseParameterComponent from "./base-parameter-component";
 import { Util } from "../../stationx/util";
 import { Event } from "../../stationx/station-x";
@@ -21,23 +21,34 @@ class SXGrid extends SXBaseParameterComponent {
 			errorMessage: ""
 		};
 
+		this.bodyRef = createRef(null);
 		//console.log("SXGrid constructor: ", this.parameter);
 	}
 
 	listenerFieldValueChanged = (event) => {
-		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
+		const { targetPortlet, targetFormId, parameter, cellIndex } = event.dataPacket;
 		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
-			//console.log("[SXGrid] SX_FIELD_VALUE_CHANGED Rejected: ", parameter);
+			//console.log("[SXGrid] SX_FIELD_VALUE_CHANGED Rejected: ", targetPortlet, targetFormId, event.dataPacket);
 			return;
 		}
 
-		console.log("[SXGrid] SX_FIELD_VALUE_CHANGED RECEIVED: ", parameter);
+		/*
+		console.log(
+			"[SXGrid] SX_FIELD_VALUE_CHANGED RECEIVED: ",
+			this.parameter.value,
+			cellIndex,
+			parameter,
+			this.state.selectedRow
+		);
+		*/
 
-		const gridValue = this.parameter.value ?? {};
-		gridValue[parameter.paramCode] = parameter.value;
+		const gridValue = this.parameter.getValue() ?? {};
+
+		gridValue[parameter.paramCode] = parameter.getValue();
+
 		this.parameter.setValue({ value: gridValue });
 
-		console.log("[SXGrid] value: ", this.parameter.hasValue(), this.parameter.getValue());
+		//console.log("[SXGrid] value: ", this.parameter.hasValue(), this.parameter.getValue());
 
 		this.parameter.fireValueChanged();
 		//this.forceUpdate();
@@ -50,7 +61,7 @@ class SXGrid extends SXBaseParameterComponent {
 			return;
 		}
 
-		console.log("[SXGrid] SX_PARAMETER_SELECTED RECEIVED: ", parameter);
+		//console.log("[SXGrid] SX_PARAMETER_SELECTED RECEIVED: ", parameter);
 
 		this.parameter.fire(Event.SX_PARAMETER_SELECTED, { parameter: parameter });
 	};
@@ -127,6 +138,10 @@ class SXGrid extends SXBaseParameterComponent {
 	}
 
 	handleColumnClicked = (rowIndex, colIndex) => {
+		//console.log("[SXGrid handleColumnClicked] ", rowIndex, colIndex, this.state.selectedRow);
+
+		this.setState({ selectedRow: rowIndex });
+
 		if (colIndex < 0) {
 			return;
 		}
@@ -201,6 +216,7 @@ class SXGrid extends SXBaseParameterComponent {
 								active={this.state.activeDropdown && this.state.selectedRow == rowIndex}
 								trigger={<div style={{ textAlign: "center" }}>{rowIndex + 1}</div>}
 								onActiveChange={(val) => {
+									console.log("DoropDown Active changed: ", val, rowIndex);
 									this.setState({ activeDropdown: val, selectedRow: rowIndex });
 								}}
 								menuWidth="shrink"
@@ -249,6 +265,7 @@ class SXGrid extends SXBaseParameterComponent {
 	}
 
 	render() {
+		//console.log("[SXGrid render] ", this.parameter);
 		return (
 			<div style={{ ...this.parameter.style }}>
 				{this.parameter.renderTitle({ spritemap: this.spritemap })}
@@ -327,7 +344,7 @@ class SXGrid extends SXBaseParameterComponent {
 								))}
 							</tr>
 						</thead>
-						<tbody key={this.parameter.rowCount}>{this.renderBodyRows()}</tbody>
+						<tbody ref={this.bodyRef}>{this.renderBodyRows()}</tbody>
 					</table>
 				</div>
 				{this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}

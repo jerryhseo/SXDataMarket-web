@@ -49,7 +49,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
-	    		"javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
+	    		"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
 	    		"javax.portlet.name=" + WebPortletKey.SXDataSetEditorPortlet,
 	    		"mvc.command.name="+MVCCommand.RESOURCE_SAVE_DATASET
 	    },
@@ -108,17 +108,20 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 			dataSetId = dataSet.getDataSetId();
 		}
 		
+		long groupId = dataSetSC.getScopeGroupId();
+		
 		String[] strAryAssociatedDataTypes = associatedDataTypes.split(",");
 		long[] longAryAssoicatedDataTypes = Arrays.stream(strAryAssociatedDataTypes).mapToLong(Long::parseLong).toArray();
 		
 		//Delete SetTypeLink un-selected
-		List<SetTypeLink> setTypeLinkList = _setTypeLinkLocalService.getSetTypeLinkListBySet(dataSetId);
+		List<SetTypeLink> setTypeLinkList = 
+				_setTypeLinkLocalService.getSetTypeLinkListByCollectionSet_G(groupId, dataCollectionId, dataSetId);
 		
 		Iterator<SetTypeLink> iter = setTypeLinkList.iterator();
 		while( iter.hasNext()) {
 			SetTypeLink setTypeLink = iter.next();
 			
-			boolean selected = Arrays.asList(setTypeLinkList).contains(setTypeLink.getDataTypeId());
+			boolean selected = Arrays.asList(longAryAssoicatedDataTypes).contains(setTypeLink.getDataTypeId());
 			
 			if( !selected ) {
 				_setTypeLinkLocalService.deleteSetTypeLink(setTypeLink.getPrimaryKey());
@@ -129,7 +132,7 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 		for(int order = 0; order < longAryAssoicatedDataTypes.length; order++) {
 			long dataTypeId = longAryAssoicatedDataTypes[order];
 			
-			SetTypeLink setTypeLink = _setTypeLinkLocalService.getSetTypeLink(dataSetId, dataTypeId);
+			SetTypeLink setTypeLink = _setTypeLinkLocalService.getSetTypeLink(groupId, dataCollectionId, dataSetId, dataTypeId);
 			if( Validator.isNull(setTypeLink)) {
 				/*
 				System.out.println("Save DataSet dataSetId: " + dataSetId);

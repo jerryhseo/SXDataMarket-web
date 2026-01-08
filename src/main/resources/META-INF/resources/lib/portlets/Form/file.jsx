@@ -14,18 +14,31 @@ class SXFile extends SXBaseParameterComponent {
 		super(props);
 
 		this.state = {
-			value: this.parameter.getValue(this.cellIndex),
+			value: this.parameter.getValue(this.cellIndex) ?? [],
 			underConstruction: false
 		};
+
+		//console.log("[SXFile props] ", props, props.parameter.key);
+	}
+
+	hasFiles() {
+		let file;
+
+		this.state.value.every((fileInfo) => {
+			file = fileInfo.file;
+
+			return file ? false : true;
+		});
+
+		return !!file;
 	}
 
 	handleFileSelectionChanged(files) {
-		let fileList = Util.isEmpty(this.state.value) ? [] : this.state.value.filter((fileInfo) => fileInfo.fileId > 0);
+		const fileList = this.state.value.filter((fileInfo) => !fileInfo.file);
 
 		for (let i = 0; i < files.length; i++) {
 			const file = files[i];
 			fileList.push({
-				fileId: 0,
 				name: file.name,
 				size: file.size,
 				type: file.type,
@@ -34,7 +47,7 @@ class SXFile extends SXBaseParameterComponent {
 		}
 
 		this.setState({ value: fileList });
-		this.parameter.setValue({ value: fileList, cellIndex: this.cellIndex, validate: true });
+		this.parameter.setValue({ value: fileList, cellIndex: this.cellIndex });
 		this.parameter.fireValueChanged(this.cellIndex);
 	}
 
@@ -43,7 +56,7 @@ class SXFile extends SXBaseParameterComponent {
 
 		let files = this.state.value
 			.filter((fileItem) => {
-				return fileItem.fileId == 0 && fileItem.name !== fileInfo.name;
+				return fileItem.file;
 			})
 			.map((fileItem) => fileItem.file);
 
@@ -54,7 +67,10 @@ class SXFile extends SXBaseParameterComponent {
 
 	handleActionClick(action, fileInfo) {
 		switch (action) {
-			case "download":
+			case "download": {
+				this.parameter.fireDownloadFile(fileInfo);
+				break;
+			}
 			case "upload": {
 				this.setState({ underConstruction: true });
 
@@ -65,13 +81,13 @@ class SXFile extends SXBaseParameterComponent {
 
 				let files = this.state.value
 					.filter((fileItem) => {
-						return fileItem.fileId == 0 && fileItem.name !== fileInfo.name;
+						return fileItem.file && fileItem.name !== fileInfo.name;
 					})
 					.map((fileItem) => fileItem.file);
 
 				files.forEach((file) => dataTransfer.items.add(file));
 
-				this.focusRef.current.files = dataTransfer.files;
+				this.inputRef.current.files = dataTransfer.files;
 
 				this.handleFileSelectionChanged(files);
 
@@ -81,99 +97,117 @@ class SXFile extends SXBaseParameterComponent {
 	}
 
 	renderFileManager() {
+		if (this.inputRef.current && !this.parameter.hasValue()) {
+			this.inputRef.current.value = "";
+		}
+
 		return (
-			<>
+			<div ref={this.focusRef}>
 				<ClayInput
 					type="file"
+					accepts={this.parameter.accepts}
 					disabled={this.parameter.getDisabled(this.cellIndex)}
-					multiple={true}
-					ref={this.focusRef}
+					multiple={this.parameter.multipleFiles}
+					ref={this.inputRef}
 					onChange={(e) => {
-						e.stopPropagation();
 						this.handleFileSelectionChanged(e.target.files);
 					}}
 					sizing="sm"
-					style={{ paddingLeft: "10px" }}
+					style={{ paddingLeft: "10px", marginBottom: "5px" }}
 				/>
-				{Util.isNotEmpty(this.state.value) &&
-					this.state.value.map((fileInfo) => (
-						<div
-							key={fileInfo.name}
-							className="autofit-row autofit-row-center autofit-padded-no-gutters-x"
-							style={{ fontSize: "0.725rem", paddingLeft: "10px" }}
+				{this.parameter.multipleFiles && Util.isNotEmpty(this.state.value) && this.state.value.length > 1 && (
+					<div style={{ paddingLeft: "1rem" }}>
+						<table
+							style={{ width: "100%", fontSize: "0.750rem", borderCollapse: "collapse", border: "none" }}
 						>
-							<div
-								className="autofit-col"
-								style={{ width: "4rem", textAlign: "center" }}
-							>
-								{fileInfo.id > 0 ? fileInfo.id : "-"}
-							</div>
-							<div className="autofit-col autofit-col-expand">{fileInfo.name}</div>
-							<div className="autofit-col">{fileInfo.size}</div>
-							<div className="autofit-col">{fileInfo.type}</div>
-							<div className="autofit-col">
-								<DropDown
-									trigger={
-										<ClayButtonWithIcon
-											aria-label="Actions"
+							<thead style={{ backgroundColor: "seashell" }}>
+								<tr>
+									<th style={{ padding: "3px", textAlign: "center" }}>{Util.translate("name")}</th>
+									<th style={{ padding: "3px", textAlign: "center" }}>{Util.translate("size")}</th>
+									<th style={{ width: "1rem", padding: "3px", textAlign: "center" }}>
+										<Icon
 											symbol="ellipsis-v"
-											title="Actions"
-											borderless="true"
-											displayType="secondary"
-											size="xs"
 											spritemap={this.spritemap}
 										/>
-									}
-									menuWidth="shrink"
-								>
-									<DropDown.ItemList
-										items={
-											fileInfo.fileId > 0
-												? [
-														{
-															id: "delete",
-															name: Util.translate("delete"),
-															symbol: "times"
-														},
-														{
-															id: "download",
-															name: Util.translate("download"),
-															symbol: "download"
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{this.state.value.map((fileInfo) => {
+									return (
+										<tr key={fileInfo.name}>
+											<td>{fileInfo.name}</td>
+											<td style={{ textAlign: "right" }}>{fileInfo.size}</td>
+											<td style={{ textAlign: "center" }}>
+												<DropDown
+													trigger={
+														<ClayButtonWithIcon
+															aria-label="Actions"
+															symbol="ellipsis-v"
+															title="Actions"
+															borderless="true"
+															displayType="secondary"
+															size="xs"
+															spritemap={this.spritemap}
+														/>
+													}
+													menuWidth="shrink"
+												>
+													<DropDown.ItemList
+														items={
+															!fileInfo.file
+																? [
+																		{
+																			id: "delete",
+																			name: Util.translate("delete"),
+																			symbol: "times"
+																		},
+																		{
+																			id: "download",
+																			name: Util.translate("download"),
+																			symbol: "download"
+																		}
+																  ]
+																: [
+																		{
+																			id: "delete",
+																			name: Util.translate("delete"),
+																			symbol: "times"
+																		},
+																		{
+																			id: "upload",
+																			name: Util.translate("upload"),
+																			symbol: "upload"
+																		}
+																  ]
 														}
-												  ]
-												: [
-														{
-															id: "delete",
-															name: Util.translate("delete"),
-															symbol: "times"
-														},
-														{
-															id: "upload",
-															name: Util.translate("upload"),
-															symbol: "upload"
-														}
-												  ]
-										}
-									>
-										{(actionItem) => (
-											<DropDown.Item
-												key={actionItem.name}
-												onClick={() => this.handleActionClick(actionItem.id, fileInfo)}
-											>
-												<Icon
-													spritemap={this.spritemap}
-													symbol={actionItem.symbol}
-													style={{ marginRight: "5px" }}
-												/>
-												{actionItem.name}
-											</DropDown.Item>
-										)}
-									</DropDown.ItemList>
-								</DropDown>
-							</div>
-						</div>
-					))}
-			</>
+													>
+														{(actionItem) => (
+															<DropDown.Item
+																key={actionItem.name}
+																onClick={() =>
+																	this.handleActionClick(actionItem.id, fileInfo)
+																}
+															>
+																<Icon
+																	spritemap={this.spritemap}
+																	symbol={actionItem.symbol}
+																	style={{ marginRight: "5px" }}
+																/>
+																{actionItem.name}
+															</DropDown.Item>
+														)}
+													</DropDown.ItemList>
+												</DropDown>
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</div>
 		);
 	}
 

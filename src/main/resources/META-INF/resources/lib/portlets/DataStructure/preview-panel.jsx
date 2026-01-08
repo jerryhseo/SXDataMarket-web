@@ -14,7 +14,7 @@ import { Icon, Text, TreeView } from "@clayui/core";
 class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 	constructor(props) {
 		super(props);
-		//console.log("Previewer props: ", props);
+		//console.log("[SXDataStructurePreviewer props]: ", props);
 
 		this.typeStructureLink = props.typeStructureLink;
 
@@ -183,11 +183,11 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
-			console.log("[SXDataStructurePreviewer] listenerUpdateParameterComments rejected:", event.dataPacket);
+			//console.log("[SXDataStructurePreviewer] listenerUpdateParameterComments rejected:", event.dataPacket);
 			return;
 		}
 
-		console.log("[SXDataStructurePreviewer] listenerUpdateParameterComments:", event.dataPacket);
+		//console.log("[SXDataStructurePreviewer] listenerUpdateParameterComments:", event.dataPacket);
 		if (parameter.hasComments()) {
 			this.comments = (
 				<div>
@@ -245,11 +245,11 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		const { targetPortlet, targetFormId, sourceFormId, requestId, params } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
-			console.log("[SXDataStructurePreviewer] listenerRequest rejected:", event.dataPacket);
+			//console.log("[SXDataStructurePreviewer] listenerRequest rejected:", event.dataPacket);
 			return;
 		}
 
-		console.log("[SXDataStructurePreviewer] listenerRequest:", event.dataPacket);
+		//console.log("[SXDataStructurePreviewer] listenerRequest:", event.dataPacket);
 		Event.fire(Event.SX_REQUEST, this.namespace, this.namespace, {
 			targetFormId: this.formId,
 			sourceFormId: sourceFormId,

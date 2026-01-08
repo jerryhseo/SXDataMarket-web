@@ -2,10 +2,10 @@ import React from "react";
 import ClayForm, { ClayInput } from "@clayui/form";
 import { ClayTooltipProvider } from "@clayui/tooltip";
 import Icon from "@clayui/icon";
-import Button from "@clayui/button";
+import Button, { ClayButtonWithIcon } from "@clayui/button";
 import { Util } from "../../stationx/util";
 import { Text } from "@clayui/core";
-import { SXFreezeIcon, SXLinkIcon, SXQMarkIcon, SXVerifyIcon } from "../../stationx/icon";
+import { SXFreezeIcon, SXHistoryIcon, SXLinkIcon, SXQMarkIcon, SXVerifyIcon } from "../../stationx/icon";
 import { EditStatus, Event } from "../../stationx/station-x";
 
 export const SXRequiredMark = ({ spritemap }) => {
@@ -68,7 +68,6 @@ export class SXTitleBar extends React.Component {
 		this.formId = props.formId;
 		this.spritemap = props.spritemap;
 		this.parameter = props.parameter;
-		this.displayMode = props.displayMode ?? EditStatus.PREVIEW;
 		this.style = props.style ?? { marginBottom: "0.4rem", fontSize: "0.85rem", fontWeight: "600" };
 
 		this.title = this.parameter.label;
@@ -85,29 +84,34 @@ export class SXTitleBar extends React.Component {
 		this.freezable = this.parameter.freezable ?? false;
 		this.verified = this.parameter.verified ?? true;
 		this.freezed = this.parameter.freezed ?? false;
+		this.historyItems = this.parameter.historyItems ?? [];
 
-		this.commentInputOpened = false;
+		this.buttons = props.buttons ?? [];
 
 		//console.log("[SXTitleBar] props", props);
 	}
 
-	handlerQMarkClicked = () => {
-		//console.log("SXTitleBar: QMark clicked: " + this.commentInputOpened);
+	handlerQMarkClicked = (event) => {
+		event.stopPropagation();
 
-		this.commentInputOpened = !this.commentInputOpened;
-		//console.log("[SXTitleBar] handlerQMarkClicked: ", this.commentInputOpened);
 		Event.fire(Event.SX_OPEN_COMMENTS, this.namespace, this.namespace, {
-			targetFormId: this.formId,
-			open: this.commentInputOpened
+			targetFormId: this.formId
 		});
 	};
 
-	handlerVerifyClicked = () => {
+	handlerVerifyClicked = (event) => {
+		event.stopPropagation();
 		console.log("SXTitleBar: Verified clicked");
 	};
 
-	handlerFreezeClicked = () => {
+	handlerFreezeClicked = (event) => {
+		event.stopPropagation();
 		console.log("SXTitleBar: Freezed clicked");
+	};
+
+	handlerHistoriesClicked = (event) => {
+		event.stopPropagation();
+		console.log("SXTitleBar: handlerHistoriesClicked clicked");
 	};
 
 	render() {
@@ -118,7 +122,7 @@ export class SXTitleBar extends React.Component {
 			: "sx-control-label";
 
 		const commentIconColor = this.hasComments ? (this.commentFreezed ? "#dfdfdf" : "#ffff00") : "#ffff00";
-		const verifyIconColor = this.verified ? "#dfdfdf" : "#ffff00";
+		const verifyIconColor = this.verified ? "#9e9c9cff" : "#ffff00";
 		const freezeIconColor = this.freezed ? "#dfdfdf" : "#ffff00";
 		/*
 		console.log(
@@ -174,12 +178,20 @@ export class SXTitleBar extends React.Component {
 					className="autofit-col"
 					style={{ display: "inline-block" }}
 				>
+					{Util.isNotEmpty(this.historyItems) && (
+						<span
+							style={{ marginRight: "0.4rem" }}
+							onClick={this.handlerHistoriesClicked}
+						>
+							<SXHistoryIcon />
+						</span>
+					)}
 					{this.commentable && (
-						<span style={{ marginRight: "0.4rem" }}>
-							<SXQMarkIcon
-								fillColor={commentIconColor}
-								onClick={this.handlerQMarkClicked}
-							/>
+						<span
+							style={{ marginRight: "0.4rem" }}
+							onClick={this.handlerQMarkClicked}
+						>
+							<SXQMarkIcon fillColor={commentIconColor} />
 						</span>
 					)}
 					{this.verifiable && (

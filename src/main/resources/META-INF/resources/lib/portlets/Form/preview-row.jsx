@@ -116,6 +116,8 @@ class SXPreviewRow extends SXBaseParameterComponent {
 			};
 		}
 
+		//console.log("[SXPreviewRow render: ", this.parameter.paramCode, this.parameter.key);
+
 		return (
 			<>
 				<div
@@ -123,7 +125,6 @@ class SXPreviewRow extends SXBaseParameterComponent {
 						className + (this.parameter.position == "end" ? " sx-preview-row-end" : " sx-preview-row")
 					}
 					onClick={this.handleClick}
-					ref={this.focusRef}
 				>
 					<div
 						className="autofit-col autofit-col-expand"

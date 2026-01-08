@@ -21,6 +21,7 @@ import com.sx.constant.StationXWebKeys;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataStructure;
 import com.sx.icecap.model.DataType;
+import com.sx.icecap.model.StructuredData;
 import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
@@ -42,49 +43,54 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
-	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
+	        "javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXStructuredDataEditorPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_STRUCTURED_DATA_EDITING
+	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_STRUCTURED_DATA
 	    },
 	    service = MVCResourceCommand.class
 )
-public class LoadEditingStructuredDataResourceCommand extends BaseMVCResourceCommand{
+public class LoadStructuredDataResourceCommand extends BaseMVCResourceCommand{
 
 	@Override
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
 		
-		long dataCollectionId = ParamUtil.getLong(resourceRequest, WebKey.DATACOLLECTION_ID, 0);
-		long dataSetId = ParamUtil.getLong(resourceRequest, WebKey.DATASET_ID, 0);
-		long dataTypeId = ParamUtil.getLong(resourceRequest, WebKey.DATATYPE_ID, 0);
-		long dataStructureId = ParamUtil.getLong(resourceRequest, WebKey.DATASTRUCTURE_ID, 0);
 		long structuredDataId = ParamUtil.getLong(resourceRequest, WebKey.STRUCTURED_DATA_ID, 0);
-		String cmd = ParamUtil.getString(resourceRequest, "cmd", "add");
 		
-		System.out.println("--- Start LoadEditingStructuredDataResourceCommand:  " );
-		System.out.println("cmd: " + cmd);
-		System.out.println("dataCollectionId: " + dataCollectionId);
-		System.out.println("dataSetId: " + dataSetId);
-		System.out.println("dataTypeId: " + dataTypeId);
-		System.out.println("dataStructureId: " + dataStructureId);
+		System.out.println("--- Start LoadStructuredDataResourceCommand:  " );
 		System.out.println("structuredDataId: " + structuredDataId);
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
-		JSONObject result = _structuredDataLocalService.getStructuredDataWithInfo(
-														structuredDataId, 
-														themeDisplay.getLocale());
+		StructuredData structuredData = _structuredDataLocalService.getStructuredData(structuredDataId);
 		
+		result.put("structuredData", structuredData.toJSON());
+		
+		long dataTypeId = structuredData.getDataTypeId();
+		TypeStructureLink typeStructureLink = _typeStructureLocalService.getTypeStructureLink(dataTypeId);
+		
+		long dataStructureId = typeStructureLink.getDataStructureId();
+		DataStructure dataStructure = _dataStructureLocalService.getDataStructure(dataStructureId);
+		
+		result.put("dataStructure", dataStructure.toJSON());
+		
+		// Finishing controller
 		System.out.println("Result: " + result.toString(4));
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(result.toJSONString());
 		pw.flush();
 		pw.close();
 		
-		System.out.println("--- End LoadEditingStructuredDataResourceCommand" );
+		System.out.println("--- End LoadStructuredDataResourceCommand" );
 	}
 	
 	@Reference
 	private StructuredDataLocalService _structuredDataLocalService;
+	
+	@Reference
+	private DataStructureLocalService _dataStructureLocalService;
+	
+	@Reference
+	private TypeStructureLinkLocalService _typeStructureLocalService;
 	
 }

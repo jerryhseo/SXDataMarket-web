@@ -31,7 +31,7 @@ class SXBaseVisualizer extends React.Component {
 		this.workbenchNamespace = props.workbenchNamespace;
 		this.workbenchId = props.workbenchPortletId;
 		this.portletId = props.portletId;
-		this.formId = props.portletId;
+		this.formId = props.namespace;
 		this.execMode = props.execMode ?? ExecutionMode.WORKBENCH_BASED;
 
 		this.permissions = props.permissions;
@@ -48,6 +48,9 @@ class SXBaseVisualizer extends React.Component {
 		this.availableLanguageIds = SXSystem.getAvailableLanguages();
 
 		this.params = props.params ?? {};
+
+		this.titleBar = this.params.titleBar;
+		this.buttons = this.params.buttons;
 	}
 
 	fireHandshake() {
@@ -76,7 +79,7 @@ class SXBaseVisualizer extends React.Component {
 		});
 	}
 
-	fireRequest({ targetFormId = this.workbenchId, sourceFormId, requestId, params, refresh = true }) {
+	fireRequest({ targetFormId = this.workbenchId, sourceFormId, requestId, params }) {
 		Event.fire(Event.SX_REQUEST, this.namespace, this.workbenchNamespace, {
 			targetFormId: targetFormId,
 			sourceFormId: sourceFormId,
@@ -84,9 +87,7 @@ class SXBaseVisualizer extends React.Component {
 			params: params
 		});
 
-		if (refresh) {
-			this.setState({ loadingStatus: LoadingStatus.PENDING });
-		}
+		this.setState({ loadingStatus: LoadingStatus.PENDING });
 	}
 
 	redirectTo({ portletName, params = {} }) {

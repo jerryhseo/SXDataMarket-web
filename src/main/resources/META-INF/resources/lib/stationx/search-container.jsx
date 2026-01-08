@@ -28,6 +28,7 @@ export class SXManagementToolbar extends React.Component {
 	constructor(props) {
 		super(props);
 
+		console.log("[SXManagementToolbar props] ", props);
 		this.namespace = props.namespace;
 		this.spritemap = props.spritemap;
 		this.formId = props.formId;
@@ -164,14 +165,7 @@ export class SXManagementToolbar extends React.Component {
 			triggerButtonTitle = Util.translate("groupby");
 		}
 
-		/*
-		console.log(
-			"renderFilterAndGroupBySection: ",
-			triggerButtonTitle,
-			this.filterOptions.length,
-			this.groupByOptions.length > 0
-		);
-		*/
+		console.log("renderFilterAndGroupBySection: ", this.state.selectAll);
 
 		return (
 			<>
@@ -328,7 +322,7 @@ export class SXManagementToolbar extends React.Component {
 					{this.renderFilterAndGroupBySection()}
 					{this.renderSearchbarSection()}
 					{this.renderActionButtonSection()}
-					{this.renderAddButtonSection()}
+					{this.addButton && this.renderAddButtonSection()}
 				</Toolbar.Nav>
 			</Toolbar>
 		);
@@ -339,10 +333,11 @@ export class SXSearchResultConainer extends React.Component {
 	constructor(props) {
 		super(props);
 
+		console.log("[SXSearchResultConainer props] ", props);
 		this.namespace = props.namespace;
 		this.formId = props.formId;
 		this.columns = props.columns ?? [];
-		this.containerId = props.searchContainerId;
+		this.componentId = props.searchContainerId;
 		this.searchResults = props.searchResults ?? [];
 		this.selectedResults = props.selectedResults ?? [];
 		this.displayStyle = props.displayStyle ?? DisplayStyles.TABLE;
@@ -358,22 +353,7 @@ export class SXSearchResultConainer extends React.Component {
 
 			if (this.checkbox) {
 				row.push({
-					id: "checkbox",
-					value: (
-						<ClayCheckbox
-							aria-label=""
-							checked={this.checkAll || this.checkResultSelected(result)}
-							onChange={(e) => {
-								const checked = e.target.checked;
-
-								if (checked) {
-									this.addSelectedResult(result);
-								} else {
-									this.removeSelectedResult(result);
-								}
-							}}
-						/>
-					)
+					id: "checkbox"
 				});
 			}
 
@@ -413,6 +393,8 @@ export class SXSearchResultConainer extends React.Component {
 			targetFormId: this.formId,
 			selectedResults: this.selectedResults
 		});
+
+		this.forceUpdate();
 	}
 
 	removeSelectedResult(result) {
@@ -425,8 +407,19 @@ export class SXSearchResultConainer extends React.Component {
 				targetFormId: this.formId,
 				selectedResults: this.selectedResults
 			});
+
+			this.forceUpdate();
 		}
 	}
+
+	handleColumnClicked = (row, column) => {
+		Event.fire(Event.SX_TABLE_COLUMN_CLICKED, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			componentId: this.componentId,
+			column: column,
+			row: row
+		});
+	};
 
 	renderTable() {
 		return (
@@ -471,25 +464,37 @@ export class SXSearchResultConainer extends React.Component {
 							return (
 								<Row key={index}>
 									{row.map((column) => {
-										if (column.id == "actions") {
+										if (column.id === "checkbox") {
 											return (
 												<Cell
 													key={column.id}
 													textAlign="center"
 													onClick={(e) => {
-														e.stopPropagation();
+														this.handleColumnClicked(row, column);
+													}}
+												>
+													<ClayCheckbox
+														aria-label="select"
+														checked={this.checkAll || this.checkResultSelected(row)}
+														onChange={(e) => {
+															const checked = e.target.checked;
 
-														Event.fire(
-															Event.SX_TABLE_COLUMN_CLICKED,
-															this.namespace,
-															this.namespace,
-															{
-																targetFormId: this.formId,
-																containerId: this.containerId,
-																column: column,
-																row: row
+															if (checked) {
+																this.addSelectedResult(row);
+															} else {
+																this.removeSelectedResult(row);
 															}
-														);
+														}}
+													/>
+												</Cell>
+											);
+										} else if (column.id === "actions") {
+											return (
+												<Cell
+													key={column.id}
+													textAlign="center"
+													onClick={(e) => {
+														this.handleColumnClicked(row, column);
 													}}
 												>
 													<SXActionDropdown
@@ -507,19 +512,7 @@ export class SXSearchResultConainer extends React.Component {
 													key={column.id}
 													textAlign="center"
 													onClick={(e) => {
-														e.stopPropagation();
-
-														Event.fire(
-															Event.SX_TABLE_COLUMN_CLICKED,
-															this.namespace,
-															this.namespace,
-															{
-																targetFormId: this.formId,
-																containerId: this.containerId,
-																column: column,
-																row: row
-															}
-														);
+														this.handleColumnClicked(row, column);
 													}}
 												>
 													{column.value}

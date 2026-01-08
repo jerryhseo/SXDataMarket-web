@@ -25,10 +25,10 @@ class SXDualListBox extends SXBaseParameterComponent {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
-			console.log("[SXDualListBox] listenerPopActionClicked event rejected: ", dataPacket);
+			//console.log("[SXDualListBox] listenerPopActionClicked event rejected: ", dataPacket);
 			return;
 		}
-		console.log("[SXDualListBox] listenerPopActionClicked: ", dataPacket);
+		//console.log("[SXDualListBox] listenerPopActionClicked: ", dataPacket);
 
 		switch (dataPacket.action) {
 			case "moveUp": {
@@ -121,7 +121,7 @@ class SXDualListBox extends SXBaseParameterComponent {
 	}
 
 	handleOptionClicked = (option, checked) => {
-		console.log("handleOptionClicked: ", option, checked);
+		//console.log("handleOptionClicked: ", option, checked);
 		const clickedOption = this.parameter.getOptionByValue(option.value);
 
 		if (checked) {
@@ -146,7 +146,7 @@ class SXDualListBox extends SXBaseParameterComponent {
 	}
 
 	renderFormField() {
-		console.log("SxDualListBox: ", this.parameter);
+		//console.log("SxDualListBox: ", this.parameter);
 		return (
 			<>
 				{this.parameter.renderTitle({
@@ -228,7 +228,7 @@ class SXDualListBox extends SXBaseParameterComponent {
 									}}
 								>
 									{this.state.leftOptions.map((option, index) => {
-										console.log("SXDualListBox.option: ", option);
+										//console.log("SXDualListBox.option: ", option);
 										const actionMenus = [];
 
 										if (index > 0) {

@@ -11,6 +11,7 @@ import SXGridTypeOptionForm from "./grid-specific-properties";
 import SXSelectTypeOptionForm from "./select-specific-properties";
 import SXDualListTypeOptionForm from "./duallist-specific-properties";
 import SXBooleanTypeOptionForm from "./boolean-specific-properties";
+import SXFileTypeOptionForm from "./file-specific-properties.jsx";
 
 class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 	constructor(props) {
@@ -67,6 +68,17 @@ class SXDSBuilderTypeSpecificPanel extends SXBasePropertiesPanelComponent {
 			case ParamType.BOOLEAN: {
 				return (
 					<SXBooleanTypeOptionForm
+						namespace={this.namespace}
+						formId={this.formId}
+						dataStructure={this.dataStructure}
+						workingParam={this.workingParam}
+						spritemap={this.spritemap}
+					/>
+				);
+			}
+			case ParamType.FILE: {
+				return (
+					<SXFileTypeOptionForm
 						namespace={this.namespace}
 						formId={this.formId}
 						dataStructure={this.dataStructure}

@@ -367,11 +367,11 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 
 	convertSearchResultsToContent(results) {
 		this.searchedData = results;
+		console.log("convertSearchResultsToContent: ", results);
 
 		this.searchResults = results.map((result, index) => {
 			const { dataCollectionId, dataCollectionCode, dataCollectionVersion, displayName } = result;
 
-			//console.log("convertSearchResultsToContent: ", results, this.searchResults);
 			const contentActionMenus = [];
 
 			if (this.permissions.includes(ActionKeys.UPDATE)) {
@@ -386,6 +386,12 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 					symbol: "trash"
 				});
 			}
+
+			contentActionMenus.push({
+				id: "data",
+				name: Util.translate("data"),
+				symbol: "data-privacy"
+			});
 
 			let row = [
 				{

@@ -8,8 +8,14 @@ import { Util } from "../../stationx/util";
 import Sticker from "@clayui/sticker";
 import SXApplicationBar from "../../stationx/application-bar";
 import Icon from "@clayui/icon";
+import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 
 class DataWorkbench extends React.Component {
+	static ViewMode = {
+		FORM: "form",
+		DATA: "data"
+	};
+
 	workbench = null;
 
 	constructor(props) {
@@ -27,6 +33,7 @@ class DataWorkbench extends React.Component {
 		this.languageId = SXSystem.getLanguageId();
 
 		this.workingPortletSectionId = this.namespace + "workingPortletSection";
+		this.workingPortletNamespace = "";
 
 		//console.log("DataWorkbench......", props);
 
@@ -39,6 +46,7 @@ class DataWorkbench extends React.Component {
 		});
 
 		this.dataCollection = null;
+		this.viewMode = DataWorkbench.ViewMode.FORM;
 
 		this.state = {
 			dataCollectionId: props.dataCollectionId ?? 0,
@@ -52,44 +60,28 @@ class DataWorkbench extends React.Component {
 				content: "",
 				portlet: null
 			},
-			openVerticalNav: true
+			openVerticalNav: true,
+			infoDialog: false
 		};
 
 		this.workingPortletRef = createRef();
 		this.canvasRef = createRef();
 
-		this.boundingRect = null;
+		//this.boundingRect = null;
 
 		this.topMenuItems = [
 			{
-				id: "dataCollection",
-				label: Util.translate("datacollection"),
-				children: [
-					{
-						id: "newDataCollection",
-						label: Util.translate("new-datacollection")
-					},
-					{
-						id: "newDataSet",
-						label: Util.translate("new-dataset")
-					},
-					{
-						id: "newDataType",
-						label: Util.translate("new-datatype")
-					},
-					{
-						id: "newDataStructure",
-						label: Util.translate("new-datastructure")
-					},
-					{
-						id: "openDataCollection",
-						label: Util.translate("open-datacollection")
-					}
-				]
+				id: "dataCollectionManagement",
+				label: Util.translate("datacollection-management")
 			},
 			{
-				id: "dataExplorer",
-				label: Util.translate("data-explorer"),
+				id: "dataManagement",
+				label: Util.translate("data-management")
+			}
+			/*
+			{
+				id: "collectionManagement",
+				label: Util.translate("collection-management"),
 				children: [
 					{
 						id: "dataCollectionExplorer",
@@ -112,10 +104,17 @@ class DataWorkbench extends React.Component {
 						label: Util.translate("structured-data-explorer")
 					}
 				]
+			},
+			{
+				id: "dataExplorer",
+				label: Util.translate("data-explorer")
 			}
+				*/
 		];
 
 		this.navItems = [];
+		this.dialogHeader = <></>;
+		this.dialogBody = <></>;
 	}
 
 	listenerLoadPortlet = (event) => {
@@ -166,85 +165,55 @@ class DataWorkbench extends React.Component {
 	};
 
 	listenerHandshake = (event) => {
-		const dataPacket = event.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace) {
+		const { targetPortlet, sourcePortlet } = event.dataPacket;
+		if (targetPortlet !== this.namespace) {
 			return;
 		}
 
-		//console.log("Workbench HANDSHAKE received: ", dataPacket);
+		console.log("Workbench HANDSHAKE received: ", event.dataPacket);
+		this.workingPortletNamespace = sourcePortlet;
 
-		Event.fire(Event.SX_WORKBENCH_READY, this.namespace, dataPacket.sourcePortlet, {});
+		Event.fire(Event.SX_WORKBENCH_READY, this.namespace, sourcePortlet, {});
 	};
 
 	listenerWindowResize = () => {
-		this.boundingRect = this.canvasRef.current.getBoundingClientRect();
+		//this.boundingRect = this.canvasRef.current.getBoundingClientRect();
 
 		this.forceUpdate();
 	};
 
 	listenerMenuItemClick = (event) => {
-		const dataPacket = event.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace) {
+		const { targetPortlet, menuId } = event.dataPacket;
+		if (targetPortlet !== this.namespace) {
 			return;
 		}
 
-		//console.log("Workbench SX_MENU_SELECTED received: ", dataPacket);
-		const menuId = dataPacket.menuId;
+		console.log("Workbench SX_MENU_SELECTED received: ", event.dataPacket);
+
+		let viewMode = DataWorkbench.ViewMode.FORM;
+
 		switch (menuId) {
-			case "newDataCollection": {
-				this.deployPortlet({
-					portletName: PortletKeys.DATACOLLECTION_EDITOR,
-					title: Util.translate("new-datacollection")
-				});
+			case "dataCollectionManagement": {
+				viewMode = DataWorkbench.ViewMode.FORM;
+
 				break;
 			}
-			case "openDataCollection": {
-				this.deployPortlet({
-					portletName: PortletKeys.DATACOLLECTION_EXPLORER,
-					params: {
-						managementBar: false,
-						checkbox: false
-					},
-					title: Util.translate("open-datacollection")
-				});
-				break;
-			}
-			case "dataCollectionExplorer": {
-				this.deployPortlet({
-					portletName: PortletKeys.DATACOLLECTION_EXPLORER,
-					title: Util.translate("datacollection-explorer")
-				});
-				break;
-			}
-			case "dataSetExplorer": {
-				this.deployPortlet({
-					portletName: PortletKeys.DATASET_EXPLORER,
-					title: Util.translate("dataset-explorer")
-				});
-				break;
-			}
-			case "dataTypeExplorer": {
-				this.deployPortlet({
-					portletName: PortletKeys.DATATYPE_EXPLORER,
-					title: Util.translate("datatype-explorer")
-				});
-				break;
-			}
-			case "dataStructureExplorer": {
-				this.deployPortlet({
-					portletName: PortletKeys.DATASTRUCTURE_EXPLORER,
-					title: Util.translate("datastructure-explorer")
-				});
-				break;
-			}
-			case "structureDataExplorer": {
-				this.deployPortlet({
-					portletName: PortletKeys.STRUCTURED_DATA_EXPLORER,
-					title: Util.translate("structured-data-explorer")
-				});
+			case "dataManagement": {
+				viewMode = DataWorkbench.ViewMode.DATA;
+
 				break;
 			}
 		}
+
+		if (this.viewMode === viewMode) {
+			return;
+		}
+
+		Event.fire(Event.SX_CHANGE_VIEWMODE, this.namespace, this.workingPortletNamespace, {
+			viewMode: viewMode
+		});
+
+		this.viewMode = viewMode;
 	};
 
 	listenerDataCollectionSelected = (event) => {
@@ -254,14 +223,30 @@ class DataWorkbench extends React.Component {
 		}
 
 		//console.log("[DataWorkbench] dataCollectionSelected: ", dataPacket);
-		this.workbench.processRequest({
-			sourceFormId: sourceFormId,
-			requestId: Workbench.RequestIDs.loadDataCollection,
-			requestPortlet: sourcePortlet,
-			params: {
+		this.dataCollectionId = dataCollectionId;
+
+		let requestId;
+		let params;
+
+		if (this.viewMode === DataWorkbench.ViewMode.FORM) {
+			requestId = Workbench.RequestIDs.loadDataCollection;
+			params = {
 				dataCollectionId: dataCollectionId,
 				loadAvailableDataSets: false
-			}
+			};
+		} else {
+			requestId = Workbench.RequestIDs.loadStructuredData;
+			params = {
+				dataCollectionId: dataCollectionId,
+				loadAvailableDataSets: false
+			};
+		}
+
+		this.workbench.processRequest({
+			sourceFormId: sourceFormId,
+			requestId: requestId,
+			requestPortlet: this.namespace,
+			params: params
 		});
 	};
 
@@ -343,15 +328,14 @@ class DataWorkbench extends React.Component {
 
 		window.addEventListener("resize", this.listenerWindowResize);
 
-		this.boundingRect = this.canvasRef.current.getBoundingClientRect();
+		//this.boundingRect = this.canvasRef.current.getBoundingClientRect();
 
 		if (this.state.dataCollectionId === 0) {
 			this.deployPortlet({
-				portletName: PortletKeys.DATACOLLECTION_EXPLORER,
-				title: Util.translate("datacollection-selector"),
+				portletName: PortletKeys.COLLECTION_MANAGEMENT,
+				title: Util.translate("collection-management"),
 				params: {
-					managementBar: false,
-					checkbox: false
+					viewMode: this.viewMode
 				},
 				portletState: Workbench.PortletState.NORMAL
 			});
@@ -391,14 +375,20 @@ class DataWorkbench extends React.Component {
 		});
 	};
 
+	handleDataCollection = (event) => {
+		event.stopPropagation();
+	};
+
 	render() {
 		let height = window.innerHeight;
 
+		/*
 		if (this.boundingRect) {
 			height = window.innerHeight - this.boundingRect.top;
 		}
+			*/
 
-		//console.log("Workbench render: ", this.workbench);
+		//console.log("Workbench render: ", this.state);
 		return (
 			<div style={{ border: "3px groove #ccc" }}>
 				<div className="autofit-row">
@@ -411,105 +401,30 @@ class DataWorkbench extends React.Component {
 						/>
 					</div>
 				</div>
-				<div
-					className="autofit-row"
-					style={{ paddingTop: "5px", alignItems: "stretch" }}
-					ref={this.canvasRef}
-				>
-					{this.state.openVerticalNav && (
-						<div
-							className="autofit-col shrink"
-							style={{
-								borderRight: "3px inset #e0dddd",
-								minWidth: "10%",
-								maxWidth: "50%",
-								padding: "5px 0 5px 5px"
-							}}
-						>
-							<Rnd
-								default={{
-									x: 0,
-									y: 0,
-									width: 100,
-									height: "100%"
-								}}
-								minWidth={120}
-								maxWidth={500}
-								maxHeight="100%"
-								disableDragging={true}
-								enableResizing={{
-									top: false,
-									right: true,
-									bottom: false,
-									left: false,
-									topRight: false,
-									bottomRight: false,
-									bottomLeft: false,
-									topLeft: false
-								}}
-								style={{ paddingLeft: "5px", position: "relative", width: "100%", height: "100%" }}
-							>
-								<Sticker
-									displayType={this.dataCollection ? "sx-label-outline-3" : "sx-label-outline-4"}
-									style={{
-										margin: "5px 0",
-										height: "40px",
-										width: "100%"
-									}}
-								>
-									<Icon
-										symbol="home-full"
-										spritemap={this.spritemap}
-										style={{ marginRight: "5px" }}
-									/>
-									{this.dataCollection
-										? this.dataCollection.displayName[this.languageId]
-										: Util.translate("no-datacollection")}
-								</Sticker>
-								<SXDataCollectionNavigator
-									key={this.state.dataCollectionId}
-									namespace={this.namespace}
-									navItems={this.navItems}
-									style={{
-										width: "100%"
-									}}
-									spritemap={this.spritemap}
-								/>
-							</Rnd>
-						</div>
-					)}
-					<div
-						className="autofit-col autofit-col-expand"
-						style={{ height: "100%", padding: "5px" }}
-					>
-						<SXApplicationBar
-							key={this.state.workingPortletInstance.title + this.state.openVerticalNav}
-							namespace={this.namespace}
-							formId={this.workbenchId}
-							applicationTitle={
-								Util.isEmpty(this.state.workingPortletInstance.title)
-									? Util.translate(this.state.workingPortletInstance.displayName)
-									: this.state.workingPortletInstance.title
-							}
-							verticalNavOpened={this.state.openVerticalNav}
-							spritemap={this.spritemap}
-						/>
-						<div
-							ref={this.workingPortletRef}
-							style={{ overflowX: "hidden", overflowY: "auto", padding: "0 10px" }}
-						>
-							{this.state.workingPortletInstance.portletState === Workbench.PortletState.NORMAL && (
-								<SXPortlet
-									key={this.state.workingPortletInstance.namespace}
-									namespace={this.namespace}
-									portletNamespace={this.state.workingPortletInstance.namespace}
-									portletContent={this.state.workingPortletInstance.content}
-								/>
-							)}
-						</div>
-					</div>
-				</div>
+				{this.state.workingPortletInstance.portletState === Workbench.PortletState.NORMAL && (
+					<SXPortlet
+						key={this.state.workingPortletInstance.namespace}
+						namespace={this.namespace}
+						portletNamespace={this.state.workingPortletInstance.namespace}
+						portletContent={this.state.workingPortletInstance.content}
+					/>
+				)}
+
 				{this.workbench.windowCount > 0 && <>{this.workbench.getWindowMap()}</>}
+				{this.state.infoDialog && (
+					<SXModalDialog
+						header={this.dialogHeader}
+						body={this.dialogBody}
+						buttons={[
+							{
+								label: Util.translate("ok"),
+								onClick: () => {
+									this.setState({ infoDialog: false });
+								}
+							}
+						]}
+					/>
+				)}
 			</div>
 		);
 	}

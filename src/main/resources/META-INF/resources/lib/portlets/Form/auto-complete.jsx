@@ -26,7 +26,7 @@ class SXAutoComplete extends React.Component {
 			value: ""
 		};
 
-		console.log("[SXAutoComplete props] ", props);
+		//console.log("[SXAutoComplete props] ", props);
 	}
 
 	handleInputChanged = (value) => {

@@ -12,12 +12,15 @@
 <%@ include file="./init.jsp" %>
 
 <%
-    String subject = ParamUtil.getString(renderRequest, "subject", "");
+    String editState = ParamUtil.getString(renderRequest, "editState", "");
     long dataCollectionId = ParamUtil.getLong(renderRequest, "dataCollectionId", 0);
     long dataSetId = ParamUtil.getLong(renderRequest, "dataSetId", 0);
     long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
     long dataStructureId = ParamUtil.getLong(renderRequest, "dataStructureId", 0);
     long structuredDataId = ParamUtil.getLong(renderRequest, "structuredDataId", 0);
+    boolean titleBar = ParamUtil.getBoolean(renderRequest, "titleBar", false);
+    boolean buttons = ParamUtil.getBoolean(renderRequest, "buttons", true);
+    
 	JSONArray permissions = (JSONArray)GetterUtil.getObject(renderRequest.getAttribute("permissions"), JSONFactoryUtil.createJSONArray());
 
 	String workbenchNamespace = ParamUtil.getString(renderRequest, StationXWebKeys.WORKBENCH_NAMESPACE, StringPool.BLANK);
@@ -27,6 +30,7 @@
 	
 	System.out.println("[SXStructuredDataEditor] workbenchNamespace: " + workbenchNamespace);
 	System.out.println("[SXStructuredDataEditor] portletId: " + portletDisplay.getId());
+	System.out.println("[SXStructuredDataEditor] structuredDataId: " + structuredDataId);
 %>
 
 <portlet:renderURL  var="baseRenderURL">
@@ -58,12 +62,14 @@
 				workbenchNamespace: '<%= workbenchNamespace %>',
 				workbenchPortletId: '<%= workbenchId %>',
 				params:{
-					subject: '<%= subject %>',
+					editState: "<%= editState %>",
+					structuredDataId: Number('<%= structuredDataId %>'),
 					dataStructureId: Number('<%= dataStructureId %>'),
 					dataCollectionId: Number('<%= dataCollectionId %>'),
 					dataSetId: Number('<%= dataSetId %>'),
 					dataTypeId: Number('<%= dataTypeId %>'),
-					structuredDataId: Number('<%= structuredDataId %>'),
+					titleBar: <%= titleBar %>,
+					buttons: <%= buttons %>,
 				}
 			}
 	};

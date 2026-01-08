@@ -36,7 +36,7 @@ class SXWorkbenchMenu extends React.Component {
 		return (
 			<NavigationBar
 				spritemap={this.spritemap}
-				style={{ ...this.style, height: "40px" }}
+				style={{ ...this.style }}
 			>
 				{this.menuItems.map((menuItem) => {
 					if (Util.isNotEmpty(menuItem.children)) {

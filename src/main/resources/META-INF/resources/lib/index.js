@@ -13,6 +13,10 @@ import DataSetExplorer from "./portlets/DataSet/dataset-explorer";
 import DataCollectionExplorer from "./portlets/DataCollection/datacollection-explorer";
 import DataSetEditor from "./portlets/DataSet/dataset-editor";
 import DataStructureExplorer from "./portlets/DataStructure/datastructure-explorer";
+import CollectionsManagement from "./portlets/DataCollection/collections-management";
+import DataCollectionViewer from "./portlets/DataCollection/datacollection-viewer";
+import DataSetViewer from "./portlets/DataSet/dataset-viewer";
+import DataTypeViewer from "./portlets/DataType/datatype-viewer";
 
 export default function (elementId, portletId, portletParams) {
 	const root = createRoot(document.getElementById(elementId));
@@ -22,6 +26,22 @@ export default function (elementId, portletId, portletParams) {
 			root.render(
 				<ClayModalProvider>
 					<DataWorkbench {...portletParams} />
+				</ClayModalProvider>
+			);
+			break;
+		}
+		case PortletKeys.COLLECTION_MANAGEMENT: {
+			root.render(
+				<ClayModalProvider>
+					<CollectionsManagement {...portletParams} />
+				</ClayModalProvider>
+			);
+			break;
+		}
+		case PortletKeys.DATACOLLECTION_VIEWER: {
+			root.render(
+				<ClayModalProvider>
+					<DataCollectionViewer {...portletParams} />
 				</ClayModalProvider>
 			);
 			break;
@@ -50,10 +70,26 @@ export default function (elementId, portletId, portletParams) {
 			);
 			break;
 		}
+		case PortletKeys.DATASET_VIEWER: {
+			root.render(
+				<ClayModalProvider>
+					<DataSetViewer {...portletParams} />
+				</ClayModalProvider>
+			);
+			break;
+		}
 		case PortletKeys.DATASET_EXPLORER: {
 			root.render(
 				<ClayModalProvider>
 					<DataSetExplorer {...portletParams} />
+				</ClayModalProvider>
+			);
+			break;
+		}
+		case PortletKeys.DATATYPE_VIEWER: {
+			root.render(
+				<ClayModalProvider>
+					<DataTypeViewer {...portletParams} />
 				</ClayModalProvider>
 			);
 			break;

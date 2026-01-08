@@ -43,8 +43,8 @@ class SXBaseParameterComponent extends React.PureComponent {
 			: {};
 
 		this.state = {
-			openComments: false,
-			openActionHistories: false
+			openComments: props.openComments ?? false,
+			openActionHistories: props.openActionHistories ?? false
 		};
 	}
 
@@ -114,7 +114,7 @@ class SXBaseParameterComponent extends React.PureComponent {
 		}
 		//console.log("[SXBaseParameterComponent] listenerOpenComments: ", this.parameter.label, event.dataPacket);
 
-		this.setState({ openComments: open });
+		this.setState({ openComments: !this.state.openComments });
 	};
 
 	listenerRequest = (event) => {

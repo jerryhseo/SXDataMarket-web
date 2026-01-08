@@ -244,6 +244,18 @@ span.toggle-switch-bar {
 	background-color: #f1f2f5;
 }
 
+.breadcrumb-bar {
+	display: inline-flex;
+	align-items: center;
+	margin-bottom: 1rem;
+}
+
+ol.breadcrumb {
+	margin-bottom: 0;
+	padding: 0;
+	align-self: "center";
+}
+
 div .not-found {
 	display: flex;
 	align-items: center;

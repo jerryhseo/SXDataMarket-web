@@ -25,24 +25,18 @@ class SXEMail extends SXBaseParameterComponent {
 		return this.state.emailId && this.state.serverName;
 	}
 
-	fireValueChanged(event) {
+	fireValueChanged() {
 		//console.log("SXEmail onItemChange: ", event);
-		if (this.state.emailId && this.state.serverName) {
-			if (this.initEmailId == this.state.emailId && this.initServerName == this.state.serverName) {
-				return;
-			}
+		this.parameter.clearError();
 
-			this.parameter.setValue({
-				value: { emailId: this.state.emailId, serverName: this.state.serverName },
-				cellIndex: this.cellIndex,
-				validate: true
-			});
+		if (this.state.emailId && this.state.serverName) {
 			this.parameter.fireValueChanged();
 		}
 	}
 
-	handleEMailIdChanged(emailId) {
+	handleEMailIdChanged = (emailId) => {
 		this.setState({ emailId: emailId });
+		this.parameter.setEmailId(emailId, this.cellIndex);
 
 		const regExpr = new RegExp(ValidationRule.EMAIL_ID);
 		if (!regExpr.test(emailId)) {
@@ -51,12 +45,15 @@ class SXEMail extends SXBaseParameterComponent {
 				errorClass: ErrorClass.ERROR
 			};
 			this.parameter.setDirty(true, this.cellIndex);
+		} else {
+			this.fireValueChanged();
 		}
-	}
+	};
 
-	handleServerChanged(serverName) {
-		console.log("SXEmail.handleServerChanged: ", serverName);
+	handleServerChanged = (serverName, e) => {
+		console.log("SXEmail.handleServerChanged: ", serverName, e);
 		this.setState({ serverName: serverName });
+		this.parameter.setServerName(serverName, this.cellIndex);
 
 		const regExpr = new RegExp(ValidationRule.SERVER_NAME);
 		if (!regExpr.test(serverName)) {
@@ -65,8 +62,10 @@ class SXEMail extends SXBaseParameterComponent {
 				errorClass: ErrorClass.ERROR
 			};
 			this.parameter.setDirty(true, this.cellIndex);
+		} else {
+			this.fireValueChanged();
 		}
-	}
+	};
 
 	getClayUI() {
 		return (
@@ -80,7 +79,6 @@ class SXEMail extends SXBaseParameterComponent {
 							e.stopPropagation();
 							this.handleEMailIdChanged(e.target.value);
 						}}
-						onBlur={(e) => this.fireValueChanged()}
 						spritemap={this.spritemap}
 						ref={this.focusRef}
 					/>
@@ -90,12 +88,13 @@ class SXEMail extends SXBaseParameterComponent {
 				</ClayInput.GroupItem>
 				<ClayInput.GroupItem>
 					<Autocomplete
+						id={this.parameter.tagId}
 						aria-labelledby={Util.translate("email-server-name")}
-						items={this.emailServers}
+						defaultItems={this.emailServers}
+						allowsCustomValue={true}
 						placeholder={Util.translate("email-server-name")}
 						disabled={this.parameter.getDisabled(this.cellIndex)}
-						onChange={(val) => this.handleServerChanged(val)}
-						onBlur={(e) => this.fireValueChanged(e)}
+						onChange={this.handleServerChanged}
 						value={this.state.serverName}
 					>
 						{(item) => <Autocomplete.Item key={item}>{item}</Autocomplete.Item>}

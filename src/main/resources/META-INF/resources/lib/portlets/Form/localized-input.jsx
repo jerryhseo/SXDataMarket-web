@@ -31,12 +31,6 @@ class SXLocalizedInput extends SXBaseParameterComponent {
 		this.setState({
 			translation: value
 		});
-	}
-
-	fireValueChanged() {
-		if (Util.isEqual(this.initValue, this.parameter.getValue(this.cellIndex))) {
-			return;
-		}
 
 		this.parameter.fireValueChanged(this.cellIndex);
 	}
@@ -71,7 +65,6 @@ class SXLocalizedInput extends SXBaseParameterComponent {
 							placeholder={this.parameter.getPlaceholder(this.state.selectedLang)}
 							disabled={this.parameter.getDisabled(this.cellIndex)}
 							onChange={(e) => this.handleChange(e.target.value)}
-							onBlur={(e) => this.fireValueChanged(e.target.value)}
 							ref={this.focusRef}
 							sizing="sm"
 						/>

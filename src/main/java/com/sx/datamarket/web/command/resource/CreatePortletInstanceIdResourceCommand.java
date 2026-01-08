@@ -30,6 +30,7 @@ import org.osgi.service.component.annotations.Reference;
 	    property = {
 	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXDataStructureBuilderPortlet,
+	        "javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
 	        "mvc.command.name="+MVCCommand.RESOURCE_CREATE_PORTLET_INSTANCE
 	    },
 	    service = MVCResourceCommand.class

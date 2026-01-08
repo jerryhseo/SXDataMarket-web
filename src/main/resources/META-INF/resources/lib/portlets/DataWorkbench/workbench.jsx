@@ -36,7 +36,7 @@ export class Workbench {
 		});
 	}
 
-	static BASE_WINDOW_ZINDEX = 10000;
+	static BASE_WINDOW_ZINDEX = 100;
 
 	static WorkflowStatus = {
 		ANY: -1,
@@ -75,8 +75,10 @@ export class Workbench {
 		deleteDataCollections: "deleteDataCollections",
 		deleteDataSets: "deleteDataSets",
 		deleteDataStructures: "deleteDataStructures",
+		deleteStructuredData: "deleteStructuredData",
 		deleteTypeStructureLink: "deleteTypeStructureLink",
 		deleteTypeStructureLinkAndImportDataStructure: "deleteTypeStructureLinkAndImportDataStructure",
+		downloadFieldAttachedFile: "downloadFieldAttachedFile",
 		importDataType: "importDataType",
 		importDataStructure: "importDataStructure",
 		loadDataCollection: "loadDataCollection",
@@ -100,7 +102,12 @@ export class Workbench {
 		searchDataTypes: "searchDataTypes",
 		searchParameters: "searchParameters",
 		searchStructuredData: "searchStructuredData",
-		updateDataType: "updateDataType"
+		updateDataCollection: "updateDataCollection",
+		updateDataSet: "updateDataSet",
+		updateDataType: "updateDataType",
+		viewDataCollection: "viewDataCollection",
+		viewDataSet: "viewDataSet",
+		viewDataType: "viewDataType"
 	};
 
 	namespace = "";
@@ -189,8 +196,8 @@ export class Workbench {
 			portletName: portletName
 		});
 
-		portletInstance.title = title;
 		//console.log("Workbench loadPortlet: ", portletInstance);
+		portletInstance.title = title;
 
 		params.workbenchNamespace = this.namespace;
 		params.workbenchId = this.workbenchId;
@@ -210,8 +217,6 @@ export class Workbench {
 			type: "get",
 			dataType: "html"
 		});
-
-		//const portletRoot = createRoot(portletRootTag);
 
 		return {
 			portletName: portletName,
@@ -367,17 +372,41 @@ export class Workbench {
 		});
 	};
 
-	ajax = async ({ url, params = {}, type = "post", dataType = "json" }) => {
-		//console.log("Workbench ajax URL: ", url, type, dataType);
-		let result;
+	convertParamsToFormData = (params) => {
+		const formData = new FormData();
 
-		let data;
+		let fileFields = [];
+		Object.keys(params).forEach((key) => {
+			let webKey = this.namespace + key;
+			const data = params[key];
+			if (key === "files") {
+				data.forEach((fileItem) => {
+					if (!fileFields.includes(fileItem.paramCode)) {
+						fileFields.push(fileItem.paramCode);
+					}
+
+					webKey = this.namespace + fileItem.paramCode;
+
+					formData.append(webKey, fileItem.file);
+				});
+			} else {
+				formData.append(webKey, data);
+			}
+
+			//console.log(this.namespace + key + ": " + params[key]);
+		});
+
+		formData.append(this.namespace + "fileFields", fileFields);
+
+		return formData;
+	};
+
+	ajax = async ({ url, params = {}, type = "post", dataType = "json", jsonParse = true }) => {
+		//console.log("Workbench ajax URL: ", url, type, dataType);
 		if (type === "post") {
-			const formData = new FormData();
-			Object.keys(params).forEach((key) => {
-				formData.append(this.namespace + key, params[key]);
-				//console.log(this.namespace + key + ": " + params[key]);
-			});
+			const formData = this.convertParamsToFormData(params);
+
+			const xhrFields = jsonParse === "blob" ? { responseType: "blob" } : {};
 
 			return new Promise((resolve, reject) => {
 				try {
@@ -385,11 +414,16 @@ export class Workbench {
 						url: url,
 						type: type,
 						data: formData,
+						xhrFields: xhrFields,
 						processData: false,
 						contentType: false,
 						success: (result) => {
 							//console.log("Data Ajax finished: ", typeof result, result);
-							resolve(JSON.parse(result));
+							if (jsonParse === true) {
+								resolve(JSON.parse(result));
+							} else {
+								resolve(result);
+							}
 						}
 					});
 				} catch (error) {
@@ -438,6 +472,8 @@ export class Workbench {
 
 	processRequest = async ({ requestPortlet, sourceFormId, requestId, params }) => {
 		let resourceId;
+
+		let jsonParse = true;
 
 		switch (requestId) {
 			case Workbench.RequestIDs.addComment: {
@@ -501,6 +537,10 @@ export class Workbench {
 				resourceId = ResourceIds.DELETE_TYPE_STRUCTURE_LINK;
 				break;
 			}
+			case Workbench.RequestIDs.viewDataType: {
+				resourceId = ResourceIds.VIEW_DATATYPE;
+				break;
+			}
 			case Workbench.RequestIDs.importDataType:
 			case Workbench.RequestIDs.loadDataType: {
 				resourceId = ResourceIds.LOAD_DATATYPE;
@@ -529,6 +569,10 @@ export class Workbench {
 				resourceId = ResourceIds.LOAD_DATACOLLECTION;
 				break;
 			}
+			case Workbench.RequestIDs.viewDataCollection: {
+				resourceId = ResourceIds.VIEW_DATACOLLECTION;
+				break;
+			}
 			case Workbench.RequestIDs.saveDataCollection: {
 				resourceId = ResourceIds.SAVE_DATACOLLECTION;
 				break;
@@ -542,11 +586,15 @@ export class Workbench {
 				break;
 			}
 			case Workbench.RequestIDs.loadStructuredData: {
-				resourceId = ResourceIds.LOAD_STRUCTURED_DATA_EDITING;
+				resourceId = ResourceIds.LOAD_STRUCTURED_DATA;
 				break;
 			}
 			case Workbench.RequestIDs.searchDataCollections: {
 				resourceId = ResourceIds.SEARCH_DATACOLLECTIONS;
+				break;
+			}
+			case Workbench.RequestIDs.viewDataSet: {
+				resourceId = ResourceIds.VIEW_DATASET;
 				break;
 			}
 			case Workbench.RequestIDs.searchDataSets: {
@@ -569,8 +617,25 @@ export class Workbench {
 				resourceId = ResourceIds.DELETE_DATASTRUCTURES;
 				break;
 			}
+			case Workbench.RequestIDs.deleteStructuredData: {
+				resourceId = ResourceIds.DELETE_STRUCTURED_DATA;
+				break;
+			}
 			case Workbench.RequestIDs.searchDataStructures: {
 				resourceId = ResourceIds.SEARCH_DATASTRUCTURES;
+				break;
+			}
+			case Workbench.RequestIDs.saveStructuredData: {
+				resourceId = ResourceIds.SAVE_STRUCTUED_DATA;
+				break;
+			}
+			case Workbench.RequestIDs.searchStructuredData: {
+				resourceId = ResourceIds.SEARCH_STRUCTUED_DATA;
+				break;
+			}
+			case Workbench.RequestIDs.downloadFieldAttachedFile: {
+				resourceId = ResourceIds.DOWNLOAD_FIELD_ATTACHED_FILE;
+				jsonParse = "blob";
 				break;
 			}
 		}
@@ -579,8 +644,11 @@ export class Workbench {
 		if (Util.isNotEmpty(resourceId)) {
 			const url = await this.createResourceURL({ resourceId: resourceId });
 
+			console.log("[Workbench processRequest] ", url, params);
+
 			result = await this.ajax({
 				url: url,
+				jsonParse: jsonParse,
 				params: params
 			});
 		}
@@ -662,7 +730,7 @@ export class SXPortletWindow extends React.Component {
 	}
 
 	componentWillUnmount() {
-		console.log("SXPortletWindow will unmount");
+		//console.log("SXPortletWindow will unmount");
 
 		Event.fire(Event.SX_COMPONENT_WILL_UNMOUNT, this.namespace, this.portletNamespace, {
 			targetPortlet: this.portletNamespace
@@ -679,7 +747,7 @@ export class SXPortletWindow extends React.Component {
 	};
 
 	render() {
-		console.log("[Window render] ", window);
+		//console.log("[Window render] ", window);
 		return (
 			<Rnd
 				default={{
@@ -693,7 +761,7 @@ export class SXPortletWindow extends React.Component {
 					zIndex: this.zIndex
 				}}
 				onResizeStop={(e, direction, ref, delta, newPosition) => {
-					console.log("[SXPortletWindow newPosition] ", e, direction, delta, newPosition);
+					//console.log("[SXPortletWindow newPosition] ", e, direction, delta, newPosition);
 					this.setState({
 						width: ref.offsetWidth,
 						height: ref.offsetHeight

@@ -102,7 +102,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		console.log("DataTypeEditor props: ", props);
+		//console.log("DataTypeEditor props: ", props);
 		this.dirty = false;
 
 		this.dataType = new DataType(this.languageId, this.availableLanguageIds);
@@ -366,7 +366,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		if (dataPacket.id == this.dataTypeImportId) {
 			this.importDataType(dataPacket.item.dataTypeId);
 		} else if (dataPacket.id == this.dataStructureImportId) {
-			console.log("Import dataStructure: ", dataPacket);
+			//console.log("Import dataStructure: ", dataPacket);
 			this.importDataStructureId = dataPacket.item.dataStructureId;
 
 			if (this.structureLink.dataTypeId > 0) {
@@ -405,11 +405,11 @@ class DataTypeEditor extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[dataTypeEditor] listenerWorkbenchReady event rejected: ", dataPacket);
+			//console.log("[dataTypeEditor] listenerWorkbenchReady event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[dataTypeEditor] listenerWorkbenchReady received: ", dataPacket);
+		//console.log("[dataTypeEditor] listenerWorkbenchReady received: ", dataPacket);
 
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.loadDataType,
@@ -431,11 +431,11 @@ class DataTypeEditor extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataTypeEditor] listenerResponce rejected: ", dataPacket);
+			//console.log("[DataTypeEditor] listenerResponce rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataTypeEditor] listenerResonse: ", dataPacket);
+		//console.log("[DataTypeEditor] listenerResonse: ", dataPacket);
 
 		const state = {};
 		switch (dataPacket.requestId) {
@@ -559,11 +559,11 @@ class DataTypeEditor extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataTypeEditor] listenerComponentWillUnmount rejected: ", dataPacket);
+			//console.log("[DataTypeEditor] listenerComponentWillUnmount rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataTypeEditor] listenerComponentWillUnmount received: ", dataPacket);
+		//console.log("[DataTypeEditor] listenerComponentWillUnmount received: ", dataPacket);
 		this.componentWillUnmount();
 	};
 
@@ -582,7 +582,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 	}
 
 	componentWillUnmount() {
-		console.log("[DataTypeEditor] componentWillUnmount");
+		//console.log("[DataTypeEditor] componentWillUnmount");
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.off(Event.SX_AUTOCOMPLETE_SELECTED, this.listenerAutocompleteSelected);
 		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerTypeStructureLinkInfoChanged);
@@ -592,7 +592,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 	}
 
 	loadDataType = (data) => {
-		console.log("data type loaded: ", data, this.dataType);
+		//console.log("data type loaded: ", data, this.dataType);
 
 		this.dataType.parse(data.dataType ?? {});
 
@@ -621,7 +621,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		}));
 
 		if (Util.isNotEmpty(data.visualizers)) {
-			console.log("data.visualizers: ", data.visualizers);
+			//console.log("data.visualizers: ", data.visualizers);
 			this.visualizers.setValue({
 				value: data.visualizers.map((v) => {
 					if (typeof v === "object") {
@@ -657,7 +657,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.dataType.dataTypeVersion = "1.0.0";
 		this.dataType.dirty = true;
 
-		console.log("imported data type loaded: ", data, this.dataType);
+		//console.log("imported data type loaded: ", data, this.dataType);
 
 		// Set dataType values to fields and initialize fields
 		this.setFormValues();
@@ -668,12 +668,12 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.structureLink.fromDB = true;
 
 		this.dataStructure.parse(data.dataStructure ?? {});
-		console.log(
+		/* console.log(
 			"In Loading imported data type: ",
 			JSON.stringify(this.structureLink, null, 4),
 			this.structureLink,
 			this.dataStructure
-		);
+		); */
 
 		if (Util.isNotEmpty(data.visualizers)) {
 			//console.log("data.visualizers: ", data.visualizers);
@@ -691,11 +691,11 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.dataTypeAutoCompleteItems = data.dataTypeAutoCompleteItems;
 		this.dataStructureAutoCompleteItems = data.dataStructureAutoCompleteItems;
 
-		console.log(
+		/* console.log(
 			"imported data type AutoCompleItes: ",
 			this.dataTypeAutoCompleteItems,
 			this.dataStructureAutoCompleteItems
-		);
+		); */
 	};
 
 	importDataType = (dataTypeId) => {
@@ -717,7 +717,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 	};
 
 	setFormValues = () => {
-		console.log("setFormValues: ", this.dataType);
+		//console.log("setFormValues: ", this.dataType);
 		for (const prop in this.dataType) {
 			switch (prop) {
 				case "dataTypeCode": {
@@ -787,13 +787,13 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.structureLink.fromDB = false;
 		this.dataStructure.setTitleBarInfos(this.structureLink.toJSON());
 
-		console.log(
+		/* console.log(
 			"importDataStructure: ",
 			data.dataStructure,
 			this.dataTypeId,
 			this.structureLink,
 			this.dataStructure
-		);
+		); */
 
 		this.setState({ loadingStatus: LoadingStatus.COMPLETE });
 	};
@@ -1009,7 +1009,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 			this.editStatus == EditStatus.UPDATE
 				? Workbench.RequestIDs.updateDataType
 				: Workbench.RequestIDs.addDataType;
-		console.log("handleBtnSaveClick: ", JSON.stringify(formValues, null, 4), this.fields);
+		//console.log("handleBtnSaveClick: ", JSON.stringify(formValues, null, 4), this.fields);
 
 		this.fireRequest({
 			requestId: requestId,
@@ -1101,7 +1101,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.dlgBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-link-info");
 
-		console.log("handleRemoveLinkInfoBtnClick: ", this.structureLink);
+		//console.log("handleRemoveLinkInfoBtnClick: ", this.structureLink);
 		if (this.structureLink.fromDB) {
 			this.setState({ dlgWarningRemoveLinkInfo: true });
 		} else {

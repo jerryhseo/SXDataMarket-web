@@ -1,5 +1,5 @@
 import React from "react";
-import { Constant, ParamType, ValidationKeys, ErrorClass, Event } from "../../stationx/station-x";
+import { Constant, ParamType, ValidationKeys, ErrorClass, Event, DisplayType } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
 import SXFormField, { SXFormFieldFeedback, SXRequiredMark, SXTitleBar, SXTooltip } from "../Form/form";
 import { ClayInput } from "@clayui/form";
@@ -294,10 +294,24 @@ class Parameter {
 		}
 	];
 	commentFreezed = false;
-	commentFreezeUserId;
-	commentFreezeUserName;
-	commentFreezeDate;
-	actionHistories = [];
+	commentFreezedUserId;
+	commentFreezedUserName;
+	commentFreezedDate;
+	historyItems = [
+		{
+			actionHistoryId: 123456,
+			createDate: "11/17/2025, 10:01:00 AM",
+			userid: 543678,
+			userName: "Jane Doe",
+			actionModel: "Parameter",
+			dataId: 234567,
+			paramCode: "paramCode",
+			actionCommand: "update",
+			prevValue: "prevValue",
+			modifiedValue: "modifiedValue",
+			comment: "This is modified"
+		}
+	];
 	freezed = false;
 	freezedUserId;
 	freezedUserName;
@@ -1114,13 +1128,14 @@ class Parameter {
 	 *     so that the function returns indexed cell value.
 	 */
 	getValue(cellIndex) {
-		if (this.isGridCell()) {
+		if (this.isGridCell() && Util.isNotEmpty(cellIndex)) {
 			if (!this.value) {
 				this.value = [];
 			}
 
 			return this.value[cellIndex];
 		} else {
+			//console.log("getValue: ", this, this.label, this.value);
 			return this.value;
 		}
 	}
@@ -1621,7 +1636,7 @@ class Parameter {
 		if (this.commentable) {
 			//this.comments = data.comments;
 		}
-		this.actionHistories = data.actionHistories;
+		this.historyItems = data.historyItems;
 
 		if (this.freezable) {
 			this.freezed = data.freezed;
@@ -1640,25 +1655,94 @@ class Parameter {
 		this.value = data.value;
 	}
 
-	toData() {
-		let data = {};
+	toFileData() {
+		const files = [];
 
-		if (this.hasValue()) {
-			data[this.paramCode] = {
-				commentFreezed: this.commentFreezed,
-				commentFreezeUserId: this.commentFreezeUserId,
-				commentFreezeUserName: this.commentFreezeUserName,
-				commentFreezeDate: this.commentFreezeDate,
-				freezed: this.freezed,
-				freezedUserId: this.freezedUserId,
-				freezedUserName: this.freezedUserName,
-				freezedDate: this.freezedDate,
-				verified: this.verified,
-				verifiedUserId: this.verifiedUserId,
-				verifiedUserName: this.verifiedUserName,
-				verifiedDate: this.verifiedDate,
-				value: this.value
+		const mapFileValueToFileData = (fileInfo, rowIndex) => {
+			return {
+				info: {}
 			};
+		};
+
+		if (this.paramType === ParamType.FILE && this.hasValue()) {
+			if (this.#displayType === ParameterConstants.DisplayTypes.GRID_CELL) {
+				const values = this.getValue();
+				values.map((cellValues, rowIndex) => {
+					cellValues.map((value) => {});
+				});
+			} else {
+			}
+		}
+	}
+
+	fileInfoToData() {
+		if (this.paramType !== ParamType.FILE) {
+			// return empty object
+			return {};
+		}
+
+		// Type of the value of the file type parameter is an array.
+		const values = this.value; // [...]
+
+		let data = [];
+		if (this.displayType === ParameterConstants.DisplayTypes.GRID_CELL) {
+			// It means the value is an Array of JSON Array
+			data = values.map((value) => {
+				return value.map((item) => ({
+					info: {
+						id: item.fileId,
+						name: item.name,
+						type: item.type
+					},
+					file: item.file
+				}));
+			});
+		} else {
+			// It means the value is an Array of JSON object
+			data = value.map;
+		}
+	}
+
+	toData() {
+		let data;
+		if (this.hasValue()) {
+			data = {};
+			data[this.paramCode] = {};
+			const strucValue = data[this.paramCode];
+
+			if (this.displayType !== ParameterConstants.DisplayTypes.GRID_CELL) {
+				if (Util.isNotEmpty(this.commentFreezed)) {
+					strucValue.commentFreezed = this.commentFreezed;
+					strucValue.commentFreezedUserId = this.commentFreezedUserId;
+					strucValue.commentFreezedUserName = this.commentFreezedUserName;
+					strucValue.commentFreezedDate = this.commentFreezedDate;
+				}
+
+				if (Util.isNotEmpty(this.freezed)) {
+					strucValue.freezed = this.freezed;
+					strucValue.freezedUserId = this.freezedUserId;
+					strucValue.freezedUserName = this.freezedUserName;
+					strucValue.freezedDate = this.freezedDate;
+				}
+
+				if (Util.isNotEmpty(this.verified)) {
+					strucValue.verified = this.verified;
+					strucValue.verifiedUserId = this.verifiedUserId;
+					strucValue.verifiedUserName = this.verifiedUserName;
+					strucValue.verifiedDate = this.verifiedDate;
+				}
+			}
+
+			strucValue.value = this.value;
+			/*
+			console.log(
+				"Parameter.toData() displayType: ",
+				this.paramCode,
+				this.displayType,
+				ParameterConstants.DisplayTypes.GRID_CELL,
+				this.displayType !== DisplayType.GRID_CELL
+			);
+			*/
 		}
 
 		return data;
@@ -2934,6 +3018,9 @@ export class EMailParameter extends Parameter {
 }
 
 export class FileParameter extends Parameter {
+	#multipleFiles = true;
+	#accepts = "";
+
 	constructor({ namespace, formId, paramType = ParamType.FILE, properties = {} }) {
 		super({
 			namespace: namespace,
@@ -2946,12 +3033,37 @@ export class FileParameter extends Parameter {
 		}
 	}
 
+	get multipleFiles() {
+		return this.#multipleFiles;
+	}
+	get accepts() {
+		return this.#accepts;
+	}
+
+	set multipleFiles(val) {
+		this.#multipleFiles = val;
+	}
+	set accepts(val) {
+		this.#accepts = val;
+	}
+
 	get abstract() {
 		if (this.abstractKey && this.hasValue()) {
 			return this.paramCode + ": " + JSON.stringify(this.value);
 		}
 
 		return "";
+	}
+
+	fireDownloadFile(fileInfo) {
+		console.log("Download file: ", fileInfo);
+		Event.fire(Event.SX_DOWNLOAD_FIELD_ATTACHED_FILE, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			fileName: fileInfo.name,
+			fileType: fileInfo.type,
+			paramCode: this.paramCode,
+			paramVersion: this.paramVersion
+		});
 	}
 
 	initProperties(json) {
@@ -2978,24 +3090,113 @@ export class FileParameter extends Parameter {
 		super.setValue({ value: this.defaultValue ?? [], cellIndex: cellIndex });
 	}
 
-	getFiles(cellIndex) {
-		return this.getValue(cellIndex);
+	toDataObject(fileItem) {
+		return {
+			id: fileItem.fileId,
+			name: fileItem.name,
+			type: fileItem.type
+		};
 	}
 
-	setFiles(val, cellIndex) {
-		this.setValue(val, cellIndex);
+	toFileObject(fileItem) {
+		return {
+			paramCode: this.paramCode,
+			paramVersion: this.paramVersion,
+			file: fileItem.file
+		};
+	}
+
+	getFiles() {
+		let files = [];
+
+		if (this.hasValue()) {
+			if (this.displayType === ParameterConstants.DisplayTypes.GRID_CELL) {
+				// It means the value is an Array of JSON Array
+				files = this.value.map((value) => {
+					return value.map((item) => this.toFileObject(item));
+				});
+			} else {
+				// It means the value is an Array of JSON object
+				files = this.value.map((item) => this.toFileObject(item));
+			}
+		}
+
+		console.log("FileParameter: ", files);
+		return files;
+	}
+
+	toData() {
+		let data;
+		if (this.hasValue()) {
+			data = {};
+			data[this.paramCode] = {};
+			const strucValue = data[this.paramCode];
+
+			if (this.displayType !== ParameterConstants.DisplayTypes.GRID_CELL) {
+				if (Util.isNotEmpty(this.commentFreezed)) {
+					strucValue.commentFreezed = this.commentFreezed;
+					strucValue.commentFreezedUserId = this.commentFreezedUserId;
+					strucValue.commentFreezedUserName = this.commentFreezedUserName;
+					strucValue.commentFreezedDate = this.commentFreezedDate;
+				}
+
+				if (Util.isNotEmpty(this.freezed)) {
+					strucValue.freezed = this.freezed;
+					strucValue.freezedUserId = this.freezedUserId;
+					strucValue.freezedUserName = this.freezedUserName;
+					strucValue.freezedDate = this.freezedDate;
+				}
+
+				if (Util.isNotEmpty(this.verified)) {
+					strucValue.verified = this.verified;
+					strucValue.verifiedUserId = this.verifiedUserId;
+					strucValue.verifiedUserName = this.verifiedUserName;
+					strucValue.verifiedDate = this.verifiedDate;
+				}
+			}
+
+			if (this.displayType === ParameterConstants.DisplayTypes.GRID_CELL) {
+				strucValue.value = this.value.map((value) => {
+					return value.map((item) => this.toDataObject(item));
+				});
+			} else {
+				strucValue.value = this.value.map((item) => this.toDataObject(item));
+			}
+
+			/*
+			console.log(
+				"Parameter.toData() displayType: ",
+				this.paramCode,
+				this.displayType,
+				ParameterConstants.DisplayTypes.GRID_CELL,
+				this.displayType !== DisplayType.GRID_CELL
+			);
+			*/
+		}
+
+		return data;
 	}
 
 	parse(json = {}) {
 		super.parse(json);
+
+		this.multipleFiles = json.multipleFiles ?? true;
+		this.accepts = json.accepts ?? "";
 	}
 
 	toJSON() {
-		return super.toJSON();
+		let json = super.toJSON();
+
+		json.multipleFiles = this.multipleFiles;
+		json.accepts = this.accepts;
+
+		return json;
 	}
 
 	toProperties(tagId, tagName) {
 		let properties = super.toProperties();
+		properties.multipleFiles = this.multipleFiles;
+		properties.accepts = this.accepts;
 
 		if (tagId) properties.tagId = tagId;
 		if (tagName) properties.tagName = tagName;
@@ -3445,12 +3646,30 @@ export class GroupParameter extends Parameter {
 		return actionItems;
 	}
 
+	getFiles() {
+		let files = [];
+
+		this.members.forEach((member) => {
+			if (member.paramType === ParamType.FILE) {
+				files = [...files, ...member.getFiles()];
+			}
+		});
+
+		console.log("GroupParameter: ", files);
+		return files;
+	}
+
 	focus(paramCode, paramVersion) {
 		this.focused = this.equalTo(paramCode, paramVersion);
 
 		this.members.forEach((param) => {
 			param.focus(paramCode, paramVersion);
 		});
+	}
+
+	getFileData(members = this.members) {
+		let fileParams = [];
+		members.forEach((member) => {});
 	}
 
 	superParse(json) {
@@ -3497,9 +3716,10 @@ export class GroupParameter extends Parameter {
 		super.loadData(data);
 
 		this.members.forEach((member) => {
-			const value = data[member.paramCode];
-			if (Util.isNotEmpty(value)) {
-				member.loadData(value);
+			const memberData = data[member.paramCode];
+
+			if (Util.isNotEmpty(memberData)) {
+				member.loadData(memberData);
 			}
 		});
 	}
@@ -3522,11 +3742,30 @@ export class GroupParameter extends Parameter {
 			return memberOutputs;
 		} else {
 			let groupOutput = {};
-			groupOutput[this.paramCode] = {
-				freezed: this.freezed,
-				verified: this.verified,
-				value: memberOutputs
-			};
+			let data = (groupOutput[this.paramCode] = {});
+
+			if (Util.isNotEmpty(this.commentFreezed)) {
+				data.commentFreezed = this.commentFreezed;
+				data.commentFreezedUserId = this.commentFreezedUserId;
+				data.commentFreezedUserName = this.commentFreezedUserName;
+				data.commentFreezedDate = this.commentFreezedDate;
+			}
+
+			if (Util.isNotEmpty(this.freezed)) {
+				data.freezed = this.freezed;
+				data.freezedUserId = this.freezedUserId;
+				data.freezedUserName = this.freezedUserName;
+				data.freezedDate = this.freezedDate;
+			}
+
+			if (Util.isNotEmpty(this.verified)) {
+				data.verified = this.verified;
+				data.verifiedUserId = this.verifiedUserId;
+				data.verifiedUserName = this.verifiedUserName;
+				data.verifiedDate = this.verifiedDate;
+			}
+
+			data.value = memberOutputs;
 
 			return groupOutput;
 		}
@@ -3570,9 +3809,6 @@ export class GroupParameter extends Parameter {
 		spritemap,
 		displayType = this.displayType,
 		viewType = this.viewType,
-		dsbuilderId,
-		propertyPanelId,
-		previewCanvasId,
 		cellIndex
 	}) {
 		return (
@@ -3588,9 +3824,6 @@ export class GroupParameter extends Parameter {
 					displayType: displayType,
 					viewType: viewType,
 					preview: false,
-					dsbuilderId: dsbuilderId,
-					propertyPanelId: propertyPanelId,
-					previewCanvasId: previewCanvasId,
 					cellIndex: cellIndex
 				})}
 			</div>
