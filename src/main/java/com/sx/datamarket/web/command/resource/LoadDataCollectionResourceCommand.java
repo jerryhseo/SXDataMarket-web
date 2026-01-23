@@ -60,7 +60,7 @@ public class LoadDataCollectionResourceCommand extends BaseMVCResourceCommand{
 	@Override
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
-		System.out.println("LoadDataCollectionResourceCommand: " );
+		//System.out.println("LoadDataCollectionResourceCommand: " );
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
@@ -95,7 +95,7 @@ public class LoadDataCollectionResourceCommand extends BaseMVCResourceCommand{
 			result.put("availableDataSetList", availableDataSetJSONArray);
 		}
 		
-		System.out.println("LoadDataCollection result: " + result.toString(4));
+		//System.out.println("LoadDataCollection result: " + result.toString(4));
 		
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(result.toJSONString());

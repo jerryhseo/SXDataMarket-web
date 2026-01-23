@@ -18,32 +18,62 @@ class SXFile extends SXBaseParameterComponent {
 			underConstruction: false
 		};
 
-		//console.log("[SXFile props] ", props, props.parameter.key);
+		//console.log("[SXFile props] ", props, this.parameter, this.state.value);
+	}
+
+	componentDidMount() {
+		super.componentDidMount();
+
+		if (this.inputRef.current && Util.isNotEmpty(this.state.value)) {
+			//console.log("[SXFile componentDidMount] ", this.state.value);
+			const dataTransfer = new DataTransfer();
+
+			this.state.value.forEach((fileItem) => {
+				if (Util.isNotEmpty(fileItem.file)) {
+					dataTransfer.items.add(fileItem.file);
+				}
+			});
+
+			this.inputRef.current.files = dataTransfer.files;
+		}
 	}
 
 	hasFiles() {
-		let file;
+		let hasFile;
 
 		this.state.value.every((fileInfo) => {
-			file = fileInfo.file;
+			hasFile = this.isFileInstance(fileInfo);
 
-			return file ? false : true;
+			return hasFile ? false : true;
 		});
 
-		return !!file;
+		return !!hasFile;
+	}
+
+	isFileInstance(fileItem) {
+		return fileItem.file instanceof File;
 	}
 
 	handleFileSelectionChanged(files) {
-		const fileList = this.state.value.filter((fileInfo) => !fileInfo.file);
+		console.log("[SXFile handleFileSelectionChanged] ", this.parameter.paramCode, files);
 
-		for (let i = 0; i < files.length; i++) {
-			const file = files[i];
-			fileList.push({
-				name: file.name,
-				size: file.size,
-				type: file.type,
-				file: file
-			});
+		let fileList;
+		if (this.parameter.multipleFiles) {
+			fileList = this.state.value.filter((fileInfo) => !this.isFileInstance(fileInfo));
+
+			for (let i = 0; i < files.length; i++) {
+				const file = files[i];
+
+				fileList.push({
+					name: file.name,
+					lastModified: file.lastModified,
+					type: file.type,
+					file: file
+				});
+			}
+		} else {
+			const file = files[0];
+			fileList = file ? [{ name: file.name, lastModified: file.lastModified, type: file.type, file: file }] : [];
 		}
 
 		this.setState({ value: fileList });
@@ -56,13 +86,21 @@ class SXFile extends SXBaseParameterComponent {
 
 		let files = this.state.value
 			.filter((fileItem) => {
-				return fileItem.file;
+				return this.isFileInstance(fileItem);
 			})
 			.map((fileItem) => fileItem.file);
 
+		/*
+		console.log(
+			"[SXFile valueToFiles] ",
+			this.parameter.paramCode,
+			this.parameter.getValue(),
+			this.state.value,
+			files
+		); */
 		files.forEach((file) => dataTransfer.items.add(file));
 
-		this.focusRef.current.files = dataTransfer.files;
+		this.inputRef.current.files = dataTransfer.files;
 	}
 
 	handleActionClick(action, fileInfo) {
@@ -77,17 +115,45 @@ class SXFile extends SXBaseParameterComponent {
 				break;
 			}
 			case "delete": {
-				const dataTransfer = new DataTransfer();
+				let files;
+				if (this.isFileInstance(fileInfo)) {
+					files = this.state.value
+						.filter((fileItem) => {
+							return this.isFileInstance(fileItem) && fileItem.name !== fileInfo.name;
+						})
+						.map((fileItem) => fileItem.file);
 
-				let files = this.state.value
-					.filter((fileItem) => {
-						return fileItem.file && fileItem.name !== fileInfo.name;
-					})
-					.map((fileItem) => fileItem.file);
+					const dataTransfer = new DataTransfer();
+					if (files.length > 0) {
+						files.forEach((file) => dataTransfer.items.add(file));
+					}
 
-				files.forEach((file) => dataTransfer.items.add(file));
+					this.inputRef.current.files = dataTransfer.files;
+				} else {
+					files = this.state.value.filter((fileItem) => {
+						if (fileItem.name === fileInfo.name) {
+							/*
+							this.parameter.fireDeleteFiles({
+								files: [
+									{
+										fileName: fileInfo.name,
+										lastModified: fileInfo.lastModified,
+										fileType: fileInfo.type
+									}
+								]
+							});
+							*/
 
-				this.inputRef.current.files = dataTransfer.files;
+							return false;
+						}
+
+						return true;
+					});
+
+					this.parameter.setValue({ value: files });
+					this.setState({ value: files });
+					//this.parameter.fireDeleteFiles();
+				}
 
 				this.handleFileSelectionChanged(files);
 
@@ -101,11 +167,16 @@ class SXFile extends SXBaseParameterComponent {
 			this.inputRef.current.value = "";
 		}
 
+		//console.log("[SXFile render] ", this.parameter.paramCode, this.state.value);
+		if (this.inputRef && this.inputRef.current) {
+			this.valueToFiles();
+		}
+
 		return (
 			<div ref={this.focusRef}>
 				<ClayInput
 					type="file"
-					accepts={this.parameter.accepts}
+					accept={this.parameter.accepts}
 					disabled={this.parameter.getDisabled(this.cellIndex)}
 					multiple={this.parameter.multipleFiles}
 					ref={this.inputRef}
@@ -115,7 +186,7 @@ class SXFile extends SXBaseParameterComponent {
 					sizing="sm"
 					style={{ paddingLeft: "10px", marginBottom: "5px" }}
 				/>
-				{this.parameter.multipleFiles && Util.isNotEmpty(this.state.value) && this.state.value.length > 1 && (
+				{this.parameter.fileManager && Util.isNotEmpty(this.state.value) && this.state.value.length > 0 && (
 					<div style={{ paddingLeft: "1rem" }}>
 						<table
 							style={{ width: "100%", fontSize: "0.750rem", borderCollapse: "collapse", border: "none" }}
@@ -123,7 +194,9 @@ class SXFile extends SXBaseParameterComponent {
 							<thead style={{ backgroundColor: "seashell" }}>
 								<tr>
 									<th style={{ padding: "3px", textAlign: "center" }}>{Util.translate("name")}</th>
-									<th style={{ padding: "3px", textAlign: "center" }}>{Util.translate("size")}</th>
+									<th style={{ padding: "3px", textAlign: "center" }}>
+										{Util.translate("last-modified")}
+									</th>
 									<th style={{ width: "1rem", padding: "3px", textAlign: "center" }}>
 										<Icon
 											symbol="ellipsis-v"
@@ -137,7 +210,9 @@ class SXFile extends SXBaseParameterComponent {
 									return (
 										<tr key={fileInfo.name}>
 											<td>{fileInfo.name}</td>
-											<td style={{ textAlign: "right" }}>{fileInfo.size}</td>
+											<td style={{ textAlign: "right" }}>
+												{new Date(fileInfo.lastModified).toLocaleString()}
+											</td>
 											<td style={{ textAlign: "center" }}>
 												<DropDown
 													trigger={
@@ -155,7 +230,7 @@ class SXFile extends SXBaseParameterComponent {
 												>
 													<DropDown.ItemList
 														items={
-															!fileInfo.file
+															!this.isFileInstance(fileInfo)
 																? [
 																		{
 																			id: "delete",

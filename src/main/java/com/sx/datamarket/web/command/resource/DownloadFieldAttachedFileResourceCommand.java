@@ -63,7 +63,7 @@ public class DownloadFieldAttachedFileResourceCommand extends BaseMVCResourceCom
 		String paramVersion = ParamUtil.getString(resourceRequest, "paramVersion", "");
 		String fileName = ParamUtil.getString(resourceRequest, "fileName", "");
 		String fileType = ParamUtil.getString(resourceRequest, "fileType", "");
-		String disposition = ParamUtil.getString(resourceRequest, "disposition", "attachment");
+		String disposition = ParamUtil.getString(resourceRequest, "disposition", "attachment"); // inline or attachement
 		
 		
 		if( !(

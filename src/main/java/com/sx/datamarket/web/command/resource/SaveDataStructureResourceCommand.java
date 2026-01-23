@@ -10,8 +10,11 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -25,12 +28,21 @@ import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.ParameterLocalService;
 import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
+import com.sx.util.SXPortalUtil;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -56,8 +68,11 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 		
 		// Save data structure
 		String strDataStructure = ParamUtil.getString(resourceRequest, "dataStructure", "{}");
+		String strFileFields = ParamUtil.getString(resourceRequest, "fileFields", "");
+		System.out.println("fileFields: " + strFileFields);
+		
 		JSONObject jsonDataStructure = JSONFactoryUtil.createJSONObject(strDataStructure);
-		System.out.println("Data Structure: " + jsonDataStructure.toString(4));
+		//System.out.println("Data Structure: " + jsonDataStructure.toString(4));
 		
 		long dataStructureId = jsonDataStructure.getLong("paramId", 0);
 		String dataStructureCode = jsonDataStructure.getString("paramCode", "");
@@ -66,6 +81,8 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 		JSONObject jsonDataStructureDescription = jsonDataStructure.getJSONObject("description");
 
 		ServiceContext dataStructureSC = ServiceContextFactory.getInstance(DataStructure.class.getName(), resourceRequest);
+		
+		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
 		if( dataStructureId == 0 ) {
 			DataStructure dataStructure = _dataStructureLocalService.addDataStructure(
@@ -91,7 +108,93 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 					dataStructureSC);
 		}
 		
-		JSONObject result = JSONFactoryUtil.createJSONObject();
+		if( !strFileFields.isEmpty() ) {
+			String[] fileFields = strFileFields.split(",");
+			
+			//Check and manage folders to save the data files
+			UploadPortletRequest uploadRequest = PortalUtil.getUploadPortletRequest(resourceRequest);
+	
+
+			String stationXDataDir = PropsUtil.get("stationx-data-dir");
+			System.out.println("StationX Data Dir: " + stationXDataDir);
+			
+			ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+			long companyId = themeDisplay.getCompanyId();
+			
+			
+			JSONArray parameters = jsonDataStructure.getJSONArray("members");
+			
+			for(int i=0; i<parameters.length(); i++) {
+				JSONObject parameter = parameters.getJSONObject(i);
+				
+				if( parameter.has("referenceFile")) {
+					Path folderPath = 
+							Paths.get( stationXDataDir+"/" + companyId + "/" +
+									themeDisplay.getScopeGroupId() + "/" + 
+									"referenceFiles/" +
+									dataStructureCode + "/" +
+									dataStructureVersion + "/" +
+									parameter.getString("paramCode") + "/" +
+									parameter.getString("paramVersion"));
+					
+					if( Files.exists(folderPath) ) {
+						System.out.println("Path exists: " + folderPath.toString());
+						
+					} else {
+						System.out.println(("Path doesn't exist: " + folderPath.toString()));
+						Files.createDirectories(folderPath);
+					}
+					
+					System.out.println("Parameter Reference File: " +
+							parameter.getString("paramCode") + ", " + parameter.getString("paramVersion") + ": " +  parameter.getJSONObject("referenceFile").toString(4));
+					
+					JSONObject referenceFile = parameter.getJSONObject("referenceFile");
+					
+					Path filePath = folderPath.resolve(referenceFile.getString("name"));
+					
+					JSONArray errorFiles = JSONFactoryUtil.createJSONArray();
+					if( Files.exists(filePath) ) {
+						File file =filePath.toFile();
+						long lastModified = file.lastModified();
+						long newModified = referenceFile.getLong("lastModified");
+						
+						if( lastModified != newModified ) {
+							errorFiles = SXPortalUtil.saveFiles(uploadRequest, fileFields, folderPath);
+						}
+					}
+					else {
+						
+						errorFiles = SXPortalUtil.saveFiles(uploadRequest, fileFields, folderPath);
+					}
+					
+					if( errorFiles.length() > 0 ) {
+						result.put("errorFiles", errorFiles);
+						
+						System.out.println("Error files: " + errorFiles.toString(4));
+					}
+				}
+				
+			}
+			
+			
+			/*
+			File folder = new File(folderPath);
+			File[] files = folder.listFiles(File::isFile);
+
+			if (files != null) {
+			    for (File file : files) {
+			        
+			    }
+			}
+
+			try (Stream<Path> stream = Files.list(folderPath)) {
+			    stream
+			        .filter(Files::isRegularFile)
+			        .map(path->path.getFileName());
+			}
+			*/
+		}
+		
 		result.put("dataStructureId", dataStructureId);
 
 		//Save DataType-DataStructure Link if dataTypeId > 0
@@ -154,6 +257,10 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 		pw.write(result.toString());
 		pw.flush();
 		pw.close();
+	}
+	
+	private void _saveReferenceFile() {
+		
 	}
 	
 	private void _printOutParameterAttributes( 

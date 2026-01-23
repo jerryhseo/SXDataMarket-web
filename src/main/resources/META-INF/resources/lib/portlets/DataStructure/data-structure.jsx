@@ -283,14 +283,14 @@ class DataStructure extends GroupParameter {
 		});
 	}
 
-	getFiles() {
+	getDataFiles() {
 		let files = [];
 
 		this.members.forEach((param) => {
 			if (param.paramType === ParamType.GROUP || param.paramType === ParamType.GRID) {
-				files = [...files, ...param.getFiles()];
+				files = [...files, ...param.getDataFiles()];
 			} else if (param.paramType === ParamType.FILE && param.hasValue()) {
-				files = [...files, ...param.getFiles()];
+				files = [...files, ...param.getDataFiles()];
 			}
 		});
 

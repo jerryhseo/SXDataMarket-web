@@ -31,6 +31,7 @@ import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -74,19 +75,16 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 		String dataCollectionVersion = ParamUtil.getString(resourceRequest, "dataCollectionVersion", "");
 		String strDisplayName = ParamUtil.getString(resourceRequest, "displayName", "{}");
 		String strDescription = ParamUtil.getString(resourceRequest, "description", "{}");
-		String strDataSets = ParamUtil.getString(resourceRequest, "associatedDataSetList");
+		String associatedDataSets = ParamUtil.getString(resourceRequest, "associatedDataSetList");
 		
 		System.out.println("dataCollectionId: " + dataCollectionId);
 		System.out.println("dataCollectionCode: " + dataCollectionCode);
 		System.out.println("dataCollectionVersion: " + dataCollectionVersion);
 		System.out.println("strDisplayName: " + strDisplayName);
 		System.out.println("strDescription: " + strDescription);
-		System.out.println("strDataSets: " + strDataSets);
+		System.out.println("strAssociatedDataSets: " + associatedDataSets);
 		
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
-		
-		String[] strAryAssociatedDataSets = strDataSets.split(",");
-		long[] assoicatedDataSets = Arrays.stream(strAryAssociatedDataSets).mapToLong(Long::parseLong).toArray();
 		
 		ServiceContext dataCollectionSC = ServiceContextFactory.getInstance(DataCollection.class.getName(), resourceRequest);
 		
@@ -115,30 +113,53 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 					dataCollectionSC);
 		}
 		
+		long groupId = dataCollectionSC.getScopeGroupId();
+		
+		String[] strAryAssociatedDataSets = associatedDataSets.isEmpty() ? new String[0] : associatedDataSets.split(",");
+		List<Long> longAryAssoicatedDataSets = new ArrayList<Long>();
+		System.out.println("strAryAssociatedDataSets: " + strAryAssociatedDataSets.length);
+		
+		for( int i=0; i< strAryAssociatedDataSets.length; i++) {
+			longAryAssoicatedDataSets.add(Long.parseLong(strAryAssociatedDataSets[i]));
+		}
+		
 		//Delete CollectionSetLink un-selected
 		List<CollectionSetLink> collectionSetLinkList = 
-				_collectionSetLinkLocalService.getCollectionSetLinkListByCollection(themeDisplay.getScopeGroupId(), dataCollectionId);
+				_collectionSetLinkLocalService.getCollectionSetLinkListByCollection(groupId, dataCollectionId);
 		
+		System.out.println("Associated Data Sets: " + collectionSetLinkList.toString());
 		Iterator<CollectionSetLink> iter = collectionSetLinkList.iterator();
 		while( iter.hasNext()) {
 			CollectionSetLink collectionSetLink = iter.next();
 			
-			boolean selected = Arrays.asList(collectionSetLinkList).contains(collectionSetLink.getDataSetId());
+			boolean selected = false;
+			for( long dataSetId : longAryAssoicatedDataSets) {
+				System.out.println("dataSetId: " + dataSetId);
+				System.out.println("collectionSetLink.dataSetId: " + collectionSetLink.getDataSetId());
+				if( dataSetId == collectionSetLink.getDataSetId() ) {
+					selected = true;
+					break;
+				}
+			}
 			
 			if( !selected ) {
+				System.out.println("Collection Set Link deleted: " + collectionSetLink.getPrimaryKey());
 				_collectionSetLinkLocalService.deleteCollectionSetLink(collectionSetLink.getPrimaryKey());
 			}
 		}
 		
 		//Add CollectionSetLink if it is new or update it if it exists.
-		if(assoicatedDataSets.length > 0) {
-			for( int order=0; order<assoicatedDataSets.length; order++) {
-				long dataSetId = assoicatedDataSets[order]; 
+		ServiceContext collectionSetLinkSC = 
+				ServiceContextFactory.getInstance(CollectionSetLink.class.getName(), resourceRequest);
+		if(longAryAssoicatedDataSets.size() > 0) {
+			for( int order=0; order<longAryAssoicatedDataSets.size(); order++) {
+				long dataSetId = longAryAssoicatedDataSets.get(order); 
 				
 				System.out.println("collectionSetLink: " + dataCollectionId + ", "+dataSetId);
 				
 				CollectionSetLink collectionSetLink = 
-						_collectionSetLinkLocalService.getCollectionSetLink(themeDisplay.getScopeGroupId(), dataCollectionId, dataSetId);
+						_collectionSetLinkLocalService.getCollectionSetLink(
+								themeDisplay.getScopeGroupId(), dataCollectionId, dataSetId);
 				
 				if( Validator.isNotNull(collectionSetLink)) {
 					collectionSetLink.setDataCollectionId(dataCollectionId);
@@ -150,7 +171,8 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 				}
 				else {
 					collectionSetLink = 
-							_collectionSetLinkLocalService.addCollectionSetLink(dataCollectionId, dataSetId, order);
+							_collectionSetLinkLocalService.addCollectionSetLink(
+									dataCollectionId, dataSetId, order, collectionSetLinkSC);
 				}
 			}
 		}

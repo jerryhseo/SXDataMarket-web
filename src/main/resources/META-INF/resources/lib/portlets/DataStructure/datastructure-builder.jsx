@@ -56,7 +56,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		backgroundColor: "#FFFFFF",
 		border: "2px solid #CDCED9",
 		padding: ".75rem 5px",
-		width: "35%"
+		width: "40%"
 	};
 	buttonPanelStyles = {
 		display: "grid",
@@ -67,13 +67,13 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		borderRight: "none",
 		padding: ".75rem 5px",
 		justifyContent: "center",
-		width: "60px"
+		width: "4%"
 	};
 	previewPanelStyles = {
 		backgroundColor: "#FFFFFF",
 		border: "2px solid #CDCED9",
 		padding: ".75rem 5px",
-		width: "60%"
+		width: "56%"
 	};
 
 	constructor(props) {
@@ -245,7 +245,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			return;
 		}
 
-		//console.log("[DataStructureBuilder] SX_PARAMETER_SELECTED received: ", parameter);
+		console.log(
+			"[DataStructureBuilder] SX_PARAMETER_SELECTED received: ",
+			JSON.stringify(this.workingParam.referenceFile, null, 4),
+			JSON.stringify(parameter.referenceFile, null, 4)
+		);
 
 		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
 			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
@@ -449,6 +453,67 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		});
 	};
 
+	listenerOpenReferenceFile = (event) => {
+		const { targetPortlet, targetFormId, sourceFormId, paramCode, paramVersion, fileName, fileType } =
+			event.dataPacket;
+
+		if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
+			console.log("[DataStructureBuilder] listenerOpenReferenceFile rejected: ", paramCode, event.dataPacket);
+
+			return;
+		}
+
+		console.log(
+			"[DataStructureBuilder] listenerOpenReferenceFile: ",
+			paramCode,
+			paramVersion,
+			fileName,
+			fileType,
+			event.dataPacket
+		);
+
+		this.fireRequest({
+			targetFormId: this.formId,
+			sourceFormId: sourceFormId,
+			requestId: Workbench.RequestIDs.openReferenceFile,
+			params: {
+				dataStructureCode: this.dataStructure.paramCode,
+				dataStructureVersion: this.dataStructure.paramVersion,
+				paramCode: paramCode,
+				paramVersion: paramVersion,
+				fileName: fileName,
+				fileType: fileType,
+				disposition: "inline"
+			}
+		});
+	};
+
+	listenerDeleteFiles = (event) => {
+		const { targetPortlet, targetFormId, sourceFormId, paramCode, paramVersion, fileName, fileType } =
+			event.dataPacket;
+
+		if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
+			console.log("[DataStructureBuilder] listenerDeleteFiles rejected: ", paramCode, event.dataPacket);
+
+			return;
+		}
+
+		console.log("[DataStructureBuilder] listenerDeleteFiles: ", paramCode, event.dataPacket);
+
+		this.fireRequest({
+			targetFormId: this.formId,
+			sourceFormId: sourceFormId,
+			requestId: Workbench.RequestIDs.deleteReferenceFiles,
+			params: {
+				dataStructureCode: this.dataStructure.paramCode,
+				dataStructureVersion: this.dataStructure.paramVersion,
+				paramCode: paramCode,
+				paramVersion: paramVersion,
+				fileName: fileName
+			}
+		});
+	};
+
 	listenerLoadPortlet = async (event) => {
 		const { targetPortlet, targetFormId, portletName } = event.dataPacket;
 
@@ -495,14 +560,14 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	};
 
 	listenerResponce = (event) => {
-		const { targetPortlet, requestId, data, status } = event.dataPacket;
+		const { targetPortlet, requestId, params, data, status } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
 			//console.log("[DataStructureBuilder] listenerResponce rejected: ", dataPacket);
 			return;
 		}
 
-		//console.log("[DataStructureBuilder] listenerResonse: ", event.dataPacket, requestId, data);
+		console.log("[DataStructureBuilder] listenerResonse: ", event.dataPacket, requestId, data);
 		const state = {};
 		const result = data;
 
@@ -597,6 +662,15 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 				break;
 			}
+			case Workbench.RequestIDs.openReferenceFile: {
+				console.log("Open referenceFile finished");
+				const url = window.URL.createObjectURL(data);
+
+				const link = document.createElement("a");
+				link.href = url;
+				link.target = "_blank";
+				link.click();
+			}
 		}
 
 		this.setState({ ...state, loadingStatus: status });
@@ -607,10 +681,12 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 		Event.on(Event.SX_COPY_PARAMETER, this.listenerCopyParameter);
+		Event.on(Event.SX_DELETE_FILES, this.listenerDeleteFiles);
 		Event.on(Event.SX_DELETE_PARAMETER, this.listenerDeleteParameter);
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.on(Event.SX_GROUP_CHANGED, this.listenerGroupChanged);
 		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
+		Event.on(Event.SX_OPEN_REFERENCE_FILE, this.listenerOpenReferenceFile);
 		Event.on(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 		Event.on(Event.SX_PARAM_TYPE_CHANGED, this.listenerParameterTypeChanged);
 		Event.on(Event.SX_REQUEST, this.listenerRequest);
@@ -626,10 +702,12 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		//console.log("[DataStructureBuilder] componentWillUnmount");
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
 		Event.off(Event.SX_COPY_PARAMETER, this.listenerCopyParameter);
+		Event.off(Event.SX_DELETE_FILES, this.listenerDeleteFiles);
 		Event.off(Event.SX_DELETE_PARAMETER, this.listenerDeleteParameter);
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.off(Event.SX_GROUP_CHANGED, this.listenerGroupChanged);
 		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
+		Event.off(Event.SX_OPEN_REFERENCE_FILE, this.listenerOpenReferenceFile);
 		Event.off(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 		Event.off(Event.SX_PARAM_TYPE_CHANGED, this.listenerParameterTypeChanged);
 		Event.off(Event.SX_REQUEST, this.listenerRequest);
@@ -737,11 +815,18 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			return;
 		}
 
+		const referenceFiles = this.dataStructure.getReferenceFiles();
+
+		console.log("typeStructureLink: ", JSON.stringify(this.typeStructureLink.toJSON()));
+		console.log("DataStructure: ", JSON.stringify(this.dataStructure.toJSON()));
+		console.log("Reference Files: ", referenceFiles);
+
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.saveDataStructure,
 			params: {
 				typeStructureLink: JSON.stringify(this.typeStructureLink.toJSON()),
-				dataStructure: JSON.stringify(this.dataStructure.toJSON())
+				dataStructure: JSON.stringify(this.dataStructure.toJSON()),
+				files: referenceFiles
 			}
 		});
 	};
@@ -920,7 +1005,6 @@ class DataStructureBuilder extends SXBaseVisualizer {
 							<div
 								style={{
 									backgroundColor: "#f7edab",
-									background: "rgba(247, 237, 171, 0.8)",
 									padding: "10px 5px",
 									justifyContent: "center",
 									justifySelf: "center",
@@ -951,7 +1035,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 										this.handleAddParameter();
 									}}
 									displayType="secondary"
-									size="md"
+									size="sm"
 									disabled={this.workingParam.isRendered()}
 									spritemap={this.spritemap}
 								></ClayButtonWithIcon>

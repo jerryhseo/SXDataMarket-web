@@ -187,13 +187,14 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 					displayName: Util.getTranslationObject(this.languageId, "reference-file"),
 					tooltip: Util.getTranslationObject(this.languageId, "reference-file-tooltip"),
 					multipleFiles: false,
-					accepts: ".jpg .png .pdf",
-					value: this.workingParam.referenceFile ?? ""
+					fileManager: true,
+					accepts: "image/*,application/pdf",
+					value: this.workingParam.referenceFile ? [this.workingParam.referenceFile] : []
 				}
 			})
 		};
 
-		//console.log("[SXDSBuilderBasicPropertiesPanel constructor] ", props);
+		//console.log("[SXDSBuilderBasicPropertiesPanel constructor] ", props, this.workingParam.referenceFile);
 	}
 
 	listenerValueChanged = (event) => {
@@ -221,32 +222,66 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 
 		const value = parameter.getValue();
 
-		this.workingParam[paramCode] = parameter.getValue();
+		switch (paramCode) {
+			case ParamProperty.PARAM_CODE: {
+				this.workingParam[paramCode] = value;
 
-		if (paramCode == ParamProperty.PARAM_CODE) {
-			const duplicated = this.dataStructure.checkDuplicateParamCode(this.workingParam);
-			if (duplicated) {
-				this.fields.paramCode.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
-				this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
-				this.fields.paramCode.setDirty(true);
-				this.fields.paramCode.fireRefresh();
+				const duplicated = this.dataStructure.checkDuplicateParamCode(this.workingParam);
+				if (duplicated) {
+					this.fields.paramCode.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
+					this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-code-must-be-unique"));
+					this.fields.paramCode.setDirty(true);
+					this.fields.paramCode.fireRefresh();
 
-				return;
+					return;
+				}
+
+				break;
 			}
-		} else if (paramCode == ParamProperty.PARAM_VERSION) {
-			if (Util.isEmpty(this.workingParam.paramCode) || this.fields.paramCode.hasError()) {
-				this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-code-is-missing"));
-				this.openErrorDlg(Util.translate("input-parameter-code-first"));
-				return;
+			case ParamProperty.PARAM_VERSION: {
+				this.workingParam[paramCode] = value;
+
+				if (Util.isEmpty(this.workingParam.paramCode) || this.fields.paramCode.hasError()) {
+					this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-code-is-missing"));
+					this.openErrorDlg(Util.translate("input-parameter-code-first"));
+					return;
+				}
+
+				if (this.dataStructure.checkDuplicateParam(this.workingParam)) {
+					this.fields.paramVersion.setError(
+						ErrorClass.ERROR,
+						Util.translate("parameter-version-is-duplicated")
+					);
+					this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-version-is-duplicated"));
+					this.fields.paramVersion.setDirty(true);
+					this.fields.paramVersion.fireRefresh();
+
+					return;
+				}
+
+				break;
 			}
+			case "referenceFile": {
+				const fileItem = value[0];
 
-			if (this.dataStructure.checkDuplicateParam(this.workingParam)) {
-				this.fields.paramVersion.setError(ErrorClass.ERROR, Util.translate("parameter-version-is-duplicated"));
-				this.dataStructure.setError(ErrorClass.ERROR, Util.translate("parameter-version-is-duplicated"));
-				this.fields.paramVersion.setDirty(true);
-				this.fields.paramVersion.fireRefresh();
+				this.workingParam.referenceFile = {
+					name: fileItem.name,
+					lastModified: fileItem.lastModified,
+					type: fileItem.type,
+					file: fileItem.file
+				};
 
-				return;
+				console.log(
+					"[SXDSBuilderBasicPropertiesPanel referenceFile]: ",
+					value,
+					fileItem,
+					this.workingParam.referenceFile
+				);
+
+				break;
+			}
+			default: {
+				this.workingParam[paramCode] = value;
 			}
 		}
 
@@ -269,12 +304,33 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 		}
 	};
 
+	listenerDeleteFiles = (event) => {
+		const { targetPortlet, targetFormId, parameter, paramCode, paramVersion } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			return;
+		}
+
+		/*
+		console.log(
+			"RECEIVED - SXDSBuilderBasicPropertiesPanel SX_FIELD_VALUE_CHANGED: ",
+			event.dataPacket,
+			this.dataStructure,
+			this.workingParam,
+			parameter,
+			parameter.getValue()
+		);
+		*/
+	};
+
 	componentDidMount() {
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerValueChanged);
+		Event.on(Event.SX_DELETE_FILES, this.listenerDeleteFiles);
 	}
 
 	componentWillUnmount() {
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerValueChanged);
+		Event.off(Event.SX_DELETE_FILES, this.listenerDeleteFiles);
 	}
 
 	checkError() {
@@ -311,7 +367,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 	}
 
 	render() {
-		//console.log("SXDSBuilderBasicPropertiesPanel: ", this.workingParam);
+		//console.log("SXDSBuilderBasicPropertiesPanel render: ", this.workingParam.referenceFile);
 		const fields = Object.values(this.fields);
 
 		//this.setPropertiesValue();

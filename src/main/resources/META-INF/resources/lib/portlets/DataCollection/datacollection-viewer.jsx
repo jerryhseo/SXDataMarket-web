@@ -24,7 +24,7 @@ class SXCollectionInfo extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("[SXCollectionInfo props] ", props);
+		//console.log("[SXCollectionInfo props] ", props);
 		this.namespace = props.namespace;
 		this.formId = props.formId;
 
@@ -143,11 +143,6 @@ class DataCollectionViewer extends SXBaseVisualizer {
 				id: "edit",
 				label: Util.translate("edit"),
 				symbol: "pencil"
-			},
-			{
-				id: "delete",
-				label: Util.translate("delete"),
-				symbol: "trash"
 			}
 		];
 	}
@@ -178,7 +173,7 @@ class DataCollectionViewer extends SXBaseVisualizer {
 			return;
 		}
 
-		console.log("[DataCollectionViewer] listenerResonse: ", requestId, params, data);
+		//console.log("[DataCollectionViewer] listenerResonse: ", requestId, params, data);
 		switch (requestId) {
 			case Workbench.RequestIDs.viewDataCollection: {
 				this.dataCollectionId = data.dataCollectionId;
@@ -239,9 +234,6 @@ class DataCollectionViewer extends SXBaseVisualizer {
 					params: { dataCollectionId: this.dataCollectionId }
 				});
 
-				break;
-			}
-			case "delete": {
 				break;
 			}
 		}

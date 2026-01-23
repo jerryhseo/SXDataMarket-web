@@ -21,7 +21,6 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		this.state = {
 			editStatus: this.dataCollectionId > 0 ? EditStatus.UPDATE : EditStatus.ADD,
 			infoDialog: false,
-			confirmDeleteDialog: false,
 			waringAndSaveDialog: false,
 			loadingStatus: LoadingStatus.PENDING
 		};
@@ -166,6 +165,33 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		});
 	}
 
+	listenerFieldValueChanged = (event) => {
+		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || this.formId !== targetFormId) {
+			console.log("[dataCollectionEditor] listenerFieldValueChanged rejected: ", event.dataPacket);
+			return;
+		}
+
+		console.log(
+			"[dataCollectionEditor] listenerFieldValueChanged received: ",
+			event.dataPacket,
+			parameter,
+			this.getAssociatedDataSetInfos(this.dataSets.getValue())
+		);
+
+		Event.fire(Event.SX_DATACOLLECTION_CHANGED, this.namespace, this.workbenchNamespace, {
+			dataCollection: {
+				dataCollectionId: this.dataCollectionId,
+				dataCollectionCode: this.dataCollectionCode.getValue(),
+				dataCollectionVersion: this.dataCollectionVersion.getValue(),
+				displayName: this.displayName.getValue(),
+				description: this.description.getValue(),
+				dataSets: this.getAssociatedDataSetInfos(this.dataSets.getValue())
+			}
+		});
+	};
+
 	listenerWorkbenchReady = (event) => {
 		const dataPacket = event.dataPacket;
 
@@ -220,7 +246,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 					this.availableDataSetList = availableDataSetList;
 					this.dataSets.options = this.availableDataSetList.map((dataSet) => {
 						let label = {};
-						label[this.languageId] = dataSet.displayName;
+						label[this.languageId] = dataSet.displayName + " v." + dataSet.dataSetVersion;
 
 						return {
 							key: dataSet.dataSetId,
@@ -257,14 +283,29 @@ class DataCollectionEditor extends SXBaseVisualizer {
 			case Workbench.RequestIDs.saveDataCollection: {
 				this.dataCollectionId = dataPacket.data.dataCollectionId;
 
+				/*
 				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
 				this.dialogBody = Util.translate("datacollection-saved-as", dataPacket.data.dataCollectionId);
+				*/
 
 				this.setState({
-					infoDialog: true,
+					//infoDialog: true,
 					editStatus: EditStatus.UPDATE,
 					loadingStatus: LoadingStatus.COMPLETE
 				});
+
+				/*
+				Event.fire(Event.SX_DATACOLLECTION_CHANGED, this.namespace, this.workbenchNamespace, {
+					dataCollection: {
+						dataCollectionId: this.dataCollectionId,
+						dataCollectionCode: this.dataCollectionCode.getValue(),
+						dataCollectionVersion: this.dataCollectionVersion.getValue(),
+						displayName: this.displayName.getValue(),
+						description: this.description.getValue(),
+						dataSets: this.getAssociatedDataSetInfos(this.dataSets.getValue())
+					}
+				});
+				*/
 
 				break;
 			}
@@ -287,6 +328,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.on(Event.SX_RESPONSE, this.listenerResponse);
 		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 
 		this.fireHandshake();
 	}
@@ -296,6 +338,17 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.off(Event.SX_RESPONSE, this.listenerResponse);
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+	}
+
+	getAssociatedDataSetInfos(dataSetStrIds) {
+		const dataSetIds = dataSetStrIds.map((id) => Number(id));
+
+		const associatedDataSets = this.availableDataSetList.filter((dataSet) =>
+			dataSetIds.includes(Number(dataSet.dataSetId))
+		);
+
+		return associatedDataSets;
 	}
 
 	checkFieldError = () => {
@@ -366,43 +419,42 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		this.saveDataCollection();
 	};
 
-	handleDeleteClick = () => {
-		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
+	handleDeleteClick = (event) => {
+		event.stopPropagation();
 
-		this.setState({ confirmDeleteDialog: true });
+		Event.fire(Event.SX_DELETE_DATACOLLECTION, this.namespace, this.workbenchNamespace, {
+			dataCollectionId: this.dataCollectionId
+		});
 	};
 
 	saveDataCollection = () => {
-		let data = {};
-		data.dataCollectionId = this.dataCollectionId;
-		data.dataCollectionCode = this.dataCollectionCode.getValue();
-		data.dataCollectionVersion = this.dataCollectionVersion.getValue();
-		data.displayName = this.displayName.getValue();
-		data.description = this.description.getValue();
+		let params = {
+			dataCollectionId: this.dataCollectionId,
+			dataCollectionCode: this.dataCollectionCode.getValue(),
+			dataCollectionVersion: this.dataCollectionVersion.getValue(),
+			associatedDataSetList: this.dataSets.getValue()
+		};
 
 		//console.log("saveDataCollection: ", this.dataSets.getValue());
 
+		if (this.displayName.hasValue()) {
+			params.displayName = JSON.stringify(this.displayName.getValue());
+		}
+
+		if (this.description.hasValue()) {
+			params.description = JSON.stringify(this.description.getValue());
+		}
+
+		Event.fire(Event.SX_SAVE_DATACOLLECTION, this.namespace, this.workbenchNamespace, {
+			dataCollection: params
+		});
+
+		/*
 		this.fireRequest({
 			requestId: Workbench.RequestIDs.saveDataCollection,
-			params: {
-				dataCollectionId: this.dataCollectionId,
-				dataCollectionCode: this.dataCollectionCode.getValue(),
-				dataCollectionVersion: this.dataCollectionVersion.getValue(),
-				displayName: JSON.stringify(this.displayName.getValue()),
-				description: JSON.stringify(this.description.getValue()),
-				associatedDataSetList: this.dataSets.getValue()
-			}
+			params: params
 		});
-	};
-
-	deleteDataCollection = () => {
-		this.fireRequest({
-			requestId: Workbench.RequestIDs.deleteDataCollections,
-			params: {
-				dataCollectionIds: [this.dataCollectionId]
-			}
-		});
+		*/
 	};
 
 	render() {
@@ -460,28 +512,6 @@ class DataCollectionEditor extends SXBaseVisualizer {
 									label: Util.translate("ok"),
 									onClick: () => {
 										this.setState({ infoDialog: false });
-									}
-								}
-							]}
-						/>
-					)}
-					{this.state.confirmDeleteDialog && (
-						<SXModalDialog
-							header={this.dialogHeader}
-							body={this.dialogBody}
-							buttons={[
-								{
-									label: Util.translate("confirm"),
-									onClick: (e) => {
-										this.deleteDataCollection();
-										this.setState({ confirmDeleteDialog: false });
-									},
-									displayType: "secondary"
-								},
-								{
-									label: Util.translate("cancel"),
-									onClick: (e) => {
-										this.setState({ confirmDeleteDialog: false });
 									}
 								}
 							]}

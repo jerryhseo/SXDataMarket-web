@@ -23,7 +23,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		console.log("StructuredDataEditor props: ", props);
+		//console.log("StructuredDataEditor props: ", props);
 
 		this.editState = this.params.editState ?? StructuredDataEditor.EditState.PREVIEW;
 		this.dataCollectionId = this.params.dataCollectionId ?? 0;
@@ -71,11 +71,11 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[StructuredDataEditor] listenerWorkbenchReady event rejected: ", dataPacket);
+			//console.log("[StructuredDataEditor] listenerWorkbenchReady event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[StructuredDataEditor] listenerWorkbenchReady received: ", dataPacket, "++" + this.editState);
+		//console.log("[StructuredDataEditor] listenerWorkbenchReady received: ", dataPacket, "++" + this.editState);
 
 		switch (this.editState) {
 			case StructuredDataEditor.EditState.PREVIEW:
@@ -277,7 +277,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		const data = this.dataStructure.toData();
 		console.log("handleSaveData: ", data);
 
-		const files = this.dataStructure.getFiles();
+		const files = this.dataStructure.getDataFiles();
 
 		console.log("[StructuredDataEditor files] ", files);
 		console.log("[StructuredDataEditor data] ", data);

@@ -81,11 +81,11 @@ public class SearchDataCollectionsResourceCommand extends BaseMVCResourceCommand
 		String filterBy = ParamUtil.getString(resourceRequest, "filterBy", "groupId");
 		String groupBy = ParamUtil.getString(resourceRequest, "groupBy", "groupId");
 		String keywords = ParamUtil.getString(resourceRequest, StationXWebKeys.KEYWORDS, "");
-		
+
+		/*
 		System.out.println("groupId: " + groupId);
 		System.out.println("dataCollectionId: " + dataCollectionId);
-		//System.out.println("dataSetId: " + dataSetId); 
-		//System.out.println("dataTypeId: " + dataTypeId);
+		*/
 		
 		JSONArray result = JSONFactoryUtil.createJSONArray();
 		List<DataCollection> dataCollectionList = null;
@@ -160,7 +160,7 @@ public class SearchDataCollectionsResourceCommand extends BaseMVCResourceCommand
 			jsonTypeArray.put(jsonDataType);
 		}
 		
-		System.out.println("jsonTypeArray: " + jsonTypeArray.toString(4));
+		//System.out.println("jsonTypeArray: " + jsonTypeArray.toString(4));
 		
 		return jsonTypeArray;
 	}

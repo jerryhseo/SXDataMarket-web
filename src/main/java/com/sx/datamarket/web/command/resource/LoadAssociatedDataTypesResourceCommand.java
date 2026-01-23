@@ -21,6 +21,7 @@ import com.sx.icecap.model.DataComment;
 import com.sx.icecap.model.DataSet;
 import com.sx.icecap.model.DataStructure;
 import com.sx.icecap.model.DataType;
+import com.sx.icecap.model.SetTypeLink;
 import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.model.TypeVisualizerLink;
 import com.sx.icecap.service.CollectionSetLinkLocalService;
@@ -29,6 +30,7 @@ import com.sx.icecap.service.DataCommentLocalService;
 import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
+import com.sx.icecap.service.SetTypeLinkLocalService;
 import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.icecap.service.TypeVisualizerLinkLocalService;
 import com.sx.spyglass.model.ScienceApp;
@@ -49,73 +51,67 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
+	    		"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
 	        "javax.portlet.name=" + WebPortletKey.SXDataSetEditorPortlet,
-	        "javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_DATASET
+	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_ASSOCIATED_DATATYPES
 	    },
 	    service = MVCResourceCommand.class
 )
-public class LoadDataSetResourceCommand extends BaseMVCResourceCommand{
+public class LoadAssociatedDataTypesResourceCommand extends BaseMVCResourceCommand{
 
 	@Override
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
+		System.out.println("LoadAssociatedDataTypesResourceCommand: " );
 		
-		JSONObject result = JSONFactoryUtil.createJSONObject();
+		JSONArray jsonAssociatedDataTypes = JSONFactoryUtil.createJSONArray();
 		
 		long dataCollectionId = ParamUtil.getLong(resourceRequest, "dataCollectionId", 0);
 		long dataSetId = ParamUtil.getLong(resourceRequest, "dataSetId", 0);
-		//System.out.println("LoadDataSetResourceCommand: " + dataCollectionId + ", "+dataSetId );
-		
-		boolean loadAvailableDataTypes = ParamUtil.getBoolean(resourceRequest, "loadAvailableDataTypes", false);
+		System.out.println("DataCollectionId: " + dataCollectionId);
+		System.out.println("DataSetId: " + dataSetId);
 		
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
 		
-		if( dataSetId > 0 ) {
-			result = _dataSetLocalService.getDataSetInfo(
-					themeDisplay.getScopeGroupId(), 
-					dataCollectionId, 
-					dataSetId, 
-					themeDisplay.getLocale());
+		List<SetTypeLink> setTypeLinkList = null;
+		if( dataCollectionId > 0  && dataSetId > 0) {
+			setTypeLinkList = 
+					_setTypeLinkLocalService.getSetTypeLinkListByCollectionSet_G(
+							themeDisplay.getScopeGroupId(), dataCollectionId, dataSetId);
 		}
+		else {
+			new Exception("[ERROR] LoadAssociatedDataTypes needs dataCollectionId and dataSetId ");
+		}
+
+		Iterator<SetTypeLink> iter = setTypeLinkList.iterator();
+		while( iter.hasNext() ) {
+			SetTypeLink link = iter.next();
 			
-		if(loadAvailableDataTypes == true) {
-			List<DataType> availableDataTypeList = 
-					_dataTypeLocalService.getDataTypesByGroupId(themeDisplay.getScopeGroupId());
-			JSONArray availableDataTypeJSONArray = JSONFactoryUtil.createJSONArray();
+			DataType dataType = _dataTypeLocalService.getDataType(link.getDataTypeId());
 			
-			Iterator<DataType> iter = availableDataTypeList.iterator();
-			while(iter.hasNext()) {
-				DataType dataType = iter.next();
-				
-				JSONObject jsonDataType = JSONFactoryUtil.createJSONObject();
-				
-				jsonDataType.put("dataTypeId", dataType.getDataTypeId());
-				jsonDataType.put("dataTypeCode", dataType.getDataTypeCode());
-				jsonDataType.put("dataTypeVersion", dataType.getDataTypeVersion());
-				jsonDataType.put("displayName", dataType.getDisplayName(themeDisplay.getLocale()));
-				
-				availableDataTypeJSONArray.put(jsonDataType);
-			}
+			JSONObject jsonDataType = JSONFactoryUtil.createJSONObject();
 			
-			result.put("availableDataTypeList", availableDataTypeJSONArray);
+			jsonDataType.put("dataTypeId", dataType.getDataTypeId());
+			jsonDataType.put("dataTypeCode", dataType.getDataTypeCode());
+			jsonDataType.put("dataTypeVersion", dataType.getDataTypeVersion());
+			jsonDataType.put("displayName", dataType.getDisplayName(themeDisplay.getLocale()));
+			
+			jsonAssociatedDataTypes.put(jsonDataType);
 		}
 		
-		System.out.println("LoadDataSet result: " + result.toString(4));
+		
+		System.out.println("LoadAssociatedDataTypesResourceCommand result: " + jsonAssociatedDataTypes.toString(4));
 		
 		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
+		pw.write(jsonAssociatedDataTypes.toJSONString());
 		pw.flush();
 		pw.close();
 	}
 	
 	@Reference
-	private DataSetLocalService _dataSetLocalService;
+	private SetTypeLinkLocalService _setTypeLinkLocalService;
 	
 	@Reference
 	private DataTypeLocalService _dataTypeLocalService;
-	
-	@Reference
-	private  DataCommentLocalService _dataCommentLocalService;
 	
 }

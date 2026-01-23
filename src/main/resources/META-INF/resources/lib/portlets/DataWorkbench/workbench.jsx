@@ -75,19 +75,24 @@ export class Workbench {
 		deleteDataCollections: "deleteDataCollections",
 		deleteDataSets: "deleteDataSets",
 		deleteDataStructures: "deleteDataStructures",
+		deleteReferenceFiles: "deleteReferenceFiles",
 		deleteStructuredData: "deleteStructuredData",
 		deleteTypeStructureLink: "deleteTypeStructureLink",
 		deleteTypeStructureLinkAndImportDataStructure: "deleteTypeStructureLinkAndImportDataStructure",
 		downloadFieldAttachedFile: "downloadFieldAttachedFile",
 		importDataType: "importDataType",
 		importDataStructure: "importDataStructure",
+		loadAssociatedDataSets: "loadAssociatedDataSets",
+		loadAssociatedDataTypes: "loadAssociatedDataTypes",
 		loadDataCollection: "loadDataCollection",
+		loadDataCollectionInfo: "loadDataCollectionInfo",
 		loadDataSet: "loadDataSet",
 		loadDataSetList: "loadDataSetList",
 		loadDataStructure: "loadDataStructure",
 		loadDataStructureWithInfo: "loadDataStructureWithInfo",
 		loadDataType: "loadDataType",
 		loadStructuredData: "loadStructuredData",
+		openReferenceFile: "openReferenceFile",
 		removeLinkInfoAndRedirectToBuilder: "removeLinkInfoAndRedirectToBuilder",
 		saveDataCollection: "saveDataCollection",
 		saveDataSet: "saveDataSet",
@@ -381,13 +386,12 @@ export class Workbench {
 			const data = params[key];
 			if (key === "files") {
 				data.forEach((fileItem) => {
-					if (!fileFields.includes(fileItem.paramCode)) {
+					if (fileItem.file instanceof File && !fileFields.includes(fileItem.paramCode)) {
+						webKey = this.namespace + fileItem.paramCode;
+
 						fileFields.push(fileItem.paramCode);
+						formData.append(webKey, fileItem.file);
 					}
-
-					webKey = this.namespace + fileItem.paramCode;
-
-					formData.append(webKey, fileItem.file);
 				});
 			} else {
 				formData.append(webKey, data);
@@ -638,13 +642,31 @@ export class Workbench {
 				jsonParse = "blob";
 				break;
 			}
+			case Workbench.RequestIDs.openReferenceFile: {
+				resourceId = ResourceIds.OPEN_REFERENCE_FILE;
+				jsonParse = "blob";
+				break;
+			}
+			case Workbench.RequestIDs.deleteReferenceFiles: {
+				resourceId = ResourceIds.DELETE_REFERENCE_FILES;
+				jsonParse = "blob";
+				break;
+			}
+			case Workbench.RequestIDs.loadAssociatedDataSets: {
+				resourceId = ResourceIds.LOAD_ASSOCIATED_DATASETS;
+				break;
+			}
+			case Workbench.RequestIDs.loadAssociatedDataTypes: {
+				resourceId = ResourceIds.LOAD_ASSOCIATED_DATATYPES;
+				break;
+			}
 		}
 
 		let result = {};
 		if (Util.isNotEmpty(resourceId)) {
 			const url = await this.createResourceURL({ resourceId: resourceId });
 
-			console.log("[Workbench processRequest] ", url, params);
+			//console.log("[Workbench processRequest] ", url, params);
 
 			result = await this.ajax({
 				url: url,

@@ -133,6 +133,8 @@ class SXDualListBox extends SXBaseParameterComponent {
 		this.setState({
 			leftOptions: this.parameter.getLeftOptions()
 		});
+
+		this.parameter.fireValueChanged(this.cellIndex);
 	};
 
 	isSelected = (option) => {

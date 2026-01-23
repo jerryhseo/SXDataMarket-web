@@ -28,7 +28,7 @@ export class SXManagementToolbar extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("[SXManagementToolbar props] ", props);
+		//console.log("[SXManagementToolbar props] ", props);
 		this.namespace = props.namespace;
 		this.spritemap = props.spritemap;
 		this.formId = props.formId;
@@ -165,7 +165,7 @@ export class SXManagementToolbar extends React.Component {
 			triggerButtonTitle = Util.translate("groupby");
 		}
 
-		console.log("renderFilterAndGroupBySection: ", this.state.selectAll);
+		//console.log("renderFilterAndGroupBySection: ", this.state.selectAll);
 
 		return (
 			<>
@@ -333,7 +333,7 @@ export class SXSearchResultConainer extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("[SXSearchResultConainer props] ", props);
+		//console.log("[SXSearchResultConainer props] ", props);
 		this.namespace = props.namespace;
 		this.formId = props.formId;
 		this.columns = props.columns ?? [];

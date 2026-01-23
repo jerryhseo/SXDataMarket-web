@@ -76,23 +76,24 @@ public class SearchStructuredDataResourceCommand extends BaseMVCResourceCommand{
 		String groupBy = ParamUtil.getString(resourceRequest, "groupBy", "groupId");
 		String keywords = ParamUtil.getString(resourceRequest, StationXWebKeys.KEYWORDS, "");
 		
+		/*
 		System.out.println("--- Start SearchStructuredDataResourceCommand:  " );
 		System.out.println("dataCollectionId: " + dataCollectionId);
 		System.out.println("dataSetId: " + dataSetId);
 		System.out.println("dataTypeId: " + dataTypeId);
-
+`		*/
 		
 		JSONObject dataList = 
 				_structuredDataLocalService.getStructuredDataListWithInfo( 
 						dataCollectionId, dataSetId, dataTypeId, themeDisplay.getLocale());
-		System.out.println("Result: " + dataList.toString(4));
+		//System.out.println("Result: " + dataList.toString(4));
 		
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(dataList.toJSONString());
 		pw.flush();
 		pw.close();
 		
-		System.out.println("--- End SearchStructuredDataResourceCommand" );
+		//System.out.println("--- End SearchStructuredDataResourceCommand" );
 	}
 	
 	@Reference

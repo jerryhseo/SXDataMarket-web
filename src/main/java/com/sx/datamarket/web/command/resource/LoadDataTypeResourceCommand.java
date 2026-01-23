@@ -52,7 +52,7 @@ public class LoadDataTypeResourceCommand extends BaseMVCResourceCommand{
 	@Override
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
-		System.out.println("LoadDataTypeResourceCommand: " + resourceResponse.getContentType());
+		//System.out.println("LoadDataTypeResourceCommand: " + resourceResponse.getContentType());
 		resourceResponse.setContentType("text/html;charset=UTF-8");
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();

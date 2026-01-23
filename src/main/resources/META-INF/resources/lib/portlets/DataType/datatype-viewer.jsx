@@ -232,17 +232,34 @@ class DataTypeViewer extends SXBaseVisualizer {
 	}
 
 	handleButtonClick = (button) => {
-		const portletName = button.id === "edit" ? PortletKeys.DATATYPE_EDITOR : PortletKeys.DATASTRUCTURE_BUILDER;
+		switch (button.id) {
+			case "edit": {
+				const portletName =
+					button.id === "edit" ? PortletKeys.DATATYPE_EDITOR : PortletKeys.DATASTRUCTURE_BUILDER;
 
-		Event.fire(Event.SX_LOAD_PORTLET, this.namespace, this.workbenchNamespace, {
-			portletName: portletName,
-			portletState: Workbench.PortletState.NORMAL,
-			params: {
-				dataCollectionId: this.dataCollectionId,
-				dataSetId: this.dataSetId,
-				dataTypeId: this.dataTypeId
+				Event.fire(Event.SX_LOAD_PORTLET, this.namespace, this.workbenchNamespace, {
+					portletName: portletName,
+					portletState: Workbench.PortletState.NORMAL,
+					params: {
+						dataCollectionId: this.dataCollectionId,
+						dataSetId: this.dataSetId,
+						dataTypeId: this.dataTypeId
+					}
+				});
+
+				break;
 			}
-		});
+			case "delete": {
+				this.fireRequest({
+					targetFormId: this.workbenchNamespace,
+					requestId: Workbench.RequestIDs.deleteDataTypes,
+					params: {
+						dataTypeIds: [this.dataTypeId]
+					}
+				});
+				break;
+			}
+		}
 	};
 
 	render() {

@@ -34,6 +34,7 @@ import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -71,7 +72,7 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 		String dataSetVersion = ParamUtil.getString(resourceRequest, "dataSetVersion", "");
 		String displayName = ParamUtil.getString(resourceRequest, "displayName", "{}");
 		String description = ParamUtil.getString(resourceRequest, "description", "{}");
-		String associatedDataTypes = ParamUtil.getString(resourceRequest, "associatedDataTypes", "[]");
+		String associatedDataTypes = ParamUtil.getString(resourceRequest, "associatedDataTypes", "");
 		
 		/*
 		System.out.println("dataSetCode: " + dataSetCode);
@@ -94,7 +95,7 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 					SXLocalizationUtil.jsonToLocalizedMap(description), 
 					WorkflowConstants.STATUS_APPROVED, 
 					dataSetSC);
-		}
+		} 
 		else {
 			dataSet = _dataSetLocalService.addDataSet (
 					dataSetCode, 
@@ -103,15 +104,20 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 					SXLocalizationUtil.jsonToLocalizedMap(description), 
 					WorkflowConstants.STATUS_APPROVED, 
 					dataSetSC
-			); 
+			);
 			
 			dataSetId = dataSet.getDataSetId();
 		}
 		
 		long groupId = dataSetSC.getScopeGroupId();
 		
-		String[] strAryAssociatedDataTypes = associatedDataTypes.split(",");
-		long[] longAryAssoicatedDataTypes = Arrays.stream(strAryAssociatedDataTypes).mapToLong(Long::parseLong).toArray();
+		String[] strAryAssociatedDataTypes = associatedDataTypes.isEmpty() ? new String[0] : associatedDataTypes.split(",");
+		List<Long> longAryAssoicatedDataTypes = new ArrayList<Long>();
+		System.out.println("strAryAssociatedDataTypes: " + strAryAssociatedDataTypes.length);
+		
+		for( int i=0; i< strAryAssociatedDataTypes.length; i++) {
+			longAryAssoicatedDataTypes.add(Long.parseLong(strAryAssociatedDataTypes[i]));
+		}
 		
 		//Delete SetTypeLink un-selected
 		List<SetTypeLink> setTypeLinkList = 
@@ -121,7 +127,7 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 		while( iter.hasNext()) {
 			SetTypeLink setTypeLink = iter.next();
 			
-			boolean selected = Arrays.asList(longAryAssoicatedDataTypes).contains(setTypeLink.getDataTypeId());
+			boolean selected = longAryAssoicatedDataTypes.contains(new Long(setTypeLink.getDataTypeId()));
 			
 			if( !selected ) {
 				_setTypeLinkLocalService.deleteSetTypeLink(setTypeLink.getPrimaryKey());
@@ -129,17 +135,21 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 		}
 		
 		//Add SetTypeLink if it is new or update it if it exists.
-		for(int order = 0; order < longAryAssoicatedDataTypes.length; order++) {
-			long dataTypeId = longAryAssoicatedDataTypes[order];
+		ServiceContext setTypeLinkSC = 
+				ServiceContextFactory.getInstance(SetTypeLink.class.getName(), resourceRequest);
+		
+		for(int order = 0; order < longAryAssoicatedDataTypes.size(); order++) {
+			long dataTypeId = longAryAssoicatedDataTypes.get(order);
 			
-			SetTypeLink setTypeLink = _setTypeLinkLocalService.getSetTypeLink(groupId, dataCollectionId, dataSetId, dataTypeId);
+			SetTypeLink setTypeLink = 
+					_setTypeLinkLocalService.getSetTypeLink(groupId, dataCollectionId, dataSetId, dataTypeId);
 			if( Validator.isNull(setTypeLink)) {
 				/*
 				System.out.println("Save DataSet dataSetId: " + dataSetId);
 				System.out.println("Save DataSet dataTypeId: " + dataTypeId);
 				System.out.println("Save DataSet Osrder: " + order);
 				*/
-				_setTypeLinkLocalService.addSetTypeLink(dataSetId, dataTypeId, order);
+				_setTypeLinkLocalService.addSetTypeLink(dataCollectionId, dataSetId, dataTypeId, order, setTypeLinkSC);
 			} 
 			/* else {
 				System.out.println("Save DataSet Link found dataSetId: " + setTypeLink.getDataSetId());

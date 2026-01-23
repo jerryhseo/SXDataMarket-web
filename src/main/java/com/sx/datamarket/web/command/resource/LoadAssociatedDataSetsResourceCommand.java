@@ -49,73 +49,65 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	    immediate = true,
 	    property = {
-	        "javax.portlet.name=" + WebPortletKey.SXDataSetEditorPortlet,
-	        "javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_DATASET
+	    		"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
+	        "javax.portlet.name=" + WebPortletKey.SXDataCollectionEditorPortlet,
+	        "mvc.command.name="+MVCCommand.RESOURCE_LOAD_ASSOCIATED_DATASETS
 	    },
 	    service = MVCResourceCommand.class
 )
-public class LoadDataSetResourceCommand extends BaseMVCResourceCommand{
+public class LoadAssociatedDataSetsResourceCommand extends BaseMVCResourceCommand{
 
 	@Override
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
+		System.out.println("LoadAssociatedDataSetsResourceCommand: " );
 		
-		JSONObject result = JSONFactoryUtil.createJSONObject();
+		JSONArray jsonAssociatedDataSets = JSONFactoryUtil.createJSONArray();
 		
 		long dataCollectionId = ParamUtil.getLong(resourceRequest, "dataCollectionId", 0);
-		long dataSetId = ParamUtil.getLong(resourceRequest, "dataSetId", 0);
-		//System.out.println("LoadDataSetResourceCommand: " + dataCollectionId + ", "+dataSetId );
-		
-		boolean loadAvailableDataTypes = ParamUtil.getBoolean(resourceRequest, "loadAvailableDataTypes", false);
+		System.out.println("DataCollectionId: " + dataCollectionId);
 		
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
 		
-		if( dataSetId > 0 ) {
-			result = _dataSetLocalService.getDataSetInfo(
-					themeDisplay.getScopeGroupId(), 
-					dataCollectionId, 
-					dataSetId, 
-					themeDisplay.getLocale());
+		List<CollectionSetLink> collectionSetLinkList = null;
+		if( dataCollectionId > 0 ) {
+			collectionSetLinkList = 
+					_collectionSetLinkLocalService.getCollectionSetLinkListByCollection(
+							themeDisplay.getScopeGroupId(), dataCollectionId);
 		}
+		else {
+			new Exception("[ERROR] LoadAssociatedDataSets needs dataCollectionId");
+		}
+
+		Iterator<CollectionSetLink> iter = collectionSetLinkList.iterator();
+		while( iter.hasNext() ) {
+			CollectionSetLink link = iter.next();
 			
-		if(loadAvailableDataTypes == true) {
-			List<DataType> availableDataTypeList = 
-					_dataTypeLocalService.getDataTypesByGroupId(themeDisplay.getScopeGroupId());
-			JSONArray availableDataTypeJSONArray = JSONFactoryUtil.createJSONArray();
+			DataSet dataSet = _dataSetLocalService.getDataSet(link.getDataSetId());
 			
-			Iterator<DataType> iter = availableDataTypeList.iterator();
-			while(iter.hasNext()) {
-				DataType dataType = iter.next();
-				
-				JSONObject jsonDataType = JSONFactoryUtil.createJSONObject();
-				
-				jsonDataType.put("dataTypeId", dataType.getDataTypeId());
-				jsonDataType.put("dataTypeCode", dataType.getDataTypeCode());
-				jsonDataType.put("dataTypeVersion", dataType.getDataTypeVersion());
-				jsonDataType.put("displayName", dataType.getDisplayName(themeDisplay.getLocale()));
-				
-				availableDataTypeJSONArray.put(jsonDataType);
-			}
+			JSONObject jsonDataSet = JSONFactoryUtil.createJSONObject();
 			
-			result.put("availableDataTypeList", availableDataTypeJSONArray);
+			jsonDataSet.put("dataSetId", dataSet.getDataSetId());
+			jsonDataSet.put("dataSetCode", dataSet.getDataSetCode());
+			jsonDataSet.put("dataSetVersion", dataSet.getDataSetVersion());
+			jsonDataSet.put("displayName", dataSet.getDisplayName(themeDisplay.getLocale()));
+			
+			jsonAssociatedDataSets.put(jsonDataSet);
 		}
 		
-		System.out.println("LoadDataSet result: " + result.toString(4));
+		
+		System.out.println("LoadAssociatedDataSetsResourceCommand result: " + jsonAssociatedDataSets.toString(4));
 		
 		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
+		pw.write(jsonAssociatedDataSets.toJSONString());
 		pw.flush();
 		pw.close();
 	}
 	
 	@Reference
+	private CollectionSetLinkLocalService _collectionSetLinkLocalService;
+	
+	@Reference
 	private DataSetLocalService _dataSetLocalService;
-	
-	@Reference
-	private DataTypeLocalService _dataTypeLocalService;
-	
-	@Reference
-	private  DataCommentLocalService _dataCommentLocalService;
 	
 }

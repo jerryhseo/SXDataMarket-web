@@ -13,7 +13,7 @@ class SXDataCollectionNavigationBar extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("SXDataCollectionNavigationBar: ", props);
+		//console.log("SXDataCollectionNavigationBar: ", props);
 		this.namespace = props.namespace;
 		this.formId = props.formId;
 		this.dataCollectionId = props.dataCollectionId;
@@ -26,7 +26,7 @@ class SXDataCollectionNavigationBar extends React.Component {
 	}
 
 	handleNavItemClick = (item) => {
-		console.log("[SXDataCollectionNavigationBar handleNavItemClick] ", item);
+		//console.log("[SXDataCollectionNavigationBar handleNavItemClick] ", item);
 
 		Event.fire(Event.SX_NAVITEM_SELECTED, this.namespace, this.namespace, {
 			targetFormId: this.formId,

@@ -57,8 +57,8 @@ public class LoadStructuredDataResourceCommand extends BaseMVCResourceCommand{
 		
 		long structuredDataId = ParamUtil.getLong(resourceRequest, WebKey.STRUCTURED_DATA_ID, 0);
 		
-		System.out.println("--- Start LoadStructuredDataResourceCommand:  " );
-		System.out.println("structuredDataId: " + structuredDataId);
+		//System.out.println("--- Start LoadStructuredDataResourceCommand:  " );
+		//System.out.println("structuredDataId: " + structuredDataId);
 
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
@@ -75,13 +75,13 @@ public class LoadStructuredDataResourceCommand extends BaseMVCResourceCommand{
 		result.put("dataStructure", dataStructure.toJSON());
 		
 		// Finishing controller
-		System.out.println("Result: " + result.toString(4));
+		//System.out.println("Result: " + result.toString(4));
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(result.toJSONString());
 		pw.flush();
 		pw.close();
 		
-		System.out.println("--- End LoadStructuredDataResourceCommand" );
+		//System.out.println("--- End LoadStructuredDataResourceCommand" );
 	}
 	
 	@Reference

@@ -62,8 +62,10 @@ public class DeleteDataCollectionsResourceCommand extends BaseMVCResourceCommand
 		String[] strAryDataCollectionIds = strDataCollectionIds.split(",");
 		long[] longAryDataCollectionIds = Arrays.stream(strAryDataCollectionIds).mapToLong(Long::parseLong).toArray();
 		
-		_dataCollectionLocalService.removeDataCollections(longAryDataCollectionIds);
+		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
 		
+		_dataCollectionLocalService.removeDataCollections(themeDisplay.getScopeGroupId(), longAryDataCollectionIds);
+		 
 		PrintWriter pw = resourceResponse.getWriter();
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();

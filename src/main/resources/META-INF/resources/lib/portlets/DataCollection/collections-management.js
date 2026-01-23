@@ -2,7 +2,7 @@ import React, { createRef } from "react";
 import { Event, PortletKeys } from "../../stationx/station-x";
 import { SXPortlet, Workbench } from "../DataWorkbench/workbench";
 import { Rnd } from "react-rnd";
-import SXDataCollectionNavigator from "./datacollection-navigationbar";
+import SXDataCollectionNavigationBar from "./datacollection-navigationbar";
 import { Util } from "../../stationx/util";
 import Sticker from "@clayui/sticker";
 import SXApplicationBar from "../../stationx/application-bar";
@@ -44,18 +44,13 @@ class CollectionsManagement extends SXBaseVisualizer {
 			dataCollectionId: this.params.dataCollectionId ?? 0,
 			dataSetId: this.params.dataSetId ?? 0,
 			dataTypeId: this.params.dataTypeId ?? 0,
-			workingPortletInstance: {
-				portletName: "",
-				portletId: "",
-				namespace: "",
-				displayName: "",
-				title: "",
-				content: "",
-				portlet: null
-			},
+			workingPortletInstance: this.initializeWorkingPortletInstance(),
 			openVerticalNav: this.params.verticalNav ?? true,
 			refreshNav: Util.randomKey(),
-			infoDialog: false
+			infoDialog: false,
+			confirmDeleteDataCollectionDialog: false,
+			confirmDeleteDataSetDialog: false,
+			dataCollectionIdsToBeDeleted: []
 		};
 
 		this.contentRef = createRef();
@@ -71,6 +66,9 @@ class CollectionsManagement extends SXBaseVisualizer {
 		this.selectedNavItem = null;
 
 		this.applicationBarButtons = [];
+
+		this.dialogHeader = <></>;
+		this.dialogBody = <></>;
 	}
 
 	listenerWorkbenchReady = (event) => {
@@ -207,32 +205,74 @@ class CollectionsManagement extends SXBaseVisualizer {
 
 		const { item } = params;
 
-		//console.log("[CollectionManagement listenerNavItemSelected] ", params.item);
+		console.log("[CollectionManagement listenerNavItemSelected] ", params.item);
 		this.applicationTitle = "";
 
-		let portletName;
+		let portletName = PortletKeys.STRUCTURED_DATA_EXPLORER;
+		let requestId;
+		let requestParams;
+		switch (item.type) {
+			case CollectionsManagement.ItemTypes.COLLECTION: {
+				const { dataCollectionId, id, items } = item;
 
-		if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
-			switch (item.type) {
-				case CollectionsManagement.ItemTypes.COLLECTION: {
+				this.setState({
+					dataCollectionId: dataCollectionId,
+					dataSetId: 0
+				});
+
+				if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
 					portletName = PortletKeys.DATACOLLECTION_VIEWER;
-					break;
 				}
-				case CollectionsManagement.ItemTypes.DATASET: {
-					portletName = PortletKeys.DATASET_VIEWER;
-					break;
+
+				if (Util.isEmpty(items)) {
+					requestId = Workbench.RequestIDs.loadAssociatedDataSets;
+					requestParams = {
+						dataCollectionId: dataCollectionId
+					};
 				}
-				case CollectionsManagement.ItemTypes.DATATYPE: {
-					portletName = PortletKeys.DATATYPE_VIEWER;
-					break;
-				}
+
+				break;
 			}
-		} else {
-			portletName = PortletKeys.STRUCTURED_DATA_EXPLORER;
+			case CollectionsManagement.ItemTypes.DATASET: {
+				const { dataSetId, id, items } = item;
+
+				this.setState({
+					dataSetId: dataSetId
+				});
+
+				if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
+					portletName = PortletKeys.DATASET_VIEWER;
+				}
+
+				if (Util.isEmpty(items)) {
+					requestId = Workbench.RequestIDs.loadAssociatedDataTypes;
+					requestParams = {
+						dataCollectionId: this.state.dataCollectionId,
+						dataSetId: dataSetId
+					};
+				}
+
+				break;
+			}
+			case CollectionsManagement.ItemTypes.DATATYPE: {
+				if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
+					portletName = PortletKeys.DATATYPE_VIEWER;
+				}
+
+				break;
+			}
 		}
 
-		if (this.selectedNavItem === item && this.state.workingPortletInstance.portletName === portletName) {
+		if (this.selectedNavItem === item) {
 			return;
+		}
+
+		if (requestId) {
+			this.workbench.processRequest({
+				requestPortlet: this.namespace,
+				requestId: requestId,
+				params: requestParams
+			});
 		}
 
 		this.selectedNavItem = params.item;
@@ -242,99 +282,6 @@ class CollectionsManagement extends SXBaseVisualizer {
 			portletName: portletName,
 			params: portletParams
 		});
-
-		/*
-		let portletParams;
-		let { dataCollectionId, dataSetId, dataTypeId } = this.state;
-
-		if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
-			switch (item.type) {
-				case CollectionsManagement.ItemTypes.COLLECTION: {
-					dataCollectionId = item.dataCollectionId;
-					dataSetId = 0;
-					dataTypeId = 0;
-					this.dataCollectionDisplayName = item.label;
-					this.dataSetDisplayName = "";
-					this.dataTypeDisplayName = "";
-
-					portletParams = {
-						dataCollectionId: dataCollectionId
-					};
-
-					this.applicationBarButtons = [
-						{
-							id: "addDataSet",
-							label: Util.translate("add-dataset"),
-							symbol: "plus"
-						}
-					];
-					break;
-				}
-				case CollectionsManagement.ItemTypes.DATASET: {
-					dataSetId = item.dataSetId;
-					dataTypeId = 0;
-					this.dataSetDisplayName = item.label;
-					this.dataTypeDisplayName = "";
-
-					portletParams = {
-						dataCollectionId: dataCollectionId,
-						dataSetId: dataSetId
-					};
-
-					this.applicationBarButtons = [
-						{
-							id: "addDataType",
-							label: Util.translate("add-datatype"),
-							symbol: "plus"
-						}
-					];
-					break;
-				}
-				case CollectionsManagement.ItemTypes.DATATYPE: {
-					dataTypeId = item.dataTypeId;
-					this.dataTypeDisplayName = item.label;
-
-					portletParams = {
-						dataCollectionId: dataCollectionId,
-						dataSetId: dataSetId,
-						dataTypeId: dataTypeId
-					};
-
-					this.applicationBarButtons = [
-						{
-							id: "editDataStructure",
-							label: Util.translate("edit-datastructure"),
-							symbol: "pencil"
-						},
-						{
-							id: "addDataStructure",
-							label: Util.translate("add-datastructure"),
-							symbol: "plus"
-						}
-					];
-					break;
-				}
-			}
-
-			this.setState({
-				dataCollectionId: dataCollectionId,
-				dataSetId: dataSetId,
-				dataTypeId: dataTypeId
-			});
-		} else {
-			portletName = PortletKeys.STRUCTURED_DATA_EXPLORER;
-			portletParams = {
-				dataCollectionId: dataCollectionId,
-				dataSetId: dataSetId,
-				dataTypeId: dataTypeId
-			};
-		} 
-
-		this.deployPortlet({
-			portletName: portletName,
-			params: portletParams
-		});
-		*/
 	};
 
 	listenerResponse = (event) => {
@@ -345,7 +292,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 			return;
 		}
 
-		//console.log("[CollectionsManagement] listenerResponse: ", event.dataPacket);
+		console.log("[CollectionsManagement] listenerResponse: ", requestId, params, data);
 		switch (requestId) {
 			case Workbench.RequestIDs.searchDataCollections: {
 				this.searchedCollections = data;
@@ -394,6 +341,68 @@ class CollectionsManagement extends SXBaseVisualizer {
 
 			case Workbench.RequestIDs.searchStructuredData: {
 				this.searchedCollections = data;
+
+				break;
+			}
+			case Workbench.RequestIDs.loadAssociatedDataSets: {
+				console.log("[CollectionsManagement] listenerResponse ", this.selectedNavItem, data);
+
+				break;
+			}
+			case Workbench.RequestIDs.loadAssociatedDataTypes: {
+				console.log("[CollectionsManagement] listenerResponse ", this.selectedNavItem, data);
+
+				break;
+			}
+			case Workbench.RequestIDs.deleteDataCollections: {
+				this.navItems = this.navItems.filter((navItem) => navItem !== this.selectedNavItem);
+
+				this.selectedNavItem = null;
+
+				this.setState({
+					refreshNav: Util.randomKey(),
+					workingPortletInstance: this.initializeWorkingPortletInstance()
+				});
+
+				break;
+			}
+			case Workbench.RequestIDs.saveDataCollection: {
+				const { dataCollectionId, error } = dataPacket.data;
+
+				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				this.dialogBody = Util.translate("datacollection-saved-as", dataCollectionId);
+
+				this.setState({
+					infoDialog: true
+				});
+
+				this.state.workingPortletInstance.dirtyData = false;
+
+				this.workbench.fireResponse({
+					targetPortlet: this.state.workingPortletInstance.namespace,
+					requestId: requestId,
+					params: params,
+					data: data
+				});
+
+				break;
+			}
+			case Workbench.RequestIDs.deleteDataSets: {
+				let itemDataCollection;
+
+				this.navItems.every((navItem) => {
+					if (navItem.dataCollectionId === this.state.dataCollectionId.toString()) {
+						itemDataCollection = navItem;
+						navItem.items = navItem.items.filter((dataSetItem) => dataSetItem !== this.selectedNavItem);
+					}
+				});
+
+				this.selectedNavItem = null;
+
+				this.setState({
+					refreshNav: Util.randomKey(),
+					workingPortletInstance: this.initializeWorkingPortletInstance()
+				});
 
 				break;
 			}
@@ -522,6 +531,184 @@ class CollectionsManagement extends SXBaseVisualizer {
 		});
 	};
 
+	listenerDataCollectionChanged = (event) => {
+		const { targetPortlet, dataCollection } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace) {
+			console.log("[CollectionsManagement listenerDataCollectionChanged REJECTED] ", event.dataPacket);
+			return;
+		}
+
+		console.log("[CollectionsManagement listenerDataCollectionChanged] ", this.selectedNavItem, dataCollection);
+
+		this.state.workingPortletInstance.dirtyData = true;
+
+		const { dataCollectionId, dataCollectionCode, dataCollectionVersion, displayName, description, dataSets } =
+			dataCollection;
+
+		if (Util.isEmpty(this.selectedNavItem)) {
+			this.selectedNavItem = { type: "collection" };
+			this.navItems.push(this.selectedNavItem);
+		}
+
+		this.selectedNavItem.id = dataCollectionId;
+		this.selectedNavItem.dataCollectionId = dataCollectionId;
+		this.selectedNavItem.label = displayName[this.languageId];
+		this.selectedNavItem.items = dataSets.map((dataSet) => ({
+			id: dataSet.dataSetId,
+			dataSetId: dataSet.dataSetId,
+			label: dataSet.displayName,
+			type: "set"
+		}));
+
+		if (this.selectedNavItem.dataCollectionId > 0) {
+			this.setState({
+				refreshNav: Util.randomKey()
+			});
+		}
+	};
+
+	listenerDataSetChanged = (event) => {
+		const { targetPortlet, dataSet } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace) {
+			console.log("[CollectionsManagement listenerDataSetChanged REJECTED] ", event.dataPacket);
+			return;
+		}
+
+		console.log("[CollectionsManagement listenerDataSetChanged] ", this.selectedNavItem, dataSet);
+		const { dataCollectionId, dataSetId, dataSetCode, dataSetVersion, displayName, description, dataTypes } =
+			dataSet;
+
+		const dataCollectionNavItem = this.getDataCollectionNavItem();
+
+		if (Util.isEmpty(this.selectedNavItem)) {
+			this.selectedNavItem = { type: "set" };
+			dataCollectionNavItem.items.push(this.selectedNavItem);
+		}
+
+		this.selectedNavItem.id = dataSetId;
+		this.selectedNavItem.dataSetId = dataSetId;
+		this.selectedNavItem.label = displayName[this.languageId];
+		this.selectedNavItem.items = dataTypes.map((dataType) => ({
+			id: dataType.dataTypeId,
+			dataTypeId: dataType.dataTypeId,
+			label: dataType.displayName,
+			type: "type"
+		}));
+
+		if (this.selectedNavItem.dataSetId > 0) {
+			this.setState({
+				refreshNav: Util.randomKey()
+			});
+		}
+		/*
+		this.workbench.processRequest({
+			requestPortlet: this.namespace,
+			requestId: Workbench.RequestIDs.loadAssociatedDataSets,
+			params: {
+				dataCollectionId: dataCollectionId
+			}
+		});
+		*/
+	};
+
+	listenerDeleteDataCollection = (event) => {
+		const { targetPortlet, dataCollectionId } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace) {
+			console.log("[CollectionsManagement listenerDeleteDataCollection REJECTED] ", event.dataPacket);
+			return;
+		}
+		console.log(
+			"[CollectionsManagement listenerDeleteDataCollection] ",
+			this.selectedNavItem,
+			this.state.dataCollectionId,
+			dataCollectionId
+		);
+
+		if (this.state.dataCollectionId !== dataCollectionId.toString()) {
+			this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+			this.dialogBody = Util.translate(
+				"current-selected-datacollection-should-be-same-with-the-datacollection-to-be-deleted"
+			);
+
+			this.setState({
+				infoDialog: true
+			});
+		} else {
+			this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+			this.dialogBody = Util.translate(
+				"will-delete-all-related-data-and-is-not-recoverable-are-you-sure-to-proceed"
+			);
+
+			this.setState({
+				confirmDeleteDataCollectionDialog: true
+			});
+		}
+	};
+
+	listenerSaveDataCollection = (event) => {
+		const { targetPortlet, dataCollection } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace) {
+			console.log("[CollectionsManagement listenerSaveDataCollection REJECTED] ", event.dataPacket);
+			return;
+		}
+		console.log(
+			"[CollectionsManagement listenerSaveDataCollection] ",
+			this.selectedNavItem,
+			this.state.dataCollectionId,
+			dataCollection
+		);
+
+		this.workbench.processRequest({
+			requestPortlet: this.namespace,
+			requestId: Workbench.RequestIDs.saveDataCollection,
+			params: dataCollection
+		});
+	};
+
+	listenerDeleteDataSet = (event) => {
+		const { targetPortlet, dataCollectionId, dataSetId } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace) {
+			console.log("[CollectionsManagement listenerDeleteDataSet REJECTED] ", event.dataPacket);
+			return;
+		}
+		console.log(
+			"[CollectionsManagement listenerDeleteDataSet] ",
+			this.selectedNavItem,
+			this.state.dataCollectionId,
+			dataCollectionId,
+			this.state.dataSetId,
+			dataSetId
+		);
+
+		if (
+			this.state.dataCollectionId !== dataCollectionId ||
+			this.selectedNavItem.dataSetId !== dataSetId.toString()
+		) {
+			this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+			this.dialogBody = Util.translate(
+				"current-selected-datacollection-should-be-same-with-the-dataset-to-be-deleted"
+			);
+
+			this.setState({
+				infoDialog: true
+			});
+		} else {
+			this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
+			this.dialogBody = Util.translate(
+				"will-delete-all-related-data-and-is-not-recoverable-are-you-sure-to-proceed"
+			);
+
+			this.setState({
+				confirmDeleteDataSetDialog: true
+			});
+		}
+	};
+
 	componentDidMount() {
 		Event.on(Event.SX_HANDSHAKE, this.listenerHandshake);
 		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
@@ -536,6 +723,11 @@ class CollectionsManagement extends SXBaseVisualizer {
 		Event.on(Event.SX_CHANGE_VIEWMODE, this.listenerChangeViewMode);
 		Event.on(Event.SX_APPLICATION_BAR_BTN_CLICKED, this.listenerApplicationBarBtnClicked);
 		Event.on(Event.SX_REDIRECT_TO, this.listenerRedirectTo);
+		Event.on(Event.SX_DATACOLLECTION_CHANGED, this.listenerDataCollectionChanged);
+		Event.on(Event.SX_DELETE_DATACOLLECTION, this.listenerDeleteDataCollection);
+		Event.on(Event.SX_SAVE_DATACOLLECTION, this.listenerSaveDataCollection);
+		Event.on(Event.SX_DATASET_CHANGED, this.listenerDataSetChanged);
+		Event.on(Event.SX_DELETE_DATASET, this.listenerDeleteDataSet);
 
 		window.addEventListener("resize", this.listenerWindowResize);
 
@@ -572,9 +764,54 @@ class CollectionsManagement extends SXBaseVisualizer {
 		Event.off(Event.SX_CHANGE_VIEWMODE, this.listenerChangeViewMode);
 		Event.off(Event.SX_APPLICATION_BAR_BTN_CLICKED, this.listenerApplicationBarBtnClicked);
 		Event.off(Event.SX_REDIRECT_TO, this.listenerRedirectTo);
+		Event.off(Event.SX_DATACOLLECTION_CHANGED, this.listenerDataCollectionChanged);
+		Event.off(Event.SX_DELETE_DATACOLLECTION, this.listenerDeleteDataCollection);
+		Event.off(Event.SX_SAVE_DATACOLLECTION, this.listenerSaveDataCollection);
+		Event.off(Event.SX_DATASET_CHANGED, this.listenerDataSetChanged);
+		Event.off(Event.SX_DELETE_DATASET, this.listenerDeleteDataSet);
 
 		window.removeEventListener("resize", this.listenerWindowResize);
 	}
+
+	getDataCollectionNavItem() {
+		return this.navItems.filter(
+			(navItem) => navItem.dataCollectionId === this.state.dataCollectionId.toString()
+		)[0];
+	}
+
+	initializeWorkingPortletInstance() {
+		return {
+			portletName: "",
+			portletId: "",
+			namespace: "",
+			displayName: "",
+			title: "",
+			content: "",
+			dirtyData: false, // if the portlet is an instance of a kind of editor
+			portlet: null
+		};
+	}
+
+	deleteDataCollection = () => {
+		this.workbench.processRequest({
+			requestPortlet: this.namespace,
+			requestId: Workbench.RequestIDs.deleteDataCollections,
+			params: {
+				dataCollectionIds: [this.state.dataCollectionId]
+			}
+		});
+	};
+
+	deleteDataSet = () => {
+		this.workbench.processRequest({
+			requestPortlet: this.namespace,
+			requestId: Workbench.RequestIDs.deleteDataSets,
+			params: {
+				dataCollectionId: this.state.dataCollectionId,
+				dataSetIds: [this.state.dataSetId]
+			}
+		});
+	};
 
 	buildApplicationTitle() {
 		let applicationTitle = Util.isEmpty(this.dataCollectionDisplayName) ? "" : this.dataCollectionDisplayName;
@@ -731,6 +968,8 @@ class CollectionsManagement extends SXBaseVisualizer {
 			portletName: PortletKeys.DATACOLLECTION_EDITOR,
 			portletState: Workbench.PortletState.NORMAL
 		});
+
+		this.selectedNavItem = null;
 	};
 
 	render() {
@@ -849,7 +1088,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 										</div>
 									)}
 								</div>
-								<SXDataCollectionNavigator
+								<SXDataCollectionNavigationBar
 									key={this.state.refreshNav}
 									namespace={this.namespace}
 									formId={this.formId}
@@ -900,6 +1139,50 @@ class CollectionsManagement extends SXBaseVisualizer {
 								label: Util.translate("ok"),
 								onClick: () => {
 									this.setState({ infoDialog: false });
+								}
+							}
+						]}
+					/>
+				)}
+				{this.state.confirmDeleteDataCollectionDialog && (
+					<SXModalDialog
+						header={this.dialogHeader}
+						body={this.dialogBody}
+						buttons={[
+							{
+								label: Util.translate("confirm"),
+								onClick: (e) => {
+									this.deleteDataCollection();
+									this.setState({ confirmDeleteDataCollectionDialog: false });
+								},
+								displayType: "secondary"
+							},
+							{
+								label: Util.translate("cancel"),
+								onClick: (e) => {
+									this.setState({ confirmDeleteDataCollectionDialog: false });
+								}
+							}
+						]}
+					/>
+				)}
+				{this.state.confirmDeleteDataSetDialog && (
+					<SXModalDialog
+						header={this.dialogHeader}
+						body={this.dialogBody}
+						buttons={[
+							{
+								label: Util.translate("confirm"),
+								onClick: (e) => {
+									this.deleteDataSet();
+									this.setState({ confirmDeleteDataSetDialog: false });
+								},
+								displayType: "secondary"
+							},
+							{
+								label: Util.translate("cancel"),
+								onClick: (e) => {
+									this.setState({ confirmDeleteDataSetDialog: false });
 								}
 							}
 						]}

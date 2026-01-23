@@ -10,6 +10,7 @@ import SXBasePropertiesPanelComponent from "./base-properties-panel-component";
 import { ParameterUtil } from "../Parameter/parameters";
 import { SXLabeledText } from "../Form/form";
 import { Icon, Text, TreeView } from "@clayui/core";
+import { Workbench } from "../DataWorkbench/workbench";
 
 class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 	constructor(props) {
@@ -258,28 +259,79 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		});
 	};
 
+	listenerOpenReferenceFile = (event) => {
+		const { targetPortlet, targetFormId, paramCode, paramVersion, fileName, fileType } = event.dataPacket;
+
+		if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
+			console.log("[SXDataStructurePreviewer] listenerOpenReferenceFile rejected: ", paramCode, event.dataPacket);
+
+			return;
+		}
+
+		console.log(
+			"[SXDataStructurePreviewer] listenerOpenReferenceFile: ",
+			paramCode,
+			paramVersion,
+			fileName,
+			fileType,
+			event.dataPacket
+		);
+
+		Event.fire(Event.SX_OPEN_REFERENCE_FILE, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			sourceFormId: this.componentId,
+			paramCode: paramCode,
+			paramVersion: paramVersion,
+			fileName: fileName,
+			fileType: fileType
+		});
+	};
+
+	listenerDeleteFiles = (event) => {
+		const { targetPortlet, targetFormId, paramCode, paramVersion, files } = event.dataPacket;
+
+		if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
+			console.log("[SXDataStructurePreviewer] listenerDeleteFiles rejected: ", paramCode, event.dataPacket);
+
+			return;
+		}
+
+		console.log("[SXDataStructurePreviewer] listenerDeleteFiles: ", paramCode, event.dataPacket);
+
+		Event.fire(Event.SX_DELETE_FILES, this.namespace, this.namespace, {
+			targetFormId: this.formId,
+			paramCode: paramCode,
+			paramVersion: paramVersion,
+			files: files
+		});
+	};
+
 	componentDidMount() {
 		Event.on(Event.SX_COPY_PARAMETER, this.listenerCopyParameter);
+		Event.on(Event.SX_DELETE_FILES, this.listenerDeleteFiles);
 		Event.on(Event.SX_DELETE_PARAMETER, this.listenerDeleteParameter);
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.on(Event.SX_MOVE_PARAMETER_DOWN, this.listenerMoveParameterDown);
 		Event.on(Event.SX_MOVE_PARAMETER_UP, this.listenerMoveParameterUp);
+		Event.on(Event.SX_OPEN_REFERENCE_FILE, this.listenerOpenReferenceFile);
 		Event.on(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 		Event.on(Event.SX_REFRESH_FORM, this.listenerRefeshForm);
-		Event.on(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
 		Event.on(Event.SX_REQUEST, this.listenerRequest);
+		Event.on(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
 	}
 
 	componentWillUnmount() {
 		Event.off(Event.SX_COPY_PARAMETER, this.listenerCopyParameter);
+		Event.off(Event.SX_DELETE_FILES, this.listenerDeleteFiles);
 		Event.off(Event.SX_DELETE_PARAMETER, this.listenerDeleteParameter);
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.off(Event.SX_MOVE_PARAMETER_DOWN, this.listenerMoveParameterDown);
 		Event.off(Event.SX_MOVE_PARAMETER_UP, this.listenerMoveParameterUp);
+		Event.off(Event.SX_OPEN_REFERENCE_FILE, this.listenerOpenReferenceFile);
 		Event.off(Event.SX_PARAMETER_SELECTED, this.listenerParameterSelected);
 		Event.off(Event.SX_REFRESH_FORM, this.listenerRefeshForm);
-		Event.off(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
 		Event.off(Event.SX_REQUEST, this.listenerRequest);
+		Event.off(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
 	}
 
 	openErrorDlg(message) {

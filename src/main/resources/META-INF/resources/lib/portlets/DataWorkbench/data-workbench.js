@@ -170,7 +170,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("Workbench HANDSHAKE received: ", event.dataPacket);
+		//console.log("Workbench HANDSHAKE received: ", event.dataPacket);
 		this.workingPortletNamespace = sourcePortlet;
 
 		Event.fire(Event.SX_WORKBENCH_READY, this.namespace, sourcePortlet, {});
@@ -188,7 +188,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		console.log("Workbench SX_MENU_SELECTED received: ", event.dataPacket);
+		//console.log("Workbench SX_MENU_SELECTED received: ", event.dataPacket);
 
 		let viewMode = DataWorkbench.ViewMode.FORM;
 

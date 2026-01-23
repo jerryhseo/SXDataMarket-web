@@ -21,6 +21,7 @@ import SXMatrix from "../Form/matrix";
 import SXNumeric from "../Form/numeric";
 import SXPhone from "../Form/phone";
 import SXCommentDisplayer from "../../stationx/comment";
+import { Workbench } from "../DataWorkbench/workbench";
 
 export class ParameterUtil {
 	static createParameter({ namespace, formId, paramType, properties = {} }) {
@@ -203,6 +204,8 @@ class Parameter {
 	modifedDate = null;
 
 	inputStatus = false;
+	comments = [];
+	/*
 	comments = [
 		{
 			id: "1",
@@ -293,10 +296,13 @@ class Parameter {
 			]
 		}
 	];
+	*/
 	commentFreezed = false;
 	commentFreezedUserId;
 	commentFreezedUserName;
 	commentFreezedDate;
+	historyItems = [];
+	/*
 	historyItems = [
 		{
 			actionHistoryId: 123456,
@@ -312,6 +318,7 @@ class Parameter {
 			comment: "This is modified"
 		}
 	];
+	*/
 	freezed = false;
 	freezedUserId;
 	freezedUserName;
@@ -670,7 +677,7 @@ class Parameter {
 	}
 
 	hasReferenceFile() {
-		return Util.isNotEmpty(this.referenceFile) && this.referenceFile.fileId > 0;
+		return Util.isNotEmpty(this.referenceFile);
 	}
 
 	checkDuplicateParamCode(param) {
@@ -800,6 +807,23 @@ class Parameter {
 	}
 	removeTooltip(languageId) {
 		delete this.tooltip[languageId];
+	}
+
+	toFileObject(fileItem) {
+		return {
+			paramCode: this.paramCode,
+			paramVersion: this.paramVersion,
+			file: fileItem.file
+		};
+	}
+
+	getReferenceFiles() {
+		if (Util.isNotEmpty(this.referenceFile)) {
+			console.log("[Parameter getReferenceFiles] ", this.referenceFile);
+			return [this.toFileObject(this.referenceFile)];
+		} else {
+			return [];
+		}
 	}
 
 	equalTo(code, version) {
@@ -1324,6 +1348,15 @@ class Parameter {
 		});
 	}
 
+	fireDeleteFiles({ targetForm, files }) {
+		Event.fire(Event.SX_DELETE_FILES, this.namespace, this.namespace, {
+			targetFormId: targetForm ?? this.formId,
+			paramCode: this.paramCode,
+			paramVersion: this.paramVersion,
+			files: files
+		});
+	}
+
 	fireMoveUp(targetForm) {
 		Event.fire(Event.SX_MOVE_PARAMETER_UP, this.namespace, this.namespace, {
 			targetFormId: targetForm ?? this.formId,
@@ -1346,7 +1379,7 @@ class Parameter {
 	}
 
 	fireParentRefreshPreview() {
-		console.log("fireParentRefreshPreview: ", this);
+		//console.log("fireParentRefreshPreview: ", this);
 		Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
 			targetFormId: this.formId,
 			paramCode: this.parent.code,
@@ -1362,10 +1395,13 @@ class Parameter {
 		});
 	}
 
-	fireAddComment() {
-		Event.fire(Event.SX_ADD_PARAMETER_COMMENT, this.namespace, this.namespace, {
+	fireOpenReferenceFile() {
+		Event.fire(Event.SX_OPEN_REFERENCE_FILE, this.namespace, this.namespace, {
 			targetFormId: this.formId,
-			parameter: this
+			paramCode: this.paramCode,
+			paramVersion: this.paramVersion,
+			fileName: this.referenceFile.name,
+			fileType: this.referenceFile.type
 		});
 	}
 
@@ -1692,7 +1728,8 @@ class Parameter {
 					info: {
 						id: item.fileId,
 						name: item.name,
-						type: item.type
+						type: item.type,
+						lastModified: item.lastModified
 					},
 					file: item.file
 				}));
@@ -1774,7 +1811,13 @@ class Parameter {
 		if (Util.isNotEmpty(this.parent)) json.parent = this.parent;
 		if (Util.isNotEmpty(this.validation)) json.validation = this.validation;
 		if (Util.isNotEmpty(this.defaultValue)) json.defaultValue = this.defaultValue;
-		if (Util.isNotEmpty(this.referenceFile)) json.referenceFile = this.referenceFile;
+		if (Util.isNotEmpty(this.referenceFile)) {
+			json.referenceFile = {
+				name: this.referenceFile.name,
+				type: this.referenceFile.type,
+				lastModified: this.referenceFile.lastModified
+			};
+		}
 		if (Util.isNotEmpty(this.style)) json.style = this.style;
 		if (this.showDefinition) json.showDefinition = this.showDefinition;
 		if (this.abstractKey) json.abstractKey = this.abstractKey;
@@ -1931,13 +1974,6 @@ class Parameter {
 	}
 
 	renderPreview({ formId = this.formId, actionItems = [], spritemap }) {
-		/* This is for test.*/
-		this.referenceFile = {
-			fileId: 12345,
-			fileType: "jpg"
-		};
-		/**/
-
 		return (
 			<SXPreviewRow
 				key={this.key}
@@ -2684,11 +2720,12 @@ export class DualListParameter extends Parameter {
 
 	setValue({ value, cellIndex, validate = true }) {
 		const values = value.map((option) => option.value);
+		/*
 		console.log(
 			"DualListParameter.setValue: ",
 			values,
 			this.options.filter((option) => values.includes(option.value))
-		);
+		); */
 
 		super.setValue({
 			value: this.options.filter((option) => values.includes(option.value)),
@@ -2787,7 +2824,7 @@ export class DualListParameter extends Parameter {
 			return foundOption ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
 		});
 
-		console.log("DualListParameter.getOptionByValue: ", value, foundOption);
+		//console.log("DualListParameter.getOptionByValue: ", value, foundOption);
 		return foundOption;
 	}
 
@@ -3019,6 +3056,7 @@ export class EMailParameter extends Parameter {
 
 export class FileParameter extends Parameter {
 	#multipleFiles = true;
+	#fileManager = true;
 	#accepts = "";
 
 	constructor({ namespace, formId, paramType = ParamType.FILE, properties = {} }) {
@@ -3036,12 +3074,18 @@ export class FileParameter extends Parameter {
 	get multipleFiles() {
 		return this.#multipleFiles;
 	}
+	get fileManager() {
+		return this.#fileManager;
+	}
 	get accepts() {
 		return this.#accepts;
 	}
 
 	set multipleFiles(val) {
 		this.#multipleFiles = val;
+	}
+	set fileManager(val) {
+		this.#fileManager = val;
 	}
 	set accepts(val) {
 		this.#accepts = val;
@@ -3056,10 +3100,11 @@ export class FileParameter extends Parameter {
 	}
 
 	fireDownloadFile(fileInfo) {
-		console.log("Download file: ", fileInfo);
+		//console.log("Download file: ", fileInfo);
 		Event.fire(Event.SX_DOWNLOAD_FIELD_ATTACHED_FILE, this.namespace, this.namespace, {
 			targetFormId: this.formId,
 			fileName: fileInfo.name,
+			lastModified: fileInfo.lastModified,
 			fileType: fileInfo.type,
 			paramCode: this.paramCode,
 			paramVersion: this.paramVersion
@@ -3098,15 +3143,7 @@ export class FileParameter extends Parameter {
 		};
 	}
 
-	toFileObject(fileItem) {
-		return {
-			paramCode: this.paramCode,
-			paramVersion: this.paramVersion,
-			file: fileItem.file
-		};
-	}
-
-	getFiles() {
+	getDataFiles() {
 		let files = [];
 
 		if (this.hasValue()) {
@@ -3121,7 +3158,7 @@ export class FileParameter extends Parameter {
 			}
 		}
 
-		console.log("FileParameter: ", files);
+		//console.log("FileParameter: ", files);
 		return files;
 	}
 
@@ -3181,6 +3218,8 @@ export class FileParameter extends Parameter {
 		super.parse(json);
 
 		this.multipleFiles = json.multipleFiles ?? true;
+		this.fileManager = json.fileManager ?? true;
+
 		this.accepts = json.accepts ?? "";
 	}
 
@@ -3188,6 +3227,7 @@ export class FileParameter extends Parameter {
 		let json = super.toJSON();
 
 		json.multipleFiles = this.multipleFiles;
+		json.fileManager = this.fileManager;
 		json.accepts = this.accepts;
 
 		return json;
@@ -3196,6 +3236,7 @@ export class FileParameter extends Parameter {
 	toProperties(tagId, tagName) {
 		let properties = super.toProperties();
 		properties.multipleFiles = this.multipleFiles;
+		properties.fileManager = this.fileManager;
 		properties.accepts = this.accepts;
 
 		if (tagId) properties.tagId = tagId;
@@ -3646,16 +3687,30 @@ export class GroupParameter extends Parameter {
 		return actionItems;
 	}
 
-	getFiles() {
+	getReferenceFiles() {
+		let files = [];
+
+		if (this.hasReferenceFile()) {
+			files.push(this.toFileObject(this.referenceFile));
+		}
+
+		this.members.forEach((param) => {
+			files = [...files, ...param.getReferenceFiles()];
+		});
+
+		return files;
+	}
+
+	getDataFiles() {
 		let files = [];
 
 		this.members.forEach((member) => {
 			if (member.paramType === ParamType.FILE) {
-				files = [...files, ...member.getFiles()];
+				files = [...files, ...member.getDataFiles()];
 			}
 		});
 
-		console.log("GroupParameter: ", files);
+		//console.log("GroupParameter: ", files);
 		return files;
 	}
 
@@ -4102,7 +4157,7 @@ export class GridParameter extends GroupParameter {
 		});
 
 		if (colFound) {
-			console.log("GridParameter.fireColumnSelected: ", colCode, colFound);
+			//console.log("GridParameter.fireColumnSelected: ", colCode, colFound);
 			colFound.fireParameterSelected();
 		}
 	}

@@ -9,7 +9,7 @@ class SXApplicationBar extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("ApplicationBar props: ", props);
+		//console.log("ApplicationBar props: ", props);
 		this.namespace = props.namespace;
 		this.formId = props.formId;
 		this.spritemap = props.spritemap;

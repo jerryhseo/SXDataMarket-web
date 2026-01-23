@@ -74,6 +74,8 @@ export class SXTitleBar extends React.Component {
 		this.hasValue = this.parameter.hasValue();
 		this.required = this.parameter.required ?? false;
 		this.tooltip = this.parameter.getTooltip() ?? "";
+		this.referenceFile = this.parameter.hasReferenceFile();
+		this.isGroup = this.parameter.isGroup;
 
 		this.refLink = this.parameter.hasReferenceFile();
 		this.inputStatus = this.parameter.inputStatus ?? false;
@@ -88,29 +90,28 @@ export class SXTitleBar extends React.Component {
 
 		this.buttons = props.buttons ?? [];
 
-		//console.log("[SXTitleBar] props", props);
+		//console.log("[SXTitleBar] props", props, this.parameter.referenceFile);
 	}
 
-	handlerQMarkClicked = (event) => {
-		event.stopPropagation();
+	handleReferenceFileClick = (event) => {
+		this.parameter.fireOpenReferenceFile();
+	};
 
+	handlerQMarkClicked = (event) => {
 		Event.fire(Event.SX_OPEN_COMMENTS, this.namespace, this.namespace, {
 			targetFormId: this.formId
 		});
 	};
 
 	handlerVerifyClicked = (event) => {
-		event.stopPropagation();
 		console.log("SXTitleBar: Verified clicked");
 	};
 
 	handlerFreezeClicked = (event) => {
-		event.stopPropagation();
 		console.log("SXTitleBar: Freezed clicked");
 	};
 
 	handlerHistoriesClicked = (event) => {
-		event.stopPropagation();
 		console.log("SXTitleBar: handlerHistoriesClicked clicked");
 	};
 
@@ -151,13 +152,16 @@ export class SXTitleBar extends React.Component {
 							/>
 						)}
 					</span>
-					{this.refLink && this.parameter.hasReferenceFile() && (
-						<span style={{ paddingLeft: "3px" }}>
+					{this.refLink && this.referenceFile && (
+						<span
+							style={{ paddingLeft: "3px" }}
+							onClick={this.handleReferenceFileClick}
+						>
 							<SXLinkIcon linked={true} />
 						</span>
 					)}
 				</div>
-				{this.parameter && this.inputStatus && this.parameter.isGroup && (
+				{this.parameter && this.inputStatus && this.isGroup && (
 					<div
 						className={"autofit-col"}
 						style={{ display: "inline-block", color: "#f18585", marginRight: "0.5rem" }}

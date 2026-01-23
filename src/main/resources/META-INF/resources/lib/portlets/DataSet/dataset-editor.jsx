@@ -15,12 +15,11 @@ class DataSetEditor extends SXBaseVisualizer {
 		super(props);
 
 		console.log("DataSetEditor: ", props);
-		this.formId = this.namespace + "dataSetEditor";
 
 		this.dataCollectionId = this.params.dataCollectionId ?? 0;
 		this.dataSetId = this.params.dataSetId ?? 0;
 
-		this.dataTypeList = [];
+		this.associatedDataTypeList = [];
 		this.availableDataTypeList = [];
 
 		this.dataSetCode = ParameterUtil.createParameter({
@@ -165,18 +164,32 @@ class DataSetEditor extends SXBaseVisualizer {
 
 		this.dialogHeader = <></>;
 		this.dialogBody = <></>;
+
+		this.componentId = this.namespace;
 	}
 
 	listenerFieldValueChanged = (event) => {
-		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
+		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
-		if (!dataPacket) {
-			//console.log("[dataSetEditor] listenerFieldValueChanged rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			console.log("[dataSetEditor] listenerFieldValueChanged rejected: ", event.dataPacket, this.formId);
 
 			return;
 		}
 
-		//console.log("[dataSetEditor] listenerFieldValueChanged received: ", dataPacket);
+		console.log("[dataSetEditor] listenerFieldValueChanged received: ", event.dataPacket, parameter);
+
+		Event.fire(Event.SX_DATASET_CHANGED, this.namespace, this.workbenchNamespace, {
+			dataSet: {
+				dataCollectionId: this.dataCollectionId,
+				dataSetId: this.dataSetId,
+				dataSetCode: this.dataSetCode.getValue(),
+				dataSetVersion: this.dataSetVersion.getValue(),
+				displayName: this.displayName.getValue(),
+				description: this.description.getValue(),
+				dataTypes: this.getAssociatedDataTypeInfos(this.dataTypes.getValue())
+			}
+		});
 	};
 
 	listenerWorkbenchReady = (event) => {
@@ -210,7 +223,12 @@ class DataSetEditor extends SXBaseVisualizer {
 
 		switch (dataPacket.requestId) {
 			case Workbench.RequestIDs.loadDataSet: {
-				const { dataCollection, dataSet, associatedDataTypeList = [], availableDataTypeList } = dataPacket.data;
+				const {
+					dataCollection,
+					dataSet,
+					associatedDataTypeList = [],
+					availableDataTypeList = []
+				} = dataPacket.data;
 
 				this.dataSetCode.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.dataSetCode });
 				this.dataSetVersion.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.dataSetVersion });
@@ -220,13 +238,13 @@ class DataSetEditor extends SXBaseVisualizer {
 				if (Util.isNotEmpty(availableDataTypeList)) {
 					this.availableDataTypeList = availableDataTypeList;
 					this.dataTypes.options = this.availableDataTypeList.map((dataType) => {
+						const { dataTypeVersion, dataTypeId, displayName } = dataType;
+
 						let label = {};
-						Object.keys(dataType.displayName).forEach((key) => {
-							label[key] = dataType.displayName[key] + " v." + dataType.dataTypeVersion;
-						});
+						label[this.languageId] = displayName + " v." + dataTypeVersion;
 
 						return {
-							value: dataType.dataTypeId,
+							value: dataTypeId,
 							label: label
 						};
 					});
@@ -235,7 +253,7 @@ class DataSetEditor extends SXBaseVisualizer {
 				}
 
 				if (Util.isNotEmpty(associatedDataTypeList)) {
-					this.dataTypeList = associatedDataTypeList;
+					this.associatedDataTypeList = associatedDataTypeList;
 
 					const dataTypeIds = associatedDataTypeList.map((dataType) => {
 						const { dataTypeVersion, dataTypeId, displayName } = dataType;
@@ -267,19 +285,19 @@ class DataSetEditor extends SXBaseVisualizer {
 					loadingStatus: LoadingStatus.COMPLETE
 				});
 
-				break;
-			}
-			case Workbench.RequestIDs.deleteDataSets: {
-				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("datasets-deleted-successfully");
-
-				this.setState({
-					infoDialog: true
+				Event.fire(Event.SX_DATASET_CHANGED, this.namespace, this.workbenchNamespace, {
+					dataSet: {
+						dataCollectionId: this.dataCollectionId,
+						dataSetId: this.dataSetId,
+						dataSetCode: this.dataSetCode.getValue(),
+						dataSetVersion: this.dataSetVersion.getValue(),
+						displayName: this.displayName.getValue(),
+						description: this.description.getValue(),
+						dataTypes: this.getAssociatedDataTypeInfos(this.dataTypes.getValue())
+					}
 				});
 
-				this.set;
-
-				return;
+				break;
 			}
 		}
 
@@ -306,6 +324,7 @@ class DataSetEditor extends SXBaseVisualizer {
 		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.on(Event.SX_RESPONSE, this.listenerResponse);
 		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 
 		this.fireHandshake();
 	}
@@ -316,6 +335,17 @@ class DataSetEditor extends SXBaseVisualizer {
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.off(Event.SX_RESPONSE, this.listenerResponse);
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+	}
+
+	getAssociatedDataTypeInfos(dataTypeStrIds) {
+		const dataTypeIds = dataTypeStrIds.map((id) => Number(id));
+
+		const associatedDataTypes = this.availableDataTypeList.filter((dataType) =>
+			dataTypeIds.includes(Number(dataType.dataTypeId))
+		);
+
+		return associatedDataTypes;
 	}
 
 	initForm = () => {
@@ -395,17 +425,20 @@ class DataSetEditor extends SXBaseVisualizer {
 		this.saveDataSet();
 	};
 
-	handleDeleteClick = () => {
-		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
+	handleDeleteClick = (event) => {
+		event.stopPropagation();
 
-		this.setState({ confirmDeleteDialog: true });
+		Event.fire(Event.SX_DELETE_DATASET, this.namespace, this.workbenchNamespace, {
+			dataCollectionId: this.dataCollectionId,
+			dataSetId: this.dataSetId
+		});
 	};
 
 	saveDataSet = () => {
 		//console.log("associatedDataTypeIDs: ", this.dataTypes.getValue());
 
 		const params = {
+			dataCollectionId: this.dataCollectionId,
 			dataSetId: this.dataSetId,
 			dataSetCode: this.dataSetCode.getValue(),
 			dataSetVersion: this.dataSetVersion.getValue(),
