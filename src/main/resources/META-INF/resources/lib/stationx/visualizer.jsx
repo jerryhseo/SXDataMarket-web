@@ -97,6 +97,16 @@ class SXBaseVisualizer extends React.Component {
 		});
 	}
 
+	openDataOnWindow(data) {
+		//console.log("Open BLOB data");
+		const url = window.URL.createObjectURL(data);
+
+		const link = document.createElement("a");
+		link.href = url;
+		link.target = "_blank";
+		link.click();
+	}
+
 	render() {
 		return <></>;
 	}

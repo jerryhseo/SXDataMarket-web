@@ -608,7 +608,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 							namespace: this.namespace,
 							formId: this.componentId,
 							paramType: ParamType.STRING
-					  });
+						});
 
 				if (this.workingParam.isRendered()) {
 					this.workingParam.focused = true;
@@ -664,12 +664,16 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			}
 			case Workbench.RequestIDs.openReferenceFile: {
 				console.log("Open referenceFile finished");
+				this.openDataOnWindow(data);
+
+				/*
 				const url = window.URL.createObjectURL(data);
 
 				const link = document.createElement("a");
 				link.href = url;
 				link.target = "_blank";
 				link.click();
+				*/
 			}
 		}
 
@@ -1142,7 +1146,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 														namespace: this.namespace,
 														formId: this.previewerId,
 														paramType: ParamType.STRING
-												  })
+													})
 												: group);
 										workingParam.focused = workingParam.isRendered() ? true : false;
 

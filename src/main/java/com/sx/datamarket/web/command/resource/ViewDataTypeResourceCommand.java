@@ -84,44 +84,50 @@ public class ViewDataTypeResourceCommand extends BaseMVCResourceCommand{
 			result = dataType.toJSON(themeDisplay.getLocale());
 			
 			// Construct information of linked DataTypes
-			TypeStructureLink typeStructureLink =  
-					_typeStructureLinkLocalService.getTypeStructureLink(dataTypeId);
+			TypeStructureLink typeStructureLink = null;
 			
-			result.put("linkId", typeStructureLink.getPrimaryKey());
-			
-			DataStructure dataStructure = 
-					_dataStructureLocalService.getDataStructure(typeStructureLink.getDataStructureId());
-			
-			JSONArray jsonStructureArray = JSONFactoryUtil.createJSONArray();
+			try {
+					typeStructureLink = _typeStructureLinkLocalService.getTypeStructureLink(dataTypeId);
 
-			JSONObject jsonStructure = dataStructure.toJSON(themeDisplay.getLocale());
-			
-			String[] keys = {"dataStructureId", "paramCode", "paramVersion", "displayName", "description"};
-			
-			for( int i=0; i<keys.length; i++) {
-				String key = keys[i];
-				
-				if(jsonStructure.has(key)) {
-					JSONObject element = JSONFactoryUtil.createJSONObject();
+					result.put("linkId", typeStructureLink.getPrimaryKey());
 					
-					String fieldValue = jsonStructure.getString(key);
-					if( !fieldValue.isEmpty()) {
-						String fieldName = "";
-						if(i == 0)	fieldName = "id";
-						else if(i == 1)	fieldName = "code";
-						else if(i == 2)	fieldName = "version";
-						else if(i == 3)	fieldName = "display-name";
-						else if(i == 4)	fieldName = "description";
+					DataStructure dataStructure = 
+							_dataStructureLocalService.getDataStructure(typeStructureLink.getDataStructureId());
+					
+					JSONArray jsonStructureArray = JSONFactoryUtil.createJSONArray();
+
+					JSONObject jsonStructure = dataStructure.toJSON(themeDisplay.getLocale());
+					
+					String[] keys = {"dataStructureId", "paramCode", "paramVersion", "displayName", "description"};
+					
+					for( int i=0; i<keys.length; i++) {
+						String key = keys[i];
 						
-						element.put("fieldName", fieldName);
-						element.put("fieldValue", fieldValue);
-						
-						jsonStructureArray.put(element);
+						if(jsonStructure.has(key)) {
+							JSONObject element = JSONFactoryUtil.createJSONObject();
+							
+							String fieldValue = jsonStructure.getString(key);
+							if( !fieldValue.isEmpty()) {
+								String fieldName = "";
+								if(i == 0)	fieldName = "id";
+								else if(i == 1)	fieldName = "code";
+								else if(i == 2)	fieldName = "version";
+								else if(i == 3)	fieldName = "display-name";
+								else if(i == 4)	fieldName = "description";
+								
+								element.put("fieldName", fieldName);
+								element.put("fieldValue", fieldValue);
+								
+								jsonStructureArray.put(element);
+							}
+						}
 					}
-				}
+					
+					result.put("dataStructure",  jsonStructureArray);
+			} catch ( NoSuchTypeStructureLinkException e ) {
+				System.out.println("No DataStructure for: " + dataTypeId);
 			}
-				
-			result.put("dataStructure",  jsonStructureArray);
+			
 			// Construct Comments 
 			
 			// Construct Histories

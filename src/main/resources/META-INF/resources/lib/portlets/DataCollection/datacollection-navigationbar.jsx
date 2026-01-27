@@ -16,13 +16,40 @@ class SXDataCollectionNavigationBar extends React.Component {
 		//console.log("SXDataCollectionNavigationBar: ", props);
 		this.namespace = props.namespace;
 		this.formId = props.formId;
-		this.dataCollectionId = props.dataCollectionId;
-		this.dataSetId = props.dataSetId;
-		this.dataTypeId = props.dataTypeId;
+		this.componentId = props.componentId;
 		this.navType = props.navType ?? SXDataCollectionNavigationBar.NavTypes.DATACOLLECTION;
 		this.spritemap = props.spritemap;
 		this.navItems = props.navItems;
+		this.expandedKeys = props.expandedKeys;
 		this.style = props.style;
+
+		this.state = {
+			expandedKeys: Util.isEmpty(this.navItems) ? new Set([]) : new Set(this.navItems.map((item) => item.id))
+		};
+	}
+
+	listenerRefreshNaveBar = (event) => {
+		const { targetPortlet, targetFormId, additinalExpandedKeys = [] } = event.dataPacket;
+
+		if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
+			return;
+		}
+
+		console.log("[SXDataCollectionNavigationBar] REFRESH: ", this.state.expandedKeys);
+
+		additinalExpandedKeys.forEach((element) => {
+			this.state.expandedKeys.add(element);
+		});
+
+		this.forceUpdate();
+	};
+
+	componentDidMount() {
+		Event.on(Event.SX_REFRESH_NAVBAR, this.listenerRefreshNaveBar);
+	}
+
+	componentWillUnmount() {
+		Event.off(Event.SX_REFRESH_NAVBAR, this.listenerRefreshNaveBar);
 	}
 
 	handleNavItemClick = (item) => {
@@ -36,15 +63,24 @@ class SXDataCollectionNavigationBar extends React.Component {
 		});
 	};
 
+	handleExpandedChange = (expandedKeys) => {
+		this.setState({ expandedKeys: expandedKeys });
+	};
+
 	render() {
+		//console.log("[Navigation render] ", this.navItems, this.state.expandedKeys);
+
 		return (
 			<ClayVerticalNav
+				key={Util.randomKey()}
 				aria-label="vertical navbar"
 				active="6"
-				defaultExpandedKeys={new Set(["5"])}
+				//defaultExpandedKeys={new Set(defaultExpandedKeys)}
 				items={this.navItems}
 				large={false}
 				decorated={true}
+				expandedKeys={this.state.expandedKeys}
+				onExpandedChange={this.handleExpandedChange}
 				style={this.style}
 				spritemap={this.spritemap}
 			>

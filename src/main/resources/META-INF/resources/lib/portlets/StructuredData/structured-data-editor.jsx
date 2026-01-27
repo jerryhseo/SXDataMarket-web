@@ -51,6 +51,8 @@ class StructuredDataEditor extends SXBaseVisualizer {
 			this.editState
 		);
 		*/
+
+		this.componentId = this.formId;
 	}
 
 	listenerLoadData = (event) => {
@@ -146,6 +148,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 					properties: dataStructure ?? {}
 				});
 
+				this.componentId = this.formId + this.dataStructure.paramCode + "_" + this.dataStructure.paramVersion;
 				break;
 			}
 			case Workbench.RequestIDs.saveStructuredData: {
@@ -172,6 +175,9 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				link.click();
 
 				window.URL.revokeObjectURL(url);
+			}
+			case Workbench.RequestIDs.openReferenceFile: {
+				this.openDataOnWindow(data);
 			}
 		}
 
@@ -230,6 +236,47 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		});
 	};
 
+	listenerOpenReferenceFile = (event) => {
+		const { targetPortlet, targetFormId, sourceFormId, paramCode, paramVersion, fileName, fileType } =
+			event.dataPacket;
+
+		if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
+			console.log(
+				"[StructuredDataEditor] listenerOpenReferenceFile rejected: ",
+				paramCode,
+				event.dataPacket,
+				this.componentId,
+				targetFormId
+			);
+
+			return;
+		}
+
+		console.log(
+			"[StructuredDataEditor] listenerOpenReferenceFile: ",
+			paramCode,
+			paramVersion,
+			fileName,
+			fileType,
+			event.dataPacket
+		);
+
+		this.fireRequest({
+			targetFormId: this.formId,
+			sourceFormId: sourceFormId,
+			requestId: Workbench.RequestIDs.openReferenceFile,
+			params: {
+				dataStructureCode: this.dataStructure.paramCode,
+				dataStructureVersion: this.dataStructure.paramVersion,
+				paramCode: paramCode,
+				paramVersion: paramVersion,
+				fileName: fileName,
+				fileType: fileType,
+				disposition: "inline"
+			}
+		});
+	};
+
 	listenerComponentWillUnmount = (event) => {
 		const { targetPortlet } = event.dataPacket;
 
@@ -249,6 +296,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		Event.on(Event.SX_RESPONSE, this.listenerResponce);
 		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.on(Event.SX_DOWNLOAD_FIELD_ATTACHED_FILE, this.listenerDownloadFieldAttachedFile);
+		Event.on(Event.SX_OPEN_REFERENCE_FILE, this.listenerOpenReferenceFile);
 
 		this.fireHandshake();
 	}
@@ -259,6 +307,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		Event.off(Event.SX_RESPONSE, this.listenerResponce);
 		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 		Event.off(Event.SX_DOWNLOAD_FIELD_ATTACHED_FILE, this.listenerDownloadFieldAttachedFile);
+		Event.off(Event.SX_OPEN_REFERENCE_FILE, this.listenerOpenReferenceFile);
 	}
 
 	loadStructuredData = async () => {

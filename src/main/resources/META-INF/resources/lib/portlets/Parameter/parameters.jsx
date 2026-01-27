@@ -1118,7 +1118,7 @@ class Parameter {
 			switch (valueProp) {
 				case "message": {
 					if (locale) {
-						return this.validation[section].message ? this.validation[section].message[locale] ?? "" : "";
+						return this.validation[section].message ? (this.validation[section].message[locale] ?? "") : "";
 					} else {
 						return this.validation[section].message ?? {};
 					}
@@ -1410,7 +1410,7 @@ class Parameter {
 	validate(cellIndex) {
 		let value = this.getValue(cellIndex);
 		let numValue = Number(this.uncertainty ? value.value : value);
-		let numUncertainty = this.uncertainty ? value.uncertainty ?? 0 : 0;
+		let numUncertainty = this.uncertainty ? (value.uncertainty ?? 0) : 0;
 
 		this.error = {};
 
@@ -1987,6 +1987,7 @@ class Parameter {
 	}
 
 	renderField({ className = "", style = {}, spritemap }) {
+		//console.log("renderField: " + this.formId);
 		return (
 			<SXFormField
 				key={this.key}
@@ -4947,7 +4948,7 @@ export class StringParameter extends Parameter {
 	getValue(cellIndex) {
 		const value = super.getValue(cellIndex);
 
-		return this.localized ? (Util.isNotEmpty(value) ? value : {}) : value ?? "";
+		return this.localized ? (Util.isNotEmpty(value) ? value : {}) : (value ?? "");
 	}
 
 	initValue(cellIndex) {

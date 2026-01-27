@@ -91,6 +91,7 @@ public class LoadAssociatedDataTypesResourceCommand extends BaseMVCResourceComma
 			
 			JSONObject jsonDataType = JSONFactoryUtil.createJSONObject();
 			
+			jsonDataType.put("setTypeLinkId", link.getSetTypeLinkId());
 			jsonDataType.put("dataTypeId", dataType.getDataTypeId());
 			jsonDataType.put("dataTypeCode", dataType.getDataTypeCode());
 			jsonDataType.put("dataTypeVersion", dataType.getDataTypeVersion());
