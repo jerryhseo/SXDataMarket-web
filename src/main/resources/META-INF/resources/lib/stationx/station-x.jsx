@@ -96,6 +96,26 @@ export const ErrorClass = {
 
 export const ACTION_NAME = "javax.portlet.action";
 
+export const PortletState = {
+	NORMAL: 0,
+	MODAL: 1,
+	POPUP: 2,
+	BLANK: 3
+};
+
+export const WorkflowStatus = {
+	ANY: -1,
+	APPROVED: 0,
+	DENIED: 1,
+	DRAFT: 2,
+	EXPIRED: 3,
+	IN_TRASH: 4,
+	INACTIVE: 5,
+	INCOMPLETE: 6,
+	PENDING: 7,
+	SCHEDULED: 8
+};
+
 export const RenderCommandNames = {
 	ROOTL: "/",
 
@@ -314,6 +334,57 @@ export const ResourceIds = {
 	VIEW_DATACOLLECTION: "/ajax/DataCollection/view-datacollection",
 	VIEW_DATASET: "/ajax/DataSet/view-dataset",
 	VIEW_DATATYPE: "/ajax/DataType/view-datatype"
+};
+
+export const RequestIDs = {
+	addComment: "addComment",
+	addDataType: "addDataType",
+	checkDataTypeUnique: "checkDataTypeUnique",
+	checkDataStructureUnique: "checkDataStructureUnique",
+	checkDataStructureCodeUnique: "checkDataStructureCodeUnique",
+	deleteComment: "deleteComment",
+	deleteDataTypes: "deleteDataTypes",
+	deleteDataCollections: "deleteDataCollections",
+	deleteDataSets: "deleteDataSets",
+	deleteDataStructures: "deleteDataStructures",
+	deleteReferenceFiles: "deleteReferenceFiles",
+	deleteStructuredData: "deleteStructuredData",
+	deleteTypeStructureLink: "deleteTypeStructureLink",
+	deleteTypeStructureLinkAndImportDataStructure: "deleteTypeStructureLinkAndImportDataStructure",
+	downloadFieldAttachedFile: "downloadFieldAttachedFile",
+	importDataType: "importDataType",
+	importDataStructure: "importDataStructure",
+	loadAssociatedDataSets: "loadAssociatedDataSets",
+	loadAssociatedDataTypes: "loadAssociatedDataTypes",
+	loadDataCollection: "loadDataCollection",
+	loadDataCollectionInfo: "loadDataCollectionInfo",
+	loadDataSet: "loadDataSet",
+	loadDataSetList: "loadDataSetList",
+	loadDataStructure: "loadDataStructure",
+	loadDataStructureWithInfo: "loadDataStructureWithInfo",
+	loadDataType: "loadDataType",
+	loadStructuredData: "loadStructuredData",
+	openReferenceFile: "openReferenceFile",
+	removeLinkInfoAndRedirectToBuilder: "removeLinkInfoAndRedirectToBuilder",
+	saveDataCollection: "saveDataCollection",
+	saveDataSet: "saveDataSet",
+	saveDataStructure: "saveDataStructure",
+	saveParameter: "saveParameter",
+	saveStructuredData: "saveStructuredData",
+	saveTypeStructureLink: "saveTypeStructureLink",
+	saveLinkInfoAndRedirectToBuilder: "saveLinkInfoAndRedirectToBuilder",
+	searchDataCollections: "searchDataCollections",
+	searchDataSets: "searchDataSets",
+	searchDataStructures: "searchDataStructures",
+	searchDataTypes: "searchDataTypes",
+	searchParameters: "searchParameters",
+	searchStructuredData: "searchStructuredData",
+	updateDataCollection: "updateDataCollection",
+	updateDataSet: "updateDataSet",
+	updateDataType: "updateDataType",
+	viewDataCollection: "viewDataCollection",
+	viewDataSet: "viewDataSet",
+	viewDataType: "viewDataType"
 };
 
 export const LoadingStatus = {
@@ -849,6 +920,12 @@ export const WindowState = {
 	NORMAL: "normal",
 	EXCLUSIVE: "exclusive",
 	POPUP: "popup"
+};
+
+export const WindowStatus = {
+	MINIMIZE: 0,
+	NORMAL: 1,
+	MAXIMIZE: 2
 };
 
 export const ActionKeys = {

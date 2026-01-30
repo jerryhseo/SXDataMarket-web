@@ -1,8 +1,16 @@
 import React from "react";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { ActionKeys, DisplayStyles, Event, LoadingStatus, PortletKeys } from "../../stationx/station-x";
+import {
+	ActionKeys,
+	DisplayStyles,
+	Event,
+	LoadingStatus,
+	PortletKeys,
+	PortletState,
+	RequestIDs,
+	WorkflowStatus
+} from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
-import { Workbench } from "../DataWorkbench/workbench";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { SXFreezeIcon } from "../../stationx/icon";
@@ -125,7 +133,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 
 		this.fireLoadPortlet({
 			portletName: PortletKeys.DATASTRUCTURE_BUILDER,
-			portletState: Workbench.PortletState.NORMAL,
+			portletState: PortletState.NORMAL,
 			title: Util.translate("create-datastructure")
 		});
 	};
@@ -230,7 +238,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		//console.log("[DataStructureExplorer] listenerWorkbenchReady received: ", dataPacket);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.searchDataStructures,
+			requestId: RequestIDs.searchDataStructures,
 			params: {
 				keywords: this.state.keywords,
 				start: this.state.start,
@@ -251,7 +259,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		//console.log("[DataStructureExplorer] listenerResponse received: ", dataPacket);
 
 		switch (dataPacket.requestId) {
-			case Workbench.RequestIDs.searchDataStructures: {
+			case RequestIDs.searchDataStructures: {
 				this.convertSearchResultsToContent(dataPacket.data);
 				break;
 			}
@@ -368,7 +376,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 				},
 				{
 					id: "status",
-					value: <SXFreezeIcon freezed={status === Workbench.WorkflowStatus.APPROVED} />
+					value: <SXFreezeIcon freezed={status === WorkflowStatus.APPROVED} />
 				},
 				{
 					id: "actions",

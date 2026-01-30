@@ -1,13 +1,11 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { Event, ExecutionMode, LoadingStatus, ParamType } from "../../stationx/station-x";
+import { Event, LoadingStatus, RequestIDs } from "../../stationx/station-x";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
 import DataStructure from "../DataStructure/data-structure";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { Workbench } from "../DataWorkbench/workbench";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
-import { Text } from "@clayui/core";
 import { SXLabeledText } from "../Form/form";
 
 class StructuredDataEditor extends SXBaseVisualizer {
@@ -83,7 +81,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 			case StructuredDataEditor.EditState.PREVIEW:
 			case StructuredDataEditor.EditState.ADD: {
 				this.fireRequest({
-					requestId: Workbench.RequestIDs.loadDataStructure,
+					requestId: RequestIDs.loadDataStructure,
 					params: {
 						dataTypeId: this.dataTypeId
 					}
@@ -94,7 +92,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 			}
 			case StructuredDataEditor.EditState.UPDATE: {
 				this.fireRequest({
-					requestId: Workbench.RequestIDs.loadStructuredData,
+					requestId: RequestIDs.loadStructuredData,
 					params: {
 						structuredDataId: this.structuredDataId
 					}
@@ -117,7 +115,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		console.log("[StructuredDataEditor] listenerResonse: ", event.dataPacket);
 
 		switch (requestId) {
-			case Workbench.RequestIDs.loadStructuredData: {
+			case RequestIDs.loadStructuredData: {
 				const { dataStructure, structuredData } = data;
 
 				this.structuredData = structuredData;
@@ -140,7 +138,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				console.log("DataStructure filled with values: ", this.dataStructure);
 				break;
 			}
-			case Workbench.RequestIDs.loadDataStructure: {
+			case RequestIDs.loadDataStructure: {
 				const { dataStructure } = data;
 				this.dataStructure = new DataStructure({
 					namespace: this.namespace,
@@ -151,7 +149,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				this.componentId = this.formId + this.dataStructure.paramCode + "_" + this.dataStructure.paramVersion;
 				break;
 			}
-			case Workbench.RequestIDs.saveStructuredData: {
+			case RequestIDs.saveStructuredData: {
 				console.log("Saved data result: ", data);
 				if (data.structuredDataId > 0) {
 					this.structuredDataId = data.structuredDataId;
@@ -164,7 +162,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				this.setState({ noticeDialog: true });
 				break;
 			}
-			case Workbench.RequestIDs.downloadFieldAttachedFile: {
+			case RequestIDs.downloadFieldAttachedFile: {
 				console.log("download finished");
 				const blob = new Blob([data]);
 				const url = window.URL.createObjectURL(blob);
@@ -176,7 +174,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 
 				window.URL.revokeObjectURL(url);
 			}
-			case Workbench.RequestIDs.openReferenceFile: {
+			case RequestIDs.openReferenceFile: {
 				this.openDataOnWindow(data);
 			}
 		}
@@ -221,7 +219,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		console.log("[StructuredDataEditor] listenerDownloadFieldAttachedFile received: ", event.dataPacket);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.downloadFieldAttachedFile,
+			requestId: RequestIDs.downloadFieldAttachedFile,
 			params: {
 				dataCollectionId: this.dataCollectionId,
 				dataSetId: this.dataSetId,
@@ -264,7 +262,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		this.fireRequest({
 			targetFormId: this.formId,
 			sourceFormId: sourceFormId,
-			requestId: Workbench.RequestIDs.openReferenceFile,
+			requestId: RequestIDs.openReferenceFile,
 			params: {
 				dataStructureCode: this.dataStructure.paramCode,
 				dataStructureVersion: this.dataStructure.paramVersion,
@@ -334,7 +332,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		console.log("Handle SaveData: ", this.dataCollectionId, this.dataSetId, this.dataTypeId, this.structuredDataId);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.saveStructuredData,
+			requestId: RequestIDs.saveStructuredData,
 			params: {
 				dataCollectionId: this.dataCollectionId,
 				dataSetId: this.dataSetId,

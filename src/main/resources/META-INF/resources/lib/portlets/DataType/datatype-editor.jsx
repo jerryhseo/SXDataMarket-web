@@ -13,14 +13,14 @@ import {
 	PortletKeys,
 	Constant,
 	ErrorClass,
-	ParamType
+	ParamType,
+	RequestIDs
 } from "../../stationx/station-x";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { DataType, DataTypeStructureLink, SXDataTypeStructureLink } from "./datatype";
 import DataStructure from "../DataStructure/data-structure";
 import { SXBroomIcon, SXEditIcon } from "../../stationx/icon";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { Workbench } from "../DataWorkbench/workbench";
 import SXAutoComplete from "../Form/auto-complete";
 import ParameterConstants from "../Parameter/parameter-constants";
 import { ParameterUtil } from "../Parameter/parameters";
@@ -378,7 +378,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 				});
 			} else {
 				this.fireRequest({
-					requestId: Workbench.RequestIDs.importDataStructure,
+					requestId: RequestIDs.importDataStructure,
 					params: {
 						dataStructureId: this.importDataStructureId
 					},
@@ -412,7 +412,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		//console.log("[dataTypeEditor] listenerWorkbenchReady received: ", dataPacket);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.loadDataType,
+			requestId: RequestIDs.loadDataType,
 			params: {
 				dataTypeId: this.dataType.dataTypeId,
 				loadStructure: true,
@@ -439,7 +439,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 		const state = {};
 		switch (dataPacket.requestId) {
-			case Workbench.RequestIDs.checkDataTypeUnique: {
+			case RequestIDs.checkDataTypeUnique: {
 				const result = dataPacket.data;
 				const { validationCode, dataTypeCode, dataTypeVersion } = dataPacket.params;
 
@@ -462,8 +462,8 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.addDataType:
-			case Workbench.RequestIDs.updateDataType: {
+			case RequestIDs.addDataType:
+			case RequestIDs.updateDataType: {
 				if (dataPacket.status === LoadingStatus.COMPLETE) {
 					if (!this.dataType.dataTypeId) {
 						this.dataType.dataTypeId = dataPacket.data.dataTypeId;
@@ -478,7 +478,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.deleteTypeStructureLinkAndImportDataStructure: {
+			case RequestIDs.deleteTypeStructureLinkAndImportDataStructure: {
 				this.structureLink = new DataTypeStructureLink();
 				this.dataStructure = new DataStructure({
 					namespace: this.namespace,
@@ -490,12 +490,12 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.removeLinkInfoAndRedirectToBuilder: {
+			case RequestIDs.removeLinkInfoAndRedirectToBuilder: {
 				this.redirectToStructureBuilder();
 
 				break;
 			}
-			case Workbench.RequestIDs.deleteTypeStructureLink: {
+			case RequestIDs.deleteTypeStructureLink: {
 				this.structureLink.dirty = false;
 
 				this.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
@@ -504,35 +504,35 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.loadDataType: {
+			case RequestIDs.loadDataType: {
 				this.loadDataType(dataPacket.data);
 
 				break;
 			}
-			case Workbench.RequestIDs.deleteDataTypes: {
+			case RequestIDs.deleteDataTypes: {
 				this.redirectTo({
 					portletName: PortletKeys.DATATYPE_EXPLORER
 				});
 
 				break;
 			}
-			case Workbench.RequestIDs.importDataType: {
+			case RequestIDs.importDataType: {
 				this.setImportedDataType(dataPacket.data);
 
 				break;
 			}
-			case Workbench.RequestIDs.importDataStructure: {
+			case RequestIDs.importDataStructure: {
 				this.importDataStructure(dataPacket.data);
 
 				break;
 			}
-			case Workbench.RequestIDs.saveLinkInfoAndRedirectToBuilder: {
+			case RequestIDs.saveLinkInfoAndRedirectToBuilder: {
 				this.structureLink.dirty = false;
 
 				this.redirectToStructureBuilder();
 				break;
 			}
-			case Workbench.RequestIDs.saveTypeStructureLink: {
+			case RequestIDs.saveTypeStructureLink: {
 				this.structureLink.dirty = false;
 				this.structureLink.fromDB = true;
 
@@ -703,7 +703,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.setState({ loadingStatus: LoadingStatus.PENDING });
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.importDataType,
+			requestId: RequestIDs.importDataType,
 			params: {
 				dataTypeId: dataTypeId,
 				loadStructure: true,
@@ -771,7 +771,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 	deleteDataType = () => {
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.deleteDataTypes,
+			requestId: RequestIDs.deleteDataTypes,
 			params: {
 				dataTypeIds: [this.dataType.dataTypeId]
 			},
@@ -861,7 +861,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 	checkDataTypeUnique = (dataTypeCode, dataTypeVersion, validationCode) => {
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.checkDataTypeUnique,
+			requestId: RequestIDs.checkDataTypeUnique,
 			params: {
 				dataTypeId: this.dataType.dataTypeId,
 				dataTypeCode: dataTypeCode,
@@ -895,7 +895,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 	removeLinkInfo = () => {
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.deleteTypeStructureLink,
+			requestId: RequestIDs.deleteTypeStructureLink,
 			params: this.structureLink.toJSON(),
 			refresh: true
 		});
@@ -903,7 +903,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 	removeLinkInfoAndRedirectToBuilder = () => {
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.removeLinkInfoAndRedirectToBuilder,
+			requestId: RequestIDs.removeLinkInfoAndRedirectToBuilder,
 			params: this.structureLink.toJSON(),
 			refresh: false
 		});
@@ -967,7 +967,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 	deleteLinkInfoAndImportDataStructure = () => {
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.deleteTypeStructureLinkAndImportDataStructure,
+			requestId: RequestIDs.deleteTypeStructureLinkAndImportDataStructure,
 			params: {
 				dataTypeId: this.structureLink.dataTypeId
 			},
@@ -1005,10 +1005,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 			formValues.visualizers = this.visualizers.getValue().map((value) => Number(value));
 		}
 
-		const requestId =
-			this.editStatus == EditStatus.UPDATE
-				? Workbench.RequestIDs.updateDataType
-				: Workbench.RequestIDs.addDataType;
+		const requestId = this.editStatus == EditStatus.UPDATE ? RequestIDs.updateDataType : RequestIDs.addDataType;
 		//console.log("handleBtnSaveClick: ", JSON.stringify(formValues, null, 4), this.fields);
 
 		this.fireRequest({
@@ -1083,7 +1080,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 	handleSaveLinkInfoBtnClick = (event) => {
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.saveTypeStructureLink,
+			requestId: RequestIDs.saveTypeStructureLink,
 			params: this.structureLink.toJSON(),
 			refresh: true
 		});
@@ -1091,7 +1088,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
 	handleSaveLinkInfoAndRedirectToBuilder = (event) => {
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.saveLinkInfoAndRedirectToBuilder,
+			requestId: RequestIDs.saveLinkInfoAndRedirectToBuilder,
 			params: this.structureLink.toJSON(),
 			refresh: false
 		});

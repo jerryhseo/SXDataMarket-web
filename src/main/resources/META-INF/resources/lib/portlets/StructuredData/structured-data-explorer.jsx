@@ -1,11 +1,10 @@
 import React from "react";
-import { ActionKeys, Event, LoadingStatus, PortletKeys, ResourceIds, WindowState } from "../../stationx/station-x";
+import { ActionKeys, Event, LoadingStatus, PortletKeys, RequestIDs } from "../../stationx/station-x";
 import { SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { Util } from "../../stationx/util";
 import Breadcrumb from "@clayui/breadcrumb";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { Workbench } from "../DataWorkbench/workbench";
 import { Text } from "@clayui/core";
 import { SXFreezeIcon, SXVerifyIcon } from "../../stationx/icon";
 import StructuredDataEditor from "./structured-data-editor";
@@ -403,7 +402,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		//console.log("[StructuredDataExplorer] listenerResponse received: ", targetPortlet, requestId, params, data);
 
 		switch (requestId) {
-			case Workbench.RequestIDs.searchStructuredData: {
+			case RequestIDs.searchStructuredData: {
 				this.searchResults = data;
 
 				this.convertSearchResultsToContent(data);
@@ -414,7 +413,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.deleteStructuredData: {
+			case RequestIDs.deleteStructuredData: {
 				this.dialogHeader = SXModalUtil.successDlgHeader();
 				this.dialogBody = Util.translate("data-is-deleted-successfully");
 
@@ -441,7 +440,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 
 		if (this.state.dataCollectionId > 0) {
 			this.fireRequest({
-				requestId: Workbench.RequestIDs.searchStructuredData,
+				requestId: RequestIDs.searchStructuredData,
 				params: {
 					dataCollectionId: this.state.dataCollectionId,
 					dataSetId: this.state.dataSetId,
@@ -450,7 +449,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 			});
 		} else {
 			this.fireRequest({
-				requestId: Workbench.RequestIDs.searchDataCollections,
+				requestId: RequestIDs.searchDataCollections,
 				params: {
 					filterBy: this.state.filterBy,
 					groupId: this.groupId,
@@ -619,7 +618,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		const dataIds = this.selectedRowsToDataIds();
 
 		Event.fire(Event.SX_REQUEST, this.namespace, this.workbenchNamespace, {
-			requestId: Workbench.RequestIDs.deleteStructuredData,
+			requestId: RequestIDs.deleteStructuredData,
 			params: {
 				structuredDataIdList: dataIds
 			}

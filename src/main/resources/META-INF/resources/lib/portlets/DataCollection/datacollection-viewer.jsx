@@ -1,22 +1,9 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import {
-	EditStatus,
-	ErrorClass,
-	Event,
-	LoadingStatus,
-	ParamType,
-	PortletKeys,
-	ValidationRule
-} from "../../stationx/station-x";
-import Button, { ClayButtonWithIcon } from "@clayui/button";
+import { Event, LoadingStatus, PortletKeys, RequestIDs } from "../../stationx/station-x";
+import Button from "@clayui/button";
 import Icon from "@clayui/icon";
-import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { Workbench } from "../DataWorkbench/workbench";
-import { SXLabeledText, SXTitleBar } from "../Form/form";
-import ParameterConstants from "../Parameter/parameter-constants";
-import { ParameterUtil } from "../Parameter/parameters";
 import Panel from "@clayui/panel";
 import { Body, Cell, Head, Row, Table, Text } from "@clayui/core";
 
@@ -158,7 +145,7 @@ class DataCollectionViewer extends SXBaseVisualizer {
 		//console.log("[DataCollectionViewer] listenerWorkbenchReady received: ", dataPacket);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.viewDataCollection,
+			requestId: RequestIDs.viewDataCollection,
 			params: {
 				dataCollectionId: this.dataCollectionId
 			}
@@ -175,7 +162,7 @@ class DataCollectionViewer extends SXBaseVisualizer {
 
 		//console.log("[DataCollectionViewer] listenerResonse: ", requestId, params, data);
 		switch (requestId) {
-			case Workbench.RequestIDs.viewDataCollection: {
+			case RequestIDs.viewDataCollection: {
 				this.dataCollectionId = data.dataCollectionId;
 				this.dataCollectionCode = data.dataCollectionCode;
 				this.dataCollectionVersion = data.dataCollectionVersion;

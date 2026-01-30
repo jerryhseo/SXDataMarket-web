@@ -1,11 +1,19 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { ActionKeys, Constant, Event, FilterOptions, LoadingStatus, PortletKeys } from "../../stationx/station-x";
+import {
+	ActionKeys,
+	Constant,
+	Event,
+	FilterOptions,
+	LoadingStatus,
+	PortletKeys,
+	PortletState,
+	RequestIDs
+} from "../../stationx/station-x";
 import { SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { UnderConstruction } from "../../stationx/common";
-import { Workbench } from "../DataWorkbench/workbench";
 import { SXFreezeIcon } from "../../stationx/icon";
 
 class DataCollectionExplorer extends SXBaseVisualizer {
@@ -156,7 +164,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 
 		this.fireLoadPortlet({
 			portletName: PortletKeys.DATACOLLECTION_EDITOR,
-			portletState: Workbench.PortletState.NORMAL,
+			portletState: PortletState.NORMAL,
 			title: Util.translate("create-datacollection")
 		});
 	};
@@ -186,7 +194,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 			}
 			case "delete": {
 				this.fireRequest({
-					requestId: Workbench.RequestIDs.deleteDataCollections,
+					requestId: RequestIDs.deleteDataCollections,
 					params: {
 						dataCollectionIds: this.selectedResults
 					}
@@ -197,16 +205,16 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	};
 
 	listenerSelectedResultsChanged = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, selectedResults } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataCollectionExplorer] listenerSelectedResultsChanged event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataCollectionExplorer] listenerSelectedResultsChanged event rejected: ", event.dataPacket);
 			return;
 		}
-		//console.log("[DataCollectionExplorer] listenerSelectedResultsChanged: ", dataPacket);
-		this.selectedResults = dataPacket.selectedResults;
+		//console.log("[DataCollectionExplorer] listenerSelectedResultsChanged: ", event.dataPacket);
+		this.selectedResults = selectedResults;
 
-		this.setState({ searchContainerKey: Util.randomKey() });
+		//this.setState({ searchContainerKey: Util.randomKey() });
 	};
 
 	listenerDeleteSelected = (event) => {
@@ -218,6 +226,10 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		}
 		//console.log("[DataCollectionExplorer] listenerDeleteSelected: ", dataPacket);
 
+		if (!this.selectedResults || this.selectedResults.length <= 0) {
+			return;
+		}
+
 		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
 
@@ -225,25 +237,16 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	};
 
 	listenerTableColumnClicked = (event) => {
-		const dataPacket = event.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace) {
+		const { targetPortlet, row, column } = event.dataPacket;
+		if (targetPortlet !== this.namespace) {
 			return;
 		}
 
-		//console.log("[DataCollectionExplorer] SX_TABLE_COLUMN_CLICKED: ", dataPacket);
+		//console.log("[DataCollectionExplorer] SX_TABLE_COLUMN_CLICKED: ", event.dataPacket);
 
-		let dataCollectionId;
-		dataPacket.row.every((column) => {
-			if (column.id === "dataCollectionId") {
-				dataCollectionId = column.value;
-			}
-
-			return dataCollectionId ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
-		});
-
-		if (dataCollectionId > 0) {
+		if (row.id > 0) {
 			Event.fire(Event.SX_DATACOLLECTION_SELECTED, this.namespace, this.workbenchNamespace, {
-				dataCollectionId: dataCollectionId
+				dataCollectionId: row.id
 			});
 		}
 	};
@@ -259,7 +262,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		//console.log("[DataCollectionExplorer] listenerWorkbenchReady received: ", dataPacket);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.searchDataCollections,
+			requestId: RequestIDs.searchDataCollections,
 			params: {
 				filterBy: this.state.filterBy,
 				groupId: this.groupId,
@@ -284,23 +287,23 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		let state = {};
 
 		switch (dataPacket.requestId) {
-			case Workbench.RequestIDs.searchDataCollections: {
+			case RequestIDs.searchDataCollections: {
 				this.convertSearchResultsToContent(dataPacket.data);
 
 				break;
 			}
-			case Workbench.RequestIDs.loadDataCollection: {
+			case RequestIDs.loadDataCollection: {
 				this.convertSearchResultsToContent(dataPacket.data);
 
 				break;
 			}
-			case Workbench.RequestIDs.deleteDataCollections: {
+			case RequestIDs.deleteDataCollections: {
 				state.infoDialog = true;
 				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
 				this.dialogBody = Util.translate("datacollections-deleted-successfully");
 
 				this.fireRequest({
-					requestId: Workbench.RequestIDs.searchDataCollections,
+					requestId: RequestIDs.searchDataCollections,
 					params: this.params
 				});
 
@@ -362,12 +365,11 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	};
 
 	selectedResultsToDataCollectionIds = () => {
-		return this.selectedResults.map((result) => Number(result[0].value));
+		return this.selectedResults.map((result) => Number(result.id));
 	};
 
 	convertSearchResultsToContent(results) {
 		this.searchedData = results;
-		console.log("convertSearchResultsToContent: ", results);
 
 		this.searchResults = results.map((result, index) => {
 			const { dataCollectionId, dataCollectionCode, dataCollectionVersion, displayName } = result;
@@ -393,32 +395,37 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 				symbol: "data-privacy"
 			});
 
-			let row = [
-				{
-					id: "dataCollectionId",
-					value: dataCollectionId
-				},
-				{
-					id: "displayName",
-					value: displayName[this.languageId]
-				},
-				{
-					id: "dataCollectionVersion",
-					value: dataCollectionVersion
-				},
-				{
-					id: "dataCollectionCode",
-					value: dataCollectionCode
-				},
-				{
-					id: "status",
-					value: <SXFreezeIcon freezed={true} />
-				},
-				{
-					id: "actions",
-					value: contentActionMenus
-				}
-			];
+			let row = {
+				id: dataCollectionId,
+				index: index,
+				checked: false,
+				columns: [
+					{
+						id: "dataCollectionId",
+						value: dataCollectionId
+					},
+					{
+						id: "displayName",
+						value: displayName
+					},
+					{
+						id: "dataCollectionVersion",
+						value: dataCollectionVersion
+					},
+					{
+						id: "dataCollectionCode",
+						value: dataCollectionCode
+					},
+					{
+						id: "status",
+						value: <SXFreezeIcon freezed={true} />
+					},
+					{
+						id: "actions",
+						value: contentActionMenus
+					}
+				]
+			};
 
 			return row;
 		});
@@ -428,10 +435,15 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 
 	deleteDataCollections = () => {
 		//console.log("Selected DataTypes: ", this.selectedResults, this.selectedResultsToDataCollectionIds());
+		const selectedDataCollectionIds = this.selectedResultsToDataCollectionIds();
+		if (Util.isEmpty(selectedDataCollectionIds)) {
+			return;
+		}
+
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.deleteDataCollections,
+			requestId: RequestIDs.deleteDataCollections,
 			params: {
-				dataCollectionIds: this.selectedResultsToDataCollectionIds()
+				dataCollectionIds: selectedDataCollectionIds
 			}
 		});
 	};

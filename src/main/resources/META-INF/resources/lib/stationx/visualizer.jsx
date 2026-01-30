@@ -1,6 +1,5 @@
 import React from "react";
-import { Event, ExecutionMode, LoadingStatus } from "./station-x";
-import { Workbench } from "../portlets/DataWorkbench/workbench";
+import { Event, ExecutionMode, LoadingStatus, PortletState } from "./station-x";
 
 export class Visualizer {
 	constructor({ namespace, visualizerId, workbenchNamespace, workbenchId, basicFuncs }) {
@@ -59,7 +58,7 @@ class SXBaseVisualizer extends React.Component {
 		});
 	}
 
-	fireLoadPortlet({ portletName, params = {}, portletState = Workbench.PortletState.NORMAL }) {
+	fireLoadPortlet({ portletName, params = {}, portletState = PortletState.NORMAL }) {
 		Event.fire(Event.SX_LOAD_PORTLET, this.namespace, this.workbenchNamespace, {
 			targetFormId: this.workbenchId,
 			portletName: portletName,

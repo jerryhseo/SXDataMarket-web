@@ -76,20 +76,84 @@ public class SearchStructuredDataResourceCommand extends BaseMVCResourceCommand{
 		String groupBy = ParamUtil.getString(resourceRequest, "groupBy", "groupId");
 		String keywords = ParamUtil.getString(resourceRequest, StationXWebKeys.KEYWORDS, "");
 		
-		/*
+		Locale locale = themeDisplay.getLocale();
+		
 		System.out.println("--- Start SearchStructuredDataResourceCommand:  " );
 		System.out.println("dataCollectionId: " + dataCollectionId);
 		System.out.println("dataSetId: " + dataSetId);
 		System.out.println("dataTypeId: " + dataTypeId);
-`		*/
 		
-		JSONObject dataList = 
-				_structuredDataLocalService.getStructuredDataListWithInfo( 
-						dataCollectionId, dataSetId, dataTypeId, themeDisplay.getLocale());
+		List<StructuredData> dataList = null;
+		
+		if( dataCollectionId > 0 && dataSetId > 0 && dataTypeId > 0) { 
+			dataList = _structuredDataLocalService.getStructuredDatasByCollectionSetType(groupId, dataCollectionId, dataSetId, dataTypeId, WorkflowConstants.STATUS_ANY);
+		} else if( dataCollectionId > 0 && dataSetId > 0) {
+			dataList = _structuredDataLocalService.getStructuredDatasByCollectionSet(groupId, dataCollectionId, dataSetId, WorkflowConstants.STATUS_ANY);
+		} else if( dataCollectionId > 0 ) {
+			dataList = _structuredDataLocalService.getStructuredDatasByDataCollectionId(groupId, dataCollectionId, WorkflowConstants.STATUS_ANY);
+		} else if( dataSetId > 0 && dataTypeId > 0 ) {
+			dataList = _structuredDataLocalService.getStructuredDatasBySetType(groupId, dataSetId, dataTypeId, WorkflowConstants.STATUS_ANY);
+		} else if( dataSetId > 0  ) {
+			dataList = _structuredDataLocalService.getStructuredDatasByDataSetId(groupId, dataSetId, WorkflowConstants.STATUS_ANY);
+		}  else if( dataTypeId > 0  ) {
+			dataList = _structuredDataLocalService.getStructuredDatasByDataTypeId(groupId, dataTypeId, WorkflowConstants.STATUS_ANY);
+		} else {
+			dataList = _structuredDataLocalService.getStructuredDatasByGroupId(groupId , WorkflowConstants.STATUS_ANY);
+		}
+		
+		JSONArray dataArray = JSONFactoryUtil.createJSONArray();
+		
+		Iterator<StructuredData> iter = dataList.iterator();
+		
+		while( iter.hasNext() ) {
+			StructuredData data = iter.next();
+			DataType dataType = _dataTypeLocalService.getDataType(data.getDataTypeId());
+			
+			JSONObject jsonData = data.toJSON();
+			jsonData.put("dataTypeCode", dataType.getDataTypeCode());
+			jsonData.put("dataTypeVersion", dataType.getDataTypeVersion());
+			jsonData.put("dataTypeLabel", dataType.getDisplayName(locale));
+
+			DataSet dataSet = _dataSetLocalService.getDataSet(data.getDataSetId());
+			
+			jsonData.put("dataSetCode", dataSet.getDataSetCode());
+			jsonData.put("dataSetVersion", dataSet.getDataSetVersion());
+			jsonData.put("dataSetLabel", dataSet.getDisplayName(locale));
+			
+			dataArray.put(jsonData);
+		}
+		
+		JSONObject jsonList = JSONFactoryUtil.createJSONObject();
+		
+		jsonList.put("structuredDataList", dataArray);
+	
+		DataCollection dataCollection = null;
+		if( dataCollectionId > 0 ) {
+			dataCollection = _dataCollectionLocalService.getDataCollection(dataCollectionId);
+		}
+		if(Validator.isNotNull(dataCollection)) {
+			jsonList.put("dataCollection", dataCollection.toJSON(locale));
+		}
+		
+		DataSet dataSet = null;
+		if( dataSetId > 0 ) {
+			dataSet = _dataSetLocalService.getDataSet(dataSetId);
+		}
+		if(Validator.isNotNull(dataSet)) {
+			jsonList.put("dataSet", dataSet.toJSON(locale));
+		}
+		
+		DataType dataType = null;
+		if( dataTypeId > 0 ) {
+			dataType = _dataTypeLocalService.getDataType(dataTypeId);
+		}
+		if(Validator.isNotNull(dataType)) {
+			jsonList.put("dataType", dataType.toJSON(locale));
+		}
 		//System.out.println("Result: " + dataList.toString(4));
 		
 		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(dataList.toJSONString());
+		pw.write(jsonList.toJSONString());
 		pw.flush();
 		pw.close();
 		

@@ -1,10 +1,17 @@
 import React from "react";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { EditStatus, ErrorClass, Event, LoadingStatus, ParamType, ValidationRule } from "../../stationx/station-x";
+import {
+	EditStatus,
+	ErrorClass,
+	Event,
+	LoadingStatus,
+	ParamType,
+	RequestIDs,
+	ValidationRule
+} from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
-import { Workbench } from "../DataWorkbench/workbench";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { SXLabeledText } from "../Form/form";
 import ParameterConstants from "../Parameter/parameter-constants";
@@ -52,6 +59,9 @@ class DataSetEditor extends SXBaseVisualizer {
 						message: Util.getTranslationObject(this.languageId, "longer-than-max-length", 32),
 						errorClass: ErrorClass.ERROR
 					}
+				},
+				style: {
+					width: "250px"
 				}
 			}
 		});
@@ -79,7 +89,10 @@ class DataSetEditor extends SXBaseVisualizer {
 						errorClass: ErrorClass.ERROR
 					}
 				},
-				defaultValue: "1.0.0"
+				defaultValue: "1.0.0",
+				style: {
+					width: "150px"
+				}
 			}
 		});
 
@@ -109,7 +122,8 @@ class DataSetEditor extends SXBaseVisualizer {
 						message: Util.getTranslationObject(this.languageId, "longer-than-max-length", 64),
 						errorClass: ErrorClass.ERROR
 					}
-				}
+				},
+				className: "autofit-col-expand"
 			}
 		});
 
@@ -202,7 +216,7 @@ class DataSetEditor extends SXBaseVisualizer {
 
 		//console.log("[dataSetEditor] listenerWorkbenchReady received: ", dataPacket);
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.loadDataSet,
+			requestId: RequestIDs.loadDataSet,
 			params: {
 				dataCollectionId: this.dataCollectionId,
 				dataSetId: this.dataSetId,
@@ -222,7 +236,7 @@ class DataSetEditor extends SXBaseVisualizer {
 		//console.log("[dataSetEditor] listenerResponse received: ", dataPacket);
 
 		switch (dataPacket.requestId) {
-			case Workbench.RequestIDs.loadDataSet: {
+			case RequestIDs.loadDataSet: {
 				const {
 					dataCollection,
 					dataSet,
@@ -231,7 +245,7 @@ class DataSetEditor extends SXBaseVisualizer {
 				} = dataPacket.data;
 
 				this.dataSetCode.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.dataSetCode });
-				this.dataSetVersion.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.dataSetVersion });
+				this.dataSetVersion.setValue({ value: Util.isEmpty(dataSet) ? "1.0.0" : dataSet.dataSetVersion });
 				this.displayName.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.displayName });
 				this.description.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.description });
 
@@ -273,7 +287,7 @@ class DataSetEditor extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.saveDataSet: {
+			case RequestIDs.saveDataSet: {
 				//console.log("DataSetEditor.listenerResponse.saveDataSet: ", dataPacket.data);
 
 				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
@@ -453,15 +467,14 @@ class DataSetEditor extends SXBaseVisualizer {
 			params.description = JSON.stringify(this.description.getValue());
 		}
 
-		this.fireRequest({
-			requestId: Workbench.RequestIDs.saveDataSet,
-			params: params
+		Event.fire(Event.SX_SAVE_DATASET, this.namespace, this.workbenchNamespace, {
+			dataSet: params
 		});
 	};
 
 	deleteDataSet = () => {
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.deleteDataSets,
+			requestId: RequestIDs.deleteDataSets,
 			params: {
 				dataCollectionId: this.dataCollectionId,
 				dataSetIds: [this.dataSetId]

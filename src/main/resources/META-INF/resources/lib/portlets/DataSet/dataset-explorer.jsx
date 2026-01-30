@@ -1,10 +1,17 @@
 import React from "react";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { ActionKeys, DisplayStyles, Event, LoadingStatus, PortletKeys } from "../../stationx/station-x";
+import {
+	ActionKeys,
+	DisplayStyles,
+	Event,
+	LoadingStatus,
+	PortletKeys,
+	PortletState,
+	RequestIDs
+} from "../../stationx/station-x";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { Util } from "../../stationx/util";
-import { Workbench } from "../DataWorkbench/workbench";
 import { SXCommentIcon, SXFreezeIcon, SXVerifyIcon } from "../../stationx/icon";
 
 class DataSetExplorer extends SXBaseVisualizer {
@@ -127,7 +134,7 @@ class DataSetExplorer extends SXBaseVisualizer {
 
 		this.fireLoadPortlet({
 			portletName: PortletKeys.DATASET_EDITOR,
-			portletState: Workbench.PortletState.NORMAL,
+			portletState: PortletState.NORMAL,
 			title: Util.translate("create-dataset"),
 			params: {
 				dataCollectionId: this.dataCollectionId
@@ -213,7 +220,7 @@ class DataSetExplorer extends SXBaseVisualizer {
 		console.log("[DataSetExplorer] listenerWorkbenchReady received: ", dataPacket);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.searchDataSets,
+			requestId: RequestIDs.searchDataSets,
 			params: {
 				dataCollectionId: this.dataCollectionId,
 				keywords: this.state.keywords,
@@ -235,18 +242,18 @@ class DataSetExplorer extends SXBaseVisualizer {
 		console.log("[DataSetExplorer] listenerResponse received: ", dataPacket);
 
 		switch (dataPacket.requestId) {
-			case Workbench.RequestIDs.searchDataSets: {
+			case RequestIDs.searchDataSets: {
 				this.convertSearchResultsToContent(dataPacket.data);
 				break;
 			}
-			case Workbench.RequestIDs.deleteDataSets: {
+			case RequestIDs.deleteDataSets: {
 				console.log("DataSetExplorer.response.deleteDataSets: ", dataPacket.data);
 
 				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
 				this.dialogBody = Util.translate("datasets-deleted-successfully");
 
 				this.fireRequest({
-					requestId: Workbench.RequestIDs.searchDataSets,
+					requestId: RequestIDs.searchDataSets,
 					params: this.params
 				});
 
@@ -392,7 +399,7 @@ class DataSetExplorer extends SXBaseVisualizer {
 		*/
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.deleteDataSets,
+			requestId: RequestIDs.deleteDataSets,
 			params: {
 				dataSetIds: this.selectedDataSets.map((row) => Number(row[0].value))
 			}

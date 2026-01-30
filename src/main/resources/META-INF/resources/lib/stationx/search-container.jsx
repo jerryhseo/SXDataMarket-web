@@ -349,19 +349,17 @@ export class SXSearchResultConainer extends React.Component {
 		this.rows = [];
 
 		this.searchResults.forEach((result, index) => {
-			let row = [];
+			let columns = result.columns;
+
+			if (this.index) {
+				columns.unshift({ id: "index", value: index + 1 });
+			}
 
 			if (this.checkbox) {
-				row.push({
+				columns.unshift({
 					id: "checkbox"
 				});
 			}
-
-			if (this.index) {
-				row.push({ id: "index", value: index + 1 });
-			}
-
-			row = [...row, ...result];
 
 			/*
 			row.push({
@@ -377,40 +375,33 @@ export class SXSearchResultConainer extends React.Component {
 				)
 			});
 			*/
-
-			this.rows.push(row);
 		});
 	}
 
-	checkResultSelected(result) {
-		return this.selectedResults.includes(result);
+	checkResultSelected(index) {
+		/*
+		console.log(
+			"checkResultSelected: ",
+			index,
+			this.selectedResults,
+			this.selectedResults[index],
+			!!this.selectedResults[index]
+		);
+		*/
+
+		return !!this.selectedResults[index];
 	}
 
-	addSelectedResult(result) {
-		this.selectedResults.push(result);
+	handleCheckboxChange = (row, checked) => {
+		row.checked = checked;
 
 		Event.fire(Event.SX_SELECTED_RESULTS_CHANGED, this.namespace, this.namespace, {
 			targetFormId: this.formId,
-			selectedResults: this.selectedResults
+			selectedResults: this.searchResults.filter((result) => result.checked)
 		});
 
 		this.forceUpdate();
-	}
-
-	removeSelectedResult(result) {
-		let matchedIndex = this.selectedResults.indexOf(result);
-
-		if (matchedIndex !== -1) {
-			this.selectedResults.splice(matchedIndex, 1);
-
-			Event.fire(Event.SX_SELECTED_RESULTS_CHANGED, this.namespace, this.namespace, {
-				targetFormId: this.formId,
-				selectedResults: this.selectedResults
-			});
-
-			this.forceUpdate();
-		}
-	}
+	};
 
 	handleColumnClicked = (row, column) => {
 		Event.fire(Event.SX_TABLE_COLUMN_CLICKED, this.namespace, this.namespace, {
@@ -459,11 +450,12 @@ export class SXSearchResultConainer extends React.Component {
 							}
 						}}
 					</Head>
-					<Body defaultItems={this.rows}>
+					<Body defaultItems={this.searchResults}>
 						{(row, index) => {
+							const { id, checked, columns } = row;
 							return (
-								<Row key={index}>
-									{row.map((column) => {
+								<Row key={id}>
+									{columns.map((column) => {
 										if (column.id === "checkbox") {
 											return (
 												<Cell
@@ -475,15 +467,9 @@ export class SXSearchResultConainer extends React.Component {
 												>
 													<ClayCheckbox
 														aria-label="select"
-														checked={this.checkAll || this.checkResultSelected(row)}
+														checked={this.checkAll || checked}
 														onChange={(e) => {
-															const checked = e.target.checked;
-
-															if (checked) {
-																this.addSelectedResult(row);
-															} else {
-																this.removeSelectedResult(row);
-															}
+															this.handleCheckboxChange(row, e.target.checked);
 														}}
 													/>
 												</Cell>

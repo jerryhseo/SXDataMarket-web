@@ -6,6 +6,7 @@ import {
 	LoadingStatus,
 	ParamProperty,
 	ParamType,
+	RequestIDs,
 	ValidationRule
 } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
@@ -18,7 +19,6 @@ import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { UnderConstruction } from "../../stationx/common";
 import { DataType, DataTypeStructureLink, SXDataTypeStructureLink } from "../DataType/datatype";
 import { SXLabeledText } from "../Form/form";
-import { Workbench } from "../DataWorkbench/workbench";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import ParameterConstants from "../Parameter/parameter-constants";
 import { ParameterUtil } from "../Parameter/parameters";
@@ -384,7 +384,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 				this.dataStructure.paramCode = this.structureCode.getValue();
 
 				this.fireRequest({
-					requestId: Workbench.RequestIDs.checkDataStructureCodeUnique,
+					requestId: RequestIDs.checkDataStructureCodeUnique,
 					params: {
 						dataStructureCode: this.dataStructure.paramCode,
 						dataStructureVersion: this.dataStructure.paramVersion
@@ -400,7 +400,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 				this.dataStructure.paramVersion = this.structureVersion.getValue();
 				this.fireRequest({
-					requestId: Workbench.RequestIDs.checkDataStructureUnique,
+					requestId: RequestIDs.checkDataStructureUnique,
 					params: {
 						dataStructureCode: this.dataStructure.paramCode,
 						dataStructureVersion: this.dataStructure.paramVersion
@@ -475,7 +475,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		this.fireRequest({
 			targetFormId: this.formId,
 			sourceFormId: sourceFormId,
-			requestId: Workbench.RequestIDs.openReferenceFile,
+			requestId: RequestIDs.openReferenceFile,
 			params: {
 				dataStructureCode: this.dataStructure.paramCode,
 				dataStructureVersion: this.dataStructure.paramVersion,
@@ -503,7 +503,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		this.fireRequest({
 			targetFormId: this.formId,
 			sourceFormId: sourceFormId,
-			requestId: Workbench.RequestIDs.deleteReferenceFiles,
+			requestId: RequestIDs.deleteReferenceFiles,
 			params: {
 				dataStructureCode: this.dataStructure.paramCode,
 				dataStructureVersion: this.dataStructure.paramVersion,
@@ -572,7 +572,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		const result = data;
 
 		switch (requestId) {
-			case Workbench.RequestIDs.loadDataStructure: {
+			case RequestIDs.loadDataStructure: {
 				this.dataType = new DataType(result.dataType ?? {});
 				this.typeStructureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
 				this.typeStructureLink.parse(result.typeStructureLink ?? {});
@@ -618,7 +618,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.checkDataStructureUnique: {
+			case RequestIDs.checkDataStructureUnique: {
 				if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
 					this.dataStructure.updateMemberParents();
 					this.dataStructure.clearError();
@@ -630,7 +630,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.checkDataStructureCodeUnique: {
+			case RequestIDs.checkDataStructureCodeUnique: {
 				if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
 					this.dataStructure.updateMemberParents();
 					this.dataStructure.clearError();
@@ -644,7 +644,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.saveDataStructure: {
+			case RequestIDs.saveDataStructure: {
 				this.dataStructure.dataStructureId = result.dataStructureId;
 				this.dataStructure.setDirty(false);
 
@@ -662,7 +662,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.openReferenceFile: {
+			case RequestIDs.openReferenceFile: {
 				console.log("Open referenceFile finished");
 				this.openDataOnWindow(data);
 
@@ -743,7 +743,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			this.setState({ loadingStatus: LoadingStatus.COMPLETE });
 		} else {
 			this.fireRequest({
-				requestId: Workbench.RequestIDs.loadDataStructure,
+				requestId: RequestIDs.loadDataStructure,
 				params: {
 					dataTypeId: this.dataTypeId,
 					dataStructureId: this.dataStructureId
@@ -826,7 +826,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		console.log("Reference Files: ", referenceFiles);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.saveDataStructure,
+			requestId: RequestIDs.saveDataStructure,
 			params: {
 				typeStructureLink: JSON.stringify(this.typeStructureLink.toJSON()),
 				dataStructure: JSON.stringify(this.dataStructure.toJSON()),

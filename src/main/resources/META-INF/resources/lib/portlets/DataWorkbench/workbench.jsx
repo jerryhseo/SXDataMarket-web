@@ -3,7 +3,7 @@ import Button, { ClayButtonWithIcon } from "@clayui/button";
 import Panel from "@clayui/panel";
 import { Rnd } from "react-rnd";
 import { Util } from "../../stationx/util";
-import { Event, LoadingStatus, ResourceIds, WindowState } from "../../stationx/station-x";
+import { Event, LoadingStatus, RequestIDs, ResourceIds, WindowState, WindowStatus } from "../../stationx/station-x";
 
 export class Workbench {
 	static loadWorkingPortlet({ portletSectionId, windowState, workingPortlet, workbench }) {
@@ -37,83 +37,6 @@ export class Workbench {
 	}
 
 	static BASE_WINDOW_ZINDEX = 100;
-
-	static WorkflowStatus = {
-		ANY: -1,
-		APPROVED: 0,
-		DENIED: 1,
-		DRAFT: 2,
-		EXPIRED: 3,
-		IN_TRASH: 4,
-		INACTIVE: 5,
-		INCOMPLETE: 6,
-		PENDING: 7,
-		SCHEDULED: 8
-	};
-
-	static WindowState = {
-		MINIMIZE: 0,
-		NORMAL: 1,
-		MAXIMIZE: 2
-	};
-
-	static PortletState = {
-		NORMAL: 0,
-		MODAL: 1,
-		POPUP: 2,
-		BLANK: 3
-	};
-
-	static RequestIDs = {
-		addComment: "addComment",
-		addDataType: "addDataType",
-		checkDataTypeUnique: "checkDataTypeUnique",
-		checkDataStructureUnique: "checkDataStructureUnique",
-		checkDataStructureCodeUnique: "checkDataStructureCodeUnique",
-		deleteComment: "deleteComment",
-		deleteDataTypes: "deleteDataTypes",
-		deleteDataCollections: "deleteDataCollections",
-		deleteDataSets: "deleteDataSets",
-		deleteDataStructures: "deleteDataStructures",
-		deleteReferenceFiles: "deleteReferenceFiles",
-		deleteStructuredData: "deleteStructuredData",
-		deleteTypeStructureLink: "deleteTypeStructureLink",
-		deleteTypeStructureLinkAndImportDataStructure: "deleteTypeStructureLinkAndImportDataStructure",
-		downloadFieldAttachedFile: "downloadFieldAttachedFile",
-		importDataType: "importDataType",
-		importDataStructure: "importDataStructure",
-		loadAssociatedDataSets: "loadAssociatedDataSets",
-		loadAssociatedDataTypes: "loadAssociatedDataTypes",
-		loadDataCollection: "loadDataCollection",
-		loadDataCollectionInfo: "loadDataCollectionInfo",
-		loadDataSet: "loadDataSet",
-		loadDataSetList: "loadDataSetList",
-		loadDataStructure: "loadDataStructure",
-		loadDataStructureWithInfo: "loadDataStructureWithInfo",
-		loadDataType: "loadDataType",
-		loadStructuredData: "loadStructuredData",
-		openReferenceFile: "openReferenceFile",
-		removeLinkInfoAndRedirectToBuilder: "removeLinkInfoAndRedirectToBuilder",
-		saveDataCollection: "saveDataCollection",
-		saveDataSet: "saveDataSet",
-		saveDataStructure: "saveDataStructure",
-		saveParameter: "saveParameter",
-		saveStructuredData: "saveStructuredData",
-		saveTypeStructureLink: "saveTypeStructureLink",
-		saveLinkInfoAndRedirectToBuilder: "saveLinkInfoAndRedirectToBuilder",
-		searchDataCollections: "searchDataCollections",
-		searchDataSets: "searchDataSets",
-		searchDataStructures: "searchDataStructures",
-		searchDataTypes: "searchDataTypes",
-		searchParameters: "searchParameters",
-		searchStructuredData: "searchStructuredData",
-		updateDataCollection: "updateDataCollection",
-		updateDataSet: "updateDataSet",
-		updateDataType: "updateDataType",
-		viewDataCollection: "viewDataCollection",
-		viewDataSet: "viewDataSet",
-		viewDataType: "viewDataType"
-	};
 
 	namespace = "";
 	windows = {};
@@ -179,12 +102,12 @@ export class Workbench {
 		return Object.keys(this.portlets).length;
 	};
 
-	setWindowState(portletId, windowState) {
-		this.windows[portletId].windowState = windowState;
+	setWindowStatus(portletId, windowStatus) {
+		this.windows[portletId].windowStatus = windowStatus;
 	}
 
-	getWindowState(portletId) {
-		return this.windows[portletId].windowState;
+	getWindowStatus(portletId) {
+		return this.windows[portletId].windowStatus;
 	}
 
 	getWindowId(portletId) {
@@ -278,7 +201,7 @@ export class Workbench {
 				windowId={this.increasedWindowId}
 				spritemap={this.spritemap}
 			/>,
-			Workbench.WindowState.NORMAL
+			WindowStatus.NORMAL
 		);
 
 		/*
@@ -480,7 +403,7 @@ export class Workbench {
 		let jsonParse = true;
 
 		switch (requestId) {
-			case Workbench.RequestIDs.addComment: {
+			case RequestIDs.addComment: {
 				//console.log("[processRequest] addComment", requestPortlet, sourceFormId, requestId, params);
 				resourceId = ResourceIds.ADD_COMMENT;
 
@@ -504,7 +427,7 @@ export class Workbench {
 
 				return;
 			}
-			case Workbench.RequestIDs.deleteComment: {
+			case RequestIDs.deleteComment: {
 				resourceId = ResourceIds.DELETE_COMMENT;
 
 				this.fireResponse({
@@ -518,145 +441,145 @@ export class Workbench {
 				});
 				return;
 			}
-			case Workbench.RequestIDs.addDataType: {
+			case RequestIDs.addDataType: {
 				resourceId = ResourceIds.ADD_DATATYPE;
 				break;
 			}
-			case Workbench.RequestIDs.checkDataTypeUnique: {
+			case RequestIDs.checkDataTypeUnique: {
 				resourceId = ResourceIds.CHECK_DATATYPE_UNIQUE;
 				break;
 			}
-			case Workbench.RequestIDs.checkDataStructureUnique:
-			case Workbench.RequestIDs.checkDataStructureCodeUnique: {
+			case RequestIDs.checkDataStructureUnique:
+			case RequestIDs.checkDataStructureCodeUnique: {
 				resourceId = ResourceIds.CHECK_DATASTRUCTURE_UNIQUE;
 				break;
 			}
-			case Workbench.RequestIDs.deleteDataTypes: {
+			case RequestIDs.deleteDataTypes: {
 				resourceId = ResourceIds.DELETE_DATATYPES;
 				break;
 			}
-			case Workbench.RequestIDs.deleteTypeStructureLink:
-			case Workbench.RequestIDs.removeLinkInfoAndRedirectToBuilder:
-			case Workbench.RequestIDs.deleteTypeStructureLinkAndImportDataStructure: {
+			case RequestIDs.deleteTypeStructureLink:
+			case RequestIDs.removeLinkInfoAndRedirectToBuilder:
+			case RequestIDs.deleteTypeStructureLinkAndImportDataStructure: {
 				resourceId = ResourceIds.DELETE_TYPE_STRUCTURE_LINK;
 				break;
 			}
-			case Workbench.RequestIDs.viewDataType: {
+			case RequestIDs.viewDataType: {
 				resourceId = ResourceIds.VIEW_DATATYPE;
 				break;
 			}
-			case Workbench.RequestIDs.importDataType:
-			case Workbench.RequestIDs.loadDataType: {
+			case RequestIDs.importDataType:
+			case RequestIDs.loadDataType: {
 				resourceId = ResourceIds.LOAD_DATATYPE;
 				break;
 			}
-			case Workbench.RequestIDs.importDataStructure:
-			case Workbench.RequestIDs.loadDataStructureWithInfo:
-			case Workbench.RequestIDs.loadDataStructure: {
+			case RequestIDs.importDataStructure:
+			case RequestIDs.loadDataStructureWithInfo:
+			case RequestIDs.loadDataStructure: {
 				resourceId = ResourceIds.LOAD_DATASTRUCTURE;
 				break;
 			}
-			case Workbench.RequestIDs.saveLinkInfoAndRedirectToBuilder:
-			case Workbench.RequestIDs.saveTypeStructureLink: {
+			case RequestIDs.saveLinkInfoAndRedirectToBuilder:
+			case RequestIDs.saveTypeStructureLink: {
 				resourceId = ResourceIds.SAVE_TYPE_STRUCTURE_LINK;
 				break;
 			}
-			case Workbench.RequestIDs.searchDataTypes: {
+			case RequestIDs.searchDataTypes: {
 				resourceId = ResourceIds.SEARCH_DATATYPES;
 				break;
 			}
-			case Workbench.RequestIDs.updateDataType: {
+			case RequestIDs.updateDataType: {
 				resourceId = ResourceIds.UPDATE_DATATYPE;
 				break;
 			}
-			case Workbench.RequestIDs.loadDataCollection: {
+			case RequestIDs.loadDataCollection: {
 				resourceId = ResourceIds.LOAD_DATACOLLECTION;
 				break;
 			}
-			case Workbench.RequestIDs.viewDataCollection: {
+			case RequestIDs.viewDataCollection: {
 				resourceId = ResourceIds.VIEW_DATACOLLECTION;
 				break;
 			}
-			case Workbench.RequestIDs.saveDataCollection: {
+			case RequestIDs.saveDataCollection: {
 				resourceId = ResourceIds.SAVE_DATACOLLECTION;
 				break;
 			}
-			case Workbench.RequestIDs.deleteDataCollections: {
+			case RequestIDs.deleteDataCollections: {
 				resourceId = ResourceIds.DELETE_DATACOLLECTIONS;
 				break;
 			}
-			case Workbench.RequestIDs.saveDataStructure: {
+			case RequestIDs.saveDataStructure: {
 				resourceId = ResourceIds.SAVE_DATASTRUCTURE;
 				break;
 			}
-			case Workbench.RequestIDs.loadStructuredData: {
+			case RequestIDs.loadStructuredData: {
 				resourceId = ResourceIds.LOAD_STRUCTURED_DATA;
 				break;
 			}
-			case Workbench.RequestIDs.searchDataCollections: {
+			case RequestIDs.searchDataCollections: {
 				resourceId = ResourceIds.SEARCH_DATACOLLECTIONS;
 				break;
 			}
-			case Workbench.RequestIDs.viewDataSet: {
+			case RequestIDs.viewDataSet: {
 				resourceId = ResourceIds.VIEW_DATASET;
 				break;
 			}
-			case Workbench.RequestIDs.searchDataSets: {
+			case RequestIDs.searchDataSets: {
 				resourceId = ResourceIds.SEARCH_DATASETS;
 				break;
 			}
-			case Workbench.RequestIDs.loadDataSet: {
+			case RequestIDs.loadDataSet: {
 				resourceId = ResourceIds.LOAD_DATASET;
 				break;
 			}
-			case Workbench.RequestIDs.saveDataSet: {
+			case RequestIDs.saveDataSet: {
 				resourceId = ResourceIds.SAVE_DATASET;
 				break;
 			}
-			case Workbench.RequestIDs.deleteDataSets: {
+			case RequestIDs.deleteDataSets: {
 				resourceId = ResourceIds.DELETE_DATASETS;
 				break;
 			}
-			case Workbench.RequestIDs.deleteDataStructures: {
+			case RequestIDs.deleteDataStructures: {
 				resourceId = ResourceIds.DELETE_DATASTRUCTURES;
 				break;
 			}
-			case Workbench.RequestIDs.deleteStructuredData: {
+			case RequestIDs.deleteStructuredData: {
 				resourceId = ResourceIds.DELETE_STRUCTURED_DATA;
 				break;
 			}
-			case Workbench.RequestIDs.searchDataStructures: {
+			case RequestIDs.searchDataStructures: {
 				resourceId = ResourceIds.SEARCH_DATASTRUCTURES;
 				break;
 			}
-			case Workbench.RequestIDs.saveStructuredData: {
+			case RequestIDs.saveStructuredData: {
 				resourceId = ResourceIds.SAVE_STRUCTUED_DATA;
 				break;
 			}
-			case Workbench.RequestIDs.searchStructuredData: {
+			case RequestIDs.searchStructuredData: {
 				resourceId = ResourceIds.SEARCH_STRUCTUED_DATA;
 				break;
 			}
-			case Workbench.RequestIDs.downloadFieldAttachedFile: {
+			case RequestIDs.downloadFieldAttachedFile: {
 				resourceId = ResourceIds.DOWNLOAD_FIELD_ATTACHED_FILE;
 				jsonParse = "blob";
 				break;
 			}
-			case Workbench.RequestIDs.openReferenceFile: {
+			case RequestIDs.openReferenceFile: {
 				resourceId = ResourceIds.OPEN_REFERENCE_FILE;
 				jsonParse = "blob";
 				break;
 			}
-			case Workbench.RequestIDs.deleteReferenceFiles: {
+			case RequestIDs.deleteReferenceFiles: {
 				resourceId = ResourceIds.DELETE_REFERENCE_FILES;
 				jsonParse = "blob";
 				break;
 			}
-			case Workbench.RequestIDs.loadAssociatedDataSets: {
+			case RequestIDs.loadAssociatedDataSets: {
 				resourceId = ResourceIds.LOAD_ASSOCIATED_DATASETS;
 				break;
 			}
-			case Workbench.RequestIDs.loadAssociatedDataTypes: {
+			case RequestIDs.loadAssociatedDataTypes: {
 				resourceId = ResourceIds.LOAD_ASSOCIATED_DATATYPES;
 				break;
 			}

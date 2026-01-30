@@ -1,22 +1,9 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import {
-	EditStatus,
-	ErrorClass,
-	Event,
-	LoadingStatus,
-	ParamType,
-	PortletKeys,
-	ValidationRule
-} from "../../stationx/station-x";
+import { Event, LoadingStatus, PortletKeys, PortletState, RequestIDs } from "../../stationx/station-x";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
-import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { Workbench } from "../DataWorkbench/workbench";
-import { SXLabeledText, SXTitleBar } from "../Form/form";
-import ParameterConstants from "../Parameter/parameter-constants";
-import { ParameterUtil } from "../Parameter/parameters";
 import Panel from "@clayui/panel";
 import { Body, Cell, Head, Row, Table, Text } from "@clayui/core";
 
@@ -161,7 +148,7 @@ class DataSetViewer extends SXBaseVisualizer {
 		//console.log("[DataSetViewer] listenerWorkbenchReady received: ", event.dataPacket);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.viewDataSet,
+			requestId: RequestIDs.viewDataSet,
 			params: {
 				dataCollectionId: this.dataCollectionId,
 				dataSetId: this.dataSetId
@@ -179,7 +166,7 @@ class DataSetViewer extends SXBaseVisualizer {
 
 		//console.log("[DataSetViewer] listenerResonse: ", requestId, params, data);
 		switch (requestId) {
-			case Workbench.RequestIDs.viewDataSet: {
+			case RequestIDs.viewDataSet: {
 				this.dataSetId = data.dataSetId;
 				this.dataSetCode = data.dataSetCode;
 				this.dataSetVersion = data.dataSetVersion;
@@ -232,7 +219,7 @@ class DataSetViewer extends SXBaseVisualizer {
 
 		Event.fire(Event.SX_LOAD_PORTLET, this.namespace, this.workbenchNamespace, {
 			portletName: portletName,
-			portletState: Workbench.PortletState.NORMAL,
+			portletState: PortletState.NORMAL,
 			params: {
 				dataCollectionId: this.dataCollectionId,
 				dataSetId: this.dataSetId

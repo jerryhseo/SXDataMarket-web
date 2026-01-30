@@ -19,14 +19,12 @@ class SXInput extends SXBaseParameterComponent {
 	}
 
 	handleChange(value) {
-		if (value == this.state.value) {
-			return;
-		}
-
 		this.parameter.setValue({ value: value, cellIndex: this.cellIndex, validate: true });
 		this.setState({ value: value });
 
-		this.parameter.fireValueChanged(this.cellIndex);
+		if (value.trim() !== this.state.value) {
+			this.parameter.fireValueChanged(this.cellIndex);
+		}
 	}
 
 	fireValueChanged(value) {

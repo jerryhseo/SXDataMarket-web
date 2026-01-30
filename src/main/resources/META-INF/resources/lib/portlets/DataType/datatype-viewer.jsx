@@ -1,22 +1,9 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import {
-	EditStatus,
-	ErrorClass,
-	Event,
-	LoadingStatus,
-	ParamType,
-	PortletKeys,
-	ValidationRule
-} from "../../stationx/station-x";
+import { Event, LoadingStatus, PortletKeys, PortletState, RequestIDs } from "../../stationx/station-x";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
-import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { Workbench } from "../DataWorkbench/workbench";
-import { SXLabeledText, SXTitleBar } from "../Form/form";
-import ParameterConstants from "../Parameter/parameter-constants";
-import { ParameterUtil } from "../Parameter/parameters";
 import Panel from "@clayui/panel";
 import { Body, Cell, Head, Row, Table, Text } from "@clayui/core";
 
@@ -164,7 +151,7 @@ class DataTypeViewer extends SXBaseVisualizer {
 		//console.log("[DataTypeViewer] listenerWorkbenchReady received: ", event.dataPacket);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.viewDataType,
+			requestId: RequestIDs.viewDataType,
 			params: {
 				dataCollectionId: this.dataCollectionId,
 				dataSetId: this.dataSetId,
@@ -183,7 +170,7 @@ class DataTypeViewer extends SXBaseVisualizer {
 
 		//console.log("[DataTypeViewer] listenerResonse: ", requestId, params, data);
 		switch (requestId) {
-			case Workbench.RequestIDs.viewDataType: {
+			case RequestIDs.viewDataType: {
 				this.dataTypeId = data.dataTypeId;
 				this.dataTypeCode = data.dataTypeCode;
 				this.dataTypeVersion = data.dataTypeVersion;
@@ -239,7 +226,7 @@ class DataTypeViewer extends SXBaseVisualizer {
 
 				Event.fire(Event.SX_LOAD_PORTLET, this.namespace, this.workbenchNamespace, {
 					portletName: portletName,
-					portletState: Workbench.PortletState.NORMAL,
+					portletState: PortletState.NORMAL,
 					params: {
 						dataCollectionId: this.dataCollectionId,
 						dataSetId: this.dataSetId,
@@ -252,7 +239,7 @@ class DataTypeViewer extends SXBaseVisualizer {
 			case "delete": {
 				this.fireRequest({
 					targetFormId: this.workbenchNamespace,
-					requestId: Workbench.RequestIDs.deleteDataTypes,
+					requestId: RequestIDs.deleteDataTypes,
 					params: {
 						dataTypeIds: [this.dataTypeId]
 					}

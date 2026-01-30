@@ -1,19 +1,18 @@
 import React, { createRef } from "react";
-import { Event, PortletKeys } from "../../stationx/station-x";
+import { Event, PortletKeys, PortletState, RequestIDs } from "../../stationx/station-x";
 import { SXPortlet, Workbench } from "./workbench";
-import { Rnd } from "react-rnd";
 import SXWorkbenchMenu from "./workbench-menu";
-import SXDataCollectionNavigator from "../DataCollection/datacollection-navigationbar";
 import { Util } from "../../stationx/util";
-import Sticker from "@clayui/sticker";
-import SXApplicationBar from "../../stationx/application-bar";
-import Icon from "@clayui/icon";
-import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
+import { SXModalDialog } from "../../stationx/modal";
 
 class DataWorkbench extends React.Component {
 	static ViewMode = {
 		FORM: "form",
-		DATA: "data"
+		DATA: "data",
+		DATACOLLECTION_EXPLORER: "dataCollectionExplorer",
+		DATASET_EXPLORER: "dataSetExplorer",
+		DATATYPE_EXPLORER: "dataTypeExplorer",
+		DATASTRUCTURE_EXPLORER: "dataStructureExplorer"
 	};
 
 	workbench = null;
@@ -77,11 +76,10 @@ class DataWorkbench extends React.Component {
 			{
 				id: "dataManagement",
 				label: Util.translate("data-management")
-			}
-			/*
+			},
 			{
-				id: "collectionManagement",
-				label: Util.translate("collection-management"),
+				id: "formExplorers",
+				label: Util.translate("form-explorers"),
 				children: [
 					{
 						id: "dataCollectionExplorer",
@@ -98,13 +96,10 @@ class DataWorkbench extends React.Component {
 					{
 						id: "dataStructureExplorer",
 						label: Util.translate("datastructure-explorer")
-					},
-					{
-						id: "structuredDataExplorer",
-						label: Util.translate("structured-data-explorer")
 					}
 				]
-			},
+			}
+			/*
 			{
 				id: "dataExplorer",
 				label: Util.translate("data-explorer")
@@ -188,7 +183,7 @@ class DataWorkbench extends React.Component {
 			return;
 		}
 
-		//console.log("Workbench SX_MENU_SELECTED received: ", event.dataPacket);
+		console.log("Workbench SX_MENU_SELECTED received: ", event.dataPacket);
 
 		let viewMode = DataWorkbench.ViewMode.FORM;
 
@@ -201,6 +196,22 @@ class DataWorkbench extends React.Component {
 			case "dataManagement": {
 				viewMode = DataWorkbench.ViewMode.DATA;
 
+				break;
+			}
+			case "dataCollectionExplorer": {
+				viewMode = DataWorkbench.ViewMode.DATACOLLECTION_EXPLORER;
+				break;
+			}
+			case "dataSetExplorer": {
+				viewMode = DataWorkbench.ViewMode.DATASET_EXPLORER;
+				break;
+			}
+			case "dataTypeExplorer": {
+				viewMode = DataWorkbench.ViewMode.DATATYPE_EXPLORER;
+				break;
+			}
+			case "dataStructureExplorer": {
+				viewMode = DataWorkbench.ViewMode.DATASTRUCTURE_EXPLORER;
 				break;
 			}
 		}
@@ -229,13 +240,13 @@ class DataWorkbench extends React.Component {
 		let params;
 
 		if (this.viewMode === DataWorkbench.ViewMode.FORM) {
-			requestId = Workbench.RequestIDs.loadDataCollection;
+			requestId = RequestIDs.loadDataCollection;
 			params = {
 				dataCollectionId: dataCollectionId,
 				loadAvailableDataSets: false
 			};
 		} else {
-			requestId = Workbench.RequestIDs.loadStructuredData;
+			requestId = RequestIDs.loadStructuredData;
 			params = {
 				dataCollectionId: dataCollectionId,
 				loadAvailableDataSets: false
@@ -260,7 +271,7 @@ class DataWorkbench extends React.Component {
 
 		//console.log("[DataWorkbench] listenerResonse: ", dataPacket);
 		switch (dataPacket.requestId) {
-			case Workbench.RequestIDs.loadDataCollection: {
+			case RequestIDs.loadDataCollection: {
 				this.dataCollection = dataPacket.data;
 
 				this.navItems = this.dataCollection.associatedDataSetList.map((dataSet) => ({
@@ -337,7 +348,7 @@ class DataWorkbench extends React.Component {
 				params: {
 					viewMode: this.viewMode
 				},
-				portletState: Workbench.PortletState.NORMAL
+				portletState: PortletState.NORMAL
 			});
 		}
 	}
@@ -361,7 +372,7 @@ class DataWorkbench extends React.Component {
 		this.workbench.fireLoadData(targetPortlet, result);
 	};
 
-	deployPortlet = async ({ portletName, params = {}, title = "", portletState = Workbench.PortletState.NORMAL }) => {
+	deployPortlet = async ({ portletName, params = {}, title = "", portletState = PortletState.NORMAL }) => {
 		const portletInstance = await this.workbench.loadPortlet({
 			portletName: portletName,
 			params: params,
@@ -401,7 +412,7 @@ class DataWorkbench extends React.Component {
 						/>
 					</div>
 				</div>
-				{this.state.workingPortletInstance.portletState === Workbench.PortletState.NORMAL && (
+				{this.state.workingPortletInstance.portletState === PortletState.NORMAL && (
 					<SXPortlet
 						key={this.state.workingPortletInstance.namespace}
 						namespace={this.namespace}

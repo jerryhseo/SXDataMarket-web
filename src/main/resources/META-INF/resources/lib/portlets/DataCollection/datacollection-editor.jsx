@@ -1,11 +1,18 @@
 import React from "react";
 import { Util } from "../../stationx/util";
-import { EditStatus, ErrorClass, Event, LoadingStatus, ParamType, ValidationRule } from "../../stationx/station-x";
+import {
+	EditStatus,
+	ErrorClass,
+	Event,
+	LoadingStatus,
+	ParamType,
+	RequestIDs,
+	ValidationRule
+} from "../../stationx/station-x";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { Workbench } from "../DataWorkbench/workbench";
 import { SXLabeledText } from "../Form/form";
 import ParameterConstants from "../Parameter/parameter-constants";
 import { ParameterUtil } from "../Parameter/parameters";
@@ -14,7 +21,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		console.log("DataCollectionEditor props: ", props);
+		//console.log("DataCollectionEditor props: ", props);
 
 		this.dataCollectionId = this.params.dataCollectionId ?? 0;
 
@@ -169,16 +176,18 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace || this.formId !== targetFormId) {
-			console.log("[dataCollectionEditor] listenerFieldValueChanged rejected: ", event.dataPacket);
+			//console.log("[dataCollectionEditor] listenerFieldValueChanged rejected: ", event.dataPacket);
 			return;
 		}
 
+		/*
 		console.log(
 			"[dataCollectionEditor] listenerFieldValueChanged received: ",
 			event.dataPacket,
 			parameter,
 			this.getAssociatedDataSetInfos(this.dataSets.getValue())
 		);
+		*/
 
 		Event.fire(Event.SX_DATACOLLECTION_CHANGED, this.namespace, this.workbenchNamespace, {
 			dataCollection: {
@@ -196,14 +205,14 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[dataCollectionEditor] listenerWorkbenchReady event rejected: ", dataPacket);
+			//console.log("[dataCollectionEditor] listenerWorkbenchReady event rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[dataCollectionEditor] listenerWorkbenchReady received: ", dataPacket);
+		//console.log("[dataCollectionEditor] listenerWorkbenchReady received: ", dataPacket);
 
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.loadDataCollection,
+			requestId: RequestIDs.loadDataCollection,
 			params: {
 				dataCollectionId: this.dataCollectionId,
 				loadAvailableDataSets: true
@@ -221,7 +230,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 
 		console.log("[dataCollectionEditor] listenerResonse: ", dataPacket);
 		switch (dataPacket.requestId) {
-			case Workbench.RequestIDs.loadDataCollection: {
+			case RequestIDs.loadDataCollection: {
 				const {
 					dataCollectionCode,
 					dataCollectionVersion = "1.0.0",
@@ -240,7 +249,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 				this.displayName.refreshKey();
 				this.description.refreshKey();
 
-				console.log("DataCollectionEditor.listenerResponse : associatedDataSetList", associatedDataSetList);
+				//console.log("DataCollectionEditor.listenerResponse : associatedDataSetList", associatedDataSetList);
 
 				if (Util.isNotEmpty(availableDataSetList)) {
 					this.availableDataSetList = availableDataSetList;
@@ -280,7 +289,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 
 				break;
 			}
-			case Workbench.RequestIDs.saveDataCollection: {
+			case RequestIDs.saveDataCollection: {
 				this.dataCollectionId = dataPacket.data.dataCollectionId;
 
 				/*
@@ -316,11 +325,11 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		const dataPacket = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataCollectionEditor] listenerComponentWillUnmount rejected: ", dataPacket);
+			//console.log("[DataCollectionEditor] listenerComponentWillUnmount rejected: ", dataPacket);
 			return;
 		}
 
-		console.log("[DataCollectionEditor] listenerComponentWillUnmount received: ", dataPacket);
+		//console.log("[DataCollectionEditor] listenerComponentWillUnmount received: ", dataPacket);
 		this.componentWillUnmount();
 	};
 
@@ -334,7 +343,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 	}
 
 	componentWillUnmount() {
-		console.log("[DataCollectionEditor] componentWillUnmount");
+		//console.log("[DataCollectionEditor] componentWillUnmount");
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.off(Event.SX_RESPONSE, this.listenerResponse);
 		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
@@ -344,9 +353,9 @@ class DataCollectionEditor extends SXBaseVisualizer {
 	getAssociatedDataSetInfos(dataSetStrIds) {
 		const dataSetIds = dataSetStrIds.map((id) => Number(id));
 
-		const associatedDataSets = this.availableDataSetList.filter((dataSet) =>
-			dataSetIds.includes(Number(dataSet.dataSetId))
-		);
+		const associatedDataSets = this.availableDataSetList
+			? this.availableDataSetList.filter((dataSet) => dataSetIds.includes(Number(dataSet.dataSetId)))
+			: [];
 
 		return associatedDataSets;
 	}
@@ -361,7 +370,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 			warning = this.dataCollectionCode.error;
 		}
 
-		console.log("dataCollectionVersion: ", this.dataCollectionVersion.getValue());
+		//console.log("dataCollectionVersion: ", this.dataCollectionVersion.getValue());
 		error = this.dataCollectionVersion.validate();
 		if (error === -1) {
 			this.dataCollectionVersion.dirty = true;
@@ -451,7 +460,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 
 		/*
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.saveDataCollection,
+			requestId: RequestIDs.saveDataCollection,
 			params: params
 		});
 		*/

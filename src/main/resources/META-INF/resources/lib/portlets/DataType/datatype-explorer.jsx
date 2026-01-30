@@ -1,12 +1,11 @@
 import React, { useState, useLayoutEffect, useContext, useRef, useCallback } from "react";
-import { ActionKeys, LoadingStatus, PortletKeys, Event } from "../../stationx/station-x";
+import { ActionKeys, LoadingStatus, PortletKeys, Event, RequestIDs, PortletState } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
 import { SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { UnderConstruction } from "../../stationx/common";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
 import { SXFreezeIcon, SXLinkIcon, SXVerifyIcon } from "../../stationx/icon";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import { Workbench } from "../DataWorkbench/workbench";
 
 class DataTypeExplorer extends SXBaseVisualizer {
 	constructor(props) {
@@ -274,7 +273,7 @@ class DataTypeExplorer extends SXBaseVisualizer {
 
 		this.fireLoadPortlet({
 			portletName: PortletKeys.DATATYPE_EDITOR,
-			portletState: Workbench.PortletState.NORMAL
+			portletState: PortletState.NORMAL
 		});
 	};
 
@@ -353,21 +352,21 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		let state = {};
 
 		switch (dataPacket.requestId) {
-			case Workbench.RequestIDs.searchDataTypes: {
+			case RequestIDs.searchDataTypes: {
 				if (dataPacket.status === LoadingStatus.COMPLETE) {
 					this.convertSearchResultsToContent(dataPacket.data);
 				}
 
 				break;
 			}
-			case Workbench.RequestIDs.deleteDataTypes: {
+			case RequestIDs.deleteDataTypes: {
 				if (dataPacket.status === LoadingStatus.COMPLETE) {
 					state.infoDialog = true;
 					state.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
 					state.dlgBody = Util.translate("datatypes-deleted-successfully");
 
 					this.fireRequest({
-						requestId: Workbench.RequestIDs.searchDataTypes,
+						requestId: RequestIDs.searchDataTypes,
 						params: this.params
 					});
 
@@ -531,7 +530,7 @@ class DataTypeExplorer extends SXBaseVisualizer {
 
 		//console.log("Selected DataTypes: ", this.selectedResults, this.selectedResultsToDataTypeIds());
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.deleteDataTypes,
+			requestId: RequestIDs.deleteDataTypes,
 			params: {
 				dataTypeIds: JSON.stringify(this.selectedResultsToDataTypeIds())
 			}
