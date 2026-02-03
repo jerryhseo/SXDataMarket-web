@@ -333,13 +333,12 @@ export class SXSearchResultConainer extends React.Component {
 	constructor(props) {
 		super(props);
 
-		//console.log("[SXSearchResultConainer props] ", props);
+		console.log("[SXSearchResultConainer props] ", props);
 		this.namespace = props.namespace;
 		this.formId = props.formId;
 		this.columns = props.columns ?? [];
 		this.componentId = props.searchContainerId;
 		this.searchResults = props.searchResults ?? [];
-		this.selectedResults = props.selectedResults ?? [];
 		this.displayStyle = props.displayStyle ?? DisplayStyles.TABLE;
 		this.checkbox = props.checkbox ?? true;
 		this.checkAll = props.checkAll ?? false;
@@ -378,26 +377,11 @@ export class SXSearchResultConainer extends React.Component {
 		});
 	}
 
-	checkResultSelected(index) {
-		/*
-		console.log(
-			"checkResultSelected: ",
-			index,
-			this.selectedResults,
-			this.selectedResults[index],
-			!!this.selectedResults[index]
-		);
-		*/
-
-		return !!this.selectedResults[index];
-	}
-
 	handleCheckboxChange = (row, checked) => {
 		row.checked = checked;
 
 		Event.fire(Event.SX_SELECTED_RESULTS_CHANGED, this.namespace, this.namespace, {
-			targetFormId: this.formId,
-			selectedResults: this.searchResults.filter((result) => result.checked)
+			targetFormId: this.formId
 		});
 
 		this.forceUpdate();
@@ -453,6 +437,7 @@ export class SXSearchResultConainer extends React.Component {
 					<Body defaultItems={this.searchResults}>
 						{(row, index) => {
 							const { id, checked, columns } = row;
+
 							return (
 								<Row key={id}>
 									{columns.map((column) => {

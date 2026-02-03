@@ -160,7 +160,7 @@ class DataCollectionViewer extends SXBaseVisualizer {
 			return;
 		}
 
-		//console.log("[DataCollectionViewer] listenerResonse: ", requestId, params, data);
+		console.log("[DataCollectionViewer] listenerResonse: ", requestId, params, data);
 		switch (requestId) {
 			case RequestIDs.viewDataCollection: {
 				this.dataCollectionId = data.dataCollectionId;

@@ -169,7 +169,6 @@ class DataSetEditor extends SXBaseVisualizer {
 		});
 
 		this.state = {
-			editStatus: this.dataSetId > 0 ? EditStatus.UPDATE : EditStatus.ADD,
 			infoDialog: false,
 			confirmDeleteDialog: false,
 			waringAndSaveDialog: false,
@@ -226,23 +225,33 @@ class DataSetEditor extends SXBaseVisualizer {
 	};
 
 	listenerResponse = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, requestId, params, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
-			//console.log("[dataSetEditor] listenerResponse rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace) {
+			//console.log("[dataSetEditor] listenerResponse rejected: ", event.dataPacket);
 			return;
 		}
 
-		//console.log("[dataSetEditor] listenerResponse received: ", dataPacket);
+		//console.log("[dataSetEditor] listenerResponse received: ", event.dataPacket);
 
-		switch (dataPacket.requestId) {
+		switch (requestId) {
 			case RequestIDs.loadDataSet: {
 				const {
 					dataCollection,
 					dataSet,
 					associatedDataTypeList = [],
-					availableDataTypeList = []
-				} = dataPacket.data;
+					availableDataTypeList = [],
+					error
+				} = data;
+
+				if (Util.isNotEmpty(error)) {
+					this.dialogHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+					this.dialogBody = Util.translate("loading-dataset-is-failed");
+
+					this.setState({ infoDialog: true });
+
+					break;
+				}
 
 				this.dataSetCode.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.dataSetCode });
 				this.dataSetVersion.setValue({ value: Util.isEmpty(dataSet) ? "1.0.0" : dataSet.dataSetVersion });
@@ -289,15 +298,27 @@ class DataSetEditor extends SXBaseVisualizer {
 			}
 			case RequestIDs.saveDataSet: {
 				//console.log("DataSetEditor.listenerResponse.saveDataSet: ", dataPacket.data);
+				const { dataSet, error } = data;
+
+				/*
+				if (Util.isNotEmpty(error)) {
+					this.dialogHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+					this.dialogBody = Util.translate("saving-dataset-is-failed");
+
+					this.setState({ infoDialog: true });
+
+					break;
+				}
 
 				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("dataset-saved-as", dataPacket.data.dataSetId);
+				this.dialogBody = Util.translate("dataset-saved-as", dataSet.dataSetId);
 
 				this.setState({
-					infoDialog: true,
-					editStatus: EditStatus.UPDATE,
-					loadingStatus: LoadingStatus.COMPLETE
+					infoDialog: true
 				});
+				*/
+
+				this.dataSetId = dataSet.dataSetId;
 
 				Event.fire(Event.SX_DATASET_CHANGED, this.namespace, this.workbenchNamespace, {
 					dataSet: {
@@ -491,7 +512,7 @@ class DataSetEditor extends SXBaseVisualizer {
 
 		return (
 			<>
-				{this.state.editStatus === EditStatus.UPDATE && (
+				{this.dataSetId > 0 && (
 					<SXLabeledText
 						label={Util.translate("dataset-id")}
 						text={this.dataSetId}

@@ -221,15 +221,15 @@ class DataCollectionEditor extends SXBaseVisualizer {
 	};
 
 	listenerResponse = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, requestId, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[dataCollectionEditor] listenerResponce rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace) {
+			console.log("[dataCollectionEditor] listenerResponce rejected: ", event.dataPacket);
 			return;
 		}
 
-		console.log("[dataCollectionEditor] listenerResonse: ", dataPacket);
-		switch (dataPacket.requestId) {
+		console.log("[dataCollectionEditor] listenerResonse: ", event.dataPacket);
+		switch (requestId) {
 			case RequestIDs.loadDataCollection: {
 				const {
 					dataCollectionCode,
@@ -238,7 +238,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 					description,
 					associatedDataSetList = [],
 					availableDataSetList = []
-				} = dataPacket.data;
+				} = data;
 
 				this.dataCollectionCode.setValue({ value: dataCollectionCode });
 				this.dataCollectionVersion.setValue({ value: dataCollectionVersion });
@@ -290,31 +290,12 @@ class DataCollectionEditor extends SXBaseVisualizer {
 				break;
 			}
 			case RequestIDs.saveDataCollection: {
-				this.dataCollectionId = dataPacket.data.dataCollectionId;
-
-				/*
-				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("datacollection-saved-as", dataPacket.data.dataCollectionId);
-				*/
+				this.dataCollectionId = data.dataCollectionId;
 
 				this.setState({
-					//infoDialog: true,
 					editStatus: EditStatus.UPDATE,
 					loadingStatus: LoadingStatus.COMPLETE
 				});
-
-				/*
-				Event.fire(Event.SX_DATACOLLECTION_CHANGED, this.namespace, this.workbenchNamespace, {
-					dataCollection: {
-						dataCollectionId: this.dataCollectionId,
-						dataCollectionCode: this.dataCollectionCode.getValue(),
-						dataCollectionVersion: this.dataCollectionVersion.getValue(),
-						displayName: this.displayName.getValue(),
-						description: this.description.getValue(),
-						dataSets: this.getAssociatedDataSetInfos(this.dataSets.getValue())
-					}
-				});
-				*/
 
 				break;
 			}

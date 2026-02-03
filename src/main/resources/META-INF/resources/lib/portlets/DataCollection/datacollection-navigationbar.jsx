@@ -3,6 +3,8 @@ import { ClayVerticalNav } from "@clayui/nav";
 import { Constant, Event } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
+import Icon from "@clayui/icon";
+import CollectionsManagement from "./collections-management";
 
 class SXDataCollectionNavigationBar extends React.Component {
 	static NavTypes = {
@@ -22,6 +24,7 @@ class SXDataCollectionNavigationBar extends React.Component {
 		this.spritemap = props.spritemap;
 		this.navItems = props.navItems;
 		this.expandedKeys = props.expandedKeys;
+		this.orderable = props.orderable;
 		this.style = props.style;
 
 		this.state = {
@@ -78,7 +81,7 @@ class SXDataCollectionNavigationBar extends React.Component {
 		//console.log("[SXDataCollectionNavigationBar handleNavItemClick] ", item);
 		const unsaved = this.hasUnsavedItem(this.navItems);
 
-		if (unsaved) {
+		if (unsaved && unsaved.id !== item.id) {
 			this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 			this.dialogBody = Util.translate("item-does-not-saved-if-you-click-ok-all-changed-disappeared");
 
@@ -91,6 +94,12 @@ class SXDataCollectionNavigationBar extends React.Component {
 	handleExpandedChange = (expandedKeys) => {
 		this.setState({ expandedKeys: expandedKeys });
 	};
+
+	handleOrderChange(item, index, direction) {
+		if (direction === "up") {
+		} else {
+		}
+	}
 
 	fireNavItemSelected = (item) => {
 		Event.fire(Event.SX_NAVITEM_SELECTED, this.namespace, this.namespace, {
@@ -115,7 +124,7 @@ class SXDataCollectionNavigationBar extends React.Component {
 					style={this.style}
 					spritemap={this.spritemap}
 				>
-					{(item) => {
+					{(item, index) => {
 						const itemStyle = {};
 
 						if (item.active) {
@@ -129,8 +138,6 @@ class SXDataCollectionNavigationBar extends React.Component {
 						if (item.dirty) {
 							itemStyle.color = "red";
 						}
-
-						//console.log("Item active style: ", item.label, item, item.id, itemStyle);
 
 						return (
 							<ClayVerticalNav.Item

@@ -93,17 +93,26 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 		
 		ServiceContext dataCollectionSC = ServiceContextFactory.getInstance(DataCollection.class.getName(), resourceRequest);
 		
+		JSONObject result = JSONFactoryUtil.createJSONObject();
+		
 		DataCollection dataCollection = null;
+		String error = "";
 		if( dataCollectionId == 0 ) {
-			dataCollection = _dataCollectionLocalService.addDataCollection(
-					dataCollectionCode, 
-					dataCollectionVersion, 
-					SXLocalizationUtil.jsonToLocalizedMap(strDisplayName), 
-					SXLocalizationUtil.jsonToLocalizedMap(strDescription), 
-					WorkflowConstants.STATUS_APPROVED, 
-					dataCollectionSC);
+			boolean duplicated = _dataCollectionLocalService.checkDuplicated(dataCollectionCode, dataCollectionVersion);
 			
-			dataCollectionId = dataCollection.getDataCollectionId();
+			if( duplicated ) {
+				error = "duplidated";
+			} else {
+				dataCollection = _dataCollectionLocalService.addDataCollection(
+						dataCollectionCode, 
+						dataCollectionVersion, 
+						SXLocalizationUtil.jsonToLocalizedMap(strDisplayName), 
+						SXLocalizationUtil.jsonToLocalizedMap(strDescription), 
+						WorkflowConstants.STATUS_APPROVED, 
+						dataCollectionSC);
+				
+				dataCollectionId = dataCollection.getDataCollectionId();
+			}
 		}
 		else {
 			dataCollection = _dataCollectionLocalService.updateDataCollection(
@@ -116,84 +125,87 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 					dataCollectionSC);
 		}
 		
-		long groupId = dataCollectionSC.getScopeGroupId();
-		
-		String[] strAryAssociatedDataSets = associatedDataSets.isEmpty() ? new String[0] : associatedDataSets.split(",");
-		List<Long> longAryAssoicatedDataSets = new ArrayList<Long>();
-		System.out.println("strAryAssociatedDataSets: " + strAryAssociatedDataSets.length);
-		
-		for( int i=0; i< strAryAssociatedDataSets.length; i++) {
-			longAryAssoicatedDataSets.add(Long.parseLong(strAryAssociatedDataSets[i]));
-		}
-		
-		JSONObject jsonDataCollection = dataCollection.toJSON(themeDisplay.getLocale());
-		
-		//Delete CollectionSetLink un-selected
-		List<CollectionSetLink> collectionSetLinkList = 
-				_collectionSetLinkLocalService.getCollectionSetLinkListByCollection(groupId, dataCollectionId);
-		
-		System.out.println("Linked Data Sets: " + collectionSetLinkList.toString());
-		Iterator<CollectionSetLink> iter = collectionSetLinkList.iterator();
-		while( iter.hasNext()) {
-			CollectionSetLink collectionSetLink = iter.next();
+		if( error.isEmpty() ) {
+			long groupId = dataCollectionSC.getScopeGroupId();
 			
-			boolean selected = false;
-			for( long dataSetId : longAryAssoicatedDataSets) {
-				System.out.println("dataSetId: " + dataSetId);
-				System.out.println("collectionSetLink.dataSetId: " + collectionSetLink.getDataSetId());
-				if( dataSetId == collectionSetLink.getDataSetId() ) {
-					selected = true;
-					break;
+			String[] strAryAssociatedDataSets = associatedDataSets.isEmpty() ? new String[0] : associatedDataSets.split(",");
+			List<Long> longAryAssoicatedDataSets = new ArrayList<Long>();
+			System.out.println("strAryAssociatedDataSets: " + strAryAssociatedDataSets.length);
+			
+			for( int i=0; i< strAryAssociatedDataSets.length; i++) {
+				longAryAssoicatedDataSets.add(Long.parseLong(strAryAssociatedDataSets[i]));
+			}
+			
+			JSONObject jsonDataCollection = dataCollection.toJSON(themeDisplay.getLocale());
+			
+			//Delete CollectionSetLink un-selected
+			List<CollectionSetLink> collectionSetLinkList = 
+					_collectionSetLinkLocalService.getCollectionSetLinkListByCollection(groupId, dataCollectionId);
+			
+			System.out.println("Linked Data Sets: " + collectionSetLinkList.toString());
+			Iterator<CollectionSetLink> iter = collectionSetLinkList.iterator();
+			while( iter.hasNext()) {
+				CollectionSetLink collectionSetLink = iter.next();
+				
+				boolean selected = false;
+				for( long dataSetId : longAryAssoicatedDataSets) {
+					System.out.println("dataSetId: " + dataSetId);
+					System.out.println("collectionSetLink.dataSetId: " + collectionSetLink.getDataSetId());
+					if( dataSetId == collectionSetLink.getDataSetId() ) {
+						selected = true;
+						break;
+					}
+				}
+				
+				if( !selected ) {
+					System.out.println("Collection Set Link deleted: " + collectionSetLink.getPrimaryKey());
+					_collectionSetLinkLocalService.deleteCollectionSetLink(collectionSetLink.getPrimaryKey());
 				}
 			}
 			
-			if( !selected ) {
-				System.out.println("Collection Set Link deleted: " + collectionSetLink.getPrimaryKey());
-				_collectionSetLinkLocalService.deleteCollectionSetLink(collectionSetLink.getPrimaryKey());
-			}
-		}
-		
-		//Add CollectionSetLink if it is new or update it if it exists.
-		JSONArray jsonAssociatedDataSets = JSONFactoryUtil.createJSONArray();
-		
-		ServiceContext collectionSetLinkSC = 
-				ServiceContextFactory.getInstance(CollectionSetLink.class.getName(), resourceRequest);
-		
-		if(longAryAssoicatedDataSets.size() > 0) {
-			for( int order=0; order<longAryAssoicatedDataSets.size(); order++) {
-				long dataSetId = longAryAssoicatedDataSets.get(order); 
-				
-				System.out.println("collectionSetLink: " + dataCollectionId + ", "+dataSetId);
-				
-				CollectionSetLink collectionSetLink = 
-						_collectionSetLinkLocalService.getCollectionSetLink(
-								themeDisplay.getScopeGroupId(), dataCollectionId, dataSetId);
-				
-				if( Validator.isNotNull(collectionSetLink)) {
-					collectionSetLink.setDataCollectionId(dataCollectionId);
-					collectionSetLink.setDataSetId(dataSetId);
-					collectionSetLink.setOrder(order);;
+			//Add CollectionSetLink if it is new or update it if it exists.
+			JSONArray jsonAssociatedDataSets = JSONFactoryUtil.createJSONArray();
+			
+			ServiceContext collectionSetLinkSC = 
+					ServiceContextFactory.getInstance(CollectionSetLink.class.getName(), resourceRequest);
+			
+			if(longAryAssoicatedDataSets.size() > 0) {
+				for( int order=0; order<longAryAssoicatedDataSets.size(); order++) {
+					long dataSetId = longAryAssoicatedDataSets.get(order); 
 					
-					_collectionSetLinkLocalService.updateCollectionSetLink(
-							collectionSetLink);
+					System.out.println("collectionSetLink: " + dataCollectionId + ", "+dataSetId);
+					
+					CollectionSetLink collectionSetLink = 
+							_collectionSetLinkLocalService.getCollectionSetLink(
+									themeDisplay.getScopeGroupId(), dataCollectionId, dataSetId);
+					
+					if( Validator.isNotNull(collectionSetLink)) {
+						collectionSetLink.setDataCollectionId(dataCollectionId);
+						collectionSetLink.setDataSetId(dataSetId);
+						collectionSetLink.setOrder(order);;
+						
+						_collectionSetLinkLocalService.updateCollectionSetLink(
+								collectionSetLink);
+					}
+					else {
+						collectionSetLink = 
+								_collectionSetLinkLocalService.addCollectionSetLink(
+										dataCollectionId, dataSetId, order, collectionSetLinkSC);
+					}
+					
+					DataSet dataSet = _dataSetLocalService.getDataSet(dataSetId);
+					JSONObject jsonDataSet = dataSet.toJSON(themeDisplay.getLocale());
+					jsonDataSet.put("linkId",  collectionSetLink.getCollectionSetLinkId());
+					
+					jsonAssociatedDataSets.put(jsonDataSet);
 				}
-				else {
-					collectionSetLink = 
-							_collectionSetLinkLocalService.addCollectionSetLink(
-									dataCollectionId, dataSetId, order, collectionSetLinkSC);
-				}
-				
-				DataSet dataSet = _dataSetLocalService.getDataSet(dataSetId);
-				JSONObject jsonDataSet = dataSet.toJSON(themeDisplay.getLocale());
-				jsonDataSet.put("linkId",  collectionSetLink.getCollectionSetLinkId());
-				
-				jsonAssociatedDataSets.put(jsonDataSet);
 			}
+	
+			result.put("dataCollection", jsonDataCollection);
+			result.put("associatedDataSets", jsonAssociatedDataSets);
+		} else {
+			result.put("error", error);
 		}
-		
-		JSONObject result = JSONFactoryUtil.createJSONObject();
-		result.put("dataCollection", jsonDataCollection);
-		result.put("associatedDataSets", jsonAssociatedDataSets);
 
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(result.toString());

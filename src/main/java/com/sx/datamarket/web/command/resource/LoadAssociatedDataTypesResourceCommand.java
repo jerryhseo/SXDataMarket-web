@@ -76,7 +76,7 @@ public class LoadAssociatedDataTypesResourceCommand extends BaseMVCResourceComma
 		List<SetTypeLink> setTypeLinkList = null;
 		if( dataCollectionId > 0  && dataSetId > 0) {
 			setTypeLinkList = 
-					_setTypeLinkLocalService.getSetTypeLinkListByCollectionSet_G(
+					_setTypeLinkLocalService.getSetTypeLinkListByCollectionSet(
 							themeDisplay.getScopeGroupId(), dataCollectionId, dataSetId);
 		}
 		else {

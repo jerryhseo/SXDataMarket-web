@@ -236,6 +236,8 @@ class CollectionsManagement extends SXBaseVisualizer {
 			case CollectionsManagement.ItemTypes.DATASET: {
 				const { dataSetId, id, items } = item;
 
+				console.log("NavItem Selected: ", item);
+
 				let dataCollectionId = this.state.dataCollectionId;
 				if (!this.state.dataCollectionId) {
 					const dataCollectionItem = this.findParentItem(this.navItems, item);
@@ -295,6 +297,8 @@ class CollectionsManagement extends SXBaseVisualizer {
 
 		this.selectedNavItem = item;
 		this.selectedNavItem.active = true;
+
+		this.applicationTitle = "";
 
 		const portletParams = this.getDeployPortletParams();
 		this.deployPortlet({
@@ -402,42 +406,47 @@ class CollectionsManagement extends SXBaseVisualizer {
 				break;
 			}
 			case RequestIDs.saveDataCollection: {
-				const { dataCollection, associatedDataSets } = data;
+				const { dataCollection, associatedDataSets, error } = data;
 
-				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("datacollection-saved-as", dataCollection.dataCollectionId);
+				if (Util.isNotEmpty(error)) {
+					this.dialogHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+					this.dialogBody = Util.translate("saving-datacollection-failed", error);
+				} else {
+					this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
+					this.dialogBody = Util.translate("datacollection-saved-as", dataCollection.dataCollectionId);
+
+					this.workbench.fireResponse({
+						targetPortlet: this.state.workingPortletInstance.namespace,
+						requestId: requestId,
+						params: params,
+						data: data
+					});
+
+					console.log("this.selectedNavItem: ", JSON.stringify(this.selectedNavItem, null, 4));
+					if (!this.selectedNavItem.id) {
+						this.selectedNavItem = {
+							type: CollectionsManagement.ItemTypes.COLLECTION
+						};
+
+						this.navItems.push(this.selectedNavItem);
+					}
+
+					this.applySelectedNavItemChanged({
+						id: dataCollection.dataCollectionId,
+						modelId: dataCollection.dataCollectionId,
+						label: dataCollection.displayName,
+						items: associatedDataSets.map((dataSet) => ({
+							id: dataSet.linkId,
+							modelId: dataSet.dataSetId,
+							label: dataSet.displayName,
+							type: CollectionsManagement.ItemTypes.DATASET
+						})),
+						dirty: false
+					});
+				}
 
 				this.setState({
 					infoDialog: true
-				});
-
-				this.workbench.fireResponse({
-					targetPortlet: this.state.workingPortletInstance.namespace,
-					requestId: requestId,
-					params: params,
-					data: data
-				});
-
-				console.log("this.selectedNavItem: ", JSON.stringify(this.selectedNavItem, null, 4));
-				if (!this.selectedNavItem.id) {
-					this.selectedNavItem = {
-						type: CollectionsManagement.ItemTypes.COLLECTION
-					};
-
-					this.navItems.push(this.selectedNavItem);
-				}
-
-				this.applySelectedNavItemChanged({
-					id: dataCollection.dataCollectionId,
-					modelId: dataCollection.dataCollectionId,
-					label: dataCollection.displayName,
-					items: associatedDataSets.map((dataSet) => ({
-						id: dataSet.linkId,
-						modelId: dataSet.dataSetId,
-						label: dataSet.displayName,
-						type: CollectionsManagement.ItemTypes.DATASET
-					})),
-					dirty: false
 				});
 
 				break;
@@ -464,42 +473,49 @@ class CollectionsManagement extends SXBaseVisualizer {
 				break;
 			}
 			case RequestIDs.saveDataSet: {
-				const { dataSet, associatedDataTypes } = data;
+				const { dataSet, associatedDataTypes = [], error } = data;
 
-				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("dataset-saved-as", dataSet.dataSetId);
+				if (Util.isNotEmpty(error)) {
+					this.dialogHeader = SXModalUtil.errorDlgHeader(this.spritemap);
+					this.dialogBody = Util.translate("saving-datacollection-failed", error);
+				} else {
+					this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
+					this.dialogBody = Util.translate("dataset-saved-as", dataSet.dataSetId);
+
+					this.workbench.fireResponse({
+						targetPortlet: this.state.workingPortletInstance.namespace,
+						requestId: requestId,
+						params: params,
+						data: data
+					});
+
+					console.log("this.selectedNavItem: ", dataSet, JSON.stringify(this.selectedNavItem, null, 4));
+					if (this.selectedNavItem.type === CollectionsManagement.ItemTypes.COLLECTION) {
+						const dataSetNavItem = {
+							type: CollectionsManagement.ItemTypes.DATASET
+						};
+
+						this.selectedNavItem.items.push(dataSetNavItem);
+
+						this.selectedNavItem = dataSetNavItem;
+					}
+
+					this.applySelectedNavItemChanged({
+						id: dataSet.dataSetId,
+						modelId: dataSet.dataSetId,
+						label: dataSet.displayName,
+						items: associatedDataTypes.map((dataType) => ({
+							id: dataType.linkId,
+							modelId: dataType.dataTypeId,
+							label: dataType.displayName,
+							type: CollectionsManagement.ItemTypes.DATATYPE
+						})),
+						dirty: false
+					});
+				}
 
 				this.setState({
 					infoDialog: true
-				});
-
-				this.workbench.fireResponse({
-					targetPortlet: this.state.workingPortletInstance.namespace,
-					requestId: requestId,
-					params: params,
-					data: data
-				});
-
-				console.log("this.selectedNavItem: ", JSON.stringify(this.selectedNavItem, null, 4));
-				if (!this.selectedNavItem.id) {
-					this.selectedNavItem = {
-						type: CollectionsManagement.ItemTypes.COLLECTION
-					};
-
-					this.navItems.push(this.selectedNavItem);
-				}
-
-				this.applySelectedNavItemChanged({
-					id: dataSet.dataSetId,
-					modelId: dataSet.dataSetId,
-					label: dataSet.displayName,
-					items: associatedDataTypes.map((dataType) => ({
-						id: dataType.linkId,
-						modelId: dataType.dataTypeId,
-						label: dataType.displayName,
-						type: CollectionsManagement.ItemTypes.DATATYPE
-					})),
-					dirty: false
 				});
 
 				break;
@@ -632,9 +648,6 @@ class CollectionsManagement extends SXBaseVisualizer {
 					dataCollectionId: this.state.dataCollectionId
 				};
 
-				const addedItem = { type: CollectionsManagement.ItemTypes.DATASET };
-				this.selectedNavItem.items.push(addedItem);
-				this.selectedNavItem = addedItem;
 				break;
 			}
 			case "addDataType": {
@@ -645,9 +658,6 @@ class CollectionsManagement extends SXBaseVisualizer {
 					dataSetId: this.state.dataSetId
 				};
 
-				const addedItem = { type: CollectionsManagement.ItemTypes.DATATYPE };
-				this.selectedNavItem.items.push(addedItem);
-				this.selectedNavItem = addedItem;
 				break;
 			}
 			case "editDataStructure": {
@@ -669,6 +679,13 @@ class CollectionsManagement extends SXBaseVisualizer {
 					dataSetId: this.state.dataSetId
 				};
 				break;
+			}
+			case "moveUp": {
+				console.log("moveUp: ", this.selectedNavItem);
+				return;
+			}
+			case "moveDown": {
+				return;
 			}
 		}
 
@@ -908,7 +925,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 		Event.off(Event.SX_DELETE_DATACOLLECTION, this.listenerDeleteDataCollection);
 		Event.off(Event.SX_SAVE_DATACOLLECTION, this.listenerSaveDataCollection);
 		Event.off(Event.SX_DATASET_CHANGED, this.listenerDataSetChanged);
-		Event.off(Event.SX_SAVE_DATASET, this.listenerSaveDataSet);
+		//Event.off(Event.SX_SAVE_DATASET, this.listenerSaveDataSet);
 		Event.off(Event.SX_DELETE_DATASET, this.listenerDeleteDataSet);
 
 		window.removeEventListener("resize", this.listenerWindowResize);
@@ -960,7 +977,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 		});
 	};
 
-	findParentItem(items, child, parent = null) {
+	findParentItem = (items, child, parent = null) => {
 		for (const item of items) {
 			if (item === child) {
 				return parent;
@@ -975,7 +992,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 		}
 
 		return null;
-	}
+	};
 
 	applySelectedNavItemChanged({ id, modelId, label, items, active = true, dirty = true }) {
 		this.selectedNavItem.id = id;
@@ -985,6 +1002,8 @@ class CollectionsManagement extends SXBaseVisualizer {
 
 		this.selectedNavItem.active = active;
 		this.selectedNavItem.dirty = dirty;
+
+		this.applicationTitle = "";
 	}
 
 	findNavItem(items, id) {
@@ -1012,15 +1031,17 @@ class CollectionsManagement extends SXBaseVisualizer {
 	}
 
 	buildApplicationTitle() {
-		let applicationTitle = Util.isEmpty(this.dataCollectionDisplayName) ? "" : this.dataCollectionDisplayName;
-		if (this.dataSetDisplayName) {
-			applicationTitle += Util.isEmpty(this.dataSetDisplayName) ? "" : " > " + this.dataSetDisplayName;
-		}
-		if (this.dataTypeDisplayName) {
-			applicationTitle += Util.isEmpty(this.dataTypeDisplayName) ? "" : " > " + this.dataTypeDisplayName;
-		}
+		if (!this.applicationTitle) {
+			let applicationTitle = Util.isEmpty(this.dataCollectionDisplayName) ? "" : this.dataCollectionDisplayName;
+			if (this.dataSetDisplayName) {
+				applicationTitle += Util.isEmpty(this.dataSetDisplayName) ? "" : " > " + this.dataSetDisplayName;
+			}
+			if (this.dataTypeDisplayName) {
+				applicationTitle += Util.isEmpty(this.dataTypeDisplayName) ? "" : " > " + this.dataTypeDisplayName;
+			}
 
-		this.applicationTitle = applicationTitle ? applicationTitle : Util.translate("select-datacollection");
+			this.applicationTitle = applicationTitle ? applicationTitle : Util.translate("select-datacollection");
+		}
 	}
 
 	searchDataTypes = async (params, targetPortlet) => {
@@ -1033,7 +1054,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 		this.dataCollectionDisplayName = "";
 		this.dataSetDisplayName = "";
 		this.dataTypeDisplayName = "";
-		this.applicationBarButtons = null;
+		this.applicationBarButtons = [];
 	}
 
 	getDeployPortletParams(viewMode = this.state.viewMode) {
@@ -1202,6 +1223,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 			return;
 		}
 
+		this.applicationTitle = Util.translate("add-datacollection");
 		this.openDataCollectionEditor();
 	};
 
@@ -1349,6 +1371,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 										componentId={this.navbarId}
 										navItems={this.navItems}
 										navExpandedKeys={this.state.navExpandedKeys}
+										orderable={this.state.viewMode === CollectionsManagement.ViewMode.FORM}
 										style={{
 											maxWidth: "100%"
 										}}

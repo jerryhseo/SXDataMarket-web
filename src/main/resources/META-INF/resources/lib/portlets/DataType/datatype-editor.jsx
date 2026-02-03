@@ -102,8 +102,11 @@ class DataTypeEditor extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		//console.log("DataTypeEditor props: ", props);
+		console.log("DataTypeEditor props: ", props);
 		this.dirty = false;
+
+		this.dataCollectionId = this.params.dataCollectionId ?? 0;
+		this.dataSetId = this.params.dataSetId ?? 0;
 
 		this.dataType = new DataType(this.languageId, this.availableLanguageIds);
 		this.dataType.dataTypeId = this.params.dataTypeId ?? 0;
@@ -260,26 +263,6 @@ class DataTypeEditor extends SXBaseVisualizer {
 			}
 		});
 
-		this.tooltip = ParameterUtil.createParameter({
-			namespace: this.namespace,
-			formId: this.componentId,
-			paramType: ParamType.STRING,
-			properties: {
-				paramCode: DataTypeProperty.TOOLTIP,
-				localized: true,
-				displayName: Util.getTranslationObject(this.languageId, "tooltip"),
-				placeholder: Util.getTranslationObject(this.languageId, "tooltip"),
-				tooltip: Util.getTranslationObject(this.languageId, "tooltip-tooltip"),
-				validation: {
-					maxLength: {
-						value: 32,
-						message: Util.getTranslationObject(this.languageId, "longer-than-max-length", ", 32"),
-						errorClass: ErrorClass.ERROR
-					}
-				}
-			}
-		});
-
 		this.visualizers = ParameterUtil.createParameter({
 			namespace: this.namespace,
 			formId: this.componentId,
@@ -313,7 +296,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 			}
 		});
 
-		this.fields = [this.groupParameter, this.displayName, this.description, this.tooltip, this.visualizers];
+		this.fields = [this.groupParameter, this.displayName, this.description, this.visualizers];
 
 		this.state = {
 			loadingStatus: LoadingStatus.PENDING,
@@ -745,11 +728,6 @@ class DataTypeEditor extends SXBaseVisualizer {
 					this.description.dirty = false;
 					break;
 				}
-				case "tooltip": {
-					this.tooltip.setValue({ value: this.dataType.tooltip });
-					this.tooltip.dirty = false;
-					break;
-				}
 			}
 		}
 	};
@@ -760,7 +738,6 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.extension.clearValue();
 		this.displayName.clearValue();
 		this.description.clearValue();
-		this.tooltip.clearValue();
 
 		this.visualizers.clearValue();
 
@@ -844,13 +821,6 @@ class DataTypeEditor extends SXBaseVisualizer {
 				const description = value ?? this.description.getValue();
 
 				this.dataType.description = description;
-
-				break;
-			}
-			case DataTypeProperty.TOOLTIP: {
-				const tooltip = value ?? this.tooltip.getValue();
-
-				this.dataType.tooltip = tooltip;
 
 				break;
 			}

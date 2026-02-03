@@ -148,7 +148,7 @@ public class SearchDataCollectionsResourceCommand extends BaseMVCResourceCommand
 			throws PortalException{
 		JSONArray jsonTypeArray = JSONFactoryUtil.createJSONArray();
 		
-		List<SetTypeLink> setTypeLinkList = _setTypeLinkLocalService.getSetTypeLinkListByCollectionSet_G(groupId, collectionId, setId);
+		List<SetTypeLink> setTypeLinkList = _setTypeLinkLocalService.getSetTypeLinkListByCollectionSet(groupId, collectionId, setId);
 		Iterator<SetTypeLink> setTypeLinkIter = setTypeLinkList.iterator();
 		while( setTypeLinkIter.hasNext()) {
 			SetTypeLink setTypeLink = setTypeLinkIter.next();

@@ -1,46 +1,28 @@
 package com.sx.datamarket.web.command.resource;
 
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
-import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.sx.icecap.constant.MVCCommand;
-import com.sx.icecap.constant.ParameterType;
 import com.sx.icecap.constant.WebPortletKey;
-import com.sx.icecap.model.DataCollection;
+import com.sx.icecap.model.CollectionSetLink;
 import com.sx.icecap.model.DataSet;
-import com.sx.icecap.model.DataStructure;
 import com.sx.icecap.model.SetTypeLink;
-import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.service.CollectionSetLinkLocalService;
-import com.sx.icecap.service.DataCollectionLocalService;
 import com.sx.icecap.service.DataSetLocalService;
-import com.sx.icecap.service.DataStructureLocalService;
-import com.sx.icecap.service.DataTypeLocalService;
-import com.sx.icecap.service.ParameterLocalService;
 import com.sx.icecap.service.SetTypeLinkLocalService;
-import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
+import com.sx.util.portlet.SXPortletURLUtil;
 
-import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -74,20 +56,29 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 		String description = ParamUtil.getString(resourceRequest, "description", "{}");
 		String associatedDataTypes = ParamUtil.getString(resourceRequest, "associatedDataTypes", "");
 		
-		/*
+		System.out.println("dataCollectionId: " + dataCollectionId);
 		System.out.println("dataSetCode: " + dataSetCode);
 		System.out.println("dataSetId: " + dataSetId);
 		System.out.println("dataSetVersion: " + dataSetVersion);
 		System.out.println("displayName: " + displayName);
 		System.out.println("description: " + description);
 		System.out.println("associatedDataTypes: " + associatedDataTypes);
-		*/
+		
+		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
 		ServiceContext dataSetSC = ServiceContextFactory.getInstance(DataSet.class.getName(), resourceRequest);
 		
+		if( dataSetId == 0 && _dataSetLocalService.checkDuplicated( dataSetCode, dataSetVersion ) ) {
+			result.put("error", "dataset-is-duplicated");
+			
+			SXPortletURLUtil.responeAjax( resourceResponse, result);
+			
+			return;
+		} 
+		
 		DataSet dataSet = null;
 		if( dataSetId > 0 ) {
-			_dataSetLocalService.updateDataSet(
+			dataSet = _dataSetLocalService.updateDataSet(
 					dataSetId,
 					dataSetCode, 
 					dataSetVersion, 
@@ -111,23 +102,47 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 		
 		long groupId = dataSetSC.getScopeGroupId();
 		
-		String[] strAryAssociatedDataTypes = associatedDataTypes.isEmpty() ? new String[0] : associatedDataTypes.split(",");
-		List<Long> longAryAssoicatedDataTypes = new ArrayList<Long>();
-		System.out.println("strAryAssociatedDataTypes: " + strAryAssociatedDataTypes.length);
-		
-		for( int i=0; i< strAryAssociatedDataTypes.length; i++) {
-			longAryAssoicatedDataTypes.add(Long.parseLong(strAryAssociatedDataTypes[i]));
+		CollectionSetLink collectionSetLink = null;
+				_collectionSetLinkLocalService.getCollectionSetLink(groupId, dataCollectionId, dataSetId);
+		if( dataCollectionId > 0 ) {
+			collectionSetLink = 
+					_collectionSetLinkLocalService.getCollectionSetLink(groupId, dataCollectionId, dataSetId);
+			
+			if( Validator.isNull(collectionSetLink) ) {
+				System.out.println("Create Collection-Set link: " + dataCollectionId);
+				
+				int linkCount = _collectionSetLinkLocalService.countCollectionSetLinkListByCollection(groupId, dataCollectionId);
+				
+				ServiceContext collectionSetLinkSC = 
+						ServiceContextFactory.getInstance(CollectionSetLink.class.getName(), resourceRequest);
+				collectionSetLink = _collectionSetLinkLocalService.addCollectionSetLink(
+						dataCollectionId, 
+						dataSetId,
+						linkCount,
+						collectionSetLinkSC);
+				}
 		}
+		
+		String[] strAryAssociatedDataTypes = 
+				associatedDataTypes.isEmpty() ? new String[0] : associatedDataTypes.split(",");
+		System.out.println("strAryAssociatedDataTypes: " + strAryAssociatedDataTypes.length);
 		
 		//Delete SetTypeLink un-selected
 		List<SetTypeLink> setTypeLinkList = 
-				_setTypeLinkLocalService.getSetTypeLinkListByCollectionSet_G(groupId, dataCollectionId, dataSetId);
+				_setTypeLinkLocalService.getSetTypeLinkListByCollectionSet(groupId, dataCollectionId, dataSetId);
 		
 		Iterator<SetTypeLink> iter = setTypeLinkList.iterator();
 		while( iter.hasNext()) {
 			SetTypeLink setTypeLink = iter.next();
 			
-			boolean selected = longAryAssoicatedDataTypes.contains(new Long(setTypeLink.getDataTypeId()));
+			boolean selected = Arrays.stream(strAryAssociatedDataTypes).anyMatch(
+					n-> {
+						System.out.print(n + ", " + setTypeLink.getDataTypeId());
+						return Long.parseLong(n) == setTypeLink.getDataTypeId();
+					}
+			);
+			
+			System.out.println("selected: " + selected);
 			
 			if( !selected ) {
 				_setTypeLinkLocalService.deleteSetTypeLink(setTypeLink.getPrimaryKey());
@@ -138,8 +153,8 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 		ServiceContext setTypeLinkSC = 
 				ServiceContextFactory.getInstance(SetTypeLink.class.getName(), resourceRequest);
 		
-		for(int order = 0; order < longAryAssoicatedDataTypes.size(); order++) {
-			long dataTypeId = longAryAssoicatedDataTypes.get(order);
+		for(int order = 0; order < strAryAssociatedDataTypes.length; order++) {
+			long dataTypeId = Long.parseLong(strAryAssociatedDataTypes[order]);
 			
 			SetTypeLink setTypeLink = 
 					_setTypeLinkLocalService.getSetTypeLink(groupId, dataCollectionId, dataSetId, dataTypeId);
@@ -158,14 +173,14 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 			} */
 		}
 		
-		JSONObject result = JSONFactoryUtil.createJSONObject();
-		result.put("dataSetId", dataSetId);
+		
+		result.put("dataSet", dataSet.toJSON(dataSetSC.getLocale()));
 
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toString());
-		pw.flush();
-		pw.close();
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
+	
+	@Reference
+	private CollectionSetLinkLocalService _collectionSetLinkLocalService;
 	
 	@Reference
 	private SetTypeLinkLocalService _setTypeLinkLocalService;

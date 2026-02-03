@@ -52,7 +52,6 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 		this.searchedData = [];
 		this.actionMenus = [];
 		this.searchResults = [];
-		this.selectedResults = [];
 
 		this.contentActionMenus = [];
 
@@ -127,30 +126,34 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	}
 
 	listenerSelectAll = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, selectAll } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataCollectionExplorer] listenerSelectAll event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataCollectionExplorer] listenerSelectAll event rejected: ", event.dataPacket);
 			return;
 		}
 
-		//console.log("[DataCollectionExplorer] listenerSelectAll: ", dataPacket);
+		//console.log("[DataCollectionExplorer] listenerSelectAll: ", event.dataPacket);
 
-		this.selectedResults = dataPacket.selectAll ? [...this.searchResults] : [];
+		this.searchResults.forEach((result) => {
+			result.checked = selectAll;
+			return result;
+		});
 
-		this.setState({ searchContainerKey: Util.randomKey() });
+		this.forceUpdate();
 	};
 
 	listenerFieldValueChanged = (event) => {
-		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
+		const { targetPortlet, targetFormId } = event.dataPacket;
 
-		if (!dataPacket) {
+		if (!(targetPortlet === this.namespace && targetFormId === this.formId)) {
 			//console.log("[DataCollectionExplorer] listenerFieldValueChanged rejected: ", dataPacket);
 
 			return;
 		}
 
 		//console.log("[DataCollectionExplorer] listenerFieldValueChanged received: ", dataPacket);
+		this.forceUpdate();
 	};
 
 	listenerAddButtonClicked = (event) => {
@@ -196,7 +199,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 				this.fireRequest({
 					requestId: RequestIDs.deleteDataCollections,
 					params: {
-						dataCollectionIds: this.selectedResults
+						dataCollectionIds: this.selectedDataCollectionIds()
 					}
 				});
 				break;
@@ -205,28 +208,28 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	};
 
 	listenerSelectedResultsChanged = (event) => {
-		const { targetPortlet, targetFormId, selectedResults } = event.dataPacket;
+		const { targetPortlet, targetFormId } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
 			//console.log("[DataCollectionExplorer] listenerSelectedResultsChanged event rejected: ", event.dataPacket);
 			return;
 		}
 		//console.log("[DataCollectionExplorer] listenerSelectedResultsChanged: ", event.dataPacket);
-		this.selectedResults = selectedResults;
 
-		//this.setState({ searchContainerKey: Util.randomKey() });
+		this.forceUpdate();
 	};
 
 	listenerDeleteSelected = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataCollectionExplorer] listenerDeleteSelected rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataCollectionExplorer] listenerDeleteSelected rejected: ", event.dataPacket);
 			return;
 		}
-		//console.log("[DataCollectionExplorer] listenerDeleteSelected: ", dataPacket);
+		//console.log("[DataCollectionExplorer] listenerDeleteSelected: ", event.dataPacket);
 
-		if (!this.selectedResults || this.selectedResults.length <= 0) {
+		const selectedDataCollectionIds = this.selectedDataCollectionIds();
+		if (Util.isEmpty(selectedDataCollectionIds)) {
 			return;
 		}
 
@@ -361,18 +364,24 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	}
 
 	checkAllResultsSelected = () => {
-		return this.selectedResults.length > 0 && this.searchResults.length == this.selectedResults.length;
+		const selectedDataCollectionIds = this.selectedDataCollectionIds();
+
+		return selectedDataCollectionIds.length == this.searchResults.length;
 	};
 
-	selectedResultsToDataCollectionIds = () => {
-		return this.selectedResults.map((result) => Number(result.id));
+	selectedDataCollectionIds = () => {
+		return this.searchResults
+			.filter((result) => result.checked)
+			.map((result) => {
+				return result.id;
+			});
 	};
 
 	convertSearchResultsToContent(results) {
 		this.searchedData = results;
 
-		this.searchResults = results.map((result, index) => {
-			const { dataCollectionId, dataCollectionCode, dataCollectionVersion, displayName } = result;
+		this.searchResults = results.map((dataCollection, index) => {
+			const { dataCollectionId, dataCollectionCode, dataCollectionVersion, displayName } = dataCollection;
 
 			const contentActionMenus = [];
 
@@ -429,13 +438,11 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 
 			return row;
 		});
-
-		this.selectedResults = [];
 	}
 
 	deleteDataCollections = () => {
-		//console.log("Selected DataTypes: ", this.selectedResults, this.selectedResultsToDataCollectionIds());
-		const selectedDataCollectionIds = this.selectedResultsToDataCollectionIds();
+		//console.log("Selected DataTypes: ", this.searchResults, this.selectedDataCollectionIds());
+		const selectedDataCollectionIds = this.selectedDataCollectionIds();
 		if (Util.isEmpty(selectedDataCollectionIds)) {
 			return;
 		}
@@ -484,7 +491,6 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 						index={true}
 						columns={this.tableColumns}
 						searchResults={this.searchResults}
-						selectedResults={this.selectedResults}
 						spritemap={this.spritemap}
 					/>
 					{this.state.infoDialog && (

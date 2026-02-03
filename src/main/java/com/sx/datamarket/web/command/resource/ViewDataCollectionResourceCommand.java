@@ -99,6 +99,9 @@ public class ViewDataCollectionResourceCommand extends BaseMVCResourceCommand{
 			// Construct Structured Data Statistics
 			
 			System.out.println("ViewDataCollection result: " + result.toString(4));
+		} else {
+			result = JSONFactoryUtil.createJSONObject();
+			result.put("error", "datacollection-id-should-be-specified-to-be-viewed");
 		}
 
 		

@@ -26,8 +26,7 @@ class DataSetExplorer extends SXBaseVisualizer {
 
 		this.availableDataTypeList = [];
 
-		this.selectedDataSets = [];
-		this.searchedDataSets = [];
+		this.searchResults = [];
 		this.checkboxEnabled = true;
 
 		this.actionButtons = [];
@@ -97,18 +96,21 @@ class DataSetExplorer extends SXBaseVisualizer {
 	}
 
 	listenerSelectAll = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, selectAll } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataSetExplorer] listenerSelectAll event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			console.log("[DataSetExplorer] listenerSelectAll event rejected: ", event.dataPacket);
 			return;
 		}
 
-		console.log("[DataSetExplorer] listenerSelectAll: ", dataPacket);
+		console.log("[DataSetExplorer] listenerSelectAll: ", event.dataPacket);
 
-		this.selectedDataSets = dataPacket.selectAll ? [...this.searchedDataSets] : [];
+		this.searchResults.forEach((result) => {
+			result.checked = selectAll;
+			return result;
+		});
 
-		this.setState({ searchContainerKey: Util.randomKey() });
+		this.forceUpdate();
 	};
 
 	listenerFieldValueChanged = (event) => {
@@ -150,13 +152,8 @@ class DataSetExplorer extends SXBaseVisualizer {
 			return;
 		}
 
-		const selectedDataSetId = this.searchedDataSets[dataPacket.data][0].value;
-		console.log(
-			"[DataSetExplorer] listenerPopActionClicked: ",
-			dataPacket,
-			this.searchedDataSets,
-			selectedDataSetId
-		);
+		const selectedDataSetId = this.searchResults[dataPacket.data][0].value;
+		console.log("[DataSetExplorer] listenerPopActionClicked: ", dataPacket, this.searchResults, selectedDataSetId);
 
 		switch (dataPacket.action) {
 			case "update": {
@@ -189,19 +186,17 @@ class DataSetExplorer extends SXBaseVisualizer {
 			return;
 		}
 		console.log("[DataSetExplorer] listenerSelectedResultsChanged: ", dataPacket);
-		this.selectedDataSets = dataPacket.selectedResults;
-
-		this.setState({ searchContainerKey: Util.randomKey() });
+		this.forceUpdate();
 	};
 
 	listenerDeleteSelected = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataSetExplorer] listenerDeleteSelected rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataSetExplorer] listenerDeleteSelected rejected: ", event.dataPacket);
 			return;
 		}
-		console.log("[DataSetExplorer] listenerDeleteSelected: ", dataPacket);
+		//console.log("[DataSetExplorer] listenerDeleteSelected: ", event.dataPacket);
 
 		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
@@ -210,14 +205,14 @@ class DataSetExplorer extends SXBaseVisualizer {
 	};
 
 	listenerWorkbenchReady = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataSetExplorer] listenerWorkbenchReady event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace) {
+			//console.log("[DataSetExplorer] listenerWorkbenchReady event rejected: ", event.dataPacket);
 			return;
 		}
 
-		console.log("[DataSetExplorer] listenerWorkbenchReady received: ", dataPacket);
+		//console.log("[DataSetExplorer] listenerWorkbenchReady received: ", event.dataPacket);
 
 		this.fireRequest({
 			requestId: RequestIDs.searchDataSets,
@@ -313,11 +308,21 @@ class DataSetExplorer extends SXBaseVisualizer {
 	}
 
 	checkAllDataSetsSelected = () => {
-		return this.selectedDataSets.length > 0 && this.searchedDataSets.length == this.selectedDataSets.length;
+		const selectedDataSetIds = this.selectedDataSetIds();
+
+		return selectedDataSetIds.length == this.searchResults.length;
+	};
+
+	selectedDataSetIds = () => {
+		return this.searchResults
+			.filter((result) => result.checked)
+			.map((result) => {
+				return result.id;
+			});
 	};
 
 	convertSearchResultsToContent(results) {
-		this.searchedDataSets = results.map((dataSet, index) => {
+		this.searchResults = results.map((dataSet, index) => {
 			const {
 				dataCollectionId = 0,
 				dataSetId,
@@ -345,63 +350,70 @@ class DataSetExplorer extends SXBaseVisualizer {
 				});
 			}
 
-			let row = [
-				{
-					id: "dataSetId",
-					value: dataSetId
-				},
-				{
-					id: "displayName",
-					value: displayName[this.languageId]
-				},
-				{
-					id: "dataSetVersion",
-					value: dataSetVersion
-				},
-				{
-					id: "dataSetCode",
-					value: dataSetCode
-				},
-				{
-					id: "status",
-					value: (
-						<>
-							<span style={{ marginRight: "5px" }}>
-								<SXCommentIcon commentCount={dataSet.commentCount}></SXCommentIcon>
-							</span>
-							<span style={{ marginRight: "5px" }}>
-								<SXVerifyIcon verified={verified} />
-							</span>
-							<span style={{ marginRight: "5px" }}>
-								<SXFreezeIcon freezed={freezed} />
-							</span>
-						</>
-					)
-				},
-				{
-					id: "actions",
-					value: contentActionMenus
-				}
-			];
+			let row = {
+				id: dataSetId,
+				index: index,
+				checked: false,
+				columns: [
+					{
+						id: "dataSetId",
+						value: dataSetId
+					},
+					{
+						id: "displayName",
+						value: displayName[this.languageId]
+					},
+					{
+						id: "dataSetVersion",
+						value: dataSetVersion
+					},
+					{
+						id: "dataSetCode",
+						value: dataSetCode
+					},
+					{
+						id: "status",
+						value: (
+							<>
+								<span style={{ marginRight: "5px" }}>
+									<SXCommentIcon commentCount={dataSet.commentCount}></SXCommentIcon>
+								</span>
+								<span style={{ marginRight: "5px" }}>
+									<SXVerifyIcon verified={verified} />
+								</span>
+								<span style={{ marginRight: "5px" }}>
+									<SXFreezeIcon freezed={freezed} />
+								</span>
+							</>
+						)
+					},
+					{
+						id: "actions",
+						value: contentActionMenus
+					}
+				]
+			};
 
 			return row;
 		});
-
-		this.selectedDataSets = [];
 	}
 
 	deleteDataSets = () => {
 		/*
 		console.log(
 			"deleteDataSets: ",
-			this.selectedDataSets.map((row) => Number(row[0].value))
+			this.selectedDataSetIds()
 		);
 		*/
+		const selectedDataSetIds = this.selectedDataSetIds();
+		if (Util.isEmpty(selectedDataSetIds)) {
+			return;
+		}
 
 		this.fireRequest({
 			requestId: RequestIDs.deleteDataSets,
 			params: {
-				dataSetIds: this.selectedDataSets.map((row) => Number(row[0].value))
+				dataSetIds: selectedDataSetIds
 			}
 		});
 	};
@@ -438,8 +450,7 @@ class DataSetExplorer extends SXBaseVisualizer {
 					checkAll={this.checkAllDataSetsSelected()}
 					index={true}
 					columns={this.tableColumns}
-					searchResults={this.searchedDataSets}
-					selectedResults={this.selectedDataSets}
+					searchResults={this.searchResults}
 					spritemap={this.spritemap}
 				/>
 				{this.state.infoDialog && (
