@@ -12,6 +12,8 @@
 <%@ include file="./init.jsp" %>
 
 <%
+	long dataCollectionId = ParamUtil.getLong(renderRequest, WebKey.DATACOLLECTION_ID, 0);
+	long dataSetId = ParamUtil.getLong(renderRequest, WebKey.DATASET_ID, 0);
 	long dataTypeId = ParamUtil.getLong(renderRequest, WebKey.DATATYPE_ID, 0);
 	JSONArray permissions = (JSONArray)renderRequest.getAttribute("permissions");
 
@@ -59,6 +61,8 @@
 				workbenchNamespace: '<%= workbenchNamespace %>',
 				workbenchPortletId: '<%= workbenchId %>',
 				params: { // initial parameters
+					dataCollectionId: Number('<%= dataCollectionId %>'),
+					dataSetId: Number('<%= dataSetId %>'),
 					dataTypeId: Number('<%= dataTypeId %>'),
 				}
 			}

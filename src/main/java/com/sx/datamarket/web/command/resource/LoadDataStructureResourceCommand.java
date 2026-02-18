@@ -1,36 +1,20 @@
 package com.sx.datamarket.web.command.resource;
 
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.sx.icecap.constant.DataTypeProperties;
 import com.sx.icecap.constant.MVCCommand;
-import com.sx.icecap.constant.WebKey;
-import com.sx.constant.StationXConstants;
-import com.sx.constant.StationXWebKeys;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataStructure;
 import com.sx.icecap.model.DataType;
-import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
-import com.sx.icecap.service.TypeStructureLinkLocalService;
-
-import java.io.PrintWriter;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import com.sx.util.SXUtil;
+import com.sx.util.portlet.SXPortletURLUtil;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -54,37 +38,55 @@ public class LoadDataStructureResourceCommand extends BaseMVCResourceCommand{
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
 		
-		long dataTypeId = ParamUtil.getLong(resourceRequest, WebKey.DATATYPE_ID, 0);
+		long dataTypeId = ParamUtil.getLong(resourceRequest, "dataTypeId", 0);
 		long dataStructureId = ParamUtil.getLong(resourceRequest, "dataStructureId", 0);
 		
-		System.out.println("LoadDataStructureResourceCommand:  " + dataTypeId + ", dataStructureId: " + dataStructureId );
+		System.out.println("LoadDataStructureResourceCommand: dataStructureId: " );
+		System.out.println("dataTypeId:  " + dataTypeId );
+		System.out.println("dataStructureId:  " + dataStructureId );
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
-		TypeStructureLink typeStructureLink = null;
-		try{
-			typeStructureLink = _typeStructureLocalService.getTypeStructureLink(dataTypeId);
-			dataStructureId = typeStructureLink.getDataStructureId();
-			result.put("typeStructureLink", typeStructureLink.toJSON());
-		} catch( PortalException e) {
-			System.out.println("No TypeStructureLink while loading data structure");
-		}
+		DataType dataType = null;
+		JSONObject jsonDataStructure = null;
+		JSONObject dataTypeStructure = null;
+		DataStructure dataStructure = null;
 		
 		if( dataTypeId > 0 ) {
-			DataType dataType = _dataTypeLocalService.getDataType(dataTypeId);
-			result.put("dataType", dataType.toJSON( ));
-		}
-		
-		if( dataStructureId > 0) {
-			DataStructure dataStructure = _dataStructureLocalService.getDataStructure(dataStructureId);
+			dataType = _dataTypeLocalService.getDataType(dataTypeId);
+			
+			if( Validator.isNull(dataType) ) {
+				result.put( "error", SXUtil.translate(resourceRequest, "cannot-find-datatype", dataTypeId) );
+				
+				SXPortletURLUtil.responeAjax(resourceResponse, result);
+				
+				return;
+			}
+			
+			result.put("dataType", dataType.toJSON(resourceRequest.getLocale()));
+			
+			dataTypeStructure = _dataTypeLocalService.getDataStructureJSON(dataTypeId);
+			if( dataTypeStructure.length() > 0 ) {
+				result.put("dataStructure", dataTypeStructure);
+			}
+			
+		} else if( dataStructureId > 0) {
+			dataStructure = _dataStructureLocalService.getDataStructure(dataStructureId);
+			if( Validator.isNull(dataStructure) ) {
+				result.put( "error", SXUtil.translate(resourceRequest, "cannot-find-datastructure", dataStructureId) );
+				
+				SXPortletURLUtil.responeAjax(resourceResponse, result);
+				
+				return;
+			}
+			
 			result.put("dataStructure", dataStructure.toJSON());
+		} 
+		else {
+			result.put("error", "datastructure-is-not-specified-to-load");
 		}
 		
-		//System.out.println("Result: " + result.toString(4));
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
-		pw.flush();
-		pw.close();
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
 	
 	@Reference
@@ -92,9 +94,6 @@ public class LoadDataStructureResourceCommand extends BaseMVCResourceCommand{
 	
 	@Reference
 	private DataTypeLocalService _dataTypeLocalService;
-	
-	@Reference
-	private TypeStructureLinkLocalService _typeStructureLocalService;
 	
 	@Reference
 	private UserLocalService _userLocalService;

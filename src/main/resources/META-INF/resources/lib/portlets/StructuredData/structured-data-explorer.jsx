@@ -17,8 +17,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		//console.log("StructuredDataExplorer props: ", props);
-
+		console.log("[StructuredDataExplorer props] ", props);
 		this.checkbox =
 			this.params.checkbox ??
 			(this.permissions.includes(ActionKeys.UPDATE) || this.permissions.includes(ActionKeys.DELETE));
@@ -80,10 +79,8 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		this.actionMenus = [];
 
 		this.searchedResults = [];
-		this.tableRows = [];
-		this.selectedRows = [];
+		this.searchResults = [];
 
-		this.dialogHeader = <></>;
 		this.dialogBody = <></>;
 		this.state = {
 			dataCollectionId: this.params.dataCollectionId,
@@ -91,12 +88,11 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 			dataTypeId: this.params.dataTypeId,
 			displayStyle: props.displayStyle ?? this.displayStyles[0].value, //table
 			filterBy: props.filterBy ?? this.filterOptions[0], //groupId
-			viewMode: "table",
 			loadingStatus: LoadingStatus.PENDING,
 			confirmDeleteDialog: false,
-			noticeDialog: false,
-			errorMessage: "",
-			progressDialog: false,
+			infoDialog: false,
+			dialogHeader: <></>,
+			dialogBody: <></>,
 			start: props.start ?? 0,
 			delta: props.delta ?? 10,
 			keywords: props.keywords ?? "",
@@ -151,48 +147,50 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 				width: "8rem"
 			});
 		} else if (this.scope === "dataCollection") {
-			this.dataTableColumns.push({
-				id: "dataSetId",
-				name: Util.translate("dataset"),
-				width: "8rem"
-			});
-			this.dataTableColumns.push({
-				id: "dataTypeId",
-				name: Util.translate("datatype"),
-				width: "8rem"
-			});
+			this.dataTableColumns = this.dataTableColumns.concat([
+				{
+					id: "dataSetId",
+					name: Util.translate("dataset"),
+					width: "8rem"
+				},
+				{
+					id: "dataTypeId",
+					name: Util.translate("datatype"),
+					width: "8rem"
+				}
+			]);
 		}
 
-		this.dataTableColumns.push({
-			id: "content",
-			name: Util.translate("content"),
-			width: "auto"
-		});
-
-		this.dataTableColumns.push({
-			id: "status",
-			name: Util.translate("status"),
-			width: "4.5rem"
-		});
-
-		this.dataTableColumns.push({
-			id: "actions",
-			name: "actions",
-			width: "3.0rem"
-		});
-
-		this.scopeTableColumns = [];
+		this.dataTableColumns = this.dataTableColumns.concat([
+			{
+				id: "content",
+				name: Util.translate("content"),
+				width: "auto"
+			},
+			{
+				id: "status",
+				name: Util.translate("status"),
+				width: "4.5rem"
+			},
+			{
+				id: "actions",
+				name: "actions",
+				width: "3.0rem"
+			}
+		]);
 
 		if (this.permissions.includes(ActionKeys.UPDATE)) {
 			this.dataTableColumns.unshift({ id: "checkbox", name: "", width: "2.5rem" });
 		}
+
+		console.log("[StructuredDataExplorer dataTableColumns] ", this.dataTableColumns);
 	}
 
 	/***************************************************
 	 * Listeners for events from ManagementToolbar and SearchResultsContainer.
 	 ****************************************************/
 	listenerSelectAll = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, selectAll } = event.dataPacket;
 
 		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
 			//console.log("listenerSelectAll event rejected: ", dataPacket);
@@ -201,9 +199,12 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 
 		//console.log("listenerSelectAll: ", dataPacket);
 
-		this.selectedRows = dataPacket.selectAll ? [...this.tableRows] : [];
+		this.searchResults.forEach((result) => {
+			result.checked = selectAll;
+			return result;
+		});
 
-		this.setState({ searchContainerKey: Util.randomKey() });
+		this.forceUpdate();
 	};
 
 	listenerSearchKeywordsChanged = (event) => {
@@ -254,7 +255,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		}
 		//console.log("listenerPopActionClicked: ", event.dataPacket);
 
-		//console.log("selectedData: ", action, data, this.selectedRows);
+		//console.log("selectedData: ", action, data);
 
 		switch (action) {
 			case "update": {
@@ -273,13 +274,13 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 				break;
 			}
 			case "delete": {
-				this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate(
-					"selected-data-will-be-deleted-and-unrecoverable-are-you-sure-to-proceed"
-				);
-
-				this.selectedRows = [this.tableRows[data]];
-				this.setState({ confirmDeleteDialog: true });
+				this.setState({
+					confirmDeleteDialog: true,
+					dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+					dialogBody: Util.translate(
+						"selected-data-will-be-deleted-and-unrecoverable-are-you-sure-to-proceed"
+					)
+				});
 				break;
 			}
 			case "dataStatus": {
@@ -337,24 +338,23 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		}
 		//console.log("listenerAddButtonClicked: ", dataPacket);
 
-		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-		this.dialogBody = Util.translate("selected-data-will-be-deleted-and-unrecoverable-are-you-sure-to-proceed");
-
-		this.setState({ confirmDeleteDialog: true });
+		this.setState({
+			confirmDeleteDialog: true,
+			dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+			dialogBody: Util.translate("selected-data-will-be-deleted-and-unrecoverable-are-you-sure-to-proceed")
+		});
 	};
 
 	listenerSelectedResultsChanged = (event) => {
-		const { targetPortlet, targetFormId, selectedResults } = event.dataPacket;
+		const { targetPortlet, targetFormId } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
 			//console.log("[StructuredDataExplorer] listenerSelectedResultsChanged event rejected: ", event.dataPacket);
 			return;
 		}
 		//console.log("[StructuredDataExplorer] listenerSelectedResultsChanged: ", event.dataPacket);
-		this.selectedRows = selectedResults;
 
 		this.forceUpdate();
-		//this.setState({ searchContainerKey: Util.randomKey() });
 	};
 
 	listenerTableColumnSelected = (event) => {
@@ -400,6 +400,16 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 		}
 
 		//console.log("[StructuredDataExplorer] listenerResponse received: ", targetPortlet, requestId, params, data);
+		const { error } = data;
+		if (error) {
+			this.setState({
+				infoDialog: true,
+				dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				dialogBody: error
+			});
+
+			return;
+		}
 
 		switch (requestId) {
 			case RequestIDs.searchStructuredData: {
@@ -414,12 +424,13 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 				break;
 			}
 			case RequestIDs.deleteStructuredData: {
-				this.dialogHeader = SXModalUtil.successDlgHeader();
-				this.dialogBody = Util.translate("data-is-deleted-successfully");
+				this.setState({
+					infoDialog: true,
+					dialogHeader: SXModalUtil.successDlgHeader(),
+					dialogBody: Util.translate("data-is-deleted-successfully")
+				});
 
-				this.setState({ noticeDialog: true });
-
-				this.resetSearchResults();
+				this.removeSelectedResults();
 
 				break;
 			}
@@ -438,29 +449,21 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 
 		//console.log("[StructuredDataExplorer] listenerWorkbenchReady received: ", event.dataPacket);
 
-		if (this.state.dataCollectionId > 0) {
-			this.fireRequest({
-				requestId: RequestIDs.searchStructuredData,
-				params: {
-					dataCollectionId: this.state.dataCollectionId,
-					dataSetId: this.state.dataSetId,
-					dataTypeId: this.state.dataTypeId
-				}
-			});
-		} else {
-			this.fireRequest({
-				requestId: RequestIDs.searchDataCollections,
-				params: {
-					filterBy: this.state.filterBy,
-					groupId: this.groupId,
-					userId: this.userId,
-					status: "all",
-					start: this.state.start,
-					delta: this.state.delta,
-					keywords: this.state.keywords
-				}
-			});
-		}
+		this.fireRequest({
+			requestId: RequestIDs.searchStructuredData,
+			params: {
+				dataCollectionId: this.state.dataCollectionId,
+				dataSetId: this.state.dataSetId,
+				dataTypeId: this.state.dataTypeId,
+				filterBy: this.state.filterBy,
+				groupId: this.groupId,
+				userId: this.userId,
+				status: "all",
+				start: this.state.start,
+				delta: this.state.delta,
+				keywords: this.state.keywords
+			}
+		});
 
 		this.setState({ loadingStatus: LoadingStatus.COMPLETE });
 	};
@@ -511,111 +514,136 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 	}
 
 	convertSearchResultsToContent(results) {
-		const { dataCollection, dataSet, dataType, structuredDataList } = results;
+		const { structuredDataList } = results;
 
-		//console.log("[StructuredDataExplorer convertSearchResultsToContent] ", this.scope, results, structuredDataList);
+		console.log("[StructuredDataExplorer convertSearchResultsToContent] ", this.scope, structuredDataList);
 
-		this.tableRows = structuredDataList.map((result, index) => {
-			const { data, verified, freezed, modifiedDate } = result;
+		this.searchResults = structuredDataList.map((result, index) => {
+			const {
+				structuredDataId, //
+				dataCollection,
+				dataSet,
+				dataType,
+				data,
+				verified,
+				freezed,
+				modifiedDate
+			} = result;
 
-			let row = [
-				{
-					id: "structuredDataId",
-					value: result.structuredDataId
-				}
-			];
+			console.log("convertSearchResultsToContent: ", result);
+
+			let row = {
+				id: structuredDataId,
+				index: index,
+				checked: false,
+				columns: [
+					{
+						id: "structuredDataId",
+						value: structuredDataId
+					}
+				]
+			};
 
 			if (this.scope === "dataCollection") {
-				row.push({
-					id: "dataSet",
-					value: (
-						<Text
-							size={3}
-							truncate
-						>
-							{result.dataSetLabel}
-						</Text>
-					)
-				});
-				row.push({
-					id: "dataType",
-					value: (
-						<Text
-							size={3}
-							truncate
-						>
-							{result.dataTypeLabel}
-						</Text>
-					)
-				});
+				row.columns = row.columns.concat([
+					{
+						id: "dataSet",
+						value: (
+							<Text
+								size={3}
+								truncate
+							>
+								{dataSet.displayName}
+							</Text>
+						)
+					},
+					{
+						id: "dataType",
+						value: (
+							<Text
+								size={3}
+								truncate
+							>
+								{dataType.displayName}
+							</Text>
+						)
+					}
+				]);
 			} else if (this.scope === "dataSet") {
-				row.push({
+				row.columns.push({
 					id: "dataType",
 					value: (
 						<Text
 							size={3}
 							truncate
 						>
-							{result.dataTypeLabel}
+							{dataType.displayName}
 						</Text>
 					)
 				});
 			}
 
-			row.push({
-				id: "content",
-				value: (
-					<Text
-						size={3}
-						truncate
-					>
-						{JSON.stringify(data)}
-					</Text>
-				)
-			});
-			row.push({
-				id: "status",
-				value: (
-					<>
-						<span style={{ marginRight: "5px" }}>
-							<SXVerifyIcon verified={result.verified} />
-						</span>
-						<span style={{ marginRight: "5px" }}>
-							<SXFreezeIcon freezed={result.freezed} />
-						</span>
-					</>
-				)
-			});
-			row.push({
-				id: "actions",
-				value: this.contentActionMenus
-			});
+			row.columns = row.columns.concat([
+				{
+					id: "content",
+					value: (
+						<Text
+							size={3}
+							truncate
+						>
+							{JSON.stringify(data)}
+						</Text>
+					)
+				},
+				{
+					id: "status",
+					value: (
+						<>
+							<span style={{ marginRight: "5px" }}>
+								<SXVerifyIcon verified={verified} />
+							</span>
+							<span style={{ marginRight: "5px" }}>
+								<SXFreezeIcon freezed={freezed} />
+							</span>
+						</>
+					)
+				},
+				{
+					id: "actions",
+					value: this.contentActionMenus
+				}
+			]);
 
 			return row;
 		});
-
-		this.selectedRows = [];
 	}
 
 	removeSearchResults(structuredDataId) {
 		this.searchedResults = this.searchedResults.filter((result) => result.structuredDataId !== structuredDataId);
 	}
 
-	selectedRowsToDataIds = () => {
-		return this.selectedRows.map((result) => result[0].value);
+	selectedDataIds = () => {
+		return this.searchResults
+			.filter((result) => result.checked)
+			.map((result) => {
+				return result.id;
+			});
 	};
 
 	checkAllResultsSelected = () => {
-		return this.tableRows.length == this.selectedRows.length;
+		const selectedDataIds = this.selectedDataIds();
+
+		return selectedDataIds.length == this.searchResults.length;
 	};
 
-	resetSearchResults() {
-		this.tableRows = this.tableRows.filter((result) => !this.selectedRows.includes(result));
-		this.selectedRows = [];
+	removeSelectedResults() {
+		const selectedDataIds = this.selectedDataIds();
+
+		this.searchResults = this.searchResults.filter((result) => !selectedDataIds.includes(result.id));
 	}
 
 	handleDeleteSelectedData = () => {
-		const dataIds = this.selectedRowsToDataIds();
+		const dataIds = this.selectedDataIds();
 
 		Event.fire(Event.SX_REQUEST, this.namespace, this.workbenchNamespace, {
 			requestId: RequestIDs.deleteStructuredData,
@@ -672,14 +700,13 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 						checkAll={this.checkAllResultsSelected()}
 						index={true}
 						columns={this.dataTableColumns}
-						searchResults={this.tableRows}
-						selectedResults={this.selectedRows}
+						searchResults={this.searchResults}
 						spritemap={this.spritemap}
 					/>
 					{this.state.confirmDeleteDialog && (
 						<SXModalDialog
-							header={this.dialogHeader}
-							body={this.dialogBody}
+							header={this.state.dialogHeader}
+							body={this.state.dialogBody}
 							buttons={[
 								{
 									label: Util.translate("confirm"),
@@ -698,15 +725,15 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 							]}
 						/>
 					)}
-					{this.state.noticeDialog && (
+					{this.state.infoDialog && (
 						<SXModalDialog
-							header={this.dialogHeader}
-							body={this.dialogBody}
+							header={this.state.dialogHeader}
+							body={this.state.dialogBody}
 							buttons={[
 								{
 									label: Util.translate("ok"),
 									onClick: (e) => {
-										this.setState({ noticeDialog: false });
+										this.setState({ infoDialog: false });
 									}
 								}
 							]}

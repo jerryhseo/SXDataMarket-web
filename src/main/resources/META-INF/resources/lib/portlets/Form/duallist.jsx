@@ -11,6 +11,7 @@ class SXDualListBox extends SXBaseParameterComponent {
 	constructor(props) {
 		super(props);
 
+		//console.log("[SXDualListBox props] ", props, this.parameter.getValue());
 		this.viewType = this.parameter.viewType ?? ParameterConstants.DualListViewTypes.HORIZONTAL;
 
 		this.state = {
@@ -22,22 +23,24 @@ class SXDualListBox extends SXBaseParameterComponent {
 	}
 
 	listenerPopActionClicked = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, action, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
-			//console.log("[SXDualListBox] listenerPopActionClicked event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+			//console.log("[SXDualListBox] listenerPopActionClicked event rejected: ", event.dataPacket);
 			return;
 		}
-		//console.log("[SXDualListBox] listenerPopActionClicked: ", dataPacket);
+		//console.log("[SXDualListBox] listenerPopActionClicked: ", event.dataPacket, action, data);
 
-		switch (dataPacket.action) {
+		switch (action) {
 			case "moveUp": {
-				const index = dataPacket.data;
+				const index = data;
 
 				const options = [...this.state.leftOptions];
 				const prevOption = options[index - 1];
 				options[index - 1] = options[index];
 				options[index] = prevOption;
+
+				this.parameter.setValue({ value: options, cellIndex: this.cellIndex });
 
 				this.setState({
 					leftOptions: options
@@ -46,12 +49,14 @@ class SXDualListBox extends SXBaseParameterComponent {
 				break;
 			}
 			case "moveDown": {
-				const index = dataPacket.data;
+				const index = data;
 
 				const options = [...this.state.leftOptions];
 				const nextOption = options[index + 1];
 				options[index + 1] = options[index];
 				options[index] = nextOption;
+
+				this.parameter.setValue({ value: options, cellIndex: this.cellIndex });
 
 				this.setState({
 					leftOptions: options
@@ -60,6 +65,8 @@ class SXDualListBox extends SXBaseParameterComponent {
 				break;
 			}
 		}
+
+		this.parameter.fireValueChanged(this.cellIndex);
 	};
 
 	componentDidMount() {
@@ -134,6 +141,7 @@ class SXDualListBox extends SXBaseParameterComponent {
 			leftOptions: this.parameter.getLeftOptions()
 		});
 
+		this.parameter.dirty = true;
 		this.parameter.fireValueChanged(this.cellIndex);
 	};
 
@@ -148,7 +156,7 @@ class SXDualListBox extends SXBaseParameterComponent {
 	}
 
 	renderFormField() {
-		//console.log("SxDualListBox: ", this.parameter);
+		//console.log("SxDualListBox render: ", this.state.leftOptions, this.state.rightOptions);
 		return (
 			<>
 				{this.parameter.renderTitle({

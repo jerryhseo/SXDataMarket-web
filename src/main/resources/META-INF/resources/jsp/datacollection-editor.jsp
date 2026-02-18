@@ -13,6 +13,7 @@
 
 <%
 	long dataCollectionId = ParamUtil.getLong(renderRequest, WebKey.DATACOLLECTION_ID, 0);
+	boolean titleBar = ParamUtil.getBoolean(renderRequest, WebKey.TITLE_BAR, true);
 	JSONArray permissions = (JSONArray)renderRequest.getAttribute("permissions");
 
 	String workbenchNamespace = ParamUtil.getString(renderRequest, StationXWebKeys.WORKBENCH_NAMESPACE, StringPool.BLANK);
@@ -58,6 +59,7 @@
 				permissions: JSON.parse('<%= permissions.toJSONString() %>'),
 				workbenchNamespace: '<%= workbenchNamespace %>',
 				workbenchPortletId: '<%= workbenchId %>',
+				titleBar: <%= titleBar %>,
 				params:{
 					dataCollectionId: Number('<%= dataCollectionId %>')
 				}

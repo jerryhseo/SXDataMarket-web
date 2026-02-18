@@ -649,6 +649,10 @@ class Parameter {
 	}
 
 	set referenceFile(val) {
+		if (val && !val.name && !val.file) {
+			return;
+		}
+
 		this.#referenceFile = val;
 	}
 	set style(val) {
@@ -1401,7 +1405,8 @@ class Parameter {
 			paramCode: this.paramCode,
 			paramVersion: this.paramVersion,
 			fileName: this.referenceFile.name,
-			fileType: this.referenceFile.type
+			fileType: this.referenceFile.type,
+			file: this.referenceFile.file
 		});
 	}
 
@@ -1725,12 +1730,7 @@ class Parameter {
 			// It means the value is an Array of JSON Array
 			data = values.map((value) => {
 				return value.map((item) => ({
-					info: {
-						id: item.fileId,
-						name: item.name,
-						type: item.type,
-						lastModified: item.lastModified
-					},
+					info: item,
 					file: item.file
 				}));
 			});
@@ -2153,6 +2153,7 @@ export class SelectParameter extends Parameter {
 	#optionsPerRow = 0;
 	#listboxSize = 3;
 	#placeholder = "";
+	#multiple = true;
 
 	constructor({ namespace, formId, paramType = ParamType.SELECT, properties = {} }) {
 		super({
@@ -2174,6 +2175,9 @@ export class SelectParameter extends Parameter {
 	}
 	get listboxSize() {
 		return this.#listboxSize;
+	}
+	get multiple() {
+		return this.#multiple;
 	}
 	get placeholder() {
 		return this.#placeholder;
@@ -2199,6 +2203,9 @@ export class SelectParameter extends Parameter {
 	}
 	set listboxSize(val) {
 		this.#listboxSize = val;
+	}
+	set multiple(val) {
+		this.#multiple = val;
 	}
 	set placeholder(val) {
 		this.#placeholder = val;
@@ -2227,7 +2234,7 @@ export class SelectParameter extends Parameter {
 	isMultiple() {
 		return (
 			this.viewType == ParameterConstants.SelectViewTypes.CHECKBOX ||
-			this.viewType == ParameterConstants.SelectViewTypes.LISTBOX
+			(this.viewType == ParameterConstants.SelectViewTypes.LISTBOX && this.multiple)
 		);
 	}
 
@@ -2322,6 +2329,7 @@ export class SelectParameter extends Parameter {
 		this.viewType = json.viewType ?? ParameterConstants.SelectViewTypes.DROPDOWN;
 		this.optionsPerRow = json.optionsPerRow ?? 0;
 		this.listboxSize = json.listboxSize ?? this.#listboxSize;
+		this.multiple = json.multiple ?? true;
 		this.placeholder = json.placeholder;
 	}
 
@@ -2339,6 +2347,10 @@ export class SelectParameter extends Parameter {
 			json.listboxSize = this.listboxSize;
 		}
 
+		if (!this.multiple) {
+			json.multiple = false;
+		}
+
 		if (Util.isNotEmpty(this.placeholder)) {
 			json.placeholder = this.placeholder;
 		}
@@ -2353,6 +2365,7 @@ export class SelectParameter extends Parameter {
 		json.options = this.options.map((option) => ({ label: option.label[this.languageId], value: option.value }));
 		json.optionsPerRow = this.optionsPerRow;
 		json.listboxSize = this.listboxSize;
+		json.multiple = this.multiple;
 		json.placeholder = this.placeholder;
 
 		return json;
@@ -2720,16 +2733,8 @@ export class DualListParameter extends Parameter {
 	}
 
 	setValue({ value, cellIndex, validate = true }) {
-		const values = value.map((option) => option.value);
-		/*
-		console.log(
-			"DualListParameter.setValue: ",
-			values,
-			this.options.filter((option) => values.includes(option.value))
-		); */
-
 		super.setValue({
-			value: this.options.filter((option) => values.includes(option.value)),
+			value: value,
 			cellIndex: cellIndex,
 			validate: validate
 		});
@@ -2746,7 +2751,7 @@ export class DualListParameter extends Parameter {
 	}
 
 	getRightOptions(cellIndex) {
-		const rightOptions = this.options
+		const rightOptions = Util.isNotEmpty(this.options)
 			? this.options.filter((option) => this.notIncludedInValues(option.value, cellIndex))
 			: [];
 
@@ -2772,8 +2777,7 @@ export class DualListParameter extends Parameter {
 	includedInValues(value, cellIndex) {
 		const values = this.getValue(cellIndex);
 
-		const result = values.filter((val) => val.value == value);
-		return result.length > 0;
+		return values.includes(value);
 	}
 
 	notIncludedInValues(value, cellIndex) {
@@ -3138,7 +3142,6 @@ export class FileParameter extends Parameter {
 
 	toDataObject(fileItem) {
 		return {
-			id: fileItem.fileId,
 			name: fileItem.name,
 			type: fileItem.type
 		};

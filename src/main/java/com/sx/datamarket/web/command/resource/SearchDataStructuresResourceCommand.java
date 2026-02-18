@@ -15,8 +15,8 @@ import com.sx.constant.StationXWebKeys;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataStructure;
 import com.sx.icecap.service.DataStructureLocalService;
+import com.sx.util.portlet.SXPortletURLUtil;
 
-import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.List;
 
@@ -55,24 +55,22 @@ public class SearchDataStructuresResourceCommand extends BaseMVCResourceCommand{
 		String groupBy = ParamUtil.getString(resourceRequest, "groupBy", "groupId");
 		String keywords = ParamUtil.getString(resourceRequest, StationXWebKeys.KEYWORDS, "");
 		
-		List<DataStructure> dataStructureList = _dataStructureLocalService.getDataStructureListByGroupId(groupId);
+		List<DataStructure> dataStructureList = _dataStructureLocalService.getAllDataStructureList();
 		
 		//JSONArray result = JSONFactoryUtil.createJSONArray(dataStructureList);
-		JSONArray result = JSONFactoryUtil.createJSONArray();
+		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
+		JSONArray jsonDataStructureList = JSONFactoryUtil.createJSONArray();
 		Iterator<DataStructure> iter = dataStructureList.iterator();
 		while(iter.hasNext()) {
-			
 			DataStructure dataStructure = iter.next();
-			JSONObject dataStructureInfo = dataStructure.toJSON();
 			
-			result.put(dataStructureInfo);
+			jsonDataStructureList.put(dataStructure.toJSON(themeDisplay.getLocale()));
 		}
+		
+		result.put("dataStructureList", jsonDataStructureList);
 
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
-		pw.flush();
-		pw.close();
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
 	
 	@Reference

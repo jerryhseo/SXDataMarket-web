@@ -479,11 +479,6 @@ export class Workbench {
 				resourceId = ResourceIds.LOAD_DATASTRUCTURE;
 				break;
 			}
-			case RequestIDs.saveLinkInfoAndRedirectToBuilder:
-			case RequestIDs.saveTypeStructureLink: {
-				resourceId = ResourceIds.SAVE_TYPE_STRUCTURE_LINK;
-				break;
-			}
 			case RequestIDs.searchDataTypes: {
 				resourceId = ResourceIds.SEARCH_DATATYPES;
 				break;
@@ -581,6 +576,10 @@ export class Workbench {
 			}
 			case RequestIDs.loadAssociatedDataTypes: {
 				resourceId = ResourceIds.LOAD_ASSOCIATED_DATATYPES;
+				break;
+			}
+			case RequestIDs.saveDataType: {
+				resourceId = ResourceIds.SAVE_DATATYPE;
 				break;
 			}
 		}

@@ -153,124 +153,6 @@ export class DataType {
 	}
 }
 
-export class DataTypeStructureLink {
-	static ViewTypes = {
-		VIEW: "view",
-		EDIT: "edit",
-		NONE: "none"
-	};
-	languageId = SXSystem.getLanguageId();
-	defaultLanguageId = SXSystem.getDefaultLanguageId();
-	availableLanguageIds = SXSystem.getAvailableLanguages();
-
-	dataTypeId = 0;
-	dataStructureId = 0;
-
-	commentable = false;
-	freezable = false;
-	verifiable = false;
-	freezed = false;
-	freezedUserId = 0;
-	freezedDate = null;
-	verified = false;
-	verifiedUserId = 0;
-	verifiedDate = null;
-	inputStatus = false;
-	jumpTo = false;
-
-	dirty = false;
-	fromDB = false;
-
-	constructor(json) {
-		if (json) {
-			this.parse(json);
-		}
-	}
-
-	copy() {
-		return new DataTypeStructureLink(this.toJSON());
-	}
-
-	parse(json) {
-		for (const prop in json) {
-			switch (prop) {
-				case "dataTypeId": {
-					this.dataTypeId = json.dataTypeId;
-					break;
-				}
-				case "dataStructureId": {
-					this.dataStructureId = json.dataStructureId;
-					break;
-				}
-				case "commentable": {
-					this.commentable = json.commentable;
-					break;
-				}
-				case "verifiable": {
-					this.verifiable = json.verifiable;
-					break;
-				}
-				case "freezable": {
-					this.freezable = json.freezable;
-					break;
-				}
-				case "verified": {
-					this.verified = json.verified;
-					break;
-				}
-				case "verifiedUserId": {
-					this.verifiedUserId = json.verifiedUserId;
-					break;
-				}
-				case "verifiedDate": {
-					this.verifiedDate = new Date(json.verifiedDate);
-					break;
-				}
-				case "freezed": {
-					this.freezed = json.freezed;
-					break;
-				}
-				case "freezedUserId": {
-					this.freezedUserId = json.freezedUserId;
-					break;
-				}
-				case "freezedDate": {
-					this.freezedDate = new Date(json.freezedDate);
-					break;
-				}
-				case "inputStatus": {
-					this.inputStatus = json.inputStatus;
-					break;
-				}
-				case "jumpTo": {
-					this.jumpTo = json.jumpTo;
-					break;
-				}
-			}
-		}
-	}
-
-	toJSON() {
-		let json = {};
-
-		if (this.dataTypeId > 0) json.dataTypeId = this.dataTypeId;
-		if (this.dataStructureId > 0) json.dataStructureId = this.dataStructureId;
-		if (this.commentable) json.commentable = this.commentable;
-		if (this.verifiable) json.verifiable = this.verifiable;
-		if (this.freezable) json.freezable = this.freezable;
-		if (this.verified) json.verified = this.verified;
-		if (this.verifiedUserId > 0) json.verifiedUserId = this.verifiedUserId;
-		if (this.verifiedDate) json.verifiedDate = this.verifiedDate.getTime();
-		if (this.freezed) json.freezed = this.freezed;
-		if (this.freezedUserId > 0) json.freezedUserId = this.freezedUserId;
-		if (this.freezedDate) json.freezedDate = this.freezedDate.getTime();
-		if (this.inputStatus) json.inputStatus = this.inputStatus;
-		if (this.jumpTo) json.jumpTo = this.jumpTo;
-
-		return json;
-	}
-}
-
 export const SXInstanceInfo = ({
 	title,
 	id,
@@ -533,7 +415,7 @@ export class SXDataTypeStructureLink extends React.Component {
 
 		return (
 			<div style={{ marginTop: "2rem" }}>
-				{this.dataTypeViewMode !== DataTypeStructureLink.ViewTypes.NONE && (
+				{this.dataTypeViewMode !== "none" && (
 					<>
 						<div className="form-group sx-fieldset">
 							<div className="sx-legend">{Util.translate("linked-datatype-info")}</div>
@@ -575,7 +457,7 @@ export class SXDataTypeStructureLink extends React.Component {
 					</>
 				)}
 
-				{this.typeStructureLinkViewMode == DataTypeStructureLink.ViewTypes.VIEW && (
+				{this.typeStructureLinkViewMode == "view" && (
 					<div className="form-group sx-fieldset">
 						<div className="sx-legend">{Util.translate("type-structure-link-info")}</div>
 						<div className="autofit-float autofit-padded-no-gutters-x autofit-row">
@@ -624,7 +506,7 @@ export class SXDataTypeStructureLink extends React.Component {
 						</div>
 					</div>
 				)}
-				{this.typeStructureLinkViewMode == DataTypeStructureLink.ViewTypes.EDIT && (
+				{this.typeStructureLinkViewMode == "edit" && (
 					<div
 						className="autofit-float autofit-padded-no-gutters-x autofit-row"
 						style={{ alignItems: "start" }}
@@ -765,7 +647,7 @@ export class SXDataTypeStructureLink extends React.Component {
 					</div>
 				)}
 
-				{this.dataStructureViewMode == DataTypeStructureLink.ViewTypes.VIEW && (
+				{this.dataStructureViewMode == "view" && (
 					<div className="form-group sx-fieldset">
 						<div className="sx-legend">{Util.translate("datastructure-info")}</div>
 						<div className="autofit-float autofit-padded-no-gutters-x autofit-row">

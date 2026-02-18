@@ -1,14 +1,6 @@
 import React from "react";
 import SXBaseVisualizer from "../../stationx/visualizer";
-import {
-	EditStatus,
-	ErrorClass,
-	Event,
-	LoadingStatus,
-	ParamType,
-	RequestIDs,
-	ValidationRule
-} from "../../stationx/station-x";
+import { ErrorClass, Event, LoadingStatus, ParamType, RequestIDs, ValidationRule } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
 import Button from "@clayui/button";
 import Icon from "@clayui/icon";
@@ -16,6 +8,7 @@ import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { SXLabeledText } from "../Form/form";
 import ParameterConstants from "../Parameter/parameter-constants";
 import { ParameterUtil } from "../Parameter/parameters";
+import { Text } from "@clayui/core";
 
 class DataSetEditor extends SXBaseVisualizer {
 	constructor(props) {
@@ -169,14 +162,13 @@ class DataSetEditor extends SXBaseVisualizer {
 		});
 
 		this.state = {
+			dialogHeader: <></>,
+			dialogBody: <></>,
 			infoDialog: false,
-			confirmDeleteDialog: false,
+			warningDeleteDialog: false,
 			waringAndSaveDialog: false,
 			loadingStatus: LoadingStatus.PENDING
 		};
-
-		this.dialogHeader = <></>;
-		this.dialogBody = <></>;
 
 		this.componentId = this.namespace;
 	}
@@ -203,6 +195,8 @@ class DataSetEditor extends SXBaseVisualizer {
 				dataTypes: this.getAssociatedDataTypeInfos(this.dataTypes.getValue())
 			}
 		});
+
+		this.forceUpdate();
 	};
 
 	listenerWorkbenchReady = (event) => {
@@ -228,11 +222,11 @@ class DataSetEditor extends SXBaseVisualizer {
 		const { targetPortlet, requestId, params, data } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			//console.log("[dataSetEditor] listenerResponse rejected: ", event.dataPacket);
+			//console.log("[dataSetEditor] listenerResponse rejected: ", targetPortlet);
 			return;
 		}
 
-		//console.log("[dataSetEditor] listenerResponse received: ", event.dataPacket);
+		//console.log("[dataSetEditor] listenerResponse received: ", requestId, params, data);
 
 		switch (requestId) {
 			case RequestIDs.loadDataSet: {
@@ -245,12 +239,13 @@ class DataSetEditor extends SXBaseVisualizer {
 				} = data;
 
 				if (Util.isNotEmpty(error)) {
-					this.dialogHeader = SXModalUtil.errorDlgHeader(this.spritemap);
-					this.dialogBody = Util.translate("loading-dataset-is-failed");
+					this.setState({
+						infoDialog: true,
+						dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+						dialogBody: Util.translate("loading-dataset-is-failed", JSON.stringify(params, null, 4))
+					});
 
-					this.setState({ infoDialog: true });
-
-					break;
+					return;
 				}
 
 				this.dataSetCode.setValue({ value: Util.isEmpty(dataSet) ? "" : dataSet.dataSetCode });
@@ -263,8 +258,8 @@ class DataSetEditor extends SXBaseVisualizer {
 					this.dataTypes.options = this.availableDataTypeList.map((dataType) => {
 						const { dataTypeVersion, dataTypeId, displayName } = dataType;
 
-						let label = {};
-						label[this.languageId] = displayName + " v." + dataTypeVersion;
+						let label = Util.getTranslationObject(this.languageId, displayName + " v." + dataTypeVersion);
+						//label[this.languageId] = displayName + " v." + dataTypeVersion;
 
 						return {
 							value: dataTypeId,
@@ -282,13 +277,13 @@ class DataSetEditor extends SXBaseVisualizer {
 						const { dataTypeVersion, dataTypeId, displayName } = dataType;
 
 						return {
-							key: dataTypeId,
-							label: displayName + " v." + dataTypeVersion,
+							label: Util.getTranslationObject(this.languageId, displayName + " v." + dataTypeVersion),
 							value: dataTypeId
 						};
 					});
 					this.dataTypes.setValue({
-						value: dataTypeIds
+						value: dataTypeIds,
+						validate: false
 					});
 				}
 
@@ -300,25 +295,9 @@ class DataSetEditor extends SXBaseVisualizer {
 				//console.log("DataSetEditor.listenerResponse.saveDataSet: ", dataPacket.data);
 				const { dataSet, error } = data;
 
-				/*
-				if (Util.isNotEmpty(error)) {
-					this.dialogHeader = SXModalUtil.errorDlgHeader(this.spritemap);
-					this.dialogBody = Util.translate("saving-dataset-is-failed");
-
-					this.setState({ infoDialog: true });
-
-					break;
-				}
-
-				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("dataset-saved-as", dataSet.dataSetId);
-
-				this.setState({
-					infoDialog: true
-				});
-				*/
-
 				this.dataSetId = dataSet.dataSetId;
+
+				this.cleanDirty();
 
 				Event.fire(Event.SX_DATASET_CHANGED, this.namespace, this.workbenchNamespace, {
 					dataSet: {
@@ -391,6 +370,24 @@ class DataSetEditor extends SXBaseVisualizer {
 		this.dataTypes.initValue();
 	};
 
+	isDirty() {
+		return (
+			this.dataSetCode.dirty ||
+			this.dataSetVersion.dirty ||
+			this.displayName.dirty ||
+			this.description.dirty ||
+			this.dataTypes.dirty
+		);
+	}
+
+	cleanDirty() {
+		this.dataSetCode.dirty = false;
+		this.dataSetVersion.dirty = false;
+		this.displayName.dirty = false;
+		this.description.dirty = false;
+		this.dataTypes.dirty = false;
+	}
+
 	checkFieldError = () => {
 		let error = this.dataSetCode.validate();
 		let warning = null;
@@ -441,17 +438,19 @@ class DataSetEditor extends SXBaseVisualizer {
 		//console.log("handleSaveClick: ", error);
 		if (Util.isNotEmpty(error)) {
 			if (error.errorClass === ErrorClass.ERROR) {
-				this.dialogHeader = SXModalUtil.errorDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("fix-the-error-first", error.message);
-
-				this.setState({ infoDialog: true });
+				this.setState({
+					infoDialog: true,
+					dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+					dialogBody: Util.translate("fix-the-error-first", error.message)
+				});
 
 				return;
 			} else {
-				this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("data-has-warning-do-you-proceed-anyway", error.message);
-
-				this.setState({ waringAndSaveDialog: true });
+				this.setState({
+					waringAndSaveDialog: true,
+					dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+					dialogBody: Util.translate("data-has-warning-do-you-proceed-anyway", error.message)
+				});
 
 				return;
 			}
@@ -504,6 +503,7 @@ class DataSetEditor extends SXBaseVisualizer {
 	};
 
 	render() {
+		console.log("[DataSetEditor render] ", this.isDirty());
 		if (this.state.loadingStatus == LoadingStatus.PENDING) {
 			return <h3>Loading....</h3>;
 		} else if (this.state.loadingStatus == LoadingStatus.FAIL) {
@@ -512,6 +512,16 @@ class DataSetEditor extends SXBaseVisualizer {
 
 		return (
 			<>
+				{this.titleBar && (
+					<div style={{ borderBottom: "3px solid #e7e7ed", marginTop: "0.5rem", marginBottom: "1.5rem" }}>
+						<Text
+							size={6}
+							weight="bold"
+						>
+							{this.dataSetId > 0 ? Util.translate("edit-dataset") : Util.translate("add-dataset")}
+						</Text>
+					</div>
+				)}
 				{this.dataSetId > 0 && (
 					<SXLabeledText
 						label={Util.translate("dataset-id")}
@@ -524,13 +534,14 @@ class DataSetEditor extends SXBaseVisualizer {
 				<div style={{ marginTop: "2rem" }}>
 					{this.basicProps.render({ spritemap: this.spritemap })}
 					{this.description.renderField({ spritemap: this.spritemap })}
-					{this.dataTypes.renderField({ spritemap: this.spritemap })}
+					{!this.hasStructure && this.dataTypes.renderField({ spritemap: this.spritemap })}
 					<div
 						style={{ width: "100%", marginTop: "1.5rem", display: "inline-flex", justifyContent: "center" }}
 					>
 						<Button.Group spaced>
 							<Button
 								title={Util.translate("save")}
+								disabled={!this.isDirty() || this.checkFieldError()}
 								onClick={this.handleSaveClick}
 							>
 								<span className="inline-item inline-item-before">
@@ -541,25 +552,27 @@ class DataSetEditor extends SXBaseVisualizer {
 								</span>
 								{Util.translate("save")}
 							</Button>
-							<Button
-								title={Util.translate("delete")}
-								onClick={this.handleDeleteClick}
-								displayType="warning"
-							>
-								<span className="inline-item inline-item-before">
-									<Icon
-										symbol="trash"
-										spritemap={this.spritemap}
-									/>
-								</span>
-								{Util.translate("delete")}
-							</Button>
+							{this.dataSetId > 0 && (
+								<Button
+									title={Util.translate("delete")}
+									onClick={this.handleDeleteClick}
+									displayType="warning"
+								>
+									<span className="inline-item inline-item-before">
+										<Icon
+											symbol="trash"
+											spritemap={this.spritemap}
+										/>
+									</span>
+									{Util.translate("delete")}
+								</Button>
+							)}
 						</Button.Group>
 					</div>
 					{this.state.infoDialog && (
 						<SXModalDialog
-							header={this.dialogHeader}
-							body={this.dialogBody}
+							header={this.state.dialogHeader}
+							body={this.state.dialogBody}
 							buttons={[
 								{
 									label: Util.translate("ok"),
@@ -570,23 +583,23 @@ class DataSetEditor extends SXBaseVisualizer {
 							]}
 						/>
 					)}
-					{this.state.confirmDeleteDialog && (
+					{this.state.warningDeleteDialog && (
 						<SXModalDialog
-							header={this.dialogHeader}
-							body={this.dialogBody}
+							header={this.state.dialogHeader}
+							body={this.state.dialogBody}
 							buttons={[
 								{
 									label: Util.translate("confirm"),
 									onClick: (e) => {
 										this.deleteDataSet();
-										this.setState({ confirmDeleteDialog: false });
+										this.setState({ warningDeleteDialog: false });
 									},
 									displayType: "secondary"
 								},
 								{
 									label: Util.translate("cancel"),
 									onClick: (e) => {
-										this.setState({ confirmDeleteDialog: false });
+										this.setState({ warningDeleteDialog: false });
 									}
 								}
 							]}
@@ -594,8 +607,8 @@ class DataSetEditor extends SXBaseVisualizer {
 					)}
 					{this.state.waringAndSaveDialog && (
 						<SXModalDialog
-							header={this.dialogHeader}
-							body={this.dialogBody}
+							header={this.state.dialogHeader}
+							body={this.state.dialogBody}
 							buttons={[
 								{
 									label: Util.translate("confirm"),

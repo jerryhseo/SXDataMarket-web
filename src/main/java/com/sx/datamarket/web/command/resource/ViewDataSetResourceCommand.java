@@ -19,8 +19,8 @@ import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.SetTypeLinkLocalService;
 import com.sx.icecap.service.StructuredDataLocalService;
+import com.sx.util.portlet.SXPortletURLUtil;
 
-import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.List;
 
@@ -75,7 +75,7 @@ public class ViewDataSetResourceCommand extends BaseMVCResourceCommand{
 			}
 			
 			if(dataTypeArray.length() > 0) {
-				result.put("dataTypes", dataTypeArray);
+				result.put("dataTypeList", dataTypeArray);
 			}
 			
 			// Construct Comments 
@@ -87,11 +87,7 @@ public class ViewDataSetResourceCommand extends BaseMVCResourceCommand{
 			System.out.println("ViewDataSet result: " + result.toString(4));
 		}
 
-		
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
-		pw.flush();
-		pw.close();
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
 	
 	@Reference

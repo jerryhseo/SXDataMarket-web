@@ -1,6 +1,5 @@
 package com.sx.datamarket.web.command.resource;
 
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -11,27 +10,19 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.sx.icecap.constant.MVCCommand;
-import com.sx.icecap.constant.WebKey;
 import com.sx.icecap.constant.WebPortletKey;
-import com.sx.icecap.exception.NoSuchDataStructureException;
-import com.sx.icecap.exception.NoSuchTypeStructureLinkException;
 import com.sx.icecap.model.DataStructure;
 import com.sx.icecap.model.DataType;
-import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.model.TypeVisualizerLink;
 import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
-import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.icecap.service.TypeVisualizerLinkLocalService;
-import com.sx.spyglass.model.ScienceApp;
 import com.sx.spyglass.service.ScienceAppLocalService;
-import com.sx.util.SXLocalizationUtil;
+import com.sx.util.portlet.SXPortletURLUtil;
 
-import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.portlet.PortletException;
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
 
@@ -52,37 +43,26 @@ public class LoadDataTypeResourceCommand extends BaseMVCResourceCommand{
 	@Override
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
-		//System.out.println("LoadDataTypeResourceCommand: " + resourceResponse.getContentType());
-		resourceResponse.setContentType("text/html;charset=UTF-8");
-		
-		JSONObject result = JSONFactoryUtil.createJSONObject();
+		System.out.println("LoadDataTypeResourceCommand: " );
 		
 		long dataTypeId = ParamUtil.getLong(resourceRequest, "dataTypeId", 0);
-		boolean loadStructure = ParamUtil.getBoolean(resourceRequest, "loadStructure", false);
 		boolean loadVisualizers = ParamUtil.getBoolean(resourceRequest, "loadVisualizers", false);
 		boolean loadAvailableVisualizers = ParamUtil.getBoolean(resourceRequest, "loadAvailableVisualizers", false);
-		boolean loadDataTypeAutoCompleteItems = ParamUtil.getBoolean(resourceRequest, "loadDataTypeAutoCompleteItems", false);
-		boolean loadDataStructureAutoCompleteItems = ParamUtil.getBoolean(resourceRequest, "loadDataStructureAutoCompleteItems", false);
+		boolean loadAvailableStructures = ParamUtil.getBoolean(resourceRequest, "loadAvailableStructures", false);
 		
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
 		
+		JSONObject result = JSONFactoryUtil.createJSONObject();
+		
+		boolean hasDataStructure = false;
+		
 		if( dataTypeId > 0 ) {
 			DataType dataType = _dataTypeLocalService.getDataType(dataTypeId);
-			result.put("dataType", dataType.toJSON());
+			JSONObject jsonDataType = dataType.toJSON();
+			hasDataStructure = _dataTypeLocalService.hasDataStructure(dataTypeId);
+			jsonDataType.put("hasStructure", hasDataStructure);
 			
-			if( loadStructure == true) {
-				try {
-					TypeStructureLink structureLink = _typeStructureLinkLocalService.getTypeStructureLink(dataTypeId);
-					result.put("structureLink", structureLink.toJSON());
-					
-					DataStructure dataStructure = _dataStructureLocalService.getDataStructure(structureLink.getDataStructureId());
-					result.put("dataStructure", dataStructure.toJSON());
-				} catch( NoSuchTypeStructureLinkException e) {
-					System.out.println(e.getMessage());
-				} catch( NoSuchDataStructureException e) {
-					System.out.println(e.getMessage());
-				}
-			}
+			result.put("dataType", jsonDataType);
 			
 			if( loadVisualizers == true ) {
 				List<TypeVisualizerLink> visualizerLinkList = _typeVisualizerLinkLocalService.getTypeVisualizerLinkList(dataTypeId);
@@ -101,7 +81,6 @@ public class LoadDataTypeResourceCommand extends BaseMVCResourceCommand{
 					result.put("visualizers", visualizers);
 				}
 			}
-			
 		}
 		
 		if(loadAvailableVisualizers == true) {
@@ -125,48 +104,27 @@ public class LoadDataTypeResourceCommand extends BaseMVCResourceCommand{
 			result.put("availableVisualizers", availables);
 		}
 		
-		if( loadDataTypeAutoCompleteItems == true ) {
-			JSONArray dataTypeAutoCompleteItems = JSONFactoryUtil.createJSONArray();
-			
-			List<DataType> dataTypeList = _dataTypeLocalService.getAllDataTypes();
-			Iterator<DataType> iterator = dataTypeList.iterator();
-			while(iterator.hasNext()) {
-				DataType dataType = iterator.next();
-				
-				JSONObject item = JSONFactoryUtil.createJSONObject();
-				item.put("dataTypeId", dataType.getDataTypeId());
-				item.put("dataTypeCode", dataType.getDataTypeCode()+ " v."+dataType.getDataTypeVersion());
-				item.put("displayName", dataType.getDisplayName(themeDisplay.getLocale()) + " v."+dataType.getDataTypeVersion());
-				
-				dataTypeAutoCompleteItems.put(item);
-			}
-			
-			result.put("dataTypeAutoCompleteItems", dataTypeAutoCompleteItems);
-		}
-		
-		if( loadDataStructureAutoCompleteItems == true ) {
-			JSONArray dataStructureAutoCompleteItems = JSONFactoryUtil.createJSONArray();
+		if( loadAvailableStructures == true ) {
+			JSONArray availableStructures = JSONFactoryUtil.createJSONArray();
 			
 			List<DataStructure> dataStructureList = _dataStructureLocalService.getAllDataStructureList();
+			
 			Iterator<DataStructure> iterator = dataStructureList.iterator();
 			while(iterator.hasNext()) {
 				DataStructure dataStructure = iterator.next();
 				
 				JSONObject item = JSONFactoryUtil.createJSONObject();
-				item.put("dataStructureId", dataStructure.getDataStructureId());
-				item.put("dataStructureCode", dataStructure.getDataStructureCode()+ " v."+dataStructure.getDataStructureVersion());
-				item.put("displayName", dataStructure.getDisplayName(themeDisplay.getLocale()) + " v."+dataStructure.getDataStructureVersion());
+				item.put("id", dataStructure.getDataStructureId());
+				item.put("label", 
+						dataStructure.getDisplayName(themeDisplay.getLocale()) + " v."+dataStructure.getDataStructureVersion());
 				
-				dataStructureAutoCompleteItems.put(item);
+				availableStructures.put(item);
 			}
 			
-			result.put("dataStructureAutoCompleteItems", dataStructureAutoCompleteItems);
+			result.put("availableDataStructures", availableStructures);
 		}
 		
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
-		pw.flush();
-		pw.close();
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
 	
 	@Reference
@@ -180,7 +138,4 @@ public class LoadDataTypeResourceCommand extends BaseMVCResourceCommand{
 	
 	@Reference
 	private ScienceAppLocalService _scienceAppLocalService;
-	
-	@Reference
-	private TypeStructureLinkLocalService _typeStructureLinkLocalService;
 }

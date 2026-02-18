@@ -14,6 +14,7 @@ import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataType;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.util.SXLocalizationUtil;
+import com.sx.util.portlet.SXPortletURLUtil;
 
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -45,7 +46,6 @@ public class AddDataTypeResourceCommand extends BaseMVCResourceCommand {
 		String extension = ParamUtil.getString(resourceRequest, DataTypeProperties.EXTENSION);
 		String displayName = ParamUtil.getString(resourceRequest, DataTypeProperties.DISPLAY_NAME, "{}");
 		String description = ParamUtil.getString(resourceRequest, DataTypeProperties.DESCRIPTION, "{}");
-		String tooltip = ParamUtil.getString(resourceRequest, DataTypeProperties.TOOLTIP, "{}");
 
 		String strStructureLink = ParamUtil.getString(resourceRequest, "typeStructureLink", "");
 		JSONObject jsonStructureLink = null;
@@ -66,16 +66,16 @@ public class AddDataTypeResourceCommand extends BaseMVCResourceCommand {
 			
 		ServiceContext dataTypeSC = ServiceContextFactory.getInstance(DataType.class.getName(), resourceRequest);
 
-		JSONObject result = _dataTypeLocalService.addDataType(
+		JSONObject result = JSONFactoryUtil.createJSONObject();
+		
+		/*
+		_dataTypeLocalService.addDataType(
 				code, 
 				version, 
 				extension,
 				SXLocalizationUtil.jsonToLocalizedMap(displayName), 
 				SXLocalizationUtil.jsonToLocalizedMap(description),
-				SXLocalizationUtil.jsonToLocalizedMap(tooltip), 
 				WorkflowConstants.STATUS_APPROVED,
-				jsonStructureLink,
-				longAryVisualizers,
 				dataTypeSC);
 		
 		System.out.println("dataTypeAdded: "+ result.toString(4));
@@ -83,7 +83,9 @@ public class AddDataTypeResourceCommand extends BaseMVCResourceCommand {
 		PrintWriter pw = resourceResponse.getWriter();
 		pw.write(result.toString());
 		pw.flush(); 
-		pw.close();
+		pw.close(); */
+		
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
 
 	@Reference

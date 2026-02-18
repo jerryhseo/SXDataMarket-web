@@ -4,7 +4,7 @@ import { Util } from "../../stationx/util";
 import { SXErrorModal, SXLoadingModal, SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { UnderConstruction } from "../../stationx/common";
 import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
-import { SXFreezeIcon, SXLinkIcon, SXVerifyIcon } from "../../stationx/icon";
+import { SXCommentIcon, SXFreezeIcon, SXLinkIcon, SXVerifyIcon } from "../../stationx/icon";
 import SXBaseVisualizer from "../../stationx/visualizer";
 
 class DataTypeExplorer extends SXBaseVisualizer {
@@ -68,13 +68,13 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		this.actionMenus = [];
 
 		this.searchResults = [];
-		this.selectedResults = [];
 
 		this.state = {
 			displayStyle: this.params.displayStyle ?? this.displayStyles[0].value, //table
 			filterBy: this.params.filterBy ?? this.filterOptions[0], //groupId
 			loadingStatus: LoadingStatus.PENDING,
 			confirmDeleteDialog: false,
+			dataTypeIdToBeDeleted: 0,
 			infoDialog: false,
 			dlgHeader: <></>,
 			dlgBody: <></>,
@@ -137,6 +137,11 @@ class DataTypeExplorer extends SXBaseVisualizer {
 			{
 				id: "datastructure",
 				name: Util.translate("datastructure"),
+				width: "3rem"
+			},
+			{
+				id: "staus",
+				name: Util.translate("status"),
 				width: "6rem"
 			},
 			{
@@ -154,46 +159,49 @@ class DataTypeExplorer extends SXBaseVisualizer {
 	 * Listeners for events from ManagementToolbar and SearchResultsContainer.
 	 ****************************************************/
 	listenerSelectAll = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, selectAll } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataTypeExplorer] listenerSelectAll event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataTypeExplorer] listenerSelectAll event rejected: ", event.dataPacket);
 			return;
 		}
 
-		//console.log("[DataTypeExplorer] listenerSelectAll: ", dataPacket);
+		//console.log("[DataTypeExplorer] listenerSelectAll: ", event.dataPacket);
 
-		this.selectedResults = dataPacket.selectAll ? [...this.searchResults] : [];
+		this.searchResults.forEach((result) => {
+			result.checked = selectAll;
+			return result;
+		});
 
-		this.setState({ searchContainerKey: Util.randomKey() });
+		this.forceUpdate();
 	};
 
 	listenerSearchKeywordsChanged = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, keywords } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataTypeExplorer] listenerSearchKeywordsChanged event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataTypeExplorer] listenerSearchKeywordsChanged event rejected: ", event.dataPacket);
 			return;
 		}
-		//console.log("[DataTypeExplorer] listenerSearchKeywordsChanged: ", dataPacket);
+		//console.log("[DataTypeExplorer] listenerSearchKeywordsChanged: ", event.dataPacket);
 
-		this.setState({ keywords: dataPacket.keywords, underConstruction: true });
+		this.setState({ keywords: keywords, underConstruction: true });
 
 		// perform search here with ajax
 	};
 
 	listenerFilterMenuClicked = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, menuItem } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataTypeExplorer] listenerFilterMenuClicked event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataTypeExplorer] listenerFilterMenuClicked event rejected: ", event.dataPacket);
 			return;
 		}
-		//console.log("[DataTypeExplorer] listenerFilterMenuClicked: ", dataPacket);
+		//console.log("[DataTypeExplorer] listenerFilterMenuClicked: ", event.dataPacket);
 
-		const isFilterMenu = this.filterOptions.map((option) => option.value).includes(dataPacket.menuItem.value);
+		const isFilterMenu = this.filterOptions.map((option) => option.value).includes(menuItem.value);
 
-		this.setState({ filterBy: dataPacket.menuItem.value, underConstruction: true });
+		this.setState({ filterBy: menuItem.value, underConstruction: true });
 	};
 
 	listenerAdvancedSearchButtonClicked = (event) => {
@@ -208,17 +216,17 @@ class DataTypeExplorer extends SXBaseVisualizer {
 	};
 
 	listenerPopActionClicked = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, action, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataTypeExplorer] listenerPopActionClicked event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataTypeExplorer] listenerPopActionClicked event rejected: ", targetPortlet, targetFormId);
 			return;
 		}
-		//console.log("[DataTypeExplorer] listenerPopActionClicked: ", dataPacket);
+		console.log("[DataTypeExplorer] listenerPopActionClicked: ", action, data);
 
-		const selectedDataTypeId = this.searchResults[dataPacket.data][0].value;
+		const selectedDataTypeId = this.searchResults[data].id;
 
-		switch (dataPacket.action) {
+		switch (action) {
 			case "update": {
 				this.fireLoadPortlet({
 					portletName: PortletKeys.DATATYPE_EDITOR,
@@ -250,26 +258,25 @@ class DataTypeExplorer extends SXBaseVisualizer {
 				break;
 			}
 			case "delete": {
-				this.state.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-				this.state.dlgBody = Util.translate(
-					"selected-datatypes-will-be-delete-with-datastructure-link-info-and-unrecoverable-are-you-sure-to-proceed"
-				);
-
-				this.selectedResults = [this.searchResults[dataPacket.data]];
-				this.setState({ confirmDeleteDialog: true });
+				this.setState({
+					dlgHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+					dlgBody: Util.translate("datatype-will-be-deleted-and-unrecoverable-are-you-sure-to-proceed"),
+					dataTypeIdToBeDeleted: selectedDataTypeId,
+					confirmDeleteDialog: true
+				});
 				break;
 			}
 		}
 	};
 
 	listenerAddButtonClicked = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("listenerAddButtonClicked event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("listenerAddButtonClicked event rejected: ", event.dataPacket);
 			return;
 		}
-		//console.log("listenerAddButtonClicked: ", dataPacket);
+		//console.log("listenerAddButtonClicked: ", event.dataPacket);
 
 		this.fireLoadPortlet({
 			portletName: PortletKeys.DATATYPE_EDITOR,
@@ -278,109 +285,125 @@ class DataTypeExplorer extends SXBaseVisualizer {
 	};
 
 	listenerDeleteSelected = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataTypeExplorer] listenerDeleteSelected rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataTypeExplorer] listenerDeleteSelected rejected: ", event.dataPacket);
 			return;
 		}
-		//console.log("[DataTypeExplorer] listenerDeleteSelected: ", dataPacket);
+		//console.log("[DataTypeExplorer] listenerDeleteSelected: ", event.dataPacket);
 
-		this.state.dlgHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-		this.state.dlgBody = Util.translate(
-			"selected-datatypes-will-be-delete-with-datastructure-link-info-and-unrecoverable-are-you-sure-to-proceed"
-		);
-
-		this.setState({ confirmDeleteDialog: true });
+		this.setState({
+			confirmDeleteDialog: true,
+			dlgHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+			dlgBody: Util.translate(
+				"selected-datatypes-will-be-delete-with-datastructure-link-info-and-unrecoverable-are-you-sure-to-proceed"
+			)
+		});
 	};
 
 	listenerSelectedResultsChanged = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataTypeExplorer] listenerSelectedResultsChanged event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataTypeExplorer] listenerSelectedResultsChanged event rejected: ", event.dataPacket);
 			return;
 		}
-		//console.log("[DataTypeExplorer] listenerSelectedResultsChanged: ", dataPacket);
-		this.selectedResults = dataPacket.selectedResults;
+		//console.log("[DataTypeExplorer] listenerSelectedResultsChanged: ", event.dataPacket);
+		this.forceUpdate();
+	};
 
-		this.setState({ searchContainerKey: Util.randomKey() });
+	listenerTableColumnClicked = (event) => {
+		const { targetPortlet, targetFormId, rowIndex, row, column } = event.dataPacket;
+
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataTypeExplorer] listenerTableColumnClicked event rejected: ", targetPortlet, targetFormId);
+			return;
+		}
+		console.log("[DataTypeExplorer] listenerTableColumnClicked: ", rowIndex, row, column);
+
+		const clickedResult = this.searchResults[rowIndex];
+
+		console.log("Selected search result: ", clickedResult);
+
+		if (!clickedResult.checked) {
+			clickedResult.checked = true;
+			this.forceUpdate();
+		}
 	};
 
 	listenerWorkbenchReady = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
-			//console.log("[DataTypeExplorer] listenerWorkbenchReady event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace) {
+			//console.log("[DataTypeExplorer] listenerWorkbenchReady event rejected: ", event.dataPacket);
 			return;
 		}
 
-		//console.log("[DataTypeExplorer] listenerWorkbenchReady received: ", dataPacket);
+		//console.log("[DataTypeExplorer] listenerWorkbenchReady received: ", event.dataPacket);
 
 		this.fireRequest({
 			requestId: "searchDataTypes",
-			params: this.params
+			params: {
+				dataCollectionId: this.dataCollectionId,
+				dataSetId: this.dataSetId,
+				start: this.state.start,
+				delta: this.state.delta,
+				filterBy: this.state.filterBy
+			}
 		});
-	};
-
-	listenerLoadData = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (dataPacket.targetPortlet !== this.namespace) {
-			//console.log("[DataTypeExplorer] listenerLoadData event rejected: ", dataPacket);
-			return;
-		}
-
-		//console.log("[DataTypeExplorer] listenerLoadData received: ", dataPacket);
-		/*
-		this.setState({
-			loadingStatus: dataPacket.status,
-			searchContainerKey: Util.randomKey()
-		});
-		*/
 	};
 
 	listenerResponse = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, requestId, params, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
+		if (targetPortlet !== this.namespace) {
 			//console.log("[DataTypeExplorer] listenerResponse event rejected: ", dataPacket);
 			return;
 		}
 
-		//console.log("[DataTypeExplorer] listenerResponse received: ", dataPacket);
-		let state = {};
+		console.log("[DataTypeExplorer] listenerResponse received: ", requestId, params, data);
 
-		switch (dataPacket.requestId) {
+		if (data.error) {
+			const dlgBody = data.errorObject ? data.error + ": " + JSON.stringify(data.errorObject) : data.error;
+
+			this.setState({
+				dlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				dlgBody: dlgBody,
+				infoDialog: true
+			});
+
+			return;
+		}
+
+		switch (requestId) {
 			case RequestIDs.searchDataTypes: {
-				if (dataPacket.status === LoadingStatus.COMPLETE) {
-					this.convertSearchResultsToContent(dataPacket.data);
-				}
+				const { dataTypeList } = data;
+
+				this.convertSearchResultsToContent(dataTypeList);
 
 				break;
 			}
 			case RequestIDs.deleteDataTypes: {
-				if (dataPacket.status === LoadingStatus.COMPLETE) {
-					state.infoDialog = true;
-					state.dlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
-					state.dlgBody = Util.translate("datatypes-deleted-successfully");
+				const { dataTypeList } = data;
 
-					this.fireRequest({
-						requestId: RequestIDs.searchDataTypes,
-						params: this.params
-					});
+				this.setState({
+					dlgHeader: SXModalUtil.successDlgHeader(this.spritemap),
+					dlgBody: Util.translate("datatypes-deleted-successfully", JSON.stringify(dataTypeList)),
+					infoDialog: true
+				});
 
-					this.setState(state);
-
-					return;
-				}
+				this.fireRequest({
+					requestId: RequestIDs.searchDataTypes,
+					params: this.params
+				});
 
 				break;
 			}
 		}
+
 		this.setState({
-			...state,
-			loadingStatus: dataPacket.status
+			loadingStatus: LoadingStatus.COMPLETE
 		});
 	};
 
@@ -405,6 +428,7 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		Event.on(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 		Event.on(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
 		Event.on(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
+		Event.on(Event.SX_TABLE_COLUMN_CLICKED, this.listenerTableColumnClicked);
 		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.on(Event.SX_LOAD_DATA, this.listenerLoadData);
 		Event.on(Event.SX_RESPONSE, this.listenerResponse);
@@ -424,6 +448,7 @@ class DataTypeExplorer extends SXBaseVisualizer {
 		Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 		Event.off(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
 		Event.off(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
+		Event.off(Event.SX_TABLE_COLUMN_CLICKED, this.listenerTableColumnClicked);
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 		Event.off(Event.SX_LOAD_DATA, this.listenerLoadData);
 		Event.off(Event.SX_RESPONSE, this.listenerResponse);
@@ -431,8 +456,17 @@ class DataTypeExplorer extends SXBaseVisualizer {
 	}
 
 	convertSearchResultsToContent(results) {
-		this.searchResults = results.map((result, index) => {
-			const { dataType, typeStructureLink } = result;
+		this.searchResults = results.map((dataType, index) => {
+			const {
+				dataTypeId,
+				dataTypeCode,
+				dataTypeVersion,
+				displayName,
+				verified = false,
+				freezed = false,
+				commentCount = 0,
+				hasStructure
+			} = dataType;
 
 			//console.log("convertSearchResultsToContent: ", result, dataType, Util.isNotEmpty(typeStructureLink));
 			const contentActionMenus = [];
@@ -448,91 +482,83 @@ class DataTypeExplorer extends SXBaseVisualizer {
 					name: Util.translate("delete"),
 					symbol: "trash"
 				});
-
-				if (Util.isNotEmpty(typeStructureLink)) {
-					contentActionMenus.push({
-						id: "manageData",
-						name: Util.translate("manage-data"),
-						symbol: "order-form-pencil"
-					});
-					contentActionMenus.push({
-						name: Util.translate("advanced-search"),
-						id: "advancedSearch",
-						symbol: "search-experiences"
-					});
-					contentActionMenus.push({
-						id: "editStructure",
-						name: Util.translate("edit-datastructure"),
-						symbol: "edit-layout"
-					});
-				}
 			}
 
-			let row = [
-				{
-					id: "dataTypeId",
-					value: dataType.dataTypeId
-				},
-				{
-					id: "displayName",
-					value: dataType.displayName
-				},
-				{
-					id: "dataTypeVersion",
-					value: dataType.dataTypeVersion
-				},
-				{
-					id: "dataTypeCode",
-					value: dataType.dataTypeCode
-				},
-				{
-					id: "structureStatus",
-					value: (
-						<>
-							<span style={{ marginRight: "5px" }}>
-								<SXLinkIcon linked={Util.isNotEmpty(typeStructureLink)} />
-							</span>
-							{Util.isNotEmpty(typeStructureLink) && (
+			let row = {
+				id: dataTypeId,
+				index: index,
+				checked: false,
+				columns: [
+					{
+						id: "dataTypeId",
+						value: dataTypeId
+					},
+					{
+						id: "displayName",
+						value: displayName
+					},
+					{
+						id: "dataTypeVersion",
+						value: dataTypeVersion
+					},
+					{
+						id: "dataTypeCode",
+						value: dataTypeCode
+					},
+					{
+						id: "dataStructure",
+						value: hasStructure ? String.fromCharCode("9675") : String.fromCharCode("9932")
+					},
+					{
+						id: "status",
+						value: (
+							<>
 								<span style={{ marginRight: "5px" }}>
-									<SXVerifyIcon verified={typeStructureLink.verified} />
+									<SXCommentIcon commentCount={commentCount}></SXCommentIcon>
 								</span>
-							)}
-							{Util.isNotEmpty(typeStructureLink) && (
 								<span style={{ marginRight: "5px" }}>
-									<SXFreezeIcon freezed={typeStructureLink.freezed} />
+									<SXVerifyIcon verified={verified} />
 								</span>
-							)}
-						</>
-					)
-				},
-				{
-					id: "actions",
-					value: contentActionMenus
-				}
-			];
+								<span style={{ marginRight: "5px" }}>
+									<SXFreezeIcon freezed={freezed} />
+								</span>
+							</>
+						)
+					},
+					{
+						id: "actions",
+						value: contentActionMenus
+					}
+				]
+			};
 
 			return row;
 		});
-
-		this.selectedResults = [];
 	}
 
-	selectedResultsToDataTypeIds = () => {
-		return this.selectedResults.map((result) => result[0].value);
+	selectedDataTypeIds = () => {
+		return this.searchResults
+			.filter((result) => result.checked)
+			.map((result) => {
+				return result.id;
+			});
 	};
 
 	checkAllResultsSelected = () => {
-		return this.searchResults.length == this.selectedResults.length;
+		const selectedDataTypeIds = this.selectedDataTypeIds();
+
+		return selectedDataTypeIds.length == this.searchResults.length;
 	};
 
 	deleteDataTypes = () => {
-		this.state.loadingStatus = LoadingStatus.PENDING;
+		//console.log("Selected DataTypes: ", this.sele);
+		const dataTypeIds =
+			this.state.dataTypeIdToBeDeleted > 0 ? [this.state.dataTypeIdToBeDeleted] : this.selectedDataTypeIds();
 
-		//console.log("Selected DataTypes: ", this.selectedResults, this.selectedResultsToDataTypeIds());
 		this.fireRequest({
 			requestId: RequestIDs.deleteDataTypes,
 			params: {
-				dataTypeIds: JSON.stringify(this.selectedResultsToDataTypeIds())
+				dataTypeIds: dataTypeIds
 			}
 		});
 	};
@@ -574,7 +600,6 @@ class DataTypeExplorer extends SXBaseVisualizer {
 						index={true}
 						columns={this.tableColumns}
 						searchResults={this.searchResults}
-						selectedResults={this.selectedResults}
 						spritemap={this.spritemap}
 					/>
 					{this.state.confirmDeleteDialog && (
@@ -586,14 +611,14 @@ class DataTypeExplorer extends SXBaseVisualizer {
 									label: Util.translate("confirm"),
 									onClick: (e) => {
 										this.deleteDataTypes();
-										this.setState({ confirmDeleteDialog: false });
+										this.setState({ confirmDeleteDialog: false, dataTypeIdToBeDeleted: 0 });
 									},
 									displayType: "secondary"
 								},
 								{
 									label: Util.translate("cancel"),
 									onClick: (e) => {
-										this.setState({ confirmDeleteDialog: false });
+										this.setState({ confirmDeleteDialog: false, dataTypeIdToBeDeleted: 0 });
 									}
 								}
 							]}

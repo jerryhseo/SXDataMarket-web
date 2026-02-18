@@ -3,7 +3,6 @@ package com.sx.datamarket.web.command.resource;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -41,40 +40,20 @@ public class OpenReferenceFileResourceCommand extends BaseMVCResourceCommand{
 			throws Exception {
 
 		System.out.println("OpenReferenceFileResourceCommand");
-		String dataStructureCode = ParamUtil.getString(resourceRequest, "dataStructureCode", "");
-		String dataStructureVersion = ParamUtil.getString(resourceRequest, "dataStructureVersion", "");
-		String paramCode = ParamUtil.getString(resourceRequest, "paramCode", "");
-		String paramVersion = ParamUtil.getString(resourceRequest, "paramVersion", "");
-		String fileName = ParamUtil.getString(resourceRequest, "fileName", "");
+		String strFilePath = ParamUtil.getString(resourceRequest, "filePath", "");
 		String fileType = ParamUtil.getString(resourceRequest, "fileType", "");
 		String disposition = ParamUtil.getString(resourceRequest, "disposition", "inline"); // inline or attachement
 		
 		
-		System.out.println("dataStructureCode: " + dataStructureCode);
-		System.out.println("dataStructureVersion: " + dataStructureVersion);
-		System.out.println("paramCode: " + paramCode);
-		System.out.println("paramVersion: " + paramVersion);
-		System.out.println("fileName: " + fileName);
+		System.out.println("filePath: " + strFilePath);
 		System.out.println("fileType: " + fileType);
 		System.out.println("disposition: " + disposition);
-		if( !( !dataStructureCode.isEmpty() && !dataStructureCode.isEmpty() &&
-				!paramCode.isEmpty() && !fileName.isEmpty() && !fileType.isEmpty()) ) {
-			
-			throw new PortalException("Cannot specify a file to open.");
-		}
-		
-		System.out.println("Can read: " + new File("d:/stationx").canRead());
 		
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
 		Path filePath = SXPortalUtil.getDataDirPath(
 				themeDisplay.getCompanyId(), 
 				themeDisplay.getScopeGroupId(), 
-				"referenceFiles/"+
-						dataStructureCode+"/"+
-						dataStructureVersion+"/"+
-						paramCode+"/"+
-						paramVersion+"/"+
-						fileName);
+				"referenceFiles/" + strFilePath);
 		
 		System.out.println("filePath: " + filePath.toString());
 		
@@ -84,11 +63,6 @@ public class OpenReferenceFileResourceCommand extends BaseMVCResourceCommand{
 		
 		try {
             resourceResponse.setContentType(fileType);
-            /*
-            resourceResponse.addProperty(
-                HttpHeaders.CONTENT_DISPOSITION,
-                disposition+"; filename=\"" + fileName + "\"");
-                */
 
             OutputStream out = resourceResponse.getPortletOutputStream();
             Files.copy(filePath, out);

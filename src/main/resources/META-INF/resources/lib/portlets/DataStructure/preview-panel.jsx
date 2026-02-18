@@ -17,7 +17,8 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		super(props);
 		//console.log("[SXDataStructurePreviewer props]: ", props);
 
-		this.typeStructureLink = props.typeStructureLink;
+		this.inputStatus = props.inputStatus ?? false;
+		this.jumpTo = props.jumpto ?? false;
 
 		this.componentId = this.namespace + "SXDataStructurePreviewer";
 
@@ -58,7 +59,7 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 		);
 		*/
 
-		if (this.typeStructureLink.inputStatus) {
+		if (this.inputStatus) {
 			this.forceUpdate();
 		}
 	};
@@ -358,7 +359,7 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 				>
 					<Toolbar.Nav>
 						<Toolbar.Item expand>
-							{this.typeStructureLink.jumpTo && (
+							{this.jumpTo && (
 								<Toolbar.Section>
 									<ClayInput.Group>
 										<ClayInput.GroupItem shrink>
@@ -398,7 +399,7 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 								</Toolbar.Section>
 							)}
 						</Toolbar.Item>
-						{this.typeStructureLink.inputStatus && (
+						{this.inputStatus && (
 							<Toolbar.Item>
 								<Toolbar.Section>
 									<ClayInput.Group>

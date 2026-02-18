@@ -1,6 +1,5 @@
 package com.sx.datamarket.web.command.resource;
 
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -11,35 +10,19 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.sx.icecap.constant.MVCCommand;
-import com.sx.icecap.constant.WebKey;
 import com.sx.icecap.constant.WebPortletKey;
-import com.sx.icecap.exception.NoSuchDataStructureException;
-import com.sx.icecap.exception.NoSuchTypeStructureLinkException;
 import com.sx.icecap.model.CollectionSetLink;
 import com.sx.icecap.model.DataCollection;
-import com.sx.icecap.model.DataComment;
 import com.sx.icecap.model.DataSet;
-import com.sx.icecap.model.DataStructure;
-import com.sx.icecap.model.DataType;
-import com.sx.icecap.model.TypeStructureLink;
-import com.sx.icecap.model.TypeVisualizerLink;
 import com.sx.icecap.service.CollectionSetLinkLocalService;
 import com.sx.icecap.service.DataCollectionLocalService;
 import com.sx.icecap.service.DataCommentLocalService;
 import com.sx.icecap.service.DataSetLocalService;
-import com.sx.icecap.service.DataStructureLocalService;
-import com.sx.icecap.service.DataTypeLocalService;
-import com.sx.icecap.service.TypeStructureLinkLocalService;
-import com.sx.icecap.service.TypeVisualizerLinkLocalService;
-import com.sx.spyglass.model.ScienceApp;
-import com.sx.spyglass.service.ScienceAppLocalService;
-import com.sx.util.SXLocalizationUtil;
+import com.sx.util.portlet.SXPortletURLUtil;
 
-import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.portlet.PortletException;
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
 
@@ -60,7 +43,7 @@ public class LoadDataCollectionResourceCommand extends BaseMVCResourceCommand{
 	@Override
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
-		//System.out.println("LoadDataCollectionResourceCommand: " );
+		System.out.println("LoadDataCollectionResourceCommand: " );
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
@@ -68,10 +51,58 @@ public class LoadDataCollectionResourceCommand extends BaseMVCResourceCommand{
 		boolean loadAvailableDataSets = ParamUtil.getBoolean(resourceRequest, "loadAvailableDataSets", false);
 		
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		long groupId = ParamUtil.getLong(resourceRequest, "groupId", themeDisplay.getScopeGroupId());
 		
 		List<CollectionSetLink> collectionSetLinkList = null;
 		if( dataCollectionId > 0 ) {
-			result = _dataCollectionLocalService.getDataCollectionInfo(dataCollectionId, themeDisplay.getLocale());
+			DataCollection dataCollection = _dataCollectionLocalService.getDataCollection(dataCollectionId);
+			
+			if( Validator.isNull(dataCollection) ) {
+				result.put("error", "cannot-find-datacollection");
+				SXPortletURLUtil.responeAjax(resourceResponse, result);
+				
+				return;
+			}
+			
+			result.put("dataCollection", dataCollection.toJSON());
+			
+			collectionSetLinkList = 
+					_collectionSetLinkLocalService.getCollectionSetLinkListByCollection(groupId, dataCollectionId);
+			
+			if( Validator.isNotNull(collectionSetLinkList)) {
+				JSONArray jsonDataSetList = JSONFactoryUtil.createJSONArray();
+				
+				Iterator<CollectionSetLink> iter = collectionSetLinkList.iterator();
+				while(iter.hasNext()) {
+					CollectionSetLink link = iter.next();
+					System.out.println("order: " + link.getOrder());
+					
+					DataSet dataSet = _dataSetLocalService.getDataSet(link.getDataSetId());
+					
+					JSONObject jsonDataSet = dataSet.toJSON(themeDisplay.getLocale());
+					
+					jsonDataSet.put("collectionSeLinktId", link.getCollectionSetLinkId());
+					jsonDataSet.put("order", link.getOrder());
+					jsonDataSet.put("verified", link.getVerified());
+					jsonDataSet.put("verifiedUserId", link.getVerifiedUserId());
+					jsonDataSet.put("verifiedUserName", link.getVerifiedUserName());
+					jsonDataSet.put("verifiedDate", link.getVerifiedDate());
+					jsonDataSet.put("freezed", link.getVerified());
+					jsonDataSet.put("freezedUserId", link.getVerifiedUserId());
+					jsonDataSet.put("freezedUserName", link.getVerifiedUserName());
+					jsonDataSet.put("freezedDate", link.getVerifiedDate());
+					
+					/*
+					int commentCount = 
+							_dataCommentLocalService.countDataComments(groupId, DataSet.class.getName(), dataSet.getDataSetId());
+					jsonDataSet.put("commentCount", commentCount);
+					*/
+					
+					jsonDataSetList.put(jsonDataSet);
+				}
+				
+				result.put("associatedDataSetList", jsonDataSetList);
+			}
 		}
 
 		if(loadAvailableDataSets == true) {
@@ -95,18 +126,21 @@ public class LoadDataCollectionResourceCommand extends BaseMVCResourceCommand{
 			result.put("availableDataSetList", availableDataSetJSONArray);
 		}
 		
-		//System.out.println("LoadDataCollection result: " + result.toString(4));
+		System.out.println("LoadDataCollection result: " + result.toString(4));
 		
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
-		pw.flush();
-		pw.close();
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
 	
 	@Reference
 	private DataCollectionLocalService _dataCollectionLocalService;
 	
 	@Reference
+	private CollectionSetLinkLocalService _collectionSetLinkLocalService;
+	
+	@Reference
 	private DataSetLocalService _dataSetLocalService;
+	
+	@Reference
+	private DataCommentLocalService _dataCommentLocalService;
 	
 }

@@ -6,6 +6,8 @@ import Icon from "@clayui/icon";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import Panel from "@clayui/panel";
 import { Body, Cell, Head, Row, Table, Text } from "@clayui/core";
+import { SXUpgradeIcon } from "../../stationx/icon";
+import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 
 class SXTypeInfo extends React.Component {
 	constructor(props) {
@@ -20,8 +22,9 @@ class SXTypeInfo extends React.Component {
 		this.dataTypeVersion = props.dataTypeVersion;
 		this.displayName = props.displayName;
 		this.description = props.description;
-		this.verified = props.verified;
-		this.freezed = props.freezed;
+		this.hasStructure = props.hasStructure;
+		this.verified = props.verified ?? { verified: false };
+		this.freezed = props.freezed ?? { freezed: false };
 		this.spritemap = props.spritemap;
 	}
 
@@ -68,7 +71,23 @@ class SXTypeInfo extends React.Component {
 							{ fieldName: Util.translate("id"), fieldValue: this.dataTypeId },
 							{ fieldName: Util.translate("code"), fieldValue: this.dataTypeCode },
 							{ fieldName: Util.translate("version"), fieldValue: this.dataTypeVersion },
-							{ fieldName: Util.translate("description"), fieldValue: this.description }
+							{ fieldName: Util.translate("description"), fieldValue: this.description },
+							{
+								fieldName: Util.translate("datastructure"),
+								fieldValue: this.hasStructure ? Util.translate("defined") : Util.translate("undefined")
+							},
+							{
+								fieldName: Util.translate("verify"),
+								fieldValue: this.verified.verified
+									? Util.translate("verified")
+									: Util.translate("unverified")
+							},
+							{
+								fieldName: Util.translate("freeze"),
+								fieldValue: this.freezed.freezed
+									? Util.translate("freezed")
+									: Util.translate("unfreezed")
+							}
 						]}
 					>
 						{(row, index) => (
@@ -98,11 +117,9 @@ class DataTypeViewer extends SXBaseVisualizer {
 	dataTypeVersion = "1.0.0";
 	displayName;
 	description;
-	dataStructureId = 0;
-	dataStructureCode = "";
-	dataStructureVersion = "1.0.0";
-	verified = {};
-	freezed = {};
+	hasStructure;
+	verified = { verified: false };
+	freezed = { freezed: false };
 	histories = [];
 	comments = [];
 	statistics = {};
@@ -125,11 +142,10 @@ class DataTypeViewer extends SXBaseVisualizer {
 
 		this.state = {
 			infoDialog: false,
+			dialogHeader: <></>,
+			dialogBody: <></>,
 			loadingStatus: LoadingStatus.PENDING
 		};
-
-		this.dialogHeader = <></>;
-		this.dialogBody = <></>;
 
 		this.buttons = [
 			{
@@ -169,27 +185,50 @@ class DataTypeViewer extends SXBaseVisualizer {
 		}
 
 		//console.log("[DataTypeViewer] listenerResonse: ", requestId, params, data);
+		const { error } = data;
+		if (error) {
+			this.setState({
+				dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				dialogBody: error,
+				infoDialog: true
+			});
+
+			return;
+		}
+
 		switch (requestId) {
 			case RequestIDs.viewDataType: {
-				this.dataTypeId = data.dataTypeId;
-				this.dataTypeCode = data.dataTypeCode;
-				this.dataTypeVersion = data.dataTypeVersion;
-				this.displayName = data.displayName;
-				this.description = data.description;
-				this.dataStructure = data.dataStructure;
-				this.verified = data.verified;
-				this.freezed = data.freezed;
-				this.histories = data.histories;
-				this.comments = data.comments;
-				this.statistics = data.statistics;
+				const {
+					dataTypeId,
+					dataTypeCode,
+					dataTypeVersion,
+					displayName,
+					description,
+					hasStructure,
+					verified,
+					freezed,
+					histories,
+					comments,
+					statistics
+				} = data;
 
-				this.setState({
-					loadingStatus: LoadingStatus.COMPLETE
-				});
+				this.dataTypeId = dataTypeId;
+				this.dataTypeCode = dataTypeCode;
+				this.dataTypeVersion = dataTypeVersion;
+				this.displayName = displayName;
+				this.description = description;
+				this.hasStructure = hasStructure;
+				this.verified = verified ?? { verified: false };
+				this.freezed = freezed ?? { freezed: false };
+				this.histories = histories;
+				this.comments = comments;
+				this.statistics = statistics;
 
 				break;
 			}
 		}
+
+		this.forceUpdate();
 	};
 
 	listenerComponentWillUnmount = (event) => {
@@ -286,6 +325,7 @@ class DataTypeViewer extends SXBaseVisualizer {
 												spritemap={this.spritemap}
 											/>
 										))}
+										<SXUpgradeIcon />
 									</Button.Group>
 								)}
 							</div>
@@ -301,7 +341,7 @@ class DataTypeViewer extends SXBaseVisualizer {
 							className="autofit-padded-no-gutters-x autofit-row"
 							style={{ alignItems: "start" }}
 						>
-							<div className="autofit-col autofit-col-shrink">
+							<div className="autofit-col autofit-col-expand">
 								<SXTypeInfo
 									key={this.dataTypeCode}
 									namespace={this.namespace}
@@ -311,68 +351,11 @@ class DataTypeViewer extends SXBaseVisualizer {
 									dataTypeVersion={this.dataTypeVersion}
 									displayName={this.displayName}
 									description={this.description}
+									hasStructure={this.hasStructure}
 									verified={this.verified}
 									freezed={this.freezed}
 									spritemap={this.spritemap}
 								/>
-							</div>
-							<div className="autofit-col autofit-col-expand">
-								<Text
-									weight="bold"
-									size="1.0rem"
-								>
-									{Util.translate("datastructure-info")}
-								</Text>
-								<Table
-									key={Util.randomKey()}
-									columnsVisibility={false}
-									borderedColumns={false}
-									size="sm"
-									hover={false}
-								>
-									<Head
-										items={[
-											{
-												id: "field",
-												name: Util.translate("field-name"),
-												width: "auto"
-											},
-											{
-												id: "value",
-												name: Util.translate("value"),
-												width: "auto"
-											}
-										]}
-									>
-										{(column) => (
-											<Cell
-												textAlign="center"
-												width={column.width}
-											>
-												{column.name}
-											</Cell>
-										)}
-									</Head>
-									<Body
-										key={this.dataStructure}
-										defaultItems={this.dataStructure}
-									>
-										{(row) => (
-											<Row>
-												<Cell>
-													<Text size={3}>
-														<span style={{ fontWeight: "bold" }}>
-															{Util.translate(row.fieldName)}
-														</span>
-													</Text>
-												</Cell>
-												<Cell>
-													<Text size={3}>{row.fieldValue}</Text>
-												</Cell>
-											</Row>
-										)}
-									</Body>
-								</Table>
 							</div>
 						</div>
 					</Panel.Body>
@@ -441,6 +424,20 @@ class DataTypeViewer extends SXBaseVisualizer {
 						</div>
 					</Panel.Body>
 				</Panel>
+				{this.state.infoDialog && (
+					<SXModalDialog
+						header={this.state.dialogHeader}
+						body={this.state.dialogBody}
+						buttons={[
+							{
+								label: Util.translate("ok"),
+								onClick: () => {
+									this.setState({ infoDialog: false });
+								}
+							}
+						]}
+					/>
+				)}
 			</>
 		);
 	}

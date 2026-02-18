@@ -1,7 +1,7 @@
 package com.sx.datamarket.web.command.resource;
 
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
@@ -11,7 +11,6 @@ import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
@@ -19,29 +18,20 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.sx.icecap.constant.MVCCommand;
-import com.sx.icecap.constant.ParameterType;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataStructure;
-import com.sx.icecap.model.TypeStructureLink;
+import com.sx.icecap.model.DataType;
 import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.ParameterLocalService;
-import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
 import com.sx.util.SXPortalUtil;
+import com.sx.util.SXUtil;
+import com.sx.util.portlet.SXPortletURLUtil;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import javax.portlet.ResourceRequest;
@@ -64,27 +54,97 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 			throws Exception {
 		
-		System.out.println("SaveDataStructureResourceCommand");
+		//System.out.println("SaveDataStructureResourceCommand");
 		
 		// Save data structure
+		long dataTypeId = ParamUtil.getLong(resourceRequest, "dataTypeId", 0);
+		long dataStructureId = ParamUtil.getLong(resourceRequest, "dataStructureId", 0);
 		String strDataStructure = ParamUtil.getString(resourceRequest, "dataStructure", "{}");
 		String strFileFields = ParamUtil.getString(resourceRequest, "fileFields", "");
-		System.out.println("fileFields: " + strFileFields);
+		//System.out.println("fileFields: " + strFileFields);
 		
-		JSONObject jsonDataStructure = JSONFactoryUtil.createJSONObject(strDataStructure);
-		//System.out.println("Data Structure: " + jsonDataStructure.toString(4));
-		
-		long dataStructureId = jsonDataStructure.getLong("paramId", 0);
-		String dataStructureCode = jsonDataStructure.getString("paramCode", "");
-		String dataStructureVersion = jsonDataStructure.getString("paramVersion", "");
-		JSONObject jsonDataStructureDisplayName = jsonDataStructure.getJSONObject("displayName");
-		JSONObject jsonDataStructureDescription = jsonDataStructure.getJSONObject("description");
-
-		ServiceContext dataStructureSC = ServiceContextFactory.getInstance(DataStructure.class.getName(), resourceRequest);
+		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		long companyId = themeDisplay.getCompanyId();
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
-		if( dataStructureId == 0 ) {
+		DataType dataType = null;
+		
+		ServiceContext dataStructureSC = ServiceContextFactory.getInstance(DataStructure.class.getName(), resourceRequest);
+		JSONObject jsonDataStructure = null;
+		String dataStructureCode = "";
+		String dataStructureVersion = "";
+		JSONObject jsonDataStructureDisplayName = null;
+		JSONObject jsonDataStructureDescription = null;
+		
+		if( !strDataStructure.isEmpty() ) {
+			try {
+				jsonDataStructure = JSONFactoryUtil.createJSONObject(strDataStructure);
+				
+				dataStructureCode = jsonDataStructure.getString("paramCode", "");
+				dataStructureVersion = jsonDataStructure.getString("paramVersion", "");
+				jsonDataStructureDisplayName = jsonDataStructure.getJSONObject("displayName");
+				jsonDataStructureDescription = jsonDataStructure.getJSONObject("description");
+			} catch (JSONException e) {
+				result.put( "error", SXUtil.translate(resourceRequest, "json-format-mismatched", new String[] {strDataStructure}) );
+				
+				SXPortletURLUtil.responeAjax(resourceResponse, result);
+				
+				return;
+			}
+		} else {
+			result.put( "error", SXUtil.translate(resourceRequest, "nothing-to-data") );
+			
+			SXPortletURLUtil.responeAjax(resourceResponse, result);
+			
+			return;
+		}
+		
+		if( dataStructureId > 0 ) {
+			// Update the data structure to DataStructure table
+			
+			_dataStructureLocalService.updateDataStructure(
+					dataStructureId, 
+					dataStructureCode, 
+					dataStructureVersion, 
+					SXLocalizationUtil.jsonToLocalizedMap(jsonDataStructureDisplayName),
+					SXLocalizationUtil.jsonToLocalizedMap(jsonDataStructureDescription), 
+					strDataStructure, 
+					WorkflowConstants.STATUS_APPROVED, 
+					dataStructureSC);
+			
+			result.put("message",SXUtil.translate(resourceRequest, "datastructure-is-saved"));
+		} else if ( dataTypeId > 0 ) {
+			
+			// Save the data structure as the structure of the DataType
+			dataType = _dataTypeLocalService.getDataType(dataTypeId);
+			
+			_dataTypeLocalService.setDataTypeStructure(dataTypeId, strDataStructure);
+			
+			result.put("message",SXUtil.translate(resourceRequest, "datastructure-for-the-datatype-is-saved", new long[] {dataTypeId}));
+			
+		} else if( Validator.isNotNull(jsonDataStructure) ) {
+			
+			// Add new DataStructure to DattaStructure table
+			
+			// Check duplicated
+			boolean duplicated = 
+					_dataStructureLocalService.checkDuplicated(dataStructureCode, dataStructureVersion);
+			
+			if( duplicated ) {
+				result.put( 
+						"error", 
+						SXUtil.translate(
+								resourceRequest, 
+								"datastructure-is-duplicated", 
+								new String[] {dataStructureCode, dataStructureVersion})
+				);
+				
+				SXPortletURLUtil.responeAjax(resourceResponse, result);
+				
+				return;
+			}
+			
 			DataStructure dataStructure = _dataStructureLocalService.addDataStructure(
 					dataStructureCode, 
 					dataStructureVersion, 
@@ -95,379 +155,74 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 					dataStructureSC);
 			
 			dataStructureId = dataStructure.getDataStructureId();
-		}
-		else {
-			_dataStructureLocalService.updateDataStructure(
-					dataStructureId, 
-					dataStructureCode, 
-					dataStructureVersion, 
-					SXLocalizationUtil.jsonToLocalizedMap(jsonDataStructureDisplayName),
-					SXLocalizationUtil.jsonToLocalizedMap(jsonDataStructureDescription), 
-					strDataStructure, 
-					WorkflowConstants.STATUS_APPROVED, 
-					dataStructureSC);
+			
+			result.put("message",SXUtil.translate(resourceRequest, "datastructure-is-added", new long[] {dataStructureId}));
+		} else {
+			result.put( "error", SXUtil.translate(resourceRequest, "one-of-the-datatype-id-datastructure-id-and-datastructure-to-save") );
+			
+			SXPortletURLUtil.responeAjax(resourceResponse, result);
+			
+			return;
 		}
 		
-		if( !strFileFields.isEmpty() ) {
-			String[] fileFields = strFileFields.split(",");
-			
-			//Check and manage folders to save the data files
-			UploadPortletRequest uploadRequest = PortalUtil.getUploadPortletRequest(resourceRequest);
-	
+		String[] fileFields = strFileFields.isEmpty() ? new String[] {} : strFileFields.split(",");
+		
+		//Check and manage folders to save the data files
+		UploadPortletRequest uploadRequest = PortalUtil.getUploadPortletRequest(resourceRequest);
 
-			String stationXDataDir = PropsUtil.get("stationx-data-dir");
-			System.out.println("StationX Data Dir: " + stationXDataDir);
-			
-			ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
-			long companyId = themeDisplay.getCompanyId();
-			
-			
-			JSONArray parameters = jsonDataStructure.getJSONArray("members");
-			
-			for(int i=0; i<parameters.length(); i++) {
-				JSONObject parameter = parameters.getJSONObject(i);
-				
-				if( parameter.has("referenceFile")) {
-					Path folderPath = 
-							Paths.get( stationXDataDir+"/" + companyId + "/" +
-									themeDisplay.getScopeGroupId() + "/" + 
-									"referenceFiles/" +
-									dataStructureCode + "/" +
-									dataStructureVersion + "/" +
-									parameter.getString("paramCode") + "/" +
-									parameter.getString("paramVersion"));
+		String stationXDataDir = PropsUtil.get("stationx-data-dir");
+		//System.out.println("StationX Data Dir: " + stationXDataDir);
+		
+		Path referencePath = Paths.get( stationXDataDir+"/" + companyId + "/" +
+				themeDisplay.getScopeGroupId() + "/referenceFiles");
+		
+		Path structurePath = Validator.isNotNull(dataType) ? 
+					referencePath.resolve( dataType.getDataTypeCode() + "/"+dataType.getDataTypeVersion() )
+					:
+					referencePath.resolve(jsonDataStructure.getString("dataStructureCode") + "/" +
+								jsonDataStructure.getString("dataStructureVersion") );
 					
-					if( Files.exists(folderPath) ) {
-						System.out.println("Path exists: " + folderPath.toString());
-						
-					} else {
-						System.out.println(("Path doesn't exist: " + folderPath.toString()));
-						Files.createDirectories(folderPath);
-					}
+		JSONArray parameters = jsonDataStructure.getJSONArray("members");
+		
+		for(int i=0; i<parameters.length(); i++) {
+			JSONObject parameter = parameters.getJSONObject(i);
+			
+			String paramCode = parameter.getString("paramCode");
+			String paramVersion = parameter.getString("paramVersion");
+			
+			Path codeFolderPath = structurePath.resolve( paramCode );
+			Path versionFolderPath = codeFolderPath.resolve( paramVersion );
+			boolean hasReferenceFile = parameter.has("referenceFile");
+			
+			if(  hasReferenceFile ) {
+				if( SXUtil.contains(fileFields, paramCode) ) {
 					
-					System.out.println("Parameter Reference File: " +
-							parameter.getString("paramCode") + ", " + parameter.getString("paramVersion") + ": " +  parameter.getJSONObject("referenceFile").toString(4));
+					SXPortalUtil.emptyFolder(versionFolderPath, true);
 					
 					JSONObject referenceFile = parameter.getJSONObject("referenceFile");
 					
-					Path filePath = folderPath.resolve(referenceFile.getString("name"));
+					Path filePath = versionFolderPath.resolve(referenceFile.getString("name"));
+					//System.out.println("Parameter has Reference File and changed to: " + filePath.toString());
 					
-					JSONArray errorFiles = JSONFactoryUtil.createJSONArray();
-					if( Files.exists(filePath) ) {
-						File file =filePath.toFile();
-						long lastModified = file.lastModified();
-						long newModified = referenceFile.getLong("lastModified");
-						
-						if( lastModified != newModified ) {
-							errorFiles = SXPortalUtil.saveFiles(uploadRequest, fileFields, folderPath);
-						}
-					}
-					else {
-						
-						errorFiles = SXPortalUtil.saveFiles(uploadRequest, fileFields, folderPath);
-					}
+					JSONArray errorFiles =  SXPortalUtil.saveUploadFieldFiles(uploadRequest, paramCode, versionFolderPath);
 					
 					if( errorFiles.length() > 0 ) {
 						result.put("errorFiles", errorFiles);
 						
-						System.out.println("Error files: " + errorFiles.toString(4));
+						//System.out.println("Error files: " + errorFiles.toString(4));
 					}
 				}
-				
-			}
-			
-			
-			/*
-			File folder = new File(folderPath);
-			File[] files = folder.listFiles(File::isFile);
-
-			if (files != null) {
-			    for (File file : files) {
-			        
-			    }
-			}
-
-			try (Stream<Path> stream = Files.list(folderPath)) {
-			    stream
-			        .filter(Files::isRegularFile)
-			        .map(path->path.getFileName());
-			}
-			*/
-		}
-		
-		result.put("dataStructureId", dataStructureId);
-
-		//Save DataType-DataStructure Link if dataTypeId > 0
-		
-		JSONObject jsonTypeStructureLink = JSONFactoryUtil.createJSONObject(
-							ParamUtil.getString(resourceRequest, "typeStructureLink", "{}"));
-		
-		System.out.println("Data jsonTypeStructureLink: " + jsonTypeStructureLink.toString(4));
-
-		long dataTypeId = jsonTypeStructureLink.getLong("dataTypeId", 0);
-		
-		if( dataTypeId > 0 ) {
-			boolean commentable = jsonTypeStructureLink.getBoolean("commentable", false);
-			boolean verifiable = jsonTypeStructureLink.getBoolean("verifiable", false);
-			boolean freezable = jsonTypeStructureLink.getBoolean("freezable", false);
-			boolean verified = jsonTypeStructureLink.getBoolean("verified", false);
-			boolean freezed = jsonTypeStructureLink.getBoolean("freezed", false);
-			boolean inputStatus = jsonTypeStructureLink.getBoolean("inputStatus", false);
-			boolean jumpTo = jsonTypeStructureLink.getBoolean("jumpTo", false);
-			
-			ServiceContext linkSC = ServiceContextFactory.getInstance(TypeStructureLink.class.getName(), resourceRequest);
-			
-			try {
-				TypeStructureLink typeStructureLink = _typeStructureLinkLocalService.getTypeStructureLink(dataTypeId);
-				
-				_typeStructureLinkLocalService.updateTypeDataStructureLink(
-						dataTypeId, 
-						dataStructureId, 
-						commentable, 
-						verifiable, 
-						freezable, 
-						verified, 
-						freezed,
-						inputStatus,
-						jumpTo,
-						linkSC);
-				
-				result.put("dataTypeId", dataTypeId);
-			} catch( PortalException e ) {
-				TypeStructureLink typeStructureLink = 
-						_typeStructureLinkLocalService.addTypeDataStructureLink(
-								dataTypeId, 
-								dataStructureId, 
-								commentable, 
-								verifiable,
-								freezable,
-								verified,
-								freezed,
-								inputStatus,
-								jumpTo,
-								linkSC	);
-				
-				result.put("dataTypeId", typeStructureLink.getDataTypeId() );
-			}
-		}
-		
-		
-		//result.put("dataStructureId", 12345);
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toString());
-		pw.flush();
-		pw.close();
-	}
-	
-	private void _saveReferenceFile() {
-		
-	}
-	
-	private void _printOutParameterAttributes( 
-							String paramType, 
-							String paramName, 
-							String paramVersion, 
-							Map<Locale, String> displayNameMap,
-							Map<Locale, String> definitionMap,
-							Map<Locale, String> tooltipMap,
-							String synonyms,
-							boolean mandatory,
-							boolean searchable,
-							boolean downloadable,
-							String value,
-							String attributes,
-							String groupParameterId,
-							long status) {
-		
-		System.out.println("******** " + paramName + " v. " + paramVersion + " *******");
-		System.out.println("Type: " + paramType );
-		System.out.println("DisplayName: " + displayNameMap.toString() );
-		displayNameMap.forEach((locale, val)->{ System.out.println(locale.toString() + ", " +val); }) ;
-		
-		String defStr = Validator.isNotNull( definitionMap ) ? definitionMap.toString()  : "";
-		System.out.println( "Definition: " + defStr ); 
-		String tipStr = Validator.isNotNull( tooltipMap ) ? tooltipMap.toString()  : "";
-		System.out.println("Tooltip: " + tipStr );
-		System.out.println("Synonyms: " + synonyms );
-		System.out.println("Mandatory: " + mandatory );
-		System.out.println("Searchable: " + searchable );
-		System.out.println("Downloadable: " + downloadable );
-		System.out.println("Value: " + value );
-		System.out.println("Attributes: " + attributes );
-		System.out.println("GroupParameterId: " + groupParameterId );
-		System.out.println("Status: " + status );
-		System.out.println("***************************************************");
-		
-	}
-	/**
-	 * GroupParameter has no dedicated attributes.
-	 * 
-	 * @param jsonObj
-	 * @param paramType
-	 * @return
-	 */
-	private String _extractParameterTypeAttributes( JSONObject jsonObj, String paramType ) {
-		
-		if( paramType.equalsIgnoreCase(ParameterType.STRING) ) {
-			return _extractStringAttributes(jsonObj);
-		}
-		else if( paramType.equalsIgnoreCase(ParameterType.NUMERIC) ) {
-			return _extractNumericAttributes(jsonObj);
-		}
-		else if( paramType.equalsIgnoreCase(ParameterType.SELECT) || 
-				   paramType.equalsIgnoreCase(ParameterType.BOOLEAN) ) {
-			return _extractListAttributes(jsonObj);
-		}
-		else if( paramType.equalsIgnoreCase(ParameterType.DATE)) {
-			return _extractDateAttributes(jsonObj);
-		}
-		else if( paramType.equalsIgnoreCase(ParameterType.FILE)) {
-			return _extractFileAttributes(jsonObj);
-		}
-		else if( paramType.equalsIgnoreCase(ParameterType.GROUP)) {
-			return _extractGroupAttributes(jsonObj);
-		}
-		else {
-			return "";
-		}
-		
-	}
-	
-	private String _extractStringAttributes( JSONObject jsonObj ) {
-		JSONObject json = JSONFactoryUtil.createJSONObject();
-		
-		if( !jsonObj.isNull("placeHolder") ) {
-			JSONObject jsonPlaceHolder = jsonObj.getJSONObject("placeHolder");
-			System.out.println( "jsonPlaceHolder: " + jsonPlaceHolder.toJSONString() );
-			json.put("placeHolder",  jsonPlaceHolder.toJSONString() );
-		}
-		
-		if( !jsonObj.isNull("minLength") ) {
-			json.put("minLength",  jsonObj.getInt("minLength"));
-		}
-
-		if( !jsonObj.isNull("maxLength") ) {
-			json.put("maxLength",  jsonObj.getInt("maxLength"));
-		}
-
-		if( !jsonObj.isNull("multiLine") ) {
-			json.put("multiLine",  jsonObj.getBoolean("multiLine"));
-		}
-		
-		if( !jsonObj.isNull("validationRule") ) {
-			json.put("validationRule",  jsonObj.getString("validationRule"));
-		}
-		return json.toJSONString();
-	}
-	
-	private String _extractNumericAttributes( JSONObject jsonObj ) {
-		JSONObject json = JSONFactoryUtil.createJSONObject();
-		
-		if( !jsonObj.has("minValue") ) {
-			json.put("minValue",  jsonObj.getDouble("minValue"));
-		}
-		
-		if( !jsonObj.has("minBoundary") ) {
-			json.put("minBoundary",  jsonObj.getBoolean("minBoundary"));
-		}
-
-		if( !jsonObj.has("maxValue") ) {
-			json.put("maxValue",  jsonObj.getDouble("maxValue"));
-		}
-		
-		if( !jsonObj.has("maxBoundary") ) {
-			json.put("maxBoundary",  jsonObj.getBoolean("maxBoundary"));
-		}
-
-		if( !jsonObj.has("unit") ) {
-			json.put("unit",  jsonObj.getString("unit"));
-		}
-
-		if( !jsonObj.has("uncertainty") ) {
-			json.put("uncertainty",  jsonObj.getBoolean("uncertainty"));
-		}
-
-		if( !jsonObj.has("sweepable") ) {
-			json.put("sweepable",  jsonObj.getBoolean("sweepable"));
-		}
-		
-		if( !jsonObj.has("placeHolder") ) {
-			json.put("placeHolder",  jsonObj.getString("placeHolder"));
-		}
-
-		return json.toJSONString();
-	}
-	
-	/**
-	 * This function is shared by ListParameter and BooleanParameter 
-	 * because BooleanParameter is a kind of special cases of the ListParameter. 
-	 * 
-	 * @param jsonObj
-	 * @return
-	 */
-	private String _extractListAttributes( JSONObject jsonObj ) {
-		JSONObject json = JSONFactoryUtil.createJSONObject();
-		
-		if( jsonObj.has("displayStyle") ) {
-			json.put("displayStyle",  jsonObj.getString("displayStyle"));
-		}
-		
-		if( jsonObj.has("options") ) {
-			JSONArray jsonOptions = jsonObj.getJSONArray("options");
-			
-			if( jsonOptions != null ) {
-				json.put("options",  jsonOptions);
+				//else {
+				//	System.out.println("Parameter has a reference file but not changed.");
+				//}
+			} else {
+				//System.out.println("Parameter has not Reference File: " + paramCode);
+				SXPortalUtil.deleteFolder(codeFolderPath);
 			}
 		}
 
-		return json.toJSONString();
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
-	
-	private String _extractDateAttributes( JSONObject jsonObj ) {
-		JSONObject json = JSONFactoryUtil.createJSONObject();
-		
-		if( jsonObj.has("enableTime") ) {
-			json.put("enableTime",  jsonObj.getString("enableTime"));
-		}
-		
-		System.out.println("Date Attrs: " + json.toString());
-		return json.toJSONString();
-	}
-	
-	private String _extractFileAttributes(JSONObject jsonObj) {
-		JSONObject json = JSONFactoryUtil.createJSONObject();
-		
-		return json.toJSONString();
-	}
-	
-	private String _extractGroupAttributes(JSONObject jsonObj) {
-		JSONObject json = JSONFactoryUtil.createJSONObject();
-		
-		if(  jsonObj.has("extended") ) {
-			json.put("extended",jsonObj.getBoolean("extended"));
-		}
-		
-		return json.toJSONString();
-	}
-	
-	private Map<Locale, String> _jsonObject2LocaleMap( JSONObject jsonObj ){
-		Map<Locale, String> map = new HashMap<Locale, String>();
-		if( Validator.isNull(jsonObj) ) {
-			return map;
-		}
-		
-		Iterator<String> keyIterator = jsonObj.keys();
-		System.out.println("_jsonObject2Map: "+jsonObj.length());
-		while( keyIterator.hasNext() ) {
-			String key = keyIterator.next();
-			map.put(LocaleUtil.fromLanguageId(key), jsonObj.getString(key));
-		}
-
-		return map;
-	}
-	
-	@Reference
-	TypeStructureLinkLocalService _typeStructureLinkLocalService;
 	
 	@Reference
 	private DataTypeLocalService _dataTypeLocalService;

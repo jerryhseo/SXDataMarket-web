@@ -17,12 +17,13 @@ import SXDSBuilderPropertiesPanel from "./properties-panel";
 import SXDataStructurePreviewer from "./preview-panel";
 import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import { UnderConstruction } from "../../stationx/common";
-import { DataType, DataTypeStructureLink, SXDataTypeStructureLink } from "../DataType/datatype";
 import { SXLabeledText } from "../Form/form";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import ParameterConstants from "../Parameter/parameter-constants";
 import { ParameterUtil } from "../Parameter/parameters";
 import SXGroupSelector from "./group-selector";
+import SXInstanceInfo from "../../stationx/instance-info";
+import StructuredDataEditor from "../StructuredData/structured-data-editor";
 
 class DataStructureBuilder extends SXBaseVisualizer {
 	rerenderProperties = [
@@ -81,155 +82,153 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 		//console.log("DataStructureBuilder props: ", props);
 
-		this.typeStructureLink = null;
+		this.dataTypeId = this.params.dataTypeId ?? 0;
+
 		this.dataType = null;
 		this.dataStructure = null;
 
-		this.dataTypeId = this.params.dataTypeId ?? 0;
-		this.dataStructureId = this.params.dataStructureId ?? 0;
-
-		this.editPhase = this.params.editPhase ?? EditStatus.ADD;
 		this.componentId = this.namespace + "DataStructureBuilder";
 		this.previewerId = this.namespace + "SXDataStructurePreviewer";
 
-		this.saveResult = "";
-
-		this.loadingFailMessage = "";
 		this.workingParam = null;
 
 		this.state = {
+			dataStructureId: this.params.dataStructureId ?? 0,
 			paramType: ParamType.STRING,
-			dataTypeStructureLinkReloadKey: Util.randomKey(),
 			dataStructurePreviewerReloadKey: Util.randomKey(),
 			loadingStatus: LoadingStatus.PENDING,
-			confirmDlgState: false,
+			infoDialog: false,
 			confirmParamDeleteDlg: false,
-			confirmDlgBody: <></>,
-			confirmDlgHeader: <></>,
+			dialogBody: <></>,
+			dialogHeader: <></>,
 			manifestSDE: false,
 			openSelectGroupModal: false,
 			underConstruction: false
 		};
 
-		this.structureCode = ParameterUtil.createParameter({
-			namespace: this.namespace,
-			formId: this.componentId,
-			paramType: ParamType.STRING,
-			properties: {
-				paramCode: "structureCode",
-				displayName: Util.getTranslationObject(this.languageId, "datastructure-code"),
-				placeholder: Util.getTranslationObject(this.languageId, "datastructure-code"),
-				tooltip: Util.getTranslationObject(this.languageId, "datastructure-code-tooltip"),
-				validation: {
-					required: {
-						value: true,
-						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
-						errorClass: ErrorClass.ERROR
-					},
-					pattern: {
-						value: ValidationRule.VARIABLE,
-						message: Util.getTranslationObject(this.languageId, "invalid-data-type-code"),
-						errorClass: ErrorClass.ERROR
-					},
-					minLength: {
-						value: 3,
-						message: Util.getTranslationObject(this.languageId, "shorter-than-min-length" + ", 3"),
-						errorClass: ErrorClass.ERROR
-					},
-					maxLength: {
-						value: 32,
-						message: Util.getTranslationObject(this.languageId, "longer-than-max-length" + ", 32"),
-						errorClass: ErrorClass.ERROR
+		if (this.dataTypeId === 0) {
+			this.structureCode = ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING,
+				properties: {
+					paramCode: "structureCode",
+					displayName: Util.getTranslationObject(this.languageId, "datastructure-code"),
+					placeholder: Util.getTranslationObject(this.languageId, "datastructure-code"),
+					tooltip: Util.getTranslationObject(this.languageId, "datastructure-code-tooltip"),
+					validation: {
+						required: {
+							value: true,
+							message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+							errorClass: ErrorClass.ERROR
+						},
+						pattern: {
+							value: ValidationRule.VARIABLE,
+							message: Util.getTranslationObject(this.languageId, "invalid-data-type-code"),
+							errorClass: ErrorClass.ERROR
+						},
+						minLength: {
+							value: 3,
+							message: Util.getTranslationObject(this.languageId, "shorter-than-min-length" + ", 3"),
+							errorClass: ErrorClass.ERROR
+						},
+						maxLength: {
+							value: 32,
+							message: Util.getTranslationObject(this.languageId, "longer-than-max-length" + ", 32"),
+							errorClass: ErrorClass.ERROR
+						}
 					}
 				}
-			}
-		});
+			});
 
-		this.structureVersion = ParameterUtil.createParameter({
-			namespace: this.namespace,
-			formId: this.componentId,
-			paramType: ParamType.STRING,
-			properties: {
-				paramCode: "structureVersion",
-				displayName: Util.getTranslationObject(this.languageId, "datastructure-version"),
-				placeholder: Util.getTranslationObject(this.languageId, "ex) 1.0.0"),
-				tooltip: Util.getTranslationObject(this.languageId, "datastructure-version-tooltip"),
-				style: { width: "10rem" },
-				validation: {
-					required: {
-						value: true,
-						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
-						errorClass: ErrorClass.ERROR
+			this.structureVersion = ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING,
+				properties: {
+					paramCode: "structureVersion",
+					displayName: Util.getTranslationObject(this.languageId, "datastructure-version"),
+					placeholder: Util.getTranslationObject(this.languageId, "ex) 1.0.0"),
+					tooltip: Util.getTranslationObject(this.languageId, "datastructure-version-tooltip"),
+					style: { width: "10rem" },
+					validation: {
+						required: {
+							value: true,
+							message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+							errorClass: ErrorClass.ERROR
+						},
+						pattern: {
+							value: ValidationRule.VERSION,
+							message: Util.getTranslationObject(this.languageId, "invalid-version-format"),
+							errorClass: ErrorClass.ERROR
+						},
+						minLength: {
+							value: 5,
+							message: Util.getTranslationObject(this.languageId, "should-be-at-least-5"),
+							errorClass: ErrorClass.ERROR
+						},
+						maxLength: {
+							value: 12,
+							message: Util.getTranslationObject(this.languageId, "should-be-up-to-12"),
+							errorClass: ErrorClass.ERROR
+						}
 					},
-					pattern: {
-						value: ValidationRule.VERSION,
-						message: Util.getTranslationObject(this.languageId, "invalid-version-format"),
-						errorClass: ErrorClass.ERROR
-					},
-					minLength: {
-						value: 5,
-						message: Util.getTranslationObject(this.languageId, "should-be-at-least-5"),
-						errorClass: ErrorClass.ERROR
-					},
-					maxLength: {
-						value: 12,
-						message: Util.getTranslationObject(this.languageId, "should-be-up-to-12"),
-						errorClass: ErrorClass.ERROR
-					}
-				},
-				defaultValue: "1.0.0"
-			}
-		});
+					defaultValue: "1.0.0"
+				}
+			});
 
-		this.structureDisplayName = ParameterUtil.createParameter({
-			namespace: this.namespace,
-			formId: this.componentId,
-			paramType: ParamType.STRING,
-			properties: {
-				paramCode: "structureDisplayName",
-				localized: true,
-				displayName: Util.getTranslationObject(this.languageId, "display-name"),
-				placeholder: Util.getTranslationObject(this.languageId, "display-name"),
-				tooltip: Util.getTranslationObject(this.languageId, "display-name-tooltip"),
-				validation: {
-					required: {
-						value: true,
-						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
-						errorClass: ErrorClass.ERROR
-					},
-					minLength: {
-						value: 3,
-						message: Util.getTranslationObject(this.languageId, "shorter-than-min-length") + ", 3",
-						errorClass: ErrorClass.ERROR
-					},
-					maxLength: {
-						value: 64,
-						message: Util.getTranslationObject(this.languageId, "long-than-max-length") + ", 64",
-						errorClass: ErrorClass.ERROR
+			this.structureDisplayName = ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING,
+				properties: {
+					paramCode: "structureDisplayName",
+					localized: true,
+					displayName: Util.getTranslationObject(this.languageId, "display-name"),
+					placeholder: Util.getTranslationObject(this.languageId, "display-name"),
+					tooltip: Util.getTranslationObject(this.languageId, "display-name-tooltip"),
+					validation: {
+						required: {
+							value: true,
+							message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+							errorClass: ErrorClass.ERROR
+						},
+						minLength: {
+							value: 3,
+							message: Util.getTranslationObject(this.languageId, "shorter-than-min-length") + ", 3",
+							errorClass: ErrorClass.ERROR
+						},
+						maxLength: {
+							value: 64,
+							message: Util.getTranslationObject(this.languageId, "long-than-max-length") + ", 64",
+							errorClass: ErrorClass.ERROR
+						}
 					}
 				}
-			}
-		});
+			});
 
-		this.structureDescription = ParameterUtil.createParameter({
-			namespace: this.namespace,
-			formId: this.componentId,
-			paramType: ParamType.STRING,
-			properties: {
-				paramCode: "structureDescription",
-				localized: true,
-				displayName: Util.getTranslationObject(this.languageId, "description"),
-				placeholder: Util.getTranslationObject(this.languageId, "description"),
-				tooltip: Util.getTranslationObject(this.languageId, "datastructure-description-tooltip"),
-				validation: {
-					maxLength: {
-						value: 256,
-						message: Util.getTranslationObject(this.languageId, "long-than-max-length") + ", 256",
-						errorClass: ErrorClass.ERROR
+			this.structureDescription = ParameterUtil.createParameter({
+				namespace: this.namespace,
+				formId: this.componentId,
+				paramType: ParamType.STRING,
+				properties: {
+					paramCode: "structureDescription",
+					localized: true,
+					displayName: Util.getTranslationObject(this.languageId, "description"),
+					placeholder: Util.getTranslationObject(this.languageId, "description"),
+					tooltip: Util.getTranslationObject(this.languageId, "datastructure-description-tooltip"),
+					validation: {
+						maxLength: {
+							value: 256,
+							message: Util.getTranslationObject(this.languageId, "long-than-max-length") + ", 256",
+							errorClass: ErrorClass.ERROR
+						}
 					}
 				}
-			}
-		});
+			});
+		}
+
+		this.dataTypeInfoFields = [];
 	}
 
 	listenerParameterSelected = (event) => {
@@ -247,7 +246,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 		console.log(
 			"[DataStructureBuilder] SX_PARAMETER_SELECTED received: ",
-			JSON.stringify(this.workingParam.referenceFile, null, 4),
+			JSON.stringify(this.dataStructure),
 			JSON.stringify(parameter.referenceFile, null, 4)
 		);
 
@@ -337,7 +336,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 		this.setState({
 			confirmParamDeleteDlg: true,
-			confirmDlgBody: <div>{Util.translate("are-you-sure-delete", this.workingParam.label)}</div>
+			dialogBody: <div>{Util.translate("are-you-sure-delete", this.workingParam.label)}</div>
 		});
 	};
 
@@ -422,19 +421,6 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		}
 	};
 
-	listenerLinkInfoChanged = (event) => {
-		const { targetPortlet, targetFormId } = event.dataPacket;
-
-		if (!(targetPortlet == this.namespace && targetFormId == this.componentId)) {
-			return;
-		}
-
-		//console.log("[DataStructureBuilder] listenerLinkInfoChanged: ", event.dataPacket);
-		this.dataStructure.setTitleBarInfos(this.typeStructureLink.inputStatus);
-
-		this.forceUpdate();
-	};
-
 	listenerRequest = (event) => {
 		const { targetPortlet, targetFormId, sourceFormId, requestId, params } = event.dataPacket;
 
@@ -454,8 +440,16 @@ class DataStructureBuilder extends SXBaseVisualizer {
 	};
 
 	listenerOpenReferenceFile = (event) => {
-		const { targetPortlet, targetFormId, sourceFormId, paramCode, paramVersion, fileName, fileType } =
-			event.dataPacket;
+		const {
+			targetPortlet, //
+			targetFormId,
+			sourceFormId,
+			paramCode,
+			paramVersion,
+			fileName,
+			fileType,
+			file
+		} = event.dataPacket;
 
 		if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
 			console.log("[DataStructureBuilder] listenerOpenReferenceFile rejected: ", paramCode, event.dataPacket);
@@ -463,6 +457,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			return;
 		}
 
+		/*
 		console.log(
 			"[DataStructureBuilder] listenerOpenReferenceFile: ",
 			paramCode,
@@ -471,26 +466,28 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			fileType,
 			event.dataPacket
 		);
+		*/
 
-		this.fireRequest({
-			targetFormId: this.formId,
-			sourceFormId: sourceFormId,
-			requestId: RequestIDs.openReferenceFile,
-			params: {
-				dataStructureCode: this.dataStructure.paramCode,
-				dataStructureVersion: this.dataStructure.paramVersion,
-				paramCode: paramCode,
-				paramVersion: paramVersion,
-				fileName: fileName,
-				fileType: fileType,
-				disposition: "inline"
-			}
-		});
+		if (file) {
+			this.openDataOnWindow(file);
+		} else {
+			let filePath = this.getParamFilePath(paramCode, paramVersion, fileName);
+
+			this.fireRequest({
+				targetFormId: this.formId,
+				sourceFormId: sourceFormId,
+				requestId: RequestIDs.openReferenceFile,
+				params: {
+					filePath: filePath,
+					fileType: fileType,
+					disposition: "inline"
+				}
+			});
+		}
 	};
 
 	listenerDeleteFiles = (event) => {
-		const { targetPortlet, targetFormId, sourceFormId, paramCode, paramVersion, fileName, fileType } =
-			event.dataPacket;
+		const { targetPortlet, targetFormId, sourceFormId, paramCode, paramVersion, files } = event.dataPacket;
 
 		if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
 			console.log("[DataStructureBuilder] listenerDeleteFiles rejected: ", paramCode, event.dataPacket);
@@ -499,6 +496,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		}
 
 		console.log("[DataStructureBuilder] listenerDeleteFiles: ", paramCode, event.dataPacket);
+		let filePath = this.getParamFilePath(paramCode, paramVersion, fileName);
 
 		this.fireRequest({
 			targetFormId: this.formId,
@@ -521,7 +519,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			return;
 		}
 
-		//console.log("listenerLoadPortlet: ", dataPacket, this.workbench);
+		//console.log("listenerLoadPortlet: ", portletName);
 		if (this.state.manifestSDE) {
 			return;
 		}
@@ -530,8 +528,10 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			portletName: portletName,
 			windowTitle: Util.translate("preview"),
 			params: {
-				dataStructureId: this.dataStructure.dataStructureId,
-				subject: this.dataStructure.label
+				dataTypeId: this.dataTypeId,
+				dataStructureId: this.state.dataStructureId,
+				subject: this.dataStructure.label,
+				editState: StructuredDataEditor.EditState.PREVIEW
 			}
 		});
 	};
@@ -563,44 +563,50 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		const { targetPortlet, requestId, params, data, status } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			//console.log("[DataStructureBuilder] listenerResponce rejected: ", dataPacket);
+			//console.log("[DataStructureBuilder] listenerResponce rejected: ", targetPortlet);
 			return;
 		}
 
-		console.log("[DataStructureBuilder] listenerResonse: ", event.dataPacket, requestId, data);
+		//console.log("[DataStructureBuilder] listenerResonse: ", requestId, params, data);
 		const state = {};
 		const result = data;
 
+		if (data.error) {
+			this.setState({
+				infoDialog: true,
+				dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				dialogBody: data.error
+			});
+
+			return;
+		}
+
 		switch (requestId) {
 			case RequestIDs.loadDataStructure: {
-				this.dataType = new DataType(result.dataType ?? {});
-				this.typeStructureLink = new DataTypeStructureLink(this.languageId, this.availableLanguageIds);
-				this.typeStructureLink.parse(result.typeStructureLink ?? {});
-				if (this.dataType.dataTypeId > 0) {
-					this.typeStructureLink.dataTypeId = this.dataType.dataTypeId;
+				const { dataStructure, dataType } = data;
+
+				if (Util.isNotEmpty(dataType)) {
+					this.dataType = dataType;
+					this.dataTypeInfoFields = [
+						{ label: Util.translate("datatype-id"), value: dataType.dataTypeId },
+						{ label: Util.translate("datatype-code"), value: dataType.dataTypeCode },
+						{ label: Util.translate("datatype-version"), value: dataType.dataTypeVersion },
+						{ label: Util.translate("display-name"), value: dataType.displayName }
+					];
 				}
 
 				this.dataStructure = new DataStructure({
 					namespace: this.namespace,
 					formId: this.componentId,
-					properties: result.dataStructure ?? {
-						dataStructureCode: this.dataType.dataTypeCode,
-						dataStructureVersion: "1.0.0",
-						displayName: { ...this.dataType.displayName },
-						description: { ...this.dataType.description }
-					}
+					properties: dataStructure ?? {}
 				});
 
-				//set type-structure link info to dataStructure.
-				this.dataStructure.setTitleBarInfos(this.typeStructureLink.toJSON());
-
-				//console.log("TypeStructureLink: ", JSON.stringify(this.typeStructureLink, null, 4));
-				this.structureCode.setValue({ value: this.dataStructure.dataStructureCode });
-				this.structureVersion.setValue({ value: this.dataStructure.dataStructureVersion });
-				this.structureDisplayName.setValue({ value: this.dataStructure.displayName });
-				this.structureDescription.setValue({ value: this.dataStructure.description });
-
-				this.editPhase = Util.isEmpty(result.dataStructure) ? EditStatus.ADD : EditStatus.UPDATE;
+				if (dataStructure && this.dataTypeId === 0) {
+					this.structureCode.setValue({ value: this.dataStructure.dataStructureCode });
+					this.structureVersion.setValue({ value: this.dataStructure.dataStructureVersion });
+					this.structureDisplayName.setValue({ value: this.dataStructure.displayName });
+					this.structureDescription.setValue({ value: this.dataStructure.description });
+				}
 
 				this.workingParam = this.dataStructure.hasMembers()
 					? this.dataStructure.members[0]
@@ -614,66 +620,21 @@ class DataStructureBuilder extends SXBaseVisualizer {
 					this.workingParam.focused = true;
 				}
 
-				this.setState({ dataTypeStructureLinkReloadKey: Util.randomKey() });
-
-				break;
-			}
-			case RequestIDs.checkDataStructureUnique: {
-				if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
-					this.dataStructure.updateMemberParents();
-					this.dataStructure.clearError();
-					this.structureVersion.clearError();
-				} else {
-					this.structureCode.setError(ErrorClass.ERROR, Util.translate("datastructure-is-duplicated"));
-					this.dataStructure.setError(ErrorClass.ERROR, Util.translate("ddatastructure-is-duplicated"));
-				}
-
-				break;
-			}
-			case RequestIDs.checkDataStructureCodeUnique: {
-				if (Util.isEmpty(result) || this.dataStructure.dataStructureId == result.dataStructureId) {
-					this.dataStructure.updateMemberParents();
-					this.dataStructure.clearError();
-					this.structureCode.clearError();
-
-					return;
-				} else {
-					this.structureCode.setError(ErrorClass.ERROR, Util.translate("datastructure-code-is-duplicated"));
-					this.dataStructure.setError(ErrorClass.ERROR, Util.translate("datastructure-code-is-duplicated"));
-				}
-
 				break;
 			}
 			case RequestIDs.saveDataStructure: {
 				this.dataStructure.dataStructureId = result.dataStructureId;
 				this.dataStructure.setDirty(false);
 
-				state.confirmDlgState = true;
-				state.confirmDlgHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				state.confirmDlgBody = (
-					<h4>
-						{Util.translate(
-							"datastructure-is-saved-successfully-as-which-is-linked-to",
-							result.dataStructureId,
-							result.dataTypeId
-						)}
-					</h4>
-				);
+				state.infoDialog = true;
+				state.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
+				state.dialogBody = <h4>{data.message}</h4>;
 
 				break;
 			}
 			case RequestIDs.openReferenceFile: {
-				console.log("Open referenceFile finished");
+				//console.log("Open referenceFile finished");
 				this.openDataOnWindow(data);
-
-				/*
-				const url = window.URL.createObjectURL(data);
-
-				const link = document.createElement("a");
-				link.href = url;
-				link.target = "_blank";
-				link.click();
-				*/
 			}
 		}
 
@@ -696,7 +657,6 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		Event.on(Event.SX_REQUEST, this.listenerRequest);
 		Event.on(Event.SX_RESPONSE, this.listenerResponce);
 		Event.on(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
-		Event.on(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
 		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 
 		this.fireHandshake();
@@ -717,17 +677,14 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		Event.off(Event.SX_REQUEST, this.listenerRequest);
 		Event.off(Event.SX_RESPONSE, this.listenerResponce);
 		Event.off(Event.SX_SELECT_GROUP, this.listenerSelectGroup);
-		Event.off(Event.SX_TYPE_STRUCTURE_LINK_INFO_CHANGED, this.listenerLinkInfoChanged);
 		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
 	}
 
 	loadDataStructure() {
 		//console.log("dataTypeId: " + this.dataTypeId);
-		//console.log("dataStructureId: " + this.dataStructureId);
+		//console.log("dataStructureId: " + this.state.dataStructureId);
 
-		if (this.dataTypeId == 0 && this.dataStructureId == 0) {
-			this.dataType = new DataType();
-			this.typeStructureLink = new DataTypeStructureLink();
+		if (this.dataTypeId == 0 && this.state.dataStructureId == 0) {
 			this.dataStructure = new DataStructure({
 				namespace: this.namespace,
 				formId: this.componentId,
@@ -738,7 +695,6 @@ class DataStructureBuilder extends SXBaseVisualizer {
 				formId: this.componentId,
 				paramType: ParamType.STRING
 			});
-			this.editPhase = EditStatus.ADD;
 
 			this.setState({ loadingStatus: LoadingStatus.COMPLETE });
 		} else {
@@ -746,13 +702,17 @@ class DataStructureBuilder extends SXBaseVisualizer {
 				requestId: RequestIDs.loadDataStructure,
 				params: {
 					dataTypeId: this.dataTypeId,
-					dataStructureId: this.dataStructureId
+					dataStructureId: this.state.dataStructureId
 				}
 			});
 		}
 	}
 
 	checkError() {
+		if (this.dataTypeId > 0) {
+			return;
+		}
+
 		const error = DataStructure.checkError([
 			this.structureCode,
 			this.structureVersion,
@@ -772,10 +732,24 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 	openErrorDlg(message) {
 		this.setState({
-			confirmDlgState: true,
-			confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-			confirmDlgBody: message
+			infoDialog: true,
+			dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+			dialogBody: message
 		});
+	}
+
+	getParamFilePath(paramCode, paramVersion, fileName) {
+		let filePath = "";
+		if (this.dataTypeId > 0 && this.dataType) {
+			filePath += this.dataType.dataTypeCode + "/" + this.dataType.dataTypeVersion;
+		} else if (this.dataStructureId > 0 && this.dataStructure) {
+			filePath += this.dataStructure.paramCode + "/" + this.dataType.dataStructureVersion;
+		} else {
+			console.log("There are no DataType or DataStructure to open referenceFile");
+			return "";
+		}
+
+		return filePath + "/" + paramCode + "/" + paramVersion + "/" + fileName;
 	}
 
 	handleEnableInputStatusChange(val) {
@@ -812,7 +786,6 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 	handleSaveDataStructure = () => {
 		//console.log(JSON.stringify(this.dataStructure.toJSON(), null, 4));
-		//console.log(JSON.stringify(this.typeStructureLink.toJSON(), null, 4));
 
 		if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
 			this.openErrorDlg(Util.translate("fix-the-error-first", this.dataStructure.errorMessage));
@@ -821,14 +794,14 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 		const referenceFiles = this.dataStructure.getReferenceFiles();
 
-		console.log("typeStructureLink: ", JSON.stringify(this.typeStructureLink.toJSON()));
 		console.log("DataStructure: ", JSON.stringify(this.dataStructure.toJSON()));
 		console.log("Reference Files: ", referenceFiles);
 
 		this.fireRequest({
 			requestId: RequestIDs.saveDataStructure,
 			params: {
-				typeStructureLink: JSON.stringify(this.typeStructureLink.toJSON()),
+				dataTypeId: this.dataTypeId,
+				dataStructureId: this.state.dataStructureId,
 				dataStructure: JSON.stringify(this.dataStructure.toJSON()),
 				files: referenceFiles
 			}
@@ -846,11 +819,23 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		}
 	};
 
+	renderDataTypeInfo() {
+		return (
+			<div style={{ marginTop: "1.5rem" }}>
+				<SXInstanceInfo
+					title={Util.translate("datatype-info")}
+					infoFields={this.dataTypeInfoFields}
+					fieldsPerRow={4}
+				/>
+			</div>
+		);
+	}
+
 	render() {
 		if (this.state.loadingStatus == LoadingStatus.PENDING) {
 			return <h3>Loading....</h3>;
 		} else if (this.state.loadingStatus == LoadingStatus.FAIL) {
-			return <h3>{this.loadingFailMessage}</h3>;
+			return <h3>Loading Failed...</h3>;
 		}
 
 		/*
@@ -859,27 +844,13 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			this.dataTypeId,
 			this.dataType,
 			this.dataStructure,
-			this.typeStructureLink,
 			this.workingParam
 		);
 		*/
 
 		return (
 			<>
-				{this.dataTypeId > 0 && (
-					<SXDataTypeStructureLink
-						key={this.state.dataTypeStructureLinkReloadKey}
-						namespace={this.namespace}
-						formId={this.componentId}
-						dataType={this.dataType}
-						dataTypeViewMode={DataTypeStructureLink.ViewTypes.VIEW}
-						typeStructureLink={this.typeStructureLink}
-						typeStructureLinkViewMode={DataTypeStructureLink.ViewTypes.EDIT}
-						dataStructure={this.dataStructure}
-						dataStructureViewMode={DataTypeStructureLink.ViewTypes.EDIT}
-						spritemap={this.spritemap}
-					/>
-				)}
+				{this.dataTypeId > 0 && Util.isNotEmpty(this.dataType) && this.renderDataTypeInfo()}
 				{/*Header*/}
 				<div
 					className="autofit-float autofit-padded-no-gutters-x autofit-row"
@@ -902,7 +873,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 								/>
 								{Util.translate("save")}
 							</Button>
-							{this.editPhase == "update" && (
+							{this.state.dataStructureId > 0 && (
 								<Button
 									displayType="warning"
 									onClick={() => {}}
@@ -919,35 +890,38 @@ class DataStructureBuilder extends SXBaseVisualizer {
 						</Button.Group>
 					</div>
 				</div>
-				<div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-					<div className="form-group sx-fieldset">
-						<div className="sx-legend">{Util.translate("datastructure-info")}</div>
-						<div className="autofit-float autofit-padded-no-gutters-x autofit-row">
-							<div className="autofit-col">
-								<SXLabeledText
-									key={Util.randomKey()}
-									label={Util.translate("id")}
-									text={this.dataStructure.dataStructureId}
-									align="left"
-									viewType="FORM_FIELD"
-									className="sx-form-field"
-								/>
-							</div>
-							<div className="autofit-col">
-								{this.structureCode.render({ spritemap: this.spritemap })}
-							</div>
-							<div className="autofit-col">
-								{this.structureVersion.render({ spritemap: this.spritemap })}
-							</div>
-							<div className="autofit-col">
-								{this.structureDisplayName.render({ spritemap: this.spritemap })}
-							</div>
-							<div className="autofit-col autofit-col-expand">
-								{this.structureDescription.render({ spritemap: this.spritemap })}
+
+				{this.state.dataStructureId > 0 && (
+					<div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
+						<div className="form-group sx-fieldset">
+							<div className="sx-legend">{Util.translate("datastructure-info")}</div>
+							<div className="autofit-float autofit-padded-no-gutters-x autofit-row">
+								<div className="autofit-col">
+									<SXLabeledText
+										key={Util.randomKey()}
+										label={Util.translate("id")}
+										text={this.dataStructure.dataStructureId}
+										align="left"
+										viewType="FORM_FIELD"
+										className="sx-form-field"
+									/>
+								</div>
+								<div className="autofit-col">
+									{this.structureCode.render({ spritemap: this.spritemap })}
+								</div>
+								<div className="autofit-col">
+									{this.structureVersion.render({ spritemap: this.spritemap })}
+								</div>
+								<div className="autofit-col">
+									{this.structureDisplayName.render({ spritemap: this.spritemap })}
+								</div>
+								<div className="autofit-col autofit-col-expand">
+									{this.structureDescription.render({ spritemap: this.spritemap })}
+								</div>
 							</div>
 						</div>
 					</div>
-				</div>
+				)}
 				<div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
 					<div
 						style={{
@@ -1062,39 +1036,42 @@ class DataStructureBuilder extends SXBaseVisualizer {
 								namespace={this.namespace}
 								formId={this.componentId}
 								dataStructure={this.dataStructure}
-								typeStructureLink={this.typeStructureLink}
+								inputStatus={Util.isEmpty(this.dataType) ? false : this.dataType.inputStatus}
+								jumpTo={Util.isEmpty(this.dataType) ? false : this.dataType.inputStatus}
 								spritemap={this.spritemap}
 							/>
 						</div>
 					</div>
-					<Button.Group spaced>
-						<Button
-							displayType="primary"
-							onClick={this.handleSaveDataStructure}
-							title={Util.translate("save-data-structure")}
-						>
-							<Icon
-								symbol="disk"
-								spritemap={this.spritemap}
-								style={{ marginRight: "5px" }}
-							/>
-							{Util.translate("save")}
-						</Button>
-						{this.editPhase == "update" && (
+					<div style={{ textAlign: "center" }}>
+						<Button.Group spaced>
 							<Button
-								displayType="warning"
-								onClick={() => {}}
-								title={Util.translate("delete-data-structure")}
+								displayType="primary"
+								onClick={this.handleSaveDataStructure}
+								title={Util.translate("save-data-structure")}
 							>
 								<Icon
-									symbol="trash"
+									symbol="disk"
 									spritemap={this.spritemap}
 									style={{ marginRight: "5px" }}
 								/>
-								{Util.translate("delete")}
+								{Util.translate("save")}
 							</Button>
-						)}
-					</Button.Group>
+							{this.state.dataStructureId > 0 && (
+								<Button
+									displayType="warning"
+									onClick={() => {}}
+									title={Util.translate("delete-data-structure")}
+								>
+									<Icon
+										symbol="trash"
+										spritemap={this.spritemap}
+										style={{ marginRight: "5px" }}
+									/>
+									{Util.translate("delete")}
+								</Button>
+							)}
+						</Button.Group>
+					</div>
 					{this.state.openSelectGroupModal && (
 						<SXGroupSelector
 							title={Util.translate("select-group")}
@@ -1104,14 +1081,14 @@ class DataStructureBuilder extends SXBaseVisualizer {
 							spritemap={this.spritemap}
 						/>
 					)}
-					{this.state.confirmDlgState && (
+					{this.state.infoDialog && (
 						<SXModalDialog
-							header={this.state.confirmDlgHeader}
-							body={this.state.confirmDlgBody}
+							header={this.state.dialogHeader}
+							body={this.state.dialogBody}
 							buttons={[
 								{
 									onClick: () => {
-										this.setState({ confirmDlgState: false });
+										this.setState({ infoDialog: false });
 									},
 									label: Util.translate("ok"),
 									displayType: "primary"
@@ -1124,7 +1101,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 					{this.state.confirmParamDeleteDlg && (
 						<SXModalDialog
 							header={SXModalUtil.warningDlgHeader(this.spritemap)}
-							body={this.state.confirmDlgBody}
+							body={this.state.dialogBody}
 							buttons={[
 								{
 									onClick: () => {

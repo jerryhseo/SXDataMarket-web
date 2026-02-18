@@ -4,19 +4,12 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
-import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.sx.icecap.constant.Constant;
-import com.sx.icecap.constant.DataTypeProperties;
-import com.sx.icecap.constant.IcecapModelNames;
 import com.sx.icecap.constant.MVCCommand;
 import com.sx.constant.StationXConstants;
 import com.sx.constant.StationXWebKeys;
@@ -26,18 +19,13 @@ import com.sx.icecap.model.DataCollection;
 import com.sx.icecap.model.DataSet;
 import com.sx.icecap.model.DataType;
 import com.sx.icecap.model.SetTypeLink;
-import com.sx.icecap.model.TypeStructureLink;
-import com.sx.icecap.security.permission.resource.datatype.DataTypeModelPermissionHelper;
-import com.sx.icecap.security.permission.resource.datatype.DataTypeResourcePermissionHelper;
 import com.sx.icecap.service.CollectionSetLinkLocalService;
 import com.sx.icecap.service.DataCollectionLocalService;
 import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.SetTypeLinkLocalService;
-import com.sx.icecap.service.TypeStructureLinkLocalService;
 
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -67,10 +55,6 @@ public class SearchDataCollectionsResourceCommand extends BaseMVCResourceCommand
 		System.out.println("SearchDataCollectionsResourceCommand");
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
-		long dataCollectionId = ParamUtil.getLong(resourceRequest,  "dataCollectionId", 0);
-		//long dataSetId = ParamUtil.getLong(resourceRequest,  "dataSetId", 0);
-		//long dataTypeId = ParamUtil.getLong(resourceRequest,  "dataTypeId", 0);
-		
 		int start = ParamUtil.getInteger(resourceRequest, StationXWebKeys.START, StationXConstants.DEFAULT_START);
 		int delta = ParamUtil.getInteger(resourceRequest, StationXWebKeys.DELTA, StationXConstants.DEFAULT_DELTA);
 		int end = start + delta - 1;
@@ -99,7 +83,7 @@ public class SearchDataCollectionsResourceCommand extends BaseMVCResourceCommand
 				JSONObject jsonCollection = collection.toJSON(themeDisplay.getLocale());
 				
 				jsonCollection.put(
-						"dataSets", 
+						"dataSetList", 
 						_getDataSetJSONArray(
 								groupId, 
 								collection.getDataCollectionId(), 
@@ -133,7 +117,7 @@ public class SearchDataCollectionsResourceCommand extends BaseMVCResourceCommand
 				JSONObject jsonSet = dataSet.toJSON(locale);
 				jsonSet.put("linkId", collectionSetLink.getCollectionSetLinkId());
 				//System.out.println("jsonSet: " + jsonSet.toString(4));
-				jsonSet.put("dataTypes",  _getDataTypeJSONArray(groupId, collectionId, dataSet.getDataSetId(), locale) );
+				jsonSet.put("dataTypeList",  _getDataTypeJSONArray(groupId, collectionId, dataSet.getDataSetId(), locale) );
 				
 				jsonSetArray.put(jsonSet);
 			}

@@ -1,23 +1,16 @@
 package com.sx.datamarket.web.command.resource;
 
-import com.liferay.bookmarks.exception.NoSuchFolderException;
-import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
-import com.liferay.document.library.kernel.store.DLStoreUtil;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
-import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
@@ -25,41 +18,22 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.sx.icecap.constant.MVCCommand;
-import com.sx.icecap.constant.ParameterType;
 import com.sx.icecap.constant.WebPortletKey;
-import com.sx.icecap.exception.NoSuchDataCollectionException;
-import com.sx.icecap.exception.NoSuchDataSetException;
-import com.sx.icecap.exception.NoSuchDataTypeException;
 import com.sx.icecap.model.DataCollection;
 import com.sx.icecap.model.DataSet;
-import com.sx.icecap.model.DataStructure;
 import com.sx.icecap.model.DataType;
 import com.sx.icecap.model.StructuredData;
-import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.service.DataCollectionLocalService;
 import com.sx.icecap.service.DataSetLocalService;
-import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
-import com.sx.icecap.service.ParameterLocalService;
 import com.sx.icecap.service.StructuredDataLocalService;
-import com.sx.icecap.service.TypeStructureLinkLocalService;
-import com.sx.util.SXLocalizationUtil;
+import com.sx.util.SXPortalUtil;
+import com.sx.util.SXUtil;
+import com.sx.util.portlet.SXPortletURLUtil;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -98,21 +72,31 @@ public class SaveStructuredDataResourceCommand extends BaseMVCResourceCommand {
 		
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
-		DataCollection dataCollection = null;
-		DataSet dataSet = null;
-		DataType dataType = null;
-		
-		try{
-			dataCollection = _dataCollectionLocalService.getDataCollection(dataCollectionId);
-			dataSet = _dataSetLocalService.getDataSet(dataSetId);
-			dataType = _dataTypeLocalService.getDataType(dataTypeId);
-		} catch(NoSuchDataCollectionException | NoSuchDataSetException | NoSuchDataTypeException e) {
-			throw e;
+		DataCollection dataCollection = _dataCollectionLocalService.getDataCollection(dataCollectionId);
+		DataSet dataSet = _dataSetLocalService.getDataSet(dataSetId);
+		DataType dataType = _dataTypeLocalService.getDataType(dataTypeId);
+
+		if( Validator.isNull(dataCollection) || Validator.isNull(dataSet) || Validator.isNull(dataType)) {
+			result.put("error", 
+					SXUtil.translate(
+							resourceRequest, 
+							"datacollection-id-dataset-id-datatype-id-should-be-provided-to-save-structured-data"));
+			
+			SXPortletURLUtil.responeAjax(resourceResponse, result);
+			
+			return;
 		}
 		
-		JSONObject jsonData = JSONFactoryUtil.createJSONObject(strData);
-		System.out.println("JSON Data: " + jsonData.toString(4));
+		if( strData.isEmpty() ) {
+			result.put("error", SXUtil.translate( resourceRequest, "there-is-no-data-to-be-saved"));
+			
+			SXPortletURLUtil.responeAjax(resourceResponse, result);
+			
+			return;
+		}
 		
+		String dataTypeCode = dataType.getDataTypeCode();
+		String dataTypeVersion = dataType.getDataTypeVersion();
 		
 		ServiceContext dataSC = ServiceContextFactory.getInstance(StructuredData.class.getName(), resourceRequest);
 
@@ -140,62 +124,56 @@ public class SaveStructuredDataResourceCommand extends BaseMVCResourceCommand {
 						dataSC);
 		}
 		
-		result = structuredData.toJSON();
+		result.put("message", SXUtil.translate(resourceRequest, "data-saved-as", structuredData.getStructuredDataId()));
+		
+		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		long companyId = themeDisplay.getCompanyId();
+		String stationXDataDir = PropsUtil.get("stationx-data-dir");
+		Path sxDataFolderPath = Paths.get( 
+						stationXDataDir + "/" + 
+						companyId + "/" + 
+						themeDisplay.getScopeGroupId() + "/" +
+						dataCollection.getDataCollectionCode() + "/" +
+						dataCollection.getDataCollectionVersion() + "/" +
+						dataSet.getDataSetCode() + "/" +
+						dataSet.getDataSetVersion()
+		);
+		
+		Path dataTypeCodeFolderPath = sxDataFolderPath.resolve(dataTypeCode);
+		Path dataTypeVersionFolderPath = dataTypeCodeFolderPath.resolve(dataTypeVersion);
 
-		if( !strFileFields.isEmpty() ) {
+		if( strFileFields.isEmpty() ) {
+			SXPortalUtil.deleteFolder(dataTypeCodeFolderPath);
+		} else {
 			String[] fileFields = strFileFields.split(",");
 			
-			//Check and manage folders to save the data files
-			UploadPortletRequest uploadRequest = PortalUtil.getUploadPortletRequest(resourceRequest);
-	
-
-			String stationXDataDir = PropsUtil.get("stationx-data-dir");
-			System.out.println("StationX Data Dir: " + stationXDataDir);
+			JSONObject jsonData =null;
 			
-			ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
-			long companyId = themeDisplay.getCompanyId();
-			Path folderPath = 
-					Paths.get( stationXDataDir+"/" + companyId + "/" +
-											themeDisplay.getScopeGroupId() + "/" + 
-											dataCollection.getDataCollectionCode() + "/" +
-											dataSet.getDataSetCode() + "/" +
-											dataType.getDataTypeCode() + "/" +
-											structuredData.getStructuredDataId());
-
-			if( Files.exists(folderPath) ) {
-				System.out.println("Path exists: " + folderPath.toString());
-			} else {
-				System.out.println(("Path doesn't exist: " + folderPath.toString()));
-				Files.createDirectories(folderPath);
+			try {
+				jsonData = JSONFactoryUtil.createJSONObject(strData);
+				System.out.println("JSON Data: " + jsonData.toString(4));
+			} catch ( JSONException e ) {
+				result.put("error", "wrong-json-format-of-the-data");
+				
+				SXPortletURLUtil.responeAjax(resourceResponse, result);
+				
+				return;
 			}
 			
+			UploadPortletRequest uploadRequest = PortalUtil.getUploadPortletRequest(resourceRequest);
 			JSONArray errorFiles = JSONFactoryUtil.createJSONArray();
 			
-			for(String fileField : fileFields) {
-				String[] fileNames = uploadRequest.getFileNames(fileField);
-				String contentType = uploadRequest.getContentType(fileField);
-				File[] files = uploadRequest.getFiles(fileField);
+			Iterator< String> keys = jsonData.keys();
+			while( keys.hasNext() ) {
+				String paramCode = keys.next();
+				Path paramCodeFolderPath = dataTypeVersionFolderPath.resolve(paramCode);
 				
-				if( Validator.isNotNull(files)) {
-					for(int i=0; i<files.length; i++) {
-						File file = files[i];
-						String fileName = fileNames[i];
-						System.out.println("FileName: " + file.getName());
-						System.out.println("fileField: "+fileField + ",  : " + fileName +", "+contentType+", "+file.length() );
-						
-						// Choose where to save it
-						Path destinationPath = folderPath.resolve( fileName);
-	
-						// Copy file to destination
-						try ( InputStream in = new FileInputStream(file) ){
-							Files.copy(in, destinationPath);
-						} catch ( FileAlreadyExistsException e ) {
-							JSONObject errorFile = JSONFactoryUtil.createJSONObject();
-							errorFile.put("fileName", file.getName());
-							errorFile.put("error", "duplicated");
-							errorFiles.put(errorFile);
-						}
-					}
+				if( SXUtil.contains(fileFields, paramCode) ) {
+					SXPortalUtil.emptyFolder(paramCodeFolderPath, true);
+					
+					errorFiles = SXPortalUtil.saveUploadFieldFiles(uploadRequest, paramCode, paramCodeFolderPath);
+				} else {
+					SXPortalUtil.deleteFolder(paramCodeFolderPath);
 				}
 			}
 			
@@ -204,10 +182,7 @@ public class SaveStructuredDataResourceCommand extends BaseMVCResourceCommand {
 			}
 		}
 		
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toString());
-		pw.flush();
-		pw.close();
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
 	
 	@Reference

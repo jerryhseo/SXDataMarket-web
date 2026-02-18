@@ -14,7 +14,6 @@ class DataStructure extends GroupParameter {
 	};
 
 	static checkError(fields) {
-		//console.log("checkError: ", fields);
 		let error = null;
 		fields.every((field) => {
 			if (field.hasError()) {
@@ -34,6 +33,9 @@ class DataStructure extends GroupParameter {
 	#paramDelimiterPosition = "end";
 	#paramValueDelimiter = "=";
 	#hierarchicalData = false;
+
+	#verified = {};
+	#freezed = {};
 
 	constructor({ namespace, formId, properties = {} }) {
 		super({
@@ -70,6 +72,12 @@ class DataStructure extends GroupParameter {
 	get description() {
 		return this.definition;
 	}
+	get verified() {
+		return this.#verified;
+	}
+	get freezed() {
+		return this.#freezed;
+	}
 
 	set paramDelimiter(val) {
 		this.#paramDelimiter = val;
@@ -94,6 +102,12 @@ class DataStructure extends GroupParameter {
 	}
 	set description(val) {
 		this.definition = val;
+	}
+	set verified(verified) {
+		this.#verified = verified;
+	}
+	set freezed(freezed) {
+		this.#freezed = freezed;
 	}
 
 	initProperties(json) {
@@ -328,6 +342,9 @@ class DataStructure extends GroupParameter {
 		this.paramValueDelimiter = json.paramValueDelimiter ?? "=";
 
 		this.dataStructureId = json.paramId ?? json.dataStructureId;
+
+		this.verified = json.verified ?? { verified: false };
+		this.freezed = json.freezed ?? { freezed: false };
 	}
 
 	toJSON() {
@@ -338,6 +355,9 @@ class DataStructure extends GroupParameter {
 		if (this.paramValueDelimiter !== "=") json.paramValueDelimiter = this.paramValueDelimiter;
 
 		json.dataStructureId = this.dataStructureId;
+
+		if (Util.isNotEmpty(this.verified)) json.verified = this.verified;
+		if (Util.isNotEmpty(this.freezed)) json.freezed = this.freezed;
 
 		return json;
 	}

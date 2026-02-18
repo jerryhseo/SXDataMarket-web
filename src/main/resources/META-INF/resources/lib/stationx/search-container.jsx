@@ -387,10 +387,11 @@ export class SXSearchResultConainer extends React.Component {
 		this.forceUpdate();
 	};
 
-	handleColumnClicked = (row, column) => {
+	handleColumnClicked = (rowIndex, row, column) => {
 		Event.fire(Event.SX_TABLE_COLUMN_CLICKED, this.namespace, this.namespace, {
 			targetFormId: this.formId,
 			componentId: this.componentId,
+			rowIndex: rowIndex,
 			column: column,
 			row: row
 		});
@@ -446,9 +447,6 @@ export class SXSearchResultConainer extends React.Component {
 												<Cell
 													key={column.id}
 													textAlign="center"
-													onClick={(e) => {
-														this.handleColumnClicked(row, column);
-													}}
 												>
 													<ClayCheckbox
 														aria-label="select"
@@ -464,9 +462,6 @@ export class SXSearchResultConainer extends React.Component {
 												<Cell
 													key={column.id}
 													textAlign="center"
-													onClick={(e) => {
-														this.handleColumnClicked(row, column);
-													}}
 												>
 													<SXActionDropdown
 														namespace={this.namespace}
@@ -483,7 +478,7 @@ export class SXSearchResultConainer extends React.Component {
 													key={column.id}
 													textAlign="center"
 													onClick={(e) => {
-														this.handleColumnClicked(row, column);
+														this.handleColumnClicked(index, row, column);
 													}}
 												>
 													{column.value}

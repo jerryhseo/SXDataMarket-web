@@ -6,6 +6,7 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.sx.icecap.constant.DataTypeProperties;
 import com.sx.icecap.constant.MVCCommand;
 import com.sx.icecap.constant.WebKey;
@@ -69,11 +70,11 @@ public class CheckDataTypeUniqueResourceCommand extends BaseMVCResourceCommand{
 			}
 		}
 		else {
-			try {
-				DataType dataType = _dataTypeLocalService.getDataType(dataTypeCode, dataTypeVersion);
-				
+			DataType dataType = _dataTypeLocalService.getDataType(dataTypeCode, dataTypeVersion);
+			
+			if( Validator.isNotNull(dataType) ) {
 				result = dataTypeId == dataType.getDataTypeId() ? "true" : "false";
-			} catch( NoSuchDataTypeException e) {
+			} else {
 				result = "true";
 			}
 		}

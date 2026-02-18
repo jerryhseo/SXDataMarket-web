@@ -1,7 +1,5 @@
 package com.sx.datamarket.web.command.resource;
 
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
@@ -16,16 +14,13 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.sx.icecap.constant.DataTypeProperties;
 import com.sx.icecap.constant.MVCCommand;
 import com.sx.icecap.constant.WebPortletKey;
-import com.sx.icecap.exception.DuplicatedDataTypeNameException;
-import com.sx.icecap.exception.InvalidDataTypeCodeException;
 import com.sx.icecap.model.DataType;
 import com.sx.icecap.model.TypeVisualizerLink;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.TypeVisualizerLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
+import com.sx.util.portlet.SXPortletURLUtil;
 
-import java.io.PrintWriter;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -74,7 +69,6 @@ public class UpdateDataTypeResourceCommand extends BaseMVCResourceCommand{
 		String extension = ParamUtil.getString(resourceRequest, DataTypeProperties.EXTENSION);
 		String displayName = ParamUtil.getString(resourceRequest, DataTypeProperties.DISPLAY_NAME);
 		String description = ParamUtil.getString(resourceRequest, DataTypeProperties.DESCRIPTION);
-		String tooltip = ParamUtil.getString(resourceRequest, DataTypeProperties.TOOLTIP);
 		String strVisualizers = ParamUtil.getString(resourceRequest, "visualizers");
 		long dataStructureId = ParamUtil.getLong(resourceRequest, DataTypeProperties.DATA_STRUCTURE_ID, 0);
 		
@@ -89,7 +83,6 @@ public class UpdateDataTypeResourceCommand extends BaseMVCResourceCommand{
 		System.out.println("extension: " + extension);
 		System.out.println("displayName: " + displayName);
 		System.out.println("description: " + description);
-		System.out.println("tooltip: " + tooltip);
 		System.out.println("visualizers: " + strVisualizers);
 		
 		DataType dataType =_dataTypeLocalService.updateDataType(
@@ -99,7 +92,6 @@ public class UpdateDataTypeResourceCommand extends BaseMVCResourceCommand{
 				extension, 
 				SXLocalizationUtil.jsonToLocalizedMap(displayName), 
 				SXLocalizationUtil.jsonToLocalizedMap(description), 
-				SXLocalizationUtil.jsonToLocalizedMap(tooltip), 
 				WorkflowConstants.STATUS_APPROVED,
 				sc
 		);
@@ -144,12 +136,8 @@ public class UpdateDataTypeResourceCommand extends BaseMVCResourceCommand{
 							visualizerId);
 			}
 		}
-			
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
 		
-		pw.flush();
-		pw.close();
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
 	
 	@Reference

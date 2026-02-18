@@ -43,11 +43,11 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 			loadingStatus: false,
 			infoDialog: false,
 			confirmDeleteDialog: false,
+			dataCollectionIdToBeDeleted: 0,
+			dialogHeader: <></>,
+			dialogBody: <></>,
 			underConstruction: false
 		};
-
-		this.dialogHeader = <></>;
-		this.dialogBody = <></>;
 
 		this.searchedData = [];
 		this.actionMenus = [];
@@ -173,19 +173,18 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 	};
 
 	listenerPopActionClicked = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, action, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataCollectionExplorer] listenerPopActionClicked event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataCollectionExplorer] listenerPopActionClicked event rejected: ", targetPortlet, targetFormId);
 			return;
 		}
 
-		//console.log("[DataCollectionExplorer] listenerPopActionClicked: ", dataPacket, this.searchResults);
+		//console.log("[DataCollectionExplorer] listenerPopActionClicked: ", action, data);
 
-		switch (dataPacket.action) {
+		const selectedDataCollectionId = this.searchResults[data].id;
+		switch (action) {
 			case "update": {
-				const selectedDataCollectionId = this.searchResults[dataPacket.data][0].value;
-
 				this.fireLoadPortlet({
 					portletName: PortletKeys.DATACOLLECTION_EDITOR,
 					params: {
@@ -196,12 +195,23 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 				break;
 			}
 			case "delete": {
+				this.setState({
+					dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+					dialogBody: Util.translate(
+						"datacollection-will-be-deleted-with-its-link-info-and-unrecoverable-are-you-sure-to-proceed"
+					),
+					dataCollectionIdToBeDeleted: selectedDataCollectionId,
+					confirmDeleteDialog: true
+				});
+
+				/*
 				this.fireRequest({
 					requestId: RequestIDs.deleteDataCollections,
 					params: {
-						dataCollectionIds: this.selectedDataCollectionIds()
+						dataCollectionIds: [selectedDataCollectionId]
 					}
 				});
+				*/
 				break;
 			}
 		}
@@ -233,10 +243,11 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 			return;
 		}
 
-		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
-
-		this.setState({ confirmDeleteDialog: true });
+		this.setState({
+			confirmDeleteDialog: true,
+			dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+			dialogBody: Util.translate("this-is-not-recoverable-are-you-sure-to-proceed")
+		});
 	};
 
 	listenerTableColumnClicked = (event) => {
@@ -301,17 +312,15 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 				break;
 			}
 			case RequestIDs.deleteDataCollections: {
-				state.infoDialog = true;
-				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("datacollections-deleted-successfully");
-
 				this.fireRequest({
 					requestId: RequestIDs.searchDataCollections,
 					params: this.params
 				});
 
 				this.setState({
-					infoDialog: true
+					infoDialog: true,
+					dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+					dialogBody: Util.translate("datacollections-deleted-successfully")
 				});
 
 				return;
@@ -442,7 +451,9 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 
 	deleteDataCollections = () => {
 		//console.log("Selected DataTypes: ", this.searchResults, this.selectedDataCollectionIds());
-		const selectedDataCollectionIds = this.selectedDataCollectionIds();
+		const selectedDataCollectionIds = this.state.dataCollectionIdToBeDeleted
+			? [this.state.dataCollectionIdToBeDeleted]
+			: this.selectedDataCollectionIds();
 		if (Util.isEmpty(selectedDataCollectionIds)) {
 			return;
 		}
@@ -495,8 +506,8 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 					/>
 					{this.state.infoDialog && (
 						<SXModalDialog
-							header={this.dialogHeader}
-							body={this.dialogBody}
+							header={this.state.dialogHeader}
+							body={this.state.dialogBody}
 							buttons={[
 								{
 									label: Util.translate("ok"),
@@ -509,21 +520,21 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 					)}
 					{this.state.confirmDeleteDialog && (
 						<SXModalDialog
-							header={this.dialogHeader}
-							body={this.dialogBody}
+							header={this.state.dialogHeader}
+							body={this.state.dialogBody}
 							buttons={[
 								{
 									label: Util.translate("confirm"),
 									onClick: (e) => {
 										this.deleteDataCollections();
-										this.setState({ confirmDeleteDialog: false });
+										this.setState({ confirmDeleteDialog: false, dataCollectionIdToBeDeleted: 0 });
 									},
 									displayType: "secondary"
 								},
 								{
 									label: Util.translate("cancel"),
 									onClick: (e) => {
-										this.setState({ confirmDeleteDialog: false });
+										this.setState({ confirmDeleteDialog: false, dataCollectionIdToBeDeleted: 0 });
 									}
 								}
 							]}

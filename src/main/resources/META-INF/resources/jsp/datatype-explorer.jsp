@@ -1,23 +1,15 @@
 <%@page import="com.liferay.portal.kernel.json.JSONArray"%>
 <%@page import="com.sx.icecap.constant.DisplayStyle"%>
 <%@page import="com.liferay.portal.kernel.portlet.LiferayWindowState"%>
-<%@page import="com.liferay.portal.kernel.service.LayoutLocalServiceUtil"%>
-<%@page import="com.liferay.portal.kernel.model.LayoutTypePortlet"%>
 <%@page import="com.liferay.portal.kernel.workflow.WorkflowConstants"%>
 <%@page import="com.liferay.petra.string.StringPool"%>
 <%@page import="com.liferay.portal.kernel.search.Field"%>
-<%@page import="com.liferay.portal.kernel.model.Layout"%>
 <%@page import="com.liferay.portal.kernel.util.PortalUtil"%>
-<%@page import="com.sx.util.SXPortalUtil"%>
 <%@page import="com.sx.icecap.constant.WebKey"%>
 <%@page import="com.sx.icecap.constant.WebPortletKey"%>
-<%@page import="com.sx.icecap.constant.MVCCommand"%>
 <%@page import="com.sx.constant.StationXWebKeys"%>
-<%@page import="com.liferay.portal.kernel.util.Validator"%>
 <%@page import="com.sx.constant.StationXConstants"%>
 <%@page import="com.liferay.portal.kernel.util.GetterUtil"%>
-<%@page import="com.sx.icecap.model.DataType"%>
-<%@page import="java.util.List"%>
 <%@ include file="./init.jsp" %>
 <!-- link
 	rel="stylesheet"

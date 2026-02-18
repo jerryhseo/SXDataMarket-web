@@ -6,6 +6,7 @@ import Icon from "@clayui/icon";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import Panel from "@clayui/panel";
 import { Body, Cell, Head, Row, Table, Text } from "@clayui/core";
+import { SXUpgradeIcon } from "../../stationx/icon";
 
 class SXSetInfo extends React.Component {
 	constructor(props) {
@@ -20,8 +21,8 @@ class SXSetInfo extends React.Component {
 		this.setVersion = props.setVersion;
 		this.displayName = props.displayName;
 		this.description = props.description;
-		this.verified = props.verified;
-		this.freezed = props.freezed;
+		this.verified = props.verified ?? { verified: false };
+		this.freezed = props.freezed ?? { freezed: false };
 		this.spritemap = props.spritemap;
 	}
 
@@ -68,7 +69,19 @@ class SXSetInfo extends React.Component {
 							{ fieldName: Util.translate("id"), fieldValue: this.setId },
 							{ fieldName: Util.translate("code"), fieldValue: this.setCode },
 							{ fieldName: Util.translate("version"), fieldValue: this.setVersion },
-							{ fieldName: Util.translate("description"), fieldValue: this.description }
+							{ fieldName: Util.translate("description"), fieldValue: this.description },
+							{
+								fieldName: Util.translate("verify"),
+								fieldValue: this.verified.verified
+									? Util.translate("verified")
+									: Util.translate("unverified")
+							},
+							{
+								fieldName: Util.translate("freeze"),
+								fieldValue: this.freezed.freezed
+									? Util.translate("freezed")
+									: Util.translate("unfreezed")
+							}
 						]}
 					>
 						{(row, index) => (
@@ -122,11 +135,10 @@ class DataSetViewer extends SXBaseVisualizer {
 
 		this.state = {
 			infoDialog: false,
+			dialogHeader: <></>,
+			dialogBody: <></>,
 			loadingStatus: LoadingStatus.PENDING
 		};
-
-		this.dialogHeader = <></>;
-		this.dialogBody = <></>;
 
 		this.buttons = [
 			{
@@ -165,19 +177,44 @@ class DataSetViewer extends SXBaseVisualizer {
 		}
 
 		//console.log("[DataSetViewer] listenerResonse: ", requestId, params, data);
+		const { error } = data;
+		if (error) {
+			this.setState({
+				dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				dialogBody: error,
+				infoDialog: true
+			});
+
+			return;
+		}
+
 		switch (requestId) {
 			case RequestIDs.viewDataSet: {
-				this.dataSetId = data.dataSetId;
-				this.dataSetCode = data.dataSetCode;
-				this.dataSetVersion = data.dataSetVersion;
-				this.displayName = data.displayName;
-				this.description = data.description;
-				this.dataTypeList = data.dataTypes;
-				this.verified = data.verified;
-				this.freezed = data.freezed;
-				this.histories = data.histories;
-				this.comments = data.comments;
-				this.statistics = data.statistics;
+				const {
+					dataSetId,
+					dataSetCode,
+					dataSetVersion,
+					displayName,
+					description,
+					dataTypeList,
+					verified,
+					freezed,
+					histories,
+					comments,
+					statistics
+				} = data;
+
+				this.dataSetId = dataSetId;
+				this.dataSetCode = dataSetCode;
+				this.dataSetVersion = dataSetVersion;
+				this.displayName = displayName;
+				this.description = description;
+				this.dataTypeList = dataTypeList;
+				this.verified = verified ?? { verified: false };
+				this.freezed = freezed ?? { freezed: false };
+				this.histories = histories;
+				this.comments = comments;
+				this.statistics = statistics;
 
 				this.setState({
 					loadingStatus: LoadingStatus.COMPLETE
@@ -264,6 +301,7 @@ class DataSetViewer extends SXBaseVisualizer {
 												spritemap={this.spritemap}
 											/>
 										))}
+										<SXUpgradeIcon />
 									</Button.Group>
 								)}
 							</div>
@@ -417,6 +455,20 @@ class DataSetViewer extends SXBaseVisualizer {
 						</div>
 					</Panel.Body>
 				</Panel>
+				{this.state.infoDialog && (
+					<SXModalDialog
+						header={this.state.dialogHeader}
+						body={this.state.dialogBody}
+						buttons={[
+							{
+								label: Util.translate("ok"),
+								onClick: () => {
+									this.setState({ infoDialog: false });
+								}
+							}
+						]}
+					/>
+				)}
 			</>
 		);
 	}

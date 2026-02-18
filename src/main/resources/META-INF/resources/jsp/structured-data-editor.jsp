@@ -1,7 +1,6 @@
 <%@page import="com.liferay.portal.kernel.json.JSONFactoryUtil"%>
 <%@page import="com.sx.icecap.model.DataStructure"%>
 <%@page import="com.liferay.portal.kernel.util.GetterUtil"%>
-<%@page import="com.sx.icecap.model.TypeStructureLink"%>
 <%@page import="com.liferay.portal.kernel.json.JSONArray"%>
 <%@page import="com.liferay.portal.kernel.portlet.LiferayWindowState"%>
 <%@page import="com.sx.icecap.constant.WebPortletKey"%>
@@ -16,7 +15,6 @@
     long dataCollectionId = ParamUtil.getLong(renderRequest, "dataCollectionId", 0);
     long dataSetId = ParamUtil.getLong(renderRequest, "dataSetId", 0);
     long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
-    long dataStructureId = ParamUtil.getLong(renderRequest, "dataStructureId", 0);
     long structuredDataId = ParamUtil.getLong(renderRequest, "structuredDataId", 0);
     boolean titleBar = ParamUtil.getBoolean(renderRequest, "titleBar", false);
     boolean buttons = ParamUtil.getBoolean(renderRequest, "buttons", true);
@@ -64,7 +62,6 @@
 				params:{
 					editState: "<%= editState %>",
 					structuredDataId: Number('<%= structuredDataId %>'),
-					dataStructureId: Number('<%= dataStructureId %>'),
 					dataCollectionId: Number('<%= dataCollectionId %>'),
 					dataSetId: Number('<%= dataSetId %>'),
 					dataTypeId: Number('<%= dataTypeId %>'),

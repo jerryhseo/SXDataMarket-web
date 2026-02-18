@@ -16,6 +16,7 @@ import SXBaseVisualizer from "../../stationx/visualizer";
 import { SXLabeledText } from "../Form/form";
 import ParameterConstants from "../Parameter/parameter-constants";
 import { ParameterUtil } from "../Parameter/parameters";
+import { Text } from "@clayui/core";
 
 class DataCollectionEditor extends SXBaseVisualizer {
 	constructor(props) {
@@ -185,9 +186,9 @@ class DataCollectionEditor extends SXBaseVisualizer {
 			"[dataCollectionEditor] listenerFieldValueChanged received: ",
 			event.dataPacket,
 			parameter,
-			this.getAssociatedDataSetInfos(this.dataSets.getValue())
-		);
-		*/
+			this.dataSets.getValue(),
+			this.dataSets.getValue().map((strDataSetId) => Number(strDataSetId))
+		); */
 
 		Event.fire(Event.SX_DATACOLLECTION_CHANGED, this.namespace, this.workbenchNamespace, {
 			dataCollection: {
@@ -196,7 +197,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 				dataCollectionVersion: this.dataCollectionVersion.getValue(),
 				displayName: this.displayName.getValue(),
 				description: this.description.getValue(),
-				dataSets: this.getAssociatedDataSetInfos(this.dataSets.getValue())
+				dataSets: this.dataSets.getValue().map((strDataSetId) => Number(strDataSetId))
 			}
 		});
 	};
@@ -210,7 +211,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		}
 
 		//console.log("[dataCollectionEditor] listenerWorkbenchReady received: ", dataPacket);
-
+		//const requestId = this.dataCollectionId > 0 ? RequestIDs.loadDataCollection : RequestIDs.loadAssociatedDataSets;
 		this.fireRequest({
 			requestId: RequestIDs.loadDataCollection,
 			params: {
@@ -224,30 +225,25 @@ class DataCollectionEditor extends SXBaseVisualizer {
 		const { targetPortlet, requestId, data } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			console.log("[dataCollectionEditor] listenerResponce rejected: ", event.dataPacket);
+			//console.log("[dataCollectionEditor] listenerResponce rejected: ", event.dataPacket);
 			return;
 		}
 
-		console.log("[dataCollectionEditor] listenerResonse: ", event.dataPacket);
+		//console.log("[dataCollectionEditor] listenerResonse: ", event.dataPacket);
 		switch (requestId) {
 			case RequestIDs.loadDataCollection: {
-				const {
-					dataCollectionCode,
-					dataCollectionVersion = "1.0.0",
-					displayName,
-					description,
-					associatedDataSetList = [],
-					availableDataSetList = []
-				} = data;
+				const { dataCollection, associatedDataSetList = [], availableDataSetList = [] } = data;
 
-				this.dataCollectionCode.setValue({ value: dataCollectionCode });
-				this.dataCollectionVersion.setValue({ value: dataCollectionVersion });
-				this.displayName.setValue({ value: displayName });
-				this.description.setValue({ value: description });
-				this.dataCollectionCode.refreshKey();
-				this.dataCollectionVersion.refreshKey();
-				this.displayName.refreshKey();
-				this.description.refreshKey();
+				if (Util.isNotEmpty(dataCollection)) {
+					this.dataCollectionCode.setValue({ value: dataCollection.dataCollectionCode });
+					this.dataCollectionVersion.setValue({ value: dataCollection.dataCollectionVersion });
+					this.displayName.setValue({ value: dataCollection.displayName });
+					this.description.setValue({ value: dataCollection.description });
+					this.dataCollectionCode.refreshKey();
+					this.dataCollectionVersion.refreshKey();
+					this.displayName.refreshKey();
+					this.description.refreshKey();
+				}
 
 				//console.log("DataCollectionEditor.listenerResponse : associatedDataSetList", associatedDataSetList);
 
@@ -271,7 +267,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 
 						return {
 							key: dataSetId,
-							label: displayName + " v." + dataSetVersion,
+							label: Util.getTranslationObject(this.languageId, displayName + " v." + dataSetVersion),
 							value: dataSetId
 						};
 					});
@@ -332,13 +328,15 @@ class DataCollectionEditor extends SXBaseVisualizer {
 	}
 
 	getAssociatedDataSetInfos(dataSetStrIds) {
-		const dataSetIds = dataSetStrIds.map((id) => Number(id));
+		return dataSetStrIds.map((id) => Number(id));
 
+		/*
 		const associatedDataSets = this.availableDataSetList
 			? this.availableDataSetList.filter((dataSet) => dataSetIds.includes(Number(dataSet.dataSetId)))
 			: [];
 
 		return associatedDataSets;
+		*/
 	}
 
 	checkFieldError = () => {
@@ -450,7 +448,17 @@ class DataCollectionEditor extends SXBaseVisualizer {
 	render() {
 		return (
 			<>
-				{this.state.editStatus === EditStatus.UPDATE && (
+				{this.titleBar && this.dataCollectionId > 0 && (
+					<div style={{ borderBottom: "3px solid #e7e7ed", marginTop: "0.5rem", marginBottom: "1.5rem" }}>
+						<Text
+							size={6}
+							weight="bold"
+						>
+							{Util.translate("edit-datacollection")}
+						</Text>
+					</div>
+				)}
+				{this.dataCollectionId > 0 && (
 					<SXLabeledText
 						label={Util.translate("datacollection-id")}
 						text={this.dataCollectionId}
@@ -479,19 +487,21 @@ class DataCollectionEditor extends SXBaseVisualizer {
 							/>
 							{Util.translate("save")}
 						</Button>
-						<Button
-							title={Util.translate("delete")}
-							onClick={this.handleDeleteClick}
-							displayType="warning"
-						>
-							<span className="inline-item inline-item-before">
-								<Icon
-									symbol="trash"
-									spritemap={this.spritemap}
-								/>
-							</span>
-							{Util.translate("delete")}
-						</Button>
+						{this.dataCollectionId > 0 && (
+							<Button
+								title={Util.translate("delete")}
+								onClick={this.handleDeleteClick}
+								displayType="warning"
+							>
+								<span className="inline-item inline-item-before">
+									<Icon
+										symbol="trash"
+										spritemap={this.spritemap}
+									/>
+								</span>
+								{Util.translate("delete")}
+							</Button>
+						)}
 					</Button.Group>
 					{this.state.infoDialog && (
 						<SXModalDialog

@@ -20,7 +20,6 @@ class DataSetExplorer extends SXBaseVisualizer {
 
 		//console.log("DataSetExplorer props: ", props);
 		this.dataCollectionId = props.dataCollectionId ?? 0;
-		this.dataSetId = props.dataSetId ?? 0;
 
 		this.dataSetList = [];
 
@@ -65,11 +64,6 @@ class DataSetExplorer extends SXBaseVisualizer {
 				name: Util.translate("status"),
 				width: "6rem"
 			},
-			//{
-			//	id: "dataStaus",
-			//	name: Util.translate("data-status"),
-			//	width: "6rem"
-			//},
 			{
 				id: "actions",
 				name: "actions",
@@ -80,9 +74,6 @@ class DataSetExplorer extends SXBaseVisualizer {
 			this.tableColumns.unshift({ id: "checkbox", name: "", width: "2.5rem" });
 		}
 
-		this.infoDlgHeader = <></>;
-		this.infoDlgBody = <></>;
-
 		this.state = {
 			displayStyle: DisplayStyles.TABLE,
 			start: this.params.start ?? 0,
@@ -91,6 +82,9 @@ class DataSetExplorer extends SXBaseVisualizer {
 			searchContainerKey: Util.randomKey(),
 			infoDialog: false,
 			confirmDeleteDialog: false,
+			dataSetIdToBeDeleted: 0,
+			dialogHeader: <></>,
+			dialogBody: <></>,
 			loadingStatus: LoadingStatus.PENDING
 		};
 	}
@@ -145,17 +139,17 @@ class DataSetExplorer extends SXBaseVisualizer {
 	};
 
 	listenerPopActionClicked = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, action, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataSetExplorer] listenerPopActionClicked event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			console.log("[DataSetExplorer] listenerPopActionClicked event rejected: ", targetPortlet, targetFormId);
 			return;
 		}
 
-		const selectedDataSetId = this.searchResults[dataPacket.data][0].value;
-		console.log("[DataSetExplorer] listenerPopActionClicked: ", dataPacket, this.searchResults, selectedDataSetId);
+		const selectedDataSetId = this.searchResults[data].id;
+		console.log("[DataSetExplorer] listenerPopActionClicked: ", action, data);
 
-		switch (dataPacket.action) {
+		switch (action) {
 			case "update": {
 				this.fireLoadPortlet({
 					portletName: PortletKeys.DATASET_EDITOR,
@@ -168,10 +162,12 @@ class DataSetExplorer extends SXBaseVisualizer {
 				break;
 			}
 			case "delete": {
-				this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
-
-				this.setState({ confirmDeleteDialog: true });
+				this.setState({
+					confirmDeleteDialog: true,
+					dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+					dialogBody: Util.translate("this-is-not-recoverable-are-you-sure-to-proceed"),
+					dataSetIdToBeDeleted: selectedDataSetId
+				});
 
 				break;
 			}
@@ -198,10 +194,11 @@ class DataSetExplorer extends SXBaseVisualizer {
 		}
 		//console.log("[DataSetExplorer] listenerDeleteSelected: ", event.dataPacket);
 
-		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
-
-		this.setState({ confirmDeleteDialog: true });
+		this.setState({
+			confirmDeleteDialog: true,
+			dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+			dialogBody: Util.translate("this-is-not-recoverable-are-you-sure-to-proceed")
+		});
 	};
 
 	listenerWorkbenchReady = (event) => {
@@ -227,40 +224,37 @@ class DataSetExplorer extends SXBaseVisualizer {
 	};
 
 	listenerResponse = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, requestId, params, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataSetExplorer] listenerResponse rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace) {
+			console.log("[DataSetExplorer] listenerResponse rejected: ", targetPortlet);
 			return;
 		}
 
-		console.log("[DataSetExplorer] listenerResponse received: ", dataPacket);
+		console.log("[DataSetExplorer] listenerResponse received: ", requestId, params, data);
 
-		switch (dataPacket.requestId) {
+		switch (requestId) {
 			case RequestIDs.searchDataSets: {
-				this.convertSearchResultsToContent(dataPacket.data);
+				this.convertSearchResultsToContent(data);
 				break;
 			}
 			case RequestIDs.deleteDataSets: {
-				console.log("DataSetExplorer.response.deleteDataSets: ", dataPacket.data);
-
-				this.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("datasets-deleted-successfully");
-
 				this.fireRequest({
 					requestId: RequestIDs.searchDataSets,
 					params: this.params
 				});
 
 				this.setState({
-					infoDialog: true
+					infoDialog: true,
+					dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+					dialogBody: Util.translate("datasets-deleted-successfully")
 				});
+
 				return;
 			}
 		}
 
 		this.setState({
-			searchContainerKey: Util.randomKey(),
 			loadingStatus: LoadingStatus.COMPLETE
 		});
 	};
@@ -324,14 +318,14 @@ class DataSetExplorer extends SXBaseVisualizer {
 	convertSearchResultsToContent(results) {
 		this.searchResults = results.map((dataSet, index) => {
 			const {
-				dataCollectionId = 0,
+				dataCollectionId = this.dataCollectionId,
 				dataSetId,
 				dataSetCode,
 				dataSetVersion,
 				displayName,
 				verified = false,
 				freezed = false,
-				commentCount
+				commentCount = 0
 			} = dataSet;
 
 			//console.log("convertSearchResultsToContent: ", result, dataType, Util.isNotEmpty(typeStructureLink));
@@ -376,7 +370,7 @@ class DataSetExplorer extends SXBaseVisualizer {
 						value: (
 							<>
 								<span style={{ marginRight: "5px" }}>
-									<SXCommentIcon commentCount={dataSet.commentCount}></SXCommentIcon>
+									<SXCommentIcon commentCount={commentCount}></SXCommentIcon>
 								</span>
 								<span style={{ marginRight: "5px" }}>
 									<SXVerifyIcon verified={verified} />
@@ -405,7 +399,9 @@ class DataSetExplorer extends SXBaseVisualizer {
 			this.selectedDataSetIds()
 		);
 		*/
-		const selectedDataSetIds = this.selectedDataSetIds();
+		const selectedDataSetIds = this.state.dataSetIdToBeDeleted
+			? [this.state.dataSetIdToBeDeleted]
+			: this.selectedDataSetIds();
 		if (Util.isEmpty(selectedDataSetIds)) {
 			return;
 		}
@@ -455,8 +451,8 @@ class DataSetExplorer extends SXBaseVisualizer {
 				/>
 				{this.state.infoDialog && (
 					<SXModalDialog
-						header={this.dialogHeader}
-						body={this.dialogBody}
+						header={this.state.dialogHeader}
+						body={this.state.dialogBody}
 						buttons={[
 							{
 								label: Util.translate("ok"),
@@ -469,21 +465,21 @@ class DataSetExplorer extends SXBaseVisualizer {
 				)}
 				{this.state.confirmDeleteDialog && (
 					<SXModalDialog
-						header={this.dialogHeader}
-						body={this.dialogBody}
+						header={this.state.dialogHeader}
+						body={this.state.dialogBody}
 						buttons={[
 							{
 								label: Util.translate("confirm"),
 								onClick: (e) => {
 									this.deleteDataSets();
-									this.setState({ confirmDeleteDialog: false });
+									this.setState({ confirmDeleteDialog: false, dataSetIdToBeDeleted: 0 });
 								},
 								displayType: "secondary"
 							},
 							{
 								label: Util.translate("cancel"),
 								onClick: (e) => {
-									this.setState({ confirmDeleteDialog: false });
+									this.setState({ confirmDeleteDialog: false, dataSetIdToBeDeleted: 0 });
 								}
 							}
 						]}

@@ -4,6 +4,7 @@ import Link from "@clayui/link";
 import DropDown from "@clayui/drop-down";
 import { Event } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
+import { Provider } from "@clayui/core";
 
 class SXWorkbenchMenu extends React.Component {
 	constructor(props) {
@@ -44,13 +45,19 @@ class SXWorkbenchMenu extends React.Component {
 							<NavigationBar.Item
 								key={menuItem.id}
 								style={{ marginRight: "10px" }}
+								spritemap={this.spritemap}
 							>
 								<DropDown
 									active={this.state.active === menuItem.id}
 									alignmentByViewport={true}
 									closeOnClick={true}
 									trigger={
-										<Link style={{ fontWeight: "550", fontSize: "1.0rem" }}>{menuItem.label}</Link>
+										<Link
+											style={{ fontWeight: "550", fontSize: "1.0rem" }}
+											spritemap={this.spritemap}
+										>
+											{menuItem.label}
+										</Link>
 									}
 									onActiveChange={(val) => {
 										let active = val ? menuItem.id : "";
@@ -59,9 +66,13 @@ class SXWorkbenchMenu extends React.Component {
 									style={{
 										cursor: "pointer"
 									}}
+									spritemap={this.spritemap}
 								>
 									{this.state.active === menuItem.id && (
-										<DropDown.ItemList items={menuItem.children}>
+										<DropDown.ItemList
+											items={menuItem.children}
+											spritemap={this.spritemap}
+										>
 											{(item) => {
 												return (
 													<DropDown.Item
@@ -71,6 +82,7 @@ class SXWorkbenchMenu extends React.Component {
 
 															this.handleMenuItemClick(item.id);
 														}}
+														spritemap={this.spritemap}
 													>
 														{item.label}
 													</DropDown.Item>
@@ -86,6 +98,7 @@ class SXWorkbenchMenu extends React.Component {
 							<NavigationBar.Item
 								key={menuItem.id}
 								active={this.state.active === menuItem.id}
+								spritemap={this.spritemap}
 							>
 								<Link
 									style={{ fontWeight: "550", fontSize: "1.0rem", cursor: "pointer" }}
@@ -93,6 +106,7 @@ class SXWorkbenchMenu extends React.Component {
 										this.setState({ active: menuItem.id });
 										this.handleMenuItemClick(menuItem.id);
 									}}
+									spritemap={this.spritemap}
 								>
 									{menuItem.label}
 								</Link>

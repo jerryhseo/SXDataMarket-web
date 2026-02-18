@@ -159,12 +159,14 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 			SetTypeLink setTypeLink = 
 					_setTypeLinkLocalService.getSetTypeLink(groupId, dataCollectionId, dataSetId, dataTypeId);
 			if( Validator.isNull(setTypeLink)) {
-				/*
-				System.out.println("Save DataSet dataSetId: " + dataSetId);
-				System.out.println("Save DataSet dataTypeId: " + dataTypeId);
-				System.out.println("Save DataSet Osrder: " + order);
-				*/
-				_setTypeLinkLocalService.addSetTypeLink(dataCollectionId, dataSetId, dataTypeId, order, setTypeLinkSC);
+				setTypeLink = _setTypeLinkLocalService.addSetTypeLink(dataCollectionId, dataSetId, dataTypeId, order, setTypeLinkSC);
+				
+				System.out.println("SetTypeLink Added: " + setTypeLink.getPrimaryKey() + 
+						", " + setTypeLink.getGroupId() +
+						", " + setTypeLink.getDataCollectionId() +
+						", " + setTypeLink.getDataSetId() +
+						", " + setTypeLink.getDataTypeId()
+						);
 			} 
 			/* else {
 				System.out.println("Save DataSet Link found dataSetId: " + setTypeLink.getDataSetId());

@@ -1,39 +1,22 @@
 package com.sx.datamarket.web.command.resource;
 
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
-import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.sx.icecap.constant.Constant;
-import com.sx.icecap.constant.DataTypeProperties;
-import com.sx.icecap.constant.IcecapModelNames;
 import com.sx.icecap.constant.MVCCommand;
 import com.sx.constant.StationXConstants;
 import com.sx.constant.StationXWebKeys;
 import com.sx.icecap.constant.WebPortletKey;
-import com.sx.icecap.model.DataSet;
 import com.sx.icecap.model.DataType;
-import com.sx.icecap.model.SetTypeLink;
-import com.sx.icecap.model.TypeStructureLink;
-import com.sx.icecap.security.permission.resource.datatype.DataTypeModelPermissionHelper;
-import com.sx.icecap.security.permission.resource.datatype.DataTypeResourcePermissionHelper;
 import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
-import com.sx.icecap.service.SetTypeLinkLocalService;
-import com.sx.icecap.service.TypeStructureLinkLocalService;
 
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.portlet.ResourceRequest;

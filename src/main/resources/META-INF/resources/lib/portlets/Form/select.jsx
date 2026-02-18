@@ -57,22 +57,24 @@ class SXSelect extends SXBaseParameterComponent {
 						label: this.parameter.getPlaceholder(),
 						value: ""
 					}
-			  ];
+				];
 
 		optionItems = [
 			...optionItems,
 			...this.parameter.options.map((option) => ({
 				key: option.value,
-				label: Util.getTranslation(option.label, this.parameter.languageId, this.defaultLanguageId),
+				label: Util.getTranslation(option.label, this.languageId, this.defaultLanguageId),
 				value: option.value
 			}))
 		];
 
+		const value = Util.isNotEmpty(this.state.value) ? this.state.value : this.parameter.multiple ? [] : "";
+
 		return (
 			<ClaySelectBox
-				value={Util.isNotEmpty(this.state.value) ? this.state.value : []}
+				value={value}
 				items={optionItems}
-				multiple
+				multiple={this.parameter.isMultiple()}
 				disabled={this.parameter.getDisabled(this.cellIndex)}
 				size={this.parameter.listboxSize ?? 4}
 				onSelectChange={this.handleLiastboxSelectChanged}
@@ -266,7 +268,7 @@ class SXSelect extends SXBaseParameterComponent {
 						label: this.parameter.getPlaceholder(),
 						value: ""
 					}
-			  ];
+				];
 
 		optionItems = [
 			...optionItems,

@@ -23,18 +23,20 @@ class StructuredDataEditor extends SXBaseVisualizer {
 
 		//console.log("StructuredDataEditor props: ", props);
 
-		this.editState = this.params.editState ?? StructuredDataEditor.EditState.PREVIEW;
+		this.editState = this.params.editState ? this.params.editState : StructuredDataEditor.EditState.PREVIEW;
 		this.dataCollectionId = this.params.dataCollectionId ?? 0;
 		this.dataSetId = this.params.dataSetId ?? 0;
 		this.dataTypeId = this.params.dataTypeId ?? 0;
 		this.dataStructureId = this.params.dataStructureId ?? 0;
-		this.structuredDataId = this.params.structuredDataId ?? 0;
 		this.structuredData = null;
 
 		this.dataStructure = null;
 
 		this.state = {
-			noticeDialog: false,
+			structuredDataId: this.params.structuredDataId ?? 0,
+			infoDialog: false,
+			dialogHeader: <></>,
+			dialogBody: <></>,
 			loadingStatus: LoadingStatus.PENDING
 		};
 
@@ -68,14 +70,14 @@ class StructuredDataEditor extends SXBaseVisualizer {
 	};
 
 	listenerWorkbenchReady = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
-			//console.log("[StructuredDataEditor] listenerWorkbenchReady event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace) {
+			//console.log("[StructuredDataEditor] listenerWorkbenchReady event rejected: ", targetPortlet);
 			return;
 		}
 
-		//console.log("[StructuredDataEditor] listenerWorkbenchReady received: ", dataPacket, "++" + this.editState);
+		console.log("[StructuredDataEditor] listenerWorkbenchReady received: ", this.editState);
 
 		switch (this.editState) {
 			case StructuredDataEditor.EditState.PREVIEW:
@@ -94,7 +96,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				this.fireRequest({
 					requestId: RequestIDs.loadStructuredData,
 					params: {
-						structuredDataId: this.structuredDataId
+						structuredDataId: this.state.structuredDataId
 					}
 				});
 
@@ -114,6 +116,15 @@ class StructuredDataEditor extends SXBaseVisualizer {
 
 		console.log("[StructuredDataEditor] listenerResonse: ", event.dataPacket);
 
+		const { error } = data;
+		if (error) {
+			this.setState({
+				infoDialog: true,
+				dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				dialogBody: error
+			});
+		}
+
 		switch (requestId) {
 			case RequestIDs.loadStructuredData: {
 				const { dataStructure, structuredData } = data;
@@ -125,7 +136,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				this.dataCollectionId = dataCollectionId;
 				this.dataSetId = dataSetId;
 				this.dataTypeId = dataTypeId;
-				this.structuredDataId = structuredDataId;
+				this.state.structuredDataId = structuredDataId;
 
 				this.dataStructure = new DataStructure({
 					namespace: this.namespace,
@@ -151,15 +162,15 @@ class StructuredDataEditor extends SXBaseVisualizer {
 			}
 			case RequestIDs.saveStructuredData: {
 				console.log("Saved data result: ", data);
-				if (data.structuredDataId > 0) {
-					this.structuredDataId = data.structuredDataId;
-					this.structuredData = data;
-				}
+				const { message, structuredDataId } = data;
 
-				this.dialogHeader = SXModalUtil.successDlgHeader();
-				this.dialogBody = Util.translate("data-saved-as");
+				this.setState({
+					structuredDataId: structuredDataId,
+					infoDialog: true,
+					dialogHeader: SXModalUtil.successDlgHeader(),
+					dialogBody: message
+				});
 
-				this.setState({ noticeDialog: true });
 				break;
 			}
 			case RequestIDs.downloadFieldAttachedFile: {
@@ -191,9 +202,9 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		}
 
 		const structuredData = this.dataStructure.toData();
-		//console.log("[StructuredDataEditor] listenerFieldValueChanged received: ", event.dataPacket, structuredData);
+		console.log("[StructuredDataEditor] listenerFieldValueChanged received: ", event.dataPacket, structuredData);
 
-		const files = this.dataStructure.getFiles();
+		const files = this.dataStructure.getDataFiles();
 
 		//console.log("[StructuredDataEditor files] ", files);
 		//console.log("[StructuredDataEditor data] ", structuredData);
@@ -203,7 +214,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 			dataCollectionId: this.dataCollectionId,
 			dataSetId: this.dataSetId,
 			dataTypeId: this.dataTypeId,
-			structuredDataId: this.structuredDataId,
+			structuredDataId: this.state.structuredDataId,
 			data: structuredData
 		});
 	};
@@ -224,7 +235,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				dataCollectionId: this.dataCollectionId,
 				dataSetId: this.dataSetId,
 				dataTypeId: this.dataTypeId,
-				structuredDataId: this.structuredDataId,
+				structuredDataId: this.state.structuredDataId,
 				paramCode: paramCode,
 				paramVersion: paramVersion,
 				fileName: fileName,
@@ -329,7 +340,13 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		console.log("[StructuredDataEditor files] ", files);
 		console.log("[StructuredDataEditor data] ", data);
 
-		console.log("Handle SaveData: ", this.dataCollectionId, this.dataSetId, this.dataTypeId, this.structuredDataId);
+		console.log(
+			"Handle SaveData: ",
+			this.dataCollectionId,
+			this.dataSetId,
+			this.dataTypeId,
+			this.state.structuredDataId
+		);
 
 		this.fireRequest({
 			requestId: RequestIDs.saveStructuredData,
@@ -337,7 +354,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				dataCollectionId: this.dataCollectionId,
 				dataSetId: this.dataSetId,
 				dataTypeId: this.dataTypeId,
-				structuredDataId: this.structuredDataId,
+				structuredDataId: this.state.structuredDataId,
 				files: files,
 				data: JSON.stringify(data)
 			}
@@ -359,7 +376,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		} else {
 			return (
 				<>
-					{this.structuredDataId > 0 && (
+					{this.state.structuredDataId > 0 && (
 						<div
 							className="autofit-row"
 							style={{ paddingRight: "10px" }}
@@ -367,7 +384,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 							<div className="autofit-col autofit-col-expand">
 								<SXLabeledText
 									label={Util.translate("id")}
-									text={this.structuredDataId}
+									text={this.state.structuredDataId}
 									spritemap={this.spritemap}
 								/>
 							</div>
@@ -414,15 +431,15 @@ class StructuredDataEditor extends SXBaseVisualizer {
 							</Button>
 						</Button.Group>
 					)}
-					{this.state.noticeDialog && (
+					{this.state.infoDialog && (
 						<SXModalDialog
-							header={this.dialogHeader}
-							body={this.dialogBody}
+							header={this.state.dialogHeader}
+							body={this.state.dialogBody}
 							buttons={[
 								{
 									label: Util.translate("ok"),
 									onClick: (e) => {
-										this.setState({ noticeDialog: false });
+										this.setState({ infoDialog: false });
 									}
 								}
 							]}

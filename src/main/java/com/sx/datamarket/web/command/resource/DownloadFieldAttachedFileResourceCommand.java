@@ -1,14 +1,11 @@
 package com.sx.datamarket.web.command.resource;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.sx.icecap.constant.MVCCommand;
 import com.sx.icecap.constant.WebKey;
@@ -16,21 +13,17 @@ import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataCollection;
 import com.sx.icecap.model.DataSet;
 import com.sx.icecap.model.DataType;
-import com.sx.icecap.model.TypeStructureLink;
 import com.sx.icecap.service.DataCollectionLocalService;
 import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
-import com.sx.icecap.service.TypeStructureLinkLocalService;
 import com.sx.util.SXPortalUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import javax.portlet.PortletException;
 import javax.portlet.ResourceRequest;

@@ -1,38 +1,30 @@
 package com.sx.datamarket.web.command.resource;
 
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
-import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.sx.icecap.constant.Constant;
-import com.sx.icecap.constant.DataTypeProperties;
-import com.sx.icecap.constant.IcecapModelNames;
 import com.sx.icecap.constant.MVCCommand;
 import com.sx.constant.StationXConstants;
 import com.sx.constant.StationXWebKeys;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataType;
-import com.sx.icecap.model.SetTypeLink;
-import com.sx.icecap.model.TypeStructureLink;
-import com.sx.icecap.security.permission.resource.datatype.DataTypeModelPermissionHelper;
-import com.sx.icecap.security.permission.resource.datatype.DataTypeResourcePermissionHelper;
+import com.sx.icecap.service.DataCollectionLocalService;
+import com.sx.icecap.service.DataSetLocalService;
+import com.sx.icecap.service.DataStructureLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.SetTypeLinkLocalService;
-import com.sx.icecap.service.TypeStructureLinkLocalService;
+import com.sx.util.portlet.SXPortletURLUtil;
 
-import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -58,10 +50,8 @@ public class SearchDataTypesResourceCommand extends BaseMVCResourceCommand{
 
 		System.out.println("SearchDataTypesResourceCommand");
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		Locale locale = themeDisplay.getLocale();
 
-		long dataCollectionId = ParamUtil.getLong(resourceRequest,  "dataCollectionId", 0);
-		long dataSetId = ParamUtil.getLong(resourceRequest,  "dataSetId", 0);
-		
 		int start = ParamUtil.getInteger(resourceRequest, StationXWebKeys.START, StationXConstants.DEFAULT_START);
 		int delta = ParamUtil.getInteger(resourceRequest, StationXWebKeys.DELTA, StationXConstants.DEFAULT_DELTA);
 		int end = start + delta - 1;
@@ -75,54 +65,40 @@ public class SearchDataTypesResourceCommand extends BaseMVCResourceCommand{
 		
 		System.out.println("Start: " + start);
 		System.out.println("End: " + end);
-		List<DataType> dataTypeList = null;
 		
-		if(dataSetId > 0) {
-			List<SetTypeLink> setTypeLinkList = 
-			setTypeLinkList = _setTypeLinkLocalService.getSetTypeLinkListBySet(dataSetId);
-		}
-		if(keywords.isEmpty()) {
-			dataTypeList = _dataTypeLocalService.getDataTypesByG_S(groupId, status, start, end);
-		}
-		else {
-			dataTypeList = new ArrayList<>();
-		}
+		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
-		JSONArray result = JSONFactoryUtil.createJSONArray();
+		List<DataType> dataTypeList = _dataTypeLocalService.getDataTypesByGroupId(groupId);
 		
-		Iterator<DataType> iter = dataTypeList.iterator();
-		while(iter.hasNext()) {
-			JSONObject dataTypeInfo = JSONFactoryUtil.createJSONObject();
-			
-			DataType dataType = iter.next();
-			
-			dataTypeInfo.put("dataType", dataType.toJSON(themeDisplay.getLocale()));
+		JSONArray jsonDataTypeList = JSONFactoryUtil.createJSONArray();
+		if( Validator.isNotNull(dataTypeList) ) {
+			Iterator<DataType> iter = dataTypeList.iterator();
+			while( iter.hasNext() ) {
+				DataType dataType = iter.next();
+				JSONObject jsonDataType = dataType.toJSON(locale);
+				jsonDataType.put("hasStructure", _dataTypeLocalService.hasDataStructure(dataType.getDataTypeId()));
 
-			try {
-				TypeStructureLink typeStructureLink = 
-						_typeStructureLinkLocalService.getTypeStructureLink(dataType.getDataTypeId());
-				
-				dataTypeInfo.put("typeStructureLink", typeStructureLink.toJSON());
-			} catch( PortalException e) {
-				System.out.println("No DataType - DataStructure link: " + 
-						dataType.getDisplayName(themeDisplay.getLocale()));
+				jsonDataTypeList.put(jsonDataType);
 			}
-			
-			result.put(dataTypeInfo);
 		}
-
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
-		pw.flush();
-		pw.close();
+		
+		result.put("dataTypeList", jsonDataTypeList);
+		
+		SXPortletURLUtil.responeAjax(resourceResponse, result);
 	}
+	
+	@Reference
+	private DataCollectionLocalService _dataCollectionLocalService;
+	
+	@Reference
+	private DataSetLocalService _dataSetLocalService;
 	
 	@Reference
 	private DataTypeLocalService _dataTypeLocalService;
 	
 	@Reference
-	private SetTypeLinkLocalService _setTypeLinkLocalService;
+	private DataStructureLocalService _dataStructureLocalService;
 	
 	@Reference
-	private TypeStructureLinkLocalService _typeStructureLinkLocalService;
+	private SetTypeLinkLocalService _setTypeLinkLocalService;
 }

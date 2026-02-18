@@ -6,6 +6,7 @@ import Icon from "@clayui/icon";
 import SXBaseVisualizer from "../../stationx/visualizer";
 import Panel from "@clayui/panel";
 import { Body, Cell, Head, Row, Table, Text } from "@clayui/core";
+import { SXUpgradeIcon } from "../../stationx/icon";
 
 class SXCollectionInfo extends React.Component {
 	constructor(props) {
@@ -20,8 +21,8 @@ class SXCollectionInfo extends React.Component {
 		this.collectionVersion = props.collectionVersion;
 		this.displayName = props.displayName;
 		this.description = props.description;
-		this.verified = props.verified;
-		this.freezed = props.freezed;
+		this.verified = props.verified ?? { verified: false };
+		this.freezed = props.freezed ?? { freezed: false };
 		this.spritemap = props.spritemap;
 	}
 
@@ -68,7 +69,19 @@ class SXCollectionInfo extends React.Component {
 							{ fieldName: Util.translate("id"), fieldValue: this.collectionId },
 							{ fieldName: Util.translate("code"), fieldValue: this.collectionCode },
 							{ fieldName: Util.translate("version"), fieldValue: this.collectionVersion },
-							{ fieldName: Util.translate("description"), fieldValue: this.description }
+							{ fieldName: Util.translate("description"), fieldValue: this.description },
+							{
+								fieldName: Util.translate("verify"),
+								fieldValue: this.verified.verified
+									? Util.translate("verified")
+									: Util.translate("unverified")
+							},
+							{
+								fieldName: Util.translate("freeze"),
+								fieldValue: this.freezed.freezed
+									? Util.translate("freezed")
+									: Util.translate("unfreezed")
+							}
 						]}
 					>
 						{(row, index) => (
@@ -97,8 +110,8 @@ class DataCollectionViewer extends SXBaseVisualizer {
 	displayName;
 	description;
 	dataSetList = [];
-	verified = {};
-	freezed = {};
+	verified = { verified: false };
+	freezed = { freezed: false };
 	histories = [];
 	comments = [];
 	statistics = {};
@@ -119,11 +132,10 @@ class DataCollectionViewer extends SXBaseVisualizer {
 
 		this.state = {
 			infoDialog: false,
+			dialogHeader: <></>,
+			dialogBody: <></>,
 			loadingStatus: LoadingStatus.PENDING
 		};
-
-		this.dialogHeader = <></>;
-		this.dialogBody = <></>;
 
 		this.buttons = [
 			{
@@ -160,20 +172,47 @@ class DataCollectionViewer extends SXBaseVisualizer {
 			return;
 		}
 
-		console.log("[DataCollectionViewer] listenerResonse: ", requestId, params, data);
+		//console.log("[DataCollectionViewer] listenerResonse: ", requestId, params, data);
+		const { error } = data;
+		if (error) {
+			this.setState({
+				dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				dialogBody: error,
+				infoDialog: true
+			});
+
+			return;
+		}
+
 		switch (requestId) {
 			case RequestIDs.viewDataCollection: {
-				this.dataCollectionId = data.dataCollectionId;
-				this.dataCollectionCode = data.dataCollectionCode;
-				this.dataCollectionVersion = data.dataCollectionVersion;
-				this.displayName = data.displayName;
-				this.description = data.description;
-				this.dataSetList = data.dataSets;
-				this.verified = data.verified;
-				this.freezed = data.freezed;
-				this.histories = data.histories;
-				this.comments = data.comments;
-				this.statistics = data.statistics;
+				const {
+					dataCollectionId,
+					dataCollectionCode,
+					dataCollectionVersion,
+					displayName,
+					description,
+					dataSetList,
+					verified,
+					freezed,
+					histories,
+					comments,
+					statistics
+				} = data;
+
+				this.dataCollectionId = dataCollectionId;
+				this.dataCollectionCode = dataCollectionCode;
+				this.dataCollectionVersion = dataCollectionVersion;
+				this.displayName = displayName;
+				this.description = description;
+				this.dataSetList = dataSetList;
+
+				this.verified = verified ?? { verified: false };
+				this.freezed = freezed ?? { freezed: false };
+
+				this.histories = histories;
+				this.comments = comments;
+				this.statistics = statistics;
 
 				this.setState({
 					loadingStatus: LoadingStatus.COMPLETE
@@ -265,6 +304,7 @@ class DataCollectionViewer extends SXBaseVisualizer {
 												spritemap={this.spritemap}
 											/>
 										))}
+										<SXUpgradeIcon />
 									</Button.Group>
 								)}
 							</div>
@@ -421,6 +461,20 @@ class DataCollectionViewer extends SXBaseVisualizer {
 						</div>
 					</Panel.Body>
 				</Panel>
+				{this.state.infoDialog && (
+					<SXModalDialog
+						header={this.state.dialogHeader}
+						body={this.state.dialogBody}
+						buttons={[
+							{
+								label: Util.translate("ok"),
+								onClick: () => {
+									this.setState({ infoDialog: false });
+								}
+							}
+						]}
+					/>
+				)}
 			</>
 		);
 	}

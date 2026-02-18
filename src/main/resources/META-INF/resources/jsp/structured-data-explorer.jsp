@@ -3,9 +3,7 @@
 <%@page import="com.liferay.portal.kernel.workflow.WorkflowConstants"%>
 <%@page import="com.sx.constant.StationXConstants"%>
 <%@page import="com.liferay.portal.kernel.json.JSONFactoryUtil"%>
-<%@page import="com.sx.icecap.model.DataStructure"%>
 <%@page import="com.liferay.portal.kernel.util.GetterUtil"%>
-<%@page import="com.sx.icecap.model.TypeStructureLink"%>
 <%@page import="com.liferay.portal.kernel.json.JSONArray"%>
 <%@page import="com.liferay.portal.kernel.portlet.LiferayWindowState"%>
 <%@page import="com.sx.icecap.constant.WebPortletKey"%>
@@ -23,18 +21,19 @@
     boolean breadcrumb = ParamUtil.getBoolean(renderRequest, "breadcrumb", false);
     boolean addButton = ParamUtil.getBoolean(renderRequest, "addButton", true);
     
-	JSONArray permissions = (JSONArray)GetterUtil.getObject(renderRequest.getAttribute("permissions"), JSONFactoryUtil.createJSONArray());
-	int start = GetterUtil.getInteger(renderRequest.getAttribute(StationXWebKeys.START), StationXConstants.DEFAULT_START);
-	int end = GetterUtil.getInteger(renderRequest.getAttribute(StationXWebKeys.END), StationXConstants.DEFAULT_END);
-	int delta = GetterUtil.getInteger(renderRequest.getAttribute(StationXWebKeys.DELTA), StationXConstants.DEFAULT_DELTA);
-	int status = GetterUtil.getInteger(renderRequest.getAttribute(StationXWebKeys.STATUS), WorkflowConstants.STATUS_APPROVED);
-	String orderCol = GetterUtil.getString(renderRequest.getAttribute(StationXWebKeys.ORDER_BY_COL), Field.MODIFIED_DATE);
-	String orderType = GetterUtil.getString(renderRequest.getAttribute(StationXWebKeys.ORDER_BY_TYPE), StationXConstants.ASC);
-	String navigation = GetterUtil.getString(renderRequest.getAttribute(StationXWebKeys.NAVIGATION), StationXConstants.NAVIGATION_MINE);
-	String  keywords = GetterUtil.getString(renderRequest.getAttribute(StationXWebKeys.KEYWORDS), StringPool.BLANK);
+	int start = ParamUtil.getInteger(renderRequest, "start", StationXConstants.DEFAULT_START);
+	int end = ParamUtil.getInteger(renderRequest, "end", StationXConstants.DEFAULT_END);
+	int delta = ParamUtil.getInteger(renderRequest, "delta", StationXConstants.DEFAULT_DELTA);
+	int status = ParamUtil.getInteger(renderRequest, "status", WorkflowConstants.STATUS_APPROVED);
+	String orderCol = ParamUtil.getString(renderRequest, StationXWebKeys.ORDER_BY_COL, Field.MODIFIED_DATE);
+	String orderType = ParamUtil.getString(renderRequest, StationXWebKeys.ORDER_BY_TYPE, StationXConstants.ASC);
+	String navigation = ParamUtil.getString(renderRequest, StationXWebKeys.NAVIGATION, StationXConstants.NAVIGATION_MINE);
+	String  keywords = ParamUtil.getString(renderRequest, StationXWebKeys.KEYWORDS, StringPool.BLANK);
 
 	String workbenchNamespace = ParamUtil.getString(renderRequest, StationXWebKeys.WORKBENCH_NAMESPACE, StringPool.BLANK);
 	String workbenchId = ParamUtil.getString(renderRequest, StationXWebKeys.WORKBENCH_ID, StringPool.BLANK);
+
+	JSONArray permissions = (JSONArray)GetterUtil.getObject(renderRequest.getAttribute("permissions"), JSONFactoryUtil.createJSONArray());
 	
 	String portalURL = PortalUtil.getPortalURL(renderRequest);
 	

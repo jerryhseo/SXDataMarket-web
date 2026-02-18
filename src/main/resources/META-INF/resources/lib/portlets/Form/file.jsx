@@ -13,12 +13,14 @@ class SXFile extends SXBaseParameterComponent {
 	constructor(props) {
 		super(props);
 
+		const files = this.parameter.getValue(this.cellIndex) ?? [];
+
 		this.state = {
-			value: this.parameter.getValue(this.cellIndex) ?? [],
+			value: files.filter((file) => !!file.name),
 			underConstruction: false
 		};
 
-		//console.log("[SXFile props] ", props, this.parameter, this.state.value);
+		console.log("[SXFile props] ", props, this.parameter, this.state.value);
 	}
 
 	componentDidMount() {
@@ -55,7 +57,7 @@ class SXFile extends SXBaseParameterComponent {
 	}
 
 	handleFileSelectionChanged(files) {
-		console.log("[SXFile handleFileSelectionChanged] ", this.parameter.paramCode, files);
+		//console.log("[SXFile handleFileSelectionChanged] ", this.parameter.paramCode, files);
 
 		let fileList;
 		if (this.parameter.multipleFiles) {
@@ -104,6 +106,7 @@ class SXFile extends SXBaseParameterComponent {
 	}
 
 	handleActionClick(action, fileInfo) {
+		console.log("[SXFile handleActionClick] ", action, fileInfo);
 		switch (action) {
 			case "download": {
 				this.parameter.fireDownloadFile(fileInfo);
@@ -132,6 +135,7 @@ class SXFile extends SXBaseParameterComponent {
 				} else {
 					files = this.state.value.filter((fileItem) => {
 						if (fileItem.name === fileInfo.name) {
+							fileItemDeleting = fileItem;
 							/*
 							this.parameter.fireDeleteFiles({
 								files: [
@@ -152,7 +156,6 @@ class SXFile extends SXBaseParameterComponent {
 
 					this.parameter.setValue({ value: files });
 					this.setState({ value: files });
-					//this.parameter.fireDeleteFiles();
 				}
 
 				this.handleFileSelectionChanged(files);
@@ -242,7 +245,7 @@ class SXFile extends SXBaseParameterComponent {
 																			name: Util.translate("download"),
 																			symbol: "download"
 																		}
-																  ]
+																	]
 																: [
 																		{
 																			id: "delete",
@@ -254,7 +257,7 @@ class SXFile extends SXBaseParameterComponent {
 																			name: Util.translate("upload"),
 																			symbol: "upload"
 																		}
-																  ]
+																	]
 														}
 													>
 														{(actionItem) => (

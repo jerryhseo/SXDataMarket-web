@@ -48,7 +48,7 @@ class SXBaseVisualizer extends React.Component {
 
 		this.params = props.params ?? {};
 
-		this.titleBar = this.params.titleBar;
+		this.titleBar = this.params.titleBar ?? true;
 		this.buttons = this.params.buttons;
 	}
 
