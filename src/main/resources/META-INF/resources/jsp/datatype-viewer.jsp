@@ -29,6 +29,7 @@
 	
 	System.out.println("[datatype-viewer.jsp] workbenchNamespace: " + workbenchNamespace);
 	System.out.println("[datatype-viewer.jsp] workbenchId: " + workbenchId);
+	System.out.println("[datatype-viewer.jsp] dataTypeId: " + dataTypeId);
 %>
 
 <portlet:renderURL  var="baseRenderURL">

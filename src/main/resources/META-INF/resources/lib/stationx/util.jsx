@@ -205,6 +205,9 @@ export const Util = {
 		$(domElement).empty();
 		$(domElement).html(html);
 	},
+	htmlEmpty: function (domElement) {
+		$(domElement).empty();
+	},
 	ajax: function ({
 		namespace, //namespace of the portlet
 		baseResourceURL,

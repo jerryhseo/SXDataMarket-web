@@ -19,6 +19,7 @@ import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.SetTypeLinkLocalService;
 import com.sx.icecap.service.StructuredDataLocalService;
+import com.sx.util.SXUtil;
 import com.sx.util.portlet.SXPortletURLUtil;
 
 import java.util.Iterator;
@@ -46,13 +47,21 @@ public class ViewDataSetResourceCommand extends BaseMVCResourceCommand{
 			throws Exception {
 		System.out.println("ViewDataSetResourceCommand: " );
 		
-		JSONObject result = null;
+		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
 		long dataCollectionId = ParamUtil.getLong(resourceRequest, "dataCollectionId", 0);
 		long dataSetId = ParamUtil.getLong(resourceRequest, "dataSetId", 0);
 		
 		System.out.println("[ViewDataSetResourceCommand] dataCollectionId: " + dataCollectionId);
 		System.out.println("[ViewDataSetResourceCommand] dataSetId: " + dataSetId);
+		
+		if( dataSetId == 0 ) {
+			result.put("error", SXUtil.translate(resourceRequest, "dataset-id-should-be-specified"));
+			
+			SXPortletURLUtil.responeAjax(resourceResponse, result);
+			
+			return;
+		}
 		
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
 		

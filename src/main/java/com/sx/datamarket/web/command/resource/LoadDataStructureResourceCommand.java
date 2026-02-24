@@ -48,7 +48,6 @@ public class LoadDataStructureResourceCommand extends BaseMVCResourceCommand{
 		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
 		DataType dataType = null;
-		JSONObject jsonDataStructure = null;
 		JSONObject dataTypeStructure = null;
 		DataStructure dataStructure = null;
 		
@@ -66,7 +65,7 @@ public class LoadDataStructureResourceCommand extends BaseMVCResourceCommand{
 			result.put("dataType", dataType.toJSON(resourceRequest.getLocale()));
 			
 			dataTypeStructure = _dataTypeLocalService.getDataStructureJSON(dataTypeId);
-			if( dataTypeStructure.length() > 0 ) {
+			if( Validator.isNotNull(dataTypeStructure) ) {
 				result.put("dataStructure", dataTypeStructure);
 			}
 			

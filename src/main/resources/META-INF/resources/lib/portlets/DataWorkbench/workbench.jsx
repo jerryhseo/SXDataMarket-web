@@ -845,7 +845,9 @@ export class SXPortlet extends React.Component {
 	}
 
 	componentWillUnmount() {
-		//console.log("SXPortlet will unmount");
+		console.log("SXPortlet will unmount");
+
+		Util.htmlEmpty(this.portletRootRef.current);
 
 		Event.fire(Event.SX_COMPONENT_WILL_UNMOUNT, this.namespace, this.portletNamespace, {
 			targetPortlet: this.portletNamespace

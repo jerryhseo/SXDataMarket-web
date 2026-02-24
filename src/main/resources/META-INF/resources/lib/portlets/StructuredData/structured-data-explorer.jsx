@@ -413,9 +413,9 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 
 		switch (requestId) {
 			case RequestIDs.searchStructuredData: {
-				this.searchResults = data;
+				const { structuredDataList } = data;
 
-				this.convertSearchResultsToContent(data);
+				this.convertSearchResultsToContent(structuredDataList);
 
 				this.dataCollection = data.dataCollection;
 				this.dataSet = data.dataSet ?? {};
@@ -514,11 +514,9 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 	}
 
 	convertSearchResultsToContent(results) {
-		const { structuredDataList } = results;
+		console.log("[StructuredDataExplorer convertSearchResultsToContent] ", this.scope, results);
 
-		console.log("[StructuredDataExplorer convertSearchResultsToContent] ", this.scope, structuredDataList);
-
-		this.searchResults = structuredDataList.map((result, index) => {
+		this.searchResults = results.map((result, index) => {
 			const {
 				structuredDataId, //
 				dataCollection,

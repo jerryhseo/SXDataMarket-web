@@ -603,6 +603,17 @@ class DataTypeEditor extends SXBaseVisualizer {
 		});
 	}
 
+	handleBtnNewDataStructure = () => {
+		this.redirectTo({
+			portletName: PortletKeys.DATASTRUCTURE_BUILDER,
+			params: {
+				dataCollectionId: this.dataCollectionId,
+				dataSetId: this.dataSetId,
+				dataTypeId: this.state.dataTypeId
+			}
+		});
+	};
+
 	handleDeleteDataTypeBtnClick = (event) => {
 		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
 		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-delete-the-datatype");
@@ -616,6 +627,8 @@ class DataTypeEditor extends SXBaseVisualizer {
 		this.redirectTo({
 			portletName: PortletKeys.DATASTRUCTURE_BUILDER,
 			params: {
+				dataCollectionId: this.dataCollectionId,
+				dataSetId: this.dataSetId,
 				dataTypeId: this.state.dataTypeId
 			}
 		});
@@ -658,6 +671,26 @@ class DataTypeEditor extends SXBaseVisualizer {
 					{this.description.renderField({ spritemap: this.spritemap })}
 					{this.visualizers.renderField({ spritemap: this.spritemap })}
 					{!this.hasStructure && this.dataStructure.renderField({ spritemap: this.spritemap })}
+					{/*!this.hasStructure && (
+						<div
+							className="autofit-float-end-sm-down autofit-padded-no-gutters-x autofit-row"
+							style={{ borderBottom: "3px solid #e7e7ed", marginBottom: "1.5rem" }}
+						>
+							<div className="autofit-col autofit-col-expand">
+								{this.dataStructure.renderField({ spritemap: this.spritemap })}
+							</div>
+							{this.state.dataTypeId > 0 && (
+								<div className="autofit-col">
+									<SXButtonWithIcon
+										label={Util.translate("new-datastructure")}
+										symbol={"plus"}
+										onClick={this.handleBtnNewDataStructure}
+										spritemap={this.spritemap}
+									/>
+								</div>
+							)}
+						</div>
+					)*/}
 					<div
 						style={{ width: "100%", marginTop: "1.5rem", display: "inline-flex", justifyContent: "center" }}
 					>
@@ -670,22 +703,22 @@ class DataTypeEditor extends SXBaseVisualizer {
 								spritemap={this.spritemap}
 							/>
 							{this.state.dataTypeId > 0 && (
-								<SXButtonWithIcon
-									label={Util.translate("edit-datastructure")}
-									symbol={"forms"}
-									displayType="secondary"
-									onClick={(e) => this.handleUpdateStructure(e)}
-									spritemap={this.spritemap}
-								/>
-							)}
-							{this.state.dataTypeId > 0 && (
-								<SXButtonWithIcon
-									label={Util.translate("delete")}
-									symbol={"trash"}
-									displayType="warning"
-									onClick={(e) => this.handleDeleteDataTypeBtnClick(e)}
-									spritemap={this.spritemap}
-								/>
+								<>
+									<SXButtonWithIcon
+										label={Util.translate("edit-datastructure")}
+										symbol={"forms"}
+										displayType="secondary"
+										onClick={(e) => this.handleUpdateStructure(e)}
+										spritemap={this.spritemap}
+									/>
+									<SXButtonWithIcon
+										label={Util.translate("delete")}
+										symbol={"trash"}
+										displayType="warning"
+										onClick={(e) => this.handleDeleteDataTypeBtnClick(e)}
+										spritemap={this.spritemap}
+									/>
+								</>
 							)}
 						</Button.Group>
 					</div>

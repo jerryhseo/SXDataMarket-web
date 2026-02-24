@@ -509,6 +509,13 @@ div .under-construction {
 	justify-self: anchor-center;
 }
 
+.datastructure-info-modal .modal-dialog {
+	overflow: hidden;
+	justify-self: anchor-center;
+	max-width: 700px; /* custom width */
+	width: 500px;
+}
+
 .table-list thead th {
 	background-color: #e6f8e6;
 }
@@ -1070,11 +1077,15 @@ div .under-construction {
 .tbar-stacked .tbar-btn-monospaced.focus,
 .tbar-stacked .tbar-btn-monospaced:focus-visible,
 .c-prefers-focus .tbar-stacked .tbar-btn-monospaced:focus {
-	box-shadow: inset 0 0 0 0.125rem #5791ff, inset 0 0 0 0.25rem #fff;
+	box-shadow:
+		inset 0 0 0 0.125rem #5791ff,
+		inset 0 0 0 0.25rem #fff;
 }
 .tbar-stacked .tbar-btn-monospaced:active:focus-visible,
 .c-prefers-focus .tbar-stacked .tbar-btn-monospaced:active:focus {
-	box-shadow: inset 0 0 0 0.125rem #5791ff, inset 0 0 0 0.25rem #fff;
+	box-shadow:
+		inset 0 0 0 0.125rem #5791ff,
+		inset 0 0 0 0.25rem #fff;
 }
 .tbar-stacked .tbar-btn-monospaced .c-inner {
 	margin-bottom: 0;
@@ -1087,7 +1098,9 @@ div .under-construction {
 }
 .tbar-light {
 	background-color: #fff;
-	box-shadow: inset 1px 0 0 0 #f1f2f5, inset -1px 0 0 0 #f1f2f5;
+	box-shadow:
+		inset 1px 0 0 0 #f1f2f5,
+		inset -1px 0 0 0 #f1f2f5;
 	color: #6b6c7e;
 }
 .tbar-light .tbar-divider-before::before {
@@ -1126,7 +1139,9 @@ div .under-construction {
 }
 .tbar-dark-l2 {
 	background-color: #393a4a;
-	box-shadow: inset 1px 0 0 0 rgba(255, 255, 255, 0.06), inset -1px 0 0 0 rgba(255, 255, 255, 0.06);
+	box-shadow:
+		inset 1px 0 0 0 rgba(255, 255, 255, 0.06),
+		inset -1px 0 0 0 rgba(255, 255, 255, 0.06);
 	border-color: rgba(255, 255, 255, 0.06);
 	color: #a7a9bc;
 }
@@ -1166,7 +1181,9 @@ div .under-construction {
 }
 .tbar-dark-d1 {
 	background-color: #1c1c24;
-	box-shadow: inset 1px 0 0 0 rgba(255, 255, 255, 0.06), inset -1px 0 0 0 rgba(255, 255, 255, 0.06);
+	box-shadow:
+		inset 1px 0 0 0 rgba(255, 255, 255, 0.06),
+		inset -1px 0 0 0 rgba(255, 255, 255, 0.06);
 	color: #a7a9bc;
 }
 .tbar-dark-d1 .tbar-divider-before::before {

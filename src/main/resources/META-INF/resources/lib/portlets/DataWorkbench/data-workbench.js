@@ -78,8 +78,8 @@ class DataWorkbench extends React.Component {
 				label: Util.translate("data-management")
 			},
 			{
-				id: "formExplorers",
-				label: Util.translate("form-explorers"),
+				id: "explorers",
+				label: Util.translate("explorers"),
 				children: [
 					{
 						id: "dataCollectionExplorer",

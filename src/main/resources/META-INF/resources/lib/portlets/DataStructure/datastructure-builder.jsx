@@ -103,130 +103,129 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			dialogHeader: <></>,
 			manifestSDE: false,
 			openSelectGroupModal: false,
+			exportDialog: false,
 			underConstruction: false
 		};
 
-		if (this.dataTypeId === 0) {
-			this.structureCode = ParameterUtil.createParameter({
-				namespace: this.namespace,
-				formId: this.componentId,
-				paramType: ParamType.STRING,
-				properties: {
-					paramCode: "structureCode",
-					displayName: Util.getTranslationObject(this.languageId, "datastructure-code"),
-					placeholder: Util.getTranslationObject(this.languageId, "datastructure-code"),
-					tooltip: Util.getTranslationObject(this.languageId, "datastructure-code-tooltip"),
-					validation: {
-						required: {
-							value: true,
-							message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
-							errorClass: ErrorClass.ERROR
-						},
-						pattern: {
-							value: ValidationRule.VARIABLE,
-							message: Util.getTranslationObject(this.languageId, "invalid-data-type-code"),
-							errorClass: ErrorClass.ERROR
-						},
-						minLength: {
-							value: 3,
-							message: Util.getTranslationObject(this.languageId, "shorter-than-min-length" + ", 3"),
-							errorClass: ErrorClass.ERROR
-						},
-						maxLength: {
-							value: 32,
-							message: Util.getTranslationObject(this.languageId, "longer-than-max-length" + ", 32"),
-							errorClass: ErrorClass.ERROR
-						}
-					}
-				}
-			});
-
-			this.structureVersion = ParameterUtil.createParameter({
-				namespace: this.namespace,
-				formId: this.componentId,
-				paramType: ParamType.STRING,
-				properties: {
-					paramCode: "structureVersion",
-					displayName: Util.getTranslationObject(this.languageId, "datastructure-version"),
-					placeholder: Util.getTranslationObject(this.languageId, "ex) 1.0.0"),
-					tooltip: Util.getTranslationObject(this.languageId, "datastructure-version-tooltip"),
-					style: { width: "10rem" },
-					validation: {
-						required: {
-							value: true,
-							message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
-							errorClass: ErrorClass.ERROR
-						},
-						pattern: {
-							value: ValidationRule.VERSION,
-							message: Util.getTranslationObject(this.languageId, "invalid-version-format"),
-							errorClass: ErrorClass.ERROR
-						},
-						minLength: {
-							value: 5,
-							message: Util.getTranslationObject(this.languageId, "should-be-at-least-5"),
-							errorClass: ErrorClass.ERROR
-						},
-						maxLength: {
-							value: 12,
-							message: Util.getTranslationObject(this.languageId, "should-be-up-to-12"),
-							errorClass: ErrorClass.ERROR
-						}
+		this.structureCode = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
+				paramCode: "structureCode",
+				displayName: Util.getTranslationObject(this.languageId, "datastructure-code"),
+				placeholder: Util.getTranslationObject(this.languageId, "datastructure-code"),
+				tooltip: Util.getTranslationObject(this.languageId, "datastructure-code-tooltip"),
+				validation: {
+					required: {
+						value: true,
+						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+						errorClass: ErrorClass.ERROR
 					},
-					defaultValue: "1.0.0"
-				}
-			});
-
-			this.structureDisplayName = ParameterUtil.createParameter({
-				namespace: this.namespace,
-				formId: this.componentId,
-				paramType: ParamType.STRING,
-				properties: {
-					paramCode: "structureDisplayName",
-					localized: true,
-					displayName: Util.getTranslationObject(this.languageId, "display-name"),
-					placeholder: Util.getTranslationObject(this.languageId, "display-name"),
-					tooltip: Util.getTranslationObject(this.languageId, "display-name-tooltip"),
-					validation: {
-						required: {
-							value: true,
-							message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
-							errorClass: ErrorClass.ERROR
-						},
-						minLength: {
-							value: 3,
-							message: Util.getTranslationObject(this.languageId, "shorter-than-min-length") + ", 3",
-							errorClass: ErrorClass.ERROR
-						},
-						maxLength: {
-							value: 64,
-							message: Util.getTranslationObject(this.languageId, "long-than-max-length") + ", 64",
-							errorClass: ErrorClass.ERROR
-						}
+					pattern: {
+						value: ValidationRule.VARIABLE,
+						message: Util.getTranslationObject(this.languageId, "invalid-data-type-code"),
+						errorClass: ErrorClass.ERROR
+					},
+					minLength: {
+						value: 3,
+						message: Util.getTranslationObject(this.languageId, "shorter-than-min-length" + ", 3"),
+						errorClass: ErrorClass.ERROR
+					},
+					maxLength: {
+						value: 32,
+						message: Util.getTranslationObject(this.languageId, "longer-than-max-length" + ", 32"),
+						errorClass: ErrorClass.ERROR
 					}
 				}
-			});
+			}
+		});
 
-			this.structureDescription = ParameterUtil.createParameter({
-				namespace: this.namespace,
-				formId: this.componentId,
-				paramType: ParamType.STRING,
-				properties: {
-					paramCode: "structureDescription",
-					localized: true,
-					displayName: Util.getTranslationObject(this.languageId, "description"),
-					placeholder: Util.getTranslationObject(this.languageId, "description"),
-					tooltip: Util.getTranslationObject(this.languageId, "datastructure-description-tooltip"),
-					validation: {
-						maxLength: {
-							value: 256,
-							message: Util.getTranslationObject(this.languageId, "long-than-max-length") + ", 256",
-							errorClass: ErrorClass.ERROR
-						}
+		this.structureVersion = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
+				paramCode: "structureVersion",
+				displayName: Util.getTranslationObject(this.languageId, "datastructure-version"),
+				placeholder: Util.getTranslationObject(this.languageId, "ex) 1.0.0"),
+				tooltip: Util.getTranslationObject(this.languageId, "datastructure-version-tooltip"),
+				style: { width: "10rem" },
+				validation: {
+					required: {
+						value: true,
+						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+						errorClass: ErrorClass.ERROR
+					},
+					pattern: {
+						value: ValidationRule.VERSION,
+						message: Util.getTranslationObject(this.languageId, "invalid-version-format"),
+						errorClass: ErrorClass.ERROR
+					},
+					minLength: {
+						value: 5,
+						message: Util.getTranslationObject(this.languageId, "should-be-at-least-5"),
+						errorClass: ErrorClass.ERROR
+					},
+					maxLength: {
+						value: 12,
+						message: Util.getTranslationObject(this.languageId, "should-be-up-to-12"),
+						errorClass: ErrorClass.ERROR
+					}
+				},
+				defaultValue: "1.0.0"
+			}
+		});
+
+		this.structureDisplayName = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
+				paramCode: "structureDisplayName",
+				localized: true,
+				displayName: Util.getTranslationObject(this.languageId, "display-name"),
+				placeholder: Util.getTranslationObject(this.languageId, "display-name"),
+				tooltip: Util.getTranslationObject(this.languageId, "display-name-tooltip"),
+				validation: {
+					required: {
+						value: true,
+						message: Util.getTranslationObject(this.languageId, "this-field-is-required"),
+						errorClass: ErrorClass.ERROR
+					},
+					minLength: {
+						value: 3,
+						message: Util.getTranslationObject(this.languageId, "shorter-than-min-length") + ", 3",
+						errorClass: ErrorClass.ERROR
+					},
+					maxLength: {
+						value: 64,
+						message: Util.getTranslationObject(this.languageId, "long-than-max-length") + ", 64",
+						errorClass: ErrorClass.ERROR
 					}
 				}
-			});
-		}
+			}
+		});
+
+		this.structureDescription = ParameterUtil.createParameter({
+			namespace: this.namespace,
+			formId: this.componentId,
+			paramType: ParamType.STRING,
+			properties: {
+				paramCode: "structureDescription",
+				localized: true,
+				displayName: Util.getTranslationObject(this.languageId, "description"),
+				placeholder: Util.getTranslationObject(this.languageId, "description"),
+				tooltip: Util.getTranslationObject(this.languageId, "datastructure-description-tooltip"),
+				validation: {
+					maxLength: {
+						value: 256,
+						message: Util.getTranslationObject(this.languageId, "long-than-max-length") + ", 256",
+						errorClass: ErrorClass.ERROR
+					}
+				}
+			}
+		});
 
 		this.dataTypeInfoFields = [];
 	}
@@ -374,41 +373,24 @@ class DataStructureBuilder extends SXBaseVisualizer {
 			return;
 		}
 
+		if (parameter.hasError()) {
+			return;
+		}
+
 		switch (paramCode) {
 			case "structureCode": {
-				if (this.structureCode.hasError()) {
-					return;
-				}
-
 				this.dataStructure.paramCode = this.structureCode.getValue();
-
-				this.fireRequest({
-					requestId: RequestIDs.checkDataStructureCodeUnique,
-					params: {
-						dataStructureCode: this.dataStructure.paramCode,
-						dataStructureVersion: this.dataStructure.paramVersion
-					}
-				});
 
 				break;
 			}
 			case "structureVersion": {
-				if (this.structureVersion.hasError()) {
-					return;
-				}
-
 				this.dataStructure.paramVersion = this.structureVersion.getValue();
-				this.fireRequest({
-					requestId: RequestIDs.checkDataStructureUnique,
-					params: {
-						dataStructureCode: this.dataStructure.paramCode,
-						dataStructureVersion: this.dataStructure.paramVersion
-					}
-				});
+
 				break;
 			}
 			case "structureDisplayName": {
 				this.dataStructure.displayName = this.structureDisplayName.getValue();
+
 				break;
 			}
 			case "structureDescription": {
@@ -752,6 +734,10 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		return filePath + "/" + paramCode + "/" + paramVersion + "/" + fileName;
 	}
 
+	exportDataStructure = () => {
+		console.log("Export DataStructure: ", this.dataStructure);
+	};
+
 	handleEnableInputStatusChange(val) {
 		this.dataStructure.enableInputStatus = val;
 
@@ -794,8 +780,8 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
 		const referenceFiles = this.dataStructure.getReferenceFiles();
 
-		console.log("DataStructure: ", JSON.stringify(this.dataStructure.toJSON()));
-		console.log("Reference Files: ", referenceFiles);
+		//console.log("DataStructure: ", JSON.stringify(this.dataStructure.toJSON(), null, 4));
+		//console.log("Reference Files: ", referenceFiles);
 
 		this.fireRequest({
 			requestId: RequestIDs.saveDataStructure,
@@ -819,6 +805,14 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		}
 	};
 
+	handleExportDataStructure = () => {
+		console.log("handleExportDataStructure: ", this.dataStructure);
+
+		this.setState({
+			exportDialog: true
+		});
+	};
+
 	renderDataTypeInfo() {
 		return (
 			<div style={{ marginTop: "1.5rem" }}>
@@ -827,6 +821,36 @@ class DataStructureBuilder extends SXBaseVisualizer {
 					infoFields={this.dataTypeInfoFields}
 					fieldsPerRow={4}
 				/>
+			</div>
+		);
+	}
+
+	renderDataStructureInfo() {
+		return (
+			<div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
+				<div className="form-group sx-fieldset">
+					<div className="sx-legend">{Util.translate("datastructure-info")}</div>
+					<div className="autofit-float autofit-padded-no-gutters-x autofit-row">
+						<div className="autofit-col">
+							<SXLabeledText
+								key={Util.randomKey()}
+								label={Util.translate("id")}
+								text={this.dataStructure.dataStructureId}
+								align="left"
+								viewType="FORM_FIELD"
+								className="sx-form-field"
+							/>
+						</div>
+						<div className="autofit-col">{this.structureCode.render({ spritemap: this.spritemap })}</div>
+						<div className="autofit-col">{this.structureVersion.render({ spritemap: this.spritemap })}</div>
+						<div className="autofit-col">
+							{this.structureDisplayName.render({ spritemap: this.spritemap })}
+						</div>
+						<div className="autofit-col autofit-col-expand">
+							{this.structureDescription.render({ spritemap: this.spritemap })}
+						</div>
+					</div>
+				</div>
 			</div>
 		);
 	}
@@ -842,16 +866,14 @@ class DataStructureBuilder extends SXBaseVisualizer {
 		console.log(
 			"DataStructureBuilder render: ",
 			this.dataTypeId,
-			this.dataType,
-			this.dataStructure,
-			this.workingParam
+			!!this.dataStructure,
+			this.dataStructure.hasMembers()
 		);
 		*/
 
 		return (
 			<>
 				{this.dataTypeId > 0 && Util.isNotEmpty(this.dataType) && this.renderDataTypeInfo()}
-				{/*Header*/}
 				<div
 					className="autofit-float autofit-padded-no-gutters-x autofit-row"
 					style={{ marginBottom: "2.5rem", borderBottom: "3px solid #c7c7ce" }}
@@ -864,7 +886,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 							<Button
 								displayType="primary"
 								onClick={this.handleSaveDataStructure}
-								title={Util.translate("save-data-structure")}
+								title={Util.translate("save-datastructure")}
 							>
 								<Icon
 									symbol="disk"
@@ -873,11 +895,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
 								/>
 								{Util.translate("save")}
 							</Button>
-							{this.state.dataStructureId > 0 && (
+							{(this.dataTypeId || this.state.dataStructureId > 0) && (
 								<Button
 									displayType="warning"
 									onClick={() => {}}
-									title={Util.translate("delete-data-structure")}
+									title={Util.translate("delete-datastructure")}
 								>
 									<Icon
 										symbol="trash"
@@ -887,41 +909,25 @@ class DataStructureBuilder extends SXBaseVisualizer {
 									{Util.translate("delete")}
 								</Button>
 							)}
+							{this.dataTypeId > 0 && !!this.dataStructure && this.dataStructure.hasMembers() && (
+								<Button
+									displayType="secondary"
+									onClick={this.handleExportDataStructure}
+									title={Util.translate("export-datastructure")}
+								>
+									<Icon
+										symbol="export"
+										spritemap={this.spritemap}
+										style={{ marginRight: "5px" }}
+									/>
+									{Util.translate("export")}
+								</Button>
+							)}
 						</Button.Group>
 					</div>
 				</div>
 
-				{this.state.dataStructureId > 0 && (
-					<div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-						<div className="form-group sx-fieldset">
-							<div className="sx-legend">{Util.translate("datastructure-info")}</div>
-							<div className="autofit-float autofit-padded-no-gutters-x autofit-row">
-								<div className="autofit-col">
-									<SXLabeledText
-										key={Util.randomKey()}
-										label={Util.translate("id")}
-										text={this.dataStructure.dataStructureId}
-										align="left"
-										viewType="FORM_FIELD"
-										className="sx-form-field"
-									/>
-								</div>
-								<div className="autofit-col">
-									{this.structureCode.render({ spritemap: this.spritemap })}
-								</div>
-								<div className="autofit-col">
-									{this.structureVersion.render({ spritemap: this.spritemap })}
-								</div>
-								<div className="autofit-col">
-									{this.structureDisplayName.render({ spritemap: this.spritemap })}
-								</div>
-								<div className="autofit-col autofit-col-expand">
-									{this.structureDescription.render({ spritemap: this.spritemap })}
-								</div>
-							</div>
-						</div>
-					</div>
-				)}
+				{this.dataTypeId == 0 && this.renderDataStructureInfo()}
 				<div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
 					<div
 						style={{
@@ -1056,18 +1062,34 @@ class DataStructureBuilder extends SXBaseVisualizer {
 								/>
 								{Util.translate("save")}
 							</Button>
-							{this.state.dataStructureId > 0 && (
+							{(this.dataTypeId > 0 || this.state.dataStructureId > 0) &&
+								this.dataStructure &&
+								this.dataStructure.hasMembers() && (
+									<Button
+										displayType="warning"
+										onClick={() => {}}
+										title={Util.translate("delete-data-structure")}
+									>
+										<Icon
+											symbol="trash"
+											spritemap={this.spritemap}
+											style={{ marginRight: "5px" }}
+										/>
+										{Util.translate("delete")}
+									</Button>
+								)}
+							{this.dataTypeId > 0 && !!this.dataStructure && this.dataStructure.hasMembers() && (
 								<Button
-									displayType="warning"
-									onClick={() => {}}
-									title={Util.translate("delete-data-structure")}
+									displayType="secondary"
+									onClick={this.handleExportDataStructure}
+									title={Util.translate("export-datastructure")}
 								>
 									<Icon
-										symbol="trash"
+										symbol="export"
 										spritemap={this.spritemap}
 										style={{ marginRight: "5px" }}
 									/>
-									{Util.translate("delete")}
+									{Util.translate("export")}
 								</Button>
 							)}
 						</Button.Group>
@@ -1095,6 +1117,62 @@ class DataStructureBuilder extends SXBaseVisualizer {
 								}
 							]}
 							status="info"
+							spritemap={this.spritemap}
+						/>
+					)}
+					{this.state.exportDialog && (
+						<SXModalDialog
+							header={Util.translate("export-datastructure")}
+							body={
+								<div style={{ width: "100%" }}>
+									{this.structureCode.renderField({
+										style: { width: "100%" },
+										spritemap: this.spritemap
+									})}
+									{this.structureVersion.renderField({
+										style: { width: "100%" },
+										spritemap: this.spritemap
+									})}
+									{this.structureDisplayName.renderField({
+										style: { width: "100%" },
+										spritemap: this.spritemap
+									})}
+									{this.structureDescription.renderField({
+										style: { width: "100%" },
+										spritemap: this.spritemap
+									})}
+								</div>
+							}
+							buttons={[
+								{
+									onClick: () => {
+										if (
+											this.structureCode.validate() == 0 &&
+											this.structureVersion.validate() == 0 &&
+											this.structureDisplayName.validate() == 0 &&
+											this.structureDescription.validate() == 0
+										) {
+											this.exportDataStructure();
+											this.setState({ exportDialog: false });
+
+											return false;
+										}
+
+										return true;
+									},
+									label: Util.translate("export"),
+									displayType: "primary"
+								},
+								{
+									onClick: () => {
+										this.setState({ exportDialog: false });
+									},
+									label: Util.translate("cancel"),
+									displayType: "secondary"
+								}
+							]}
+							status="info"
+							className="datastructure-info-modal"
 							spritemap={this.spritemap}
 						/>
 					)}
@@ -1138,7 +1216,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 										this.setState({ confirmParamDeleteDlg: false });
 									},
 									label: Util.translate("cancel"),
-									displayType: "primary"
+									displayType: "secondary"
 								}
 							]}
 							status="info"

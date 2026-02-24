@@ -29,10 +29,8 @@ import com.sx.util.SXPortalUtil;
 import com.sx.util.SXUtil;
 import com.sx.util.portlet.SXPortletURLUtil;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.Stream;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -55,54 +53,67 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 			throws Exception {
 		
 		//System.out.println("SaveDataStructureResourceCommand");
+		JSONObject result = JSONFactoryUtil.createJSONObject();
 		
 		// Save data structure
 		long dataTypeId = ParamUtil.getLong(resourceRequest, "dataTypeId", 0);
 		long dataStructureId = ParamUtil.getLong(resourceRequest, "dataStructureId", 0);
+		
 		String strDataStructure = ParamUtil.getString(resourceRequest, "dataStructure", "{}");
-		String strFileFields = ParamUtil.getString(resourceRequest, "fileFields", "");
-		//System.out.println("fileFields: " + strFileFields);
-		
-		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
-		long companyId = themeDisplay.getCompanyId();
-		
-		JSONObject result = JSONFactoryUtil.createJSONObject();
-		
-		DataType dataType = null;
-		
-		ServiceContext dataStructureSC = ServiceContextFactory.getInstance(DataStructure.class.getName(), resourceRequest);
-		JSONObject jsonDataStructure = null;
-		String dataStructureCode = "";
-		String dataStructureVersion = "";
-		JSONObject jsonDataStructureDisplayName = null;
-		JSONObject jsonDataStructureDescription = null;
-		
-		if( !strDataStructure.isEmpty() ) {
-			try {
-				jsonDataStructure = JSONFactoryUtil.createJSONObject(strDataStructure);
-				
-				dataStructureCode = jsonDataStructure.getString("paramCode", "");
-				dataStructureVersion = jsonDataStructure.getString("paramVersion", "");
-				jsonDataStructureDisplayName = jsonDataStructure.getJSONObject("displayName");
-				jsonDataStructureDescription = jsonDataStructure.getJSONObject("description");
-			} catch (JSONException e) {
-				result.put( "error", SXUtil.translate(resourceRequest, "json-format-mismatched", new String[] {strDataStructure}) );
-				
-				SXPortletURLUtil.responeAjax(resourceResponse, result);
-				
-				return;
-			}
-		} else {
-			result.put( "error", SXUtil.translate(resourceRequest, "nothing-to-data") );
+		if(strDataStructure.isEmpty() ) {
+			result.put( "error", SXUtil.translate(resourceRequest, "nothing-to-save") );
 			
 			SXPortletURLUtil.responeAjax(resourceResponse, result);
 			
 			return;
 		}
 		
-		if( dataStructureId > 0 ) {
-			// Update the data structure to DataStructure table
+		JSONObject jsonDataStructure = null;
+		String dataStructureCode = "";
+		String dataStructureVersion = "";
+		JSONObject jsonDataStructureDisplayName = null;
+		JSONObject jsonDataStructureDescription = null;
+
+		try {
+			jsonDataStructure = JSONFactoryUtil.createJSONObject(strDataStructure);
 			
+			dataStructureCode = jsonDataStructure.getString("paramCode", "");
+			dataStructureVersion = jsonDataStructure.getString("paramVersion", "");
+			jsonDataStructureDisplayName = jsonDataStructure.getJSONObject("displayName");
+			jsonDataStructureDescription = jsonDataStructure.getJSONObject("description");
+		}  catch (JSONException e) {
+			result.put( "error", SXUtil.translate(resourceRequest, "json-format-mismatched", new String[] {strDataStructure}) );
+			
+			SXPortletURLUtil.responeAjax(resourceResponse, result);
+			
+			return;
+		}
+			
+		DataType dataType = null;
+		
+		String strFileFields = ParamUtil.getString(resourceRequest, "fileFields", "");
+		//System.out.println("fileFields: " + strFileFields);
+		
+		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		long companyId = themeDisplay.getCompanyId();
+		
+		ServiceContext dataStructureSC = 
+				ServiceContextFactory.getInstance(DataStructure.class.getName(), resourceRequest);
+		if( dataTypeId > 0 ) {
+			dataType = _dataTypeLocalService.getDataType(dataTypeId);
+			
+			if( Validator.isNotNull(dataType) ) {
+				_dataTypeLocalService.setDataTypeStructure(dataTypeId, strDataStructure);
+				
+				result.put("message",SXUtil.translate(resourceRequest, "datastructure-for-the-datatype-is-saved", dataTypeId));
+			} else {
+				result.put("error", SXUtil.translate(resourceRequest, "cannot-find-datatype-to-save-datastructure", dataTypeId));
+				
+				SXPortletURLUtil.responeAjax(resourceResponse, result);
+				
+				return;
+			}
+		} else if ( dataStructureId > 0 ) {
 			_dataStructureLocalService.updateDataStructure(
 					dataStructureId, 
 					dataStructureCode, 
@@ -114,19 +125,7 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 					dataStructureSC);
 			
 			result.put("message",SXUtil.translate(resourceRequest, "datastructure-is-saved"));
-		} else if ( dataTypeId > 0 ) {
-			
-			// Save the data structure as the structure of the DataType
-			dataType = _dataTypeLocalService.getDataType(dataTypeId);
-			
-			_dataTypeLocalService.setDataTypeStructure(dataTypeId, strDataStructure);
-			
-			result.put("message",SXUtil.translate(resourceRequest, "datastructure-for-the-datatype-is-saved", new long[] {dataTypeId}));
-			
-		} else if( Validator.isNotNull(jsonDataStructure) ) {
-			
-			// Add new DataStructure to DattaStructure table
-			
+		} else {
 			// Check duplicated
 			boolean duplicated = 
 					_dataStructureLocalService.checkDuplicated(dataStructureCode, dataStructureVersion);
@@ -137,7 +136,7 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 						SXUtil.translate(
 								resourceRequest, 
 								"datastructure-is-duplicated", 
-								new String[] {dataStructureCode, dataStructureVersion})
+								dataStructureCode, dataStructureVersion)
 				);
 				
 				SXPortletURLUtil.responeAjax(resourceResponse, result);
@@ -157,12 +156,6 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 			dataStructureId = dataStructure.getDataStructureId();
 			
 			result.put("message",SXUtil.translate(resourceRequest, "datastructure-is-added", new long[] {dataStructureId}));
-		} else {
-			result.put( "error", SXUtil.translate(resourceRequest, "one-of-the-datatype-id-datastructure-id-and-datastructure-to-save") );
-			
-			SXPortletURLUtil.responeAjax(resourceResponse, result);
-			
-			return;
 		}
 		
 		String[] fileFields = strFileFields.isEmpty() ? new String[] {} : strFileFields.split(",");
@@ -199,9 +192,9 @@ public class SaveDataStructureResourceCommand extends BaseMVCResourceCommand {
 					
 					SXPortalUtil.emptyFolder(versionFolderPath, true);
 					
-					JSONObject referenceFile = parameter.getJSONObject("referenceFile");
+					//JSONObject referenceFile = parameter.getJSONObject("referenceFile");
 					
-					Path filePath = versionFolderPath.resolve(referenceFile.getString("name"));
+					//Path filePath = versionFolderPath.resolve(referenceFile.getString("name"));
 					//System.out.println("Parameter has Reference File and changed to: " + filePath.toString());
 					
 					JSONArray errorFiles =  SXPortalUtil.saveUploadFieldFiles(uploadRequest, paramCode, versionFolderPath);

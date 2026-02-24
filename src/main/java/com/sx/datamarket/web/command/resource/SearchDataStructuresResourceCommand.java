@@ -19,6 +19,7 @@ import com.sx.util.portlet.SXPortletURLUtil;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
@@ -49,10 +50,10 @@ public class SearchDataStructuresResourceCommand extends BaseMVCResourceCommand{
 		int end = start + delta - 1;
 		long groupId = ParamUtil.getLong(resourceRequest, StationXWebKeys.GROUP_ID, themeDisplay.getScopeGroupId());
 		long userId = ParamUtil.getLong(resourceRequest, StationXWebKeys.USER_ID, themeDisplay.getUserId());
+		Locale locale = resourceRequest.getLocale();
 		
 		int status = ParamUtil.getInteger(resourceRequest, StationXWebKeys.STATUS, WorkflowConstants.STATUS_ANY);
 		String filterBy = ParamUtil.getString(resourceRequest, "filterBy", "groupId");
-		String groupBy = ParamUtil.getString(resourceRequest, "groupBy", "groupId");
 		String keywords = ParamUtil.getString(resourceRequest, StationXWebKeys.KEYWORDS, "");
 		
 		List<DataStructure> dataStructureList = _dataStructureLocalService.getAllDataStructureList();
@@ -65,7 +66,7 @@ public class SearchDataStructuresResourceCommand extends BaseMVCResourceCommand{
 		while(iter.hasNext()) {
 			DataStructure dataStructure = iter.next();
 			
-			jsonDataStructureList.put(dataStructure.toJSON(themeDisplay.getLocale()));
+			jsonDataStructureList.put(dataStructure.toJSON(locale));
 		}
 		
 		result.put("dataStructureList", jsonDataStructureList);

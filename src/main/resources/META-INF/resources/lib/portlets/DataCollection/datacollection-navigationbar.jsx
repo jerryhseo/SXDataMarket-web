@@ -22,13 +22,13 @@ class SXDataCollectionNavigationBar extends React.Component {
 		this.componentId = props.componentId;
 		this.navType = props.navType ?? SXDataCollectionNavigationBar.NavTypes.DATACOLLECTION;
 		this.spritemap = props.spritemap;
-		this.navItems = props.navItems;
+		this.navItems = props.navItems ?? [];
 		this.expandedKeys = props.expandedKeys;
 		this.orderable = props.orderable;
 		this.style = props.style;
 
 		this.state = {
-			expandedKeys: Util.isEmpty(this.navItems) ? new Set([]) : new Set(this.navItems.map((item) => item.id)),
+			expandedKeys: new Set(this.navItems.map((navItem) => navItem.id)),
 			confirmItemSelectDialog: false,
 			selectedItem: null
 		};
@@ -60,6 +60,21 @@ class SXDataCollectionNavigationBar extends React.Component {
 	componentWillUnmount() {
 		Event.off(Event.SX_REFRESH_NAVBAR, this.listenerRefreshNaveBar);
 	}
+
+	getAllExpandKeys = (navItems) => {
+		const expandedKeys = new Set([]);
+
+		navItems.map((item) => {
+			if (item.items) {
+				this.getAllExpandKeys(item.items).forEach((subKey) => expandedKeys.add(subKey));
+			}
+
+			expandedKeys.add(item.id);
+		});
+
+		//console.log("getAllExpandKeys: ", expandedKeys);
+		return expandedKeys;
+	};
 
 	hasUnsavedItem(items) {
 		let unsaved = null;

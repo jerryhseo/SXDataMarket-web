@@ -31,7 +31,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 	constructor(props) {
 		super(props);
 
-		console.log("[CollectionsManagement props]", props);
+		//console.log("[CollectionsManagement props]", props);
 
 		this.workbench = new Workbench({
 			namespace: this.namespace, //namespace of the CollectionManagement portlet
@@ -136,11 +136,11 @@ class CollectionsManagement extends SXBaseVisualizer {
 		const { targetPortlet, portletName, windowTitle, params } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			console.log("[CollectionManagement SX_OPEN_PORTLET_WINDOW REJECTED] ", targetPortlet);
+			//console.log("[CollectionManagement SX_OPEN_PORTLET_WINDOW REJECTED] ", targetPortlet);
 			return;
 		}
 
-		console.log("[CollectionManagement SX_OPEN_PORTLET_WINDOW Received] ", portletName, windowTitle, params);
+		//console.log("[CollectionManagement SX_OPEN_PORTLET_WINDOW Received] ", portletName, windowTitle, params);
 
 		this.workbench
 			.openPortletWindow({
@@ -204,7 +204,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 			return;
 		}
 
-		//console.log("[CollectionManagement listenerNavItemSelected] ", params.item, this.state);
+		//console.log("[CollectionManagement listenerNavItemSelected] ", item, this.state);
 		//this.applicationTitle = "";
 
 		let portletName = PortletKeys.STRUCTURED_DATA_EXPLORER;
@@ -213,62 +213,70 @@ class CollectionsManagement extends SXBaseVisualizer {
 
 		let { dataCollectionId, dataSetId, dataTypeId } = this.state;
 
+		const { id, modelId, label, type, items } = item;
+
 		switch (item.type) {
 			case CollectionsManagement.ItemTypes.COLLECTION: {
-				const { dataCollectionId, id, items } = item;
-
 				this.setState({
-					dataCollectionId: Number(dataCollectionId),
-					dataSetId: 0
+					dataCollectionId: Number(modelId),
+					dataSetId: 0,
+					dataTypeId: 0
 				});
 
 				if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
 					portletName = PortletKeys.DATACOLLECTION_VIEWER;
 				}
 
+				/*
 				if (Util.isEmpty(items)) {
 					requestId = RequestIDs.loadAssociatedDataSets;
 					requestParams = {
-						dataCollectionId: dataCollectionId
+						dataCollectionId: modelId
 					};
 				}
+					*/
 
 				break;
 			}
 			case CollectionsManagement.ItemTypes.DATASET: {
-				//console.log("NavItem Selected: ", item);
-
 				if (!dataCollectionId) {
 					const dataCollectionItem = this.findParentItem(this.navItems, item);
-					dataCollectionId = Number(dataCollectionItem.dataCollectionId);
+					dataCollectionId = Number(dataCollectionItem.modelId);
 				}
-				console.log("NaveItemSelected: ", item, dataCollectionId);
+				//console.log("NaveItemSelected: ", dataSetId, modelId);
+				dataSetId = modelId;
 
-				dataSetId = Number(item.dataSetId);
 				this.setState({
 					dataCollectionId: dataCollectionId,
-					dataSetId: dataSetId
+					dataSetId: Number(modelId)
 				});
 
 				if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
 					portletName = PortletKeys.DATASET_VIEWER;
 				}
 
-				if (Util.isEmpty(item.items)) {
+				/*
+				if (Util.isEmpty(items)) {
 					requestId = RequestIDs.loadAssociatedDataTypes;
 					requestParams = {
 						dataCollectionId: dataCollectionId,
 						dataSetId: dataSetId
 					};
 				}
+					*/
 
 				break;
 			}
 			case CollectionsManagement.ItemTypes.DATATYPE: {
-				const { dataTypeId, id } = item;
+				//console.log("[CollectionManagement DataType NavItemSelected] ", item);
+				dataTypeId = Number(modelId);
+
 				this.setState({
+					dataCollectionId: dataCollectionId,
+					dataSetId: dataSetId,
 					dataTypeId: Number(dataTypeId)
 				});
+
 				if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
 					portletName = PortletKeys.DATATYPE_VIEWER;
 				}
@@ -301,11 +309,22 @@ class CollectionsManagement extends SXBaseVisualizer {
 
 		this.applicationTitle = "";
 
+		//console.log("Before getDeployPortletParams: ", dataCollectionId, dataSetId, dataTypeId);
 		const portletParams = this.getDeployPortletParams({
 			dataCollectionId: dataCollectionId ?? this.state.dataCollectionId,
 			dataSetId: dataSetId ?? this.state.dataSetId,
 			dataTypeId: dataTypeId ?? this.state.dataTypeId
 		});
+
+		/*
+		console.log(
+			"[CollectionManagement NaveItemSelected] ",
+			dataCollectionId,
+			dataSetId,
+			dataTypeId,
+			portletParams,
+			this.state
+		); */
 		this.deployPortlet({
 			portletName: portletName,
 			params: portletParams
@@ -320,7 +339,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 			return;
 		}
 
-		console.log("[CollectionsManagement] listenerResponse: ", requestId, params, data);
+		//console.log("[CollectionsManagement] listenerResponse: ", requestId, params, data);
 		switch (requestId) {
 			case RequestIDs.searchDataCollections: {
 				this.searchedCollections = data;
@@ -328,7 +347,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 				this.navItems = this.searchedCollections.map((dataCollection) => {
 					const collectionItem = {
 						id: dataCollection.dataCollectionId,
-						dataCollectionId: dataCollection.dataCollectionId,
+						modelId: dataCollection.dataCollectionId,
 						label: dataCollection.displayName,
 						verified: dataCollection.verified ?? { verified: false },
 						freezed: dataCollection.freezed ?? { freezed: false },
@@ -340,17 +359,21 @@ class CollectionsManagement extends SXBaseVisualizer {
 						collectionItem.items = dataCollection.dataSetList.map((dataSet) => {
 							const setItem = {
 								id: dataSet.linkId,
-								dataSetId: dataSet.dataSetId,
+								modelId: dataSet.dataSetId,
 								label: dataSet.displayName,
+								verified: dataSet.verified ?? { verified: false },
+								freezed: dataSet.freezed ?? { freezed: false },
 								type: CollectionsManagement.ItemTypes.DATASET
 							};
 
-							if (dataSet.dataTypes) {
-								setItem.items = dataSet.dataTypes.map((dataType) => {
+							if (dataSet.dataTypeList) {
+								setItem.items = dataSet.dataTypeList.map((dataType) => {
 									return {
 										id: dataType.setTypelinkId,
-										dataTypeId: dataType.dataTypeId,
+										modelId: dataType.dataTypeId,
 										label: dataType.displayName,
+										verified: dataType.verified ?? { verified: false },
+										freezed: dataType.freezed ?? { freezed: false },
 										type: CollectionsManagement.ItemTypes.DATATYPE
 									};
 								});
@@ -363,7 +386,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 					return collectionItem;
 				});
 
-				//console.log("navItems: ", this.navItems);
+				//console.log("navItems: ", this.navItems, this.selectedNavItem);
 				//this.setState({ dataCollectionId: this.dataCollection.dataCollectionId });
 				this.setState({ refreshNav: Util.randomKey() });
 				break;
@@ -429,7 +452,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 						data: data
 					});
 
-					console.log("this.selectedNavItem: ", JSON.stringify(this.selectedNavItem, null, 4));
+					//console.log("this.selectedNavItem: ", JSON.stringify(this.selectedNavItem, null, 4));
 					if (!this.selectedNavItem) {
 						this.selectedNavItem = {
 							type: CollectionsManagement.ItemTypes.COLLECTION
@@ -622,7 +645,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 			return;
 		}
 
-		console.log("[CollectionsManagement viewMode] ", viewMode);
+		//console.log("[CollectionsManagement viewMode] ", viewMode);
 
 		this.setState({ viewMode: viewMode });
 
@@ -710,7 +733,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 			}
 			case "addDataType": {
 				portletName = PortletKeys.DATATYPE_EDITOR;
-				console.log("dataCollectionId: ", this.selectedNavItem, this.state);
+				//console.log("dataCollectionId: ", this.selectedNavItem, this.state);
 				params = {
 					dataCollectionId: this.state.dataCollectionId,
 					dataSetId: this.state.dataSetId,
@@ -739,7 +762,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 			return;
 		}
 
-		console.log("[CollectionsManagement listenerDataCollectionChanged] ", this.selectedNavItem, dataCollection);
+		//console.log("[CollectionsManagement listenerDataCollectionChanged] ", this.selectedNavItem, dataCollection);
 
 		const { dataCollectionId, displayName, dataSets } = dataCollection;
 
@@ -753,11 +776,11 @@ class CollectionsManagement extends SXBaseVisualizer {
 		const { targetPortlet, dataSet } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			console.log("[CollectionsManagement listenerDataSetChanged REJECTED] ", event.dataPacket);
+			//console.log("[CollectionsManagement listenerDataSetChanged REJECTED] ", event.dataPacket);
 			return;
 		}
 
-		console.log("[CollectionsManagement listenerDataSetChanged] ", this.selectedNavItem, dataSet);
+		//console.log("[CollectionsManagement listenerDataSetChanged] ", this.selectedNavItem, dataSet);
 		const { dataSetId, displayName, dataTypes } = dataSet;
 
 		if (!this.selectedNavItem) {
@@ -775,15 +798,16 @@ class CollectionsManagement extends SXBaseVisualizer {
 		const { targetPortlet, dataCollectionId } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			console.log("[CollectionsManagement listenerDeleteDataCollection REJECTED] ", event.dataPacket);
+			//console.log("[CollectionsManagement listenerDeleteDataCollection REJECTED] ", event.dataPacket);
 			return;
 		}
+		/*
 		console.log(
 			"[CollectionsManagement listenerDeleteDataCollection] ",
 			this.selectedNavItem,
 			this.state.dataCollectionId,
 			dataCollectionId
-		);
+		); */
 
 		if (this.state.dataCollectionId !== dataCollectionId.toString()) {
 			this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
@@ -810,15 +834,16 @@ class CollectionsManagement extends SXBaseVisualizer {
 		const { targetPortlet, dataCollection } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			console.log("[CollectionsManagement listenerSaveDataCollection REJECTED] ", event.dataPacket);
+			//console.log("[CollectionsManagement listenerSaveDataCollection REJECTED] ", event.dataPacket);
 			return;
 		}
+		/*
 		console.log(
 			"[CollectionsManagement listenerSaveDataCollection] ",
 			this.selectedNavItem,
 			this.state.dataCollectionId,
 			dataCollection
-		);
+		); */
 
 		this.workbench.processRequest({
 			requestPortlet: this.namespace,
@@ -833,15 +858,16 @@ class CollectionsManagement extends SXBaseVisualizer {
 		const { targetPortlet, dataSet } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			console.log("[CollectionsManagement listenerSaveDataSet REJECTED] ", event.dataPacket);
+			//console.log("[CollectionsManagement listenerSaveDataSet REJECTED] ", event.dataPacket);
 			return;
 		}
+		/*
 		console.log(
 			"[CollectionsManagement listenerSaveDataSet] ",
 			this.selectedNavItem,
 			this.state.dataSetId,
 			dataSet
-		);
+		); */
 
 		this.workbench.processRequest({
 			requestPortlet: this.namespace,
@@ -856,9 +882,10 @@ class CollectionsManagement extends SXBaseVisualizer {
 		const { targetPortlet, dataCollectionId, dataSetId } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			console.log("[CollectionsManagement listenerDeleteDataSet REJECTED] ", event.dataPacket);
+			//console.log("[CollectionsManagement listenerDeleteDataSet REJECTED] ", event.dataPacket);
 			return;
 		}
+		/*
 		console.log(
 			"[CollectionsManagement listenerDeleteDataSet] ",
 			this.selectedNavItem,
@@ -866,7 +893,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 			dataCollectionId,
 			this.state.dataSetId,
 			dataSetId
-		);
+		); */
 
 		if (
 			this.state.dataCollectionId !== dataCollectionId ||
@@ -908,9 +935,10 @@ class CollectionsManagement extends SXBaseVisualizer {
 		} = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			console.log("[CollectionsManagement listenerSaveDataType REJECTED] ", event.dataPacket);
+			//console.log("[CollectionsManagement listenerSaveDataType REJECTED] ", event.dataPacket);
 			return;
 		}
+		/*
 		console.log(
 			"[CollectionsManagement listenerSaveDataType] ",
 			dataCollectionId,
@@ -921,7 +949,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 			extension,
 			visualizers,
 			dataStructureId
-		);
+		); */
 
 		this.workbench.processRequest({
 			requestPortlet: this.namespace,
@@ -947,9 +975,10 @@ class CollectionsManagement extends SXBaseVisualizer {
 		const { targetPortlet, dataCollectionId, dataSetId, dataTypeId } = event.dataPacket;
 
 		if (targetPortlet !== this.namespace) {
-			console.log("[CollectionsManagement listenerDeleteDataTypes REJECTED] ", event.dataPacket);
+			//console.log("[CollectionsManagement listenerDeleteDataTypes REJECTED] ", event.dataPacket);
 			return;
 		}
+		/*
 		console.log(
 			"[CollectionsManagement listenerDeleteDataTypes] ",
 			this.selectedNavItem,
@@ -959,7 +988,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 			dataSetId,
 			this.state.dataTypeId,
 			dataTypeId
-		);
+		); */
 
 		if (
 			this.state.dataCollectionId !== dataCollectionId ||
@@ -1204,11 +1233,11 @@ class CollectionsManagement extends SXBaseVisualizer {
 		}
 
 		let portletParams;
-		console.log("getDeployPortletParams: ", dataCollectionId, dataSetId, dataTypeId, this.selectedNavItem);
+		//console.log("getDeployPortletParams: ", dataCollectionId, dataSetId, dataTypeId, this.selectedNavItem);
 
 		switch (this.selectedNavItem.type) {
 			case CollectionsManagement.ItemTypes.COLLECTION: {
-				dataCollectionId = this.selectedNavItem.dataCollectionId;
+				dataCollectionId = this.selectedNavItem.modelId;
 				dataSetId = 0;
 				dataTypeId = 0;
 				this.dataCollectionDisplayName = this.selectedNavItem.label;
@@ -1231,7 +1260,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 				break;
 			}
 			case CollectionsManagement.ItemTypes.DATASET: {
-				dataSetId = this.selectedNavItem.dataSetId;
+				dataSetId = this.selectedNavItem.modelId;
 				dataTypeId = 0;
 				this.dataSetDisplayName = this.selectedNavItem.label;
 				this.dataTypeDisplayName = "";
@@ -1239,7 +1268,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 				const dataCollectionItem = this.findParentItem(this.navItems, this.selectedNavItem);
 				this.dataCollectionDisplayName = dataCollectionItem.label;
 				portletParams = {
-					dataCollectionId: dataCollectionItem.dataCollectionId,
+					dataCollectionId: dataCollectionItem.modelId,
 					dataSetId: dataSetId
 				};
 
@@ -1255,7 +1284,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 				break;
 			}
 			case CollectionsManagement.ItemTypes.DATATYPE: {
-				dataTypeId = this.selectedNavItem.dataTypeId;
+				dataTypeId = this.selectedNavItem.modelId;
 				this.dataTypeDisplayName = this.selectedNavItem.label;
 
 				const dataSetItem = this.findParentItem(this.navItems, this.selectedNavItem);
@@ -1263,8 +1292,8 @@ class CollectionsManagement extends SXBaseVisualizer {
 				//console.log("getDeployPortletParams: ", dataSetItem, dataCollectionItem, dataTypeId);
 
 				portletParams = {
-					dataCollectionId: dataCollectionItem.dataCollectionId,
-					dataSetId: dataSetItem.dataSetId,
+					dataCollectionId: dataCollectionItem.modelId,
+					dataSetId: dataSetItem.modelId,
 					dataTypeId: dataTypeId
 				};
 
@@ -1275,11 +1304,13 @@ class CollectionsManagement extends SXBaseVisualizer {
 			}
 		}
 
+		/*
 		this.setState({
 			dataCollectionId: dataCollectionId,
 			dataSetId: dataSetId,
 			dataTypeId: dataTypeId
 		});
+		*/
 
 		if (viewMode === CollectionsManagement.ViewMode.DATA) {
 			this.applicationBarButtons = [];

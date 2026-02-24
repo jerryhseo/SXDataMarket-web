@@ -20,10 +20,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		super(props);
 
 		//console.log("DataStructureExplorer props: ", props);
-		this.dataStructureList = [];
-
-		this.selectedDataStructures = [];
-		this.searchedDataStructures = [];
+		this.searchResults = [];
 		this.checkboxEnabled = true;
 
 		this.actionButtons = [];
@@ -58,16 +55,6 @@ class DataStructureExplorer extends SXBaseVisualizer {
 				width: "10rem"
 			},
 			{
-				id: "staus",
-				name: Util.translate("status"),
-				width: "6rem"
-			},
-			//{
-			//	id: "dataStaus",
-			//	name: Util.translate("data-status"),
-			//	width: "6rem"
-			//},
-			{
 				id: "actions",
 				name: "actions",
 				width: "3.5rem"
@@ -77,9 +64,6 @@ class DataStructureExplorer extends SXBaseVisualizer {
 			this.tableColumns.unshift({ id: "checkbox", name: "", width: "2.5rem" });
 		}
 
-		this.dialogHeader = <></>;
-		this.dialogBody = <></>;
-
 		this.state = {
 			displayStyle: DisplayStyles.TABLE,
 			start: this.params.start ?? 0,
@@ -87,27 +71,32 @@ class DataStructureExplorer extends SXBaseVisualizer {
 			keywords: this.params.keywords ?? "",
 			searchContainerKey: Util.randomKey(),
 			infoDialog: false,
+			dialogHeader: <></>,
+			dialogBody: <></>,
 			confirmDeleteDialog: false,
+			dataStructureIdToBeDeleted: 0,
 			loadingStatus: LoadingStatus.PENDING
 		};
 
 		this.searchContainerId = this.namespace + "dataStructureSeachContainer";
-		this.lastSelectedRow = null;
 	}
 
 	listenerSelectAll = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, selectAll } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataStructureExplorer] listenerSelectAll event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataStructureExplorer] listenerSelectAll event rejected: ", targetPortlet, targetFormId);
 			return;
 		}
 
 		//console.log("[DataStructureExplorer] listenerSelectAll: ", dataPacket);
 
-		this.selectedDataStructures = dataPacket.selectAll ? [...this.searchedDataStructures] : [];
+		this.searchResults.forEach((result) => {
+			result.checked = selectAll;
+			return result;
+		});
 
-		this.setState({ searchContainerKey: Util.randomKey() });
+		this.forceUpdate();
 	};
 
 	listenerFieldValueChanged = (event) => {
@@ -139,22 +128,17 @@ class DataStructureExplorer extends SXBaseVisualizer {
 	};
 
 	listenerPopActionClicked = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, action, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataStructureExplorer] listenerPopActionClicked event rejected: ", dataPacket);
+		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+			//console.log("[DataStructureExplorer] listenerPopActionClicked event rejected: ", targetPortlet, targetFormId);
 			return;
 		}
 
-		const selectedDataStructureId = this.searchedDataStructures[dataPacket.data][0].value;
-		/*console.log(
-			"[DataStructureExplorer] listenerPopActionClicked: ",
-			dataPacket,
-			this.searchedDataStructures,
-			selectedDataStructureId
-		);*/
+		const selectedDataStructureId = this.searchResults[data].id;
+		console.log("[DataStructureExplorer] listenerPopActionClicked: ", this.searchResults[data], action, data);
 
-		switch (dataPacket.action) {
+		switch (action) {
 			case "update": {
 				this.fireLoadPortlet({
 					portletName: PortletKeys.DATASTRUCTURE_BUILDER,
@@ -166,11 +150,11 @@ class DataStructureExplorer extends SXBaseVisualizer {
 				break;
 			}
 			case "delete": {
-				this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-				this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
-
 				this.setState({
-					confirmDeleteDialog: true
+					confirmDeleteDialog: true,
+					dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+					dialogBody: Util.translate("this-is-not-recoverable-are-you-sure-to-proceed"),
+					dataStructureIdToBeDeleted: selectedDataStructureId
 				});
 				break;
 			}
@@ -185,9 +169,8 @@ class DataStructureExplorer extends SXBaseVisualizer {
 			return;
 		}
 		//console.log("[DataStructureExplorer] listenerSelectedResultsChanged: ", dataPacket);
-		this.selectedDataStructures = dataPacket.selectedResults;
 
-		this.setState({ searchContainerKey: Util.randomKey() });
+		this.forceUpdate();
 	};
 
 	listenerDeleteSelected = (event) => {
@@ -199,32 +182,11 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		}
 		//console.log("[DataStructureExplorer] listenerDeleteSelected: ", dataPacket);
 
-		this.dialogHeader = SXModalUtil.warningDlgHeader(this.spritemap);
-		this.dialogBody = Util.translate("this-is-not-recoverable-are-you-sure-to-proceed");
-
-		this.setState({ confirmDeleteDialog: true });
-	};
-
-	listenerTableRowSelected = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataStructureExplorer] listenerTableRowSelected rejected: ", dataPacket);
-			return;
-		}
-		//console.log("[DataStructureExplorer] listenerTableRowSelected: ", dataPacket);
-	};
-
-	listenerTableColumnSelected = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			//console.log("[DataStructureExplorer] listenerTableColumnSelected rejected: ", dataPacket);
-			return;
-		}
-		//console.log("[DataStructureExplorer] listenerTableColumnSelected: ", dataPacket);
-
-		this.lastSelectedDataStructureId = this.getDataStructureIdFromRow(dataPacket.row);
+		this.setState({
+			confirmDeleteDialog: true,
+			dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+			dialogBody: Util.translate("this-is-not-recoverable-are-you-sure-to-proceed")
+		});
 	};
 
 	listenerWorkbenchReady = (event) => {
@@ -249,24 +211,52 @@ class DataStructureExplorer extends SXBaseVisualizer {
 	};
 
 	listenerResponse = (event) => {
-		const dataPacket = event.dataPacket;
+		const { targetPortlet, targetFormId, requestId, params, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
+		if (targetPortlet !== this.namespace) {
 			//console.log("[DataStructureExplorer] listenerResponse rejected: ", dataPacket);
 			return;
 		}
 
-		//console.log("[DataStructureExplorer] listenerResponse received: ", dataPacket);
+		console.log("[DataStructureExplorer] listenerResponse received: ", requestId, params, data);
 
-		switch (dataPacket.requestId) {
+		const { error } = data;
+		if (error) {
+			this.setState({
+				infoDialog: true,
+				dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				dialogBody: error
+			});
+
+			return;
+		}
+
+		switch (requestId) {
 			case RequestIDs.searchDataStructures: {
-				this.convertSearchResultsToContent(dataPacket.data);
+				const { dataStructureList } = data;
+
+				this.convertSearchResultsToContent(dataStructureList);
+				break;
+			}
+			case RequestIDs.deleteDataStructures: {
+				const { dataStructureList } = data;
+
+				this.setState({
+					dlgHeader: SXModalUtil.successDlgHeader(this.spritemap),
+					dlgBody: Util.translate("datastructures-deleted-successfully", dataStructureList),
+					infoDialog: true
+				});
+
+				this.fireRequest({
+					requestId: RequestIDs.searchDataStructures,
+					params: this.params
+				});
+
 				break;
 			}
 		}
 
 		this.setState({
-			searchContainerKey: Util.randomKey(),
 			loadingStatus: LoadingStatus.COMPLETE
 		});
 	};
@@ -296,8 +286,6 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		Event.on(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
 		Event.on(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
 		Event.on(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
-		Event.on(Event.SX_TABLE_ROW_CLICKED, this.listenerTableRowSelected);
-		Event.on(Event.SX_TABLE_COLUMN_CLICKED, this.listenerTableColumnSelected);
 
 		this.fireHandshake();
 	}
@@ -313,9 +301,21 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		Event.off(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
 		Event.off(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
 		Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
-		Event.off(Event.SX_TABLE_ROW_CLICKED, this.listenerTableRowSelected);
-		Event.off(Event.SX_TABLE_COLUMN_CLICKED, this.listenerTableColumnSelected);
 	}
+
+	selectedDataStructureIds = () => {
+		return this.searchResults
+			.filter((result) => result.checked)
+			.map((result) => {
+				return result.id;
+			});
+	};
+
+	checkAllResultsSelected = () => {
+		const dataStructureIds = this.selectedDataStructureIds();
+
+		return dataStructureIds.length == this.searchResults.length;
+	};
 
 	getDataStructureIdFromRow(row) {
 		const column = row.filter((column) => column.id === "dataStructureId")[0];
@@ -323,25 +323,11 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		return column.value;
 	}
 
-	checkAllDataStructuresSelected = () => {
-		return (
-			this.selectedDataStructures.length > 0 &&
-			this.searchedDataStructures.length == this.selectedDataStructures.length
-		);
-	};
-
 	convertSearchResultsToContent(results) {
-		this.searchedDataStructures = results.map((dataStructure, index) => {
-			const {
-				dataCollectionId = 0,
-				dataStructureId,
-				dataStructureCode,
-				dataStructureVersion,
-				displayName,
-				status
-			} = dataStructure;
+		console.log("seachec dataStructureList: ", results);
+		this.searchResults = results.map((dataStructure, index) => {
+			const { dataStructureId, paramCode, paramVersion, displayName } = dataStructure;
 
-			//console.log("convertSearchResultsToContent: ", result, dataType, Util.isNotEmpty(typeStructureLink));
 			const contentActionMenus = [];
 
 			if (this.permissions.includes(ActionKeys.UPDATE)) {
@@ -357,50 +343,52 @@ class DataStructureExplorer extends SXBaseVisualizer {
 				});
 			}
 
-			let row = [
-				{
-					id: "dataStructureId",
-					value: dataStructureId
-				},
-				{
-					id: "displayName",
-					value: displayName[this.languageId]
-				},
-				{
-					id: "dataStructureVersion",
-					value: dataStructureVersion
-				},
-				{
-					id: "dataStructureCode",
-					value: dataStructureCode
-				},
-				{
-					id: "status",
-					value: <SXFreezeIcon freezed={status === WorkflowStatus.APPROVED} />
-				},
-				{
-					id: "actions",
-					value: contentActionMenus
-				}
-			];
+			let row = {
+				id: dataStructureId,
+				index: index,
+				checked: false,
+				columns: [
+					{
+						id: "dataStructureId",
+						value: dataStructureId
+					},
+					{
+						id: "displayName",
+						value: displayName
+					},
+					{
+						id: "dataStructureVersion",
+						value: paramVersion
+					},
+					{
+						id: "dataStructureCode",
+						value: paramCode
+					},
+					{
+						id: "actions",
+						value: contentActionMenus
+					}
+				]
+			};
 
 			return row;
 		});
-
-		this.selectedDataStructures = [];
 	}
 
 	deleteDataStructures = () => {
-		console.log("deleteDataStructures: ", this.selectedDataStructures);
+		const dataStructureIds =
+			this.state.dataStructureIdToBeDeleted > 0
+				? [this.state.dataStructureIdToBeDeleted]
+				: this.selectedDataStructureIds();
 
-		/*
+		console.log("deleteDataStructures: ", dataStructureIds);
+
 		this.fireRequest({
-			requestId: Workbench.RequestIDs.deleteDataStructures,
+			requestId: RequestIDs.deleteDataStructures,
 			params: {
-				dataStructureIds: this.selectedDataStructures
+				dataStructureIds: dataStructureIds
 			}
 		});
-		*/
 	};
 
 	render() {
@@ -413,7 +401,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		return (
 			<div>
 				<SXManagementToolbar
-					key={this.checkAllDataStructuresSelected()}
+					key={this.checkAllResultsSelected()}
 					namespace={this.namespace}
 					formId={this.formId}
 					searchBar={true}
@@ -421,7 +409,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 					actionButtons={this.actionButtons}
 					actionMenus={this.actionMenus}
 					checkbox={this.checkboxEnabled}
-					checkboxChecked={this.checkAllDataStructuresSelected()}
+					checkboxChecked={this.checkAllResultsSelected()}
 					start={this.state.start}
 					delta={this.state.delta}
 					keywords={this.state.keywords}
@@ -431,19 +419,17 @@ class DataStructureExplorer extends SXBaseVisualizer {
 					key={this.state.searchContainerKey}
 					namespace={this.namespace}
 					formId={this.formId}
-					searchContainerId={this.searchContainerId}
 					checkbox={this.checkboxEnabled}
-					checkAll={this.checkAllDataStructuresSelected()}
+					checkAll={this.checkAllResultsSelected()}
 					index={true}
 					columns={this.tableColumns}
-					searchResults={this.searchedDataStructures}
-					selectedResults={this.selectedDataStructures}
+					searchResults={this.searchResults}
 					spritemap={this.spritemap}
 				/>
 				{this.state.infoDialog && (
 					<SXModalDialog
-						header={this.dialogHeader}
-						body={this.dialogBody}
+						header={this.state.dialogHeader}
+						body={this.state.dialogBody}
 						buttons={[
 							{
 								label: Util.translate("ok"),
@@ -456,8 +442,8 @@ class DataStructureExplorer extends SXBaseVisualizer {
 				)}
 				{this.state.confirmDeleteDialog && (
 					<SXModalDialog
-						header={this.dialogHeader}
-						body={this.dialogBody}
+						header={this.state.dialogHeader}
+						body={this.state.dialogBody}
 						buttons={[
 							{
 								label: Util.translate("confirm"),

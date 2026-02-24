@@ -50,8 +50,9 @@ export class SXModalUtil {
 }
 
 export const SXModalDialog = ({
-	size,
+	size = "sm",
 	status = "secondary",
+	className = "",
 	spritemap,
 	header = <></>,
 	body,
@@ -60,14 +61,16 @@ export const SXModalDialog = ({
 	disableAutoClose = "false"
 }) => {
 	const { observer, onOpenChange, open } = useModal();
+
 	return (
 		<Modal
 			observer={observer}
 			size={size}
-			spritemap={spritemap}
 			status={status}
 			disableAutoClose={disableAutoClose}
 			center
+			className={className}
+			spritemap={spritemap}
 		>
 			<Modal.Header
 				withTitle={withTitle}
@@ -86,8 +89,8 @@ export const SXModalDialog = ({
 									displayType={button.displayType}
 									onClick={(event) => {
 										event.stopPropagation();
-										button.onClick();
-										onOpenChange(false);
+										//button.onClick();
+										onOpenChange(button.onClick());
 									}}
 								>
 									{button.label}
