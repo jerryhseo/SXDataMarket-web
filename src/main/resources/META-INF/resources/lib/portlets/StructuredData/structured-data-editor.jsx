@@ -35,6 +35,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		this.state = {
 			structuredDataId: this.params.structuredDataId ?? 0,
 			infoDialog: false,
+			saveWarningDialog: false,
 			dialogHeader: <></>,
 			dialogBody: <></>,
 			loadingStatus: LoadingStatus.PENDING
@@ -331,7 +332,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
 		//this.visualizer.loadData(ResourceIds.LOAD_STRUCTURED_DATA_EDITING, params);
 	};
 
-	handleSaveData = () => {
+	saveData = () => {
 		const data = this.dataStructure.toData();
 		console.log("handleSaveData: ", data);
 
@@ -359,6 +360,30 @@ class StructuredDataEditor extends SXBaseVisualizer {
 				data: JSON.stringify(data)
 			}
 		});
+	};
+
+	handleSaveData = () => {
+		const hasError = this.dataStructure.validate();
+		console.log("[StructuredDataEditor handleSaveData hasError] ", hasError);
+		if (hasError > 0) {
+			this.setState({
+				saveWarningDialog: true,
+				dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+				dialogBody: Util.translate("data-has-warning-are-you-sure-to-save-with-warning")
+			});
+
+			return;
+		} else if (hasError < 0) {
+			this.setState({
+				infoDialog: true,
+				dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+				dialogBody: Util.translate("data-has-error-please-fix-it-to-save")
+			});
+
+			return;
+		}
+
+		this.saveData();
 	};
 
 	handleCancel = () => {
@@ -440,6 +465,28 @@ class StructuredDataEditor extends SXBaseVisualizer {
 									label: Util.translate("ok"),
 									onClick: (e) => {
 										this.setState({ infoDialog: false });
+									}
+								}
+							]}
+						/>
+					)}
+					{this.state.saveWarningDialog && (
+						<SXModalDialog
+							header={this.state.dialogHeader}
+							body={this.state.dialogBody}
+							buttons={[
+								{
+									label: Util.translate("save"),
+									onClick: (e) => {
+										this.saveData();
+
+										this.setState({ saveWarningDialog: false });
+									}
+								},
+								{
+									label: Util.translate("cancel"),
+									onClick: (e) => {
+										this.setState({ saveWarningDialog: false });
 									}
 								}
 							]}

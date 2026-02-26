@@ -164,7 +164,7 @@ class DataTypeViewer extends SXBaseVisualizer {
 			return;
 		}
 
-		console.log("[DataTypeViewer] listenerWorkbenchReady received: ", event.dataPacket);
+		//console.log("[DataTypeViewer] listenerWorkbenchReady received: ", event.dataPacket);
 
 		this.fireRequest({
 			requestId: RequestIDs.viewDataType,

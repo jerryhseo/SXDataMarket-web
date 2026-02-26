@@ -6,6 +6,7 @@ import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
 import SXBasePropertiesPanelComponent from "./base-properties-panel-component.jsx";
 import ParameterConstants from "../Parameter/parameter-constants.jsx";
 import { ParameterUtil } from "../Parameter/parameters.jsx";
+import DataStructure from "./data-structure.jsx";
 
 class SXDSBuilderValidationPanel extends SXBasePropertiesPanelComponent {
 	constructor(props) {
@@ -814,22 +815,22 @@ class SXDSBuilderValidationPanel extends SXBasePropertiesPanelComponent {
 	getSectionValue(sectionId) {
 		const section = this.getSection(sectionId);
 
-		return Util.isNotEmpty(section) ? section.value ?? "" : "";
+		return Util.isNotEmpty(section) ? (section.value ?? "") : "";
 	}
 
 	getSectionBoundary(sectionId) {
 		const section = this.getSection(sectionId);
-		return section ? section.boundary ?? false : false;
+		return section ? (section.boundary ?? false) : false;
 	}
 
 	getSectionMessage(sectionId) {
 		const section = this.getSection(sectionId);
-		return section ? section.message ?? {} : {};
+		return section ? (section.message ?? {}) : {};
 	}
 
 	getSectionErrorClass(sectionId) {
 		const section = this.getSection(sectionId);
-		return section ? section.errorClass ?? ErrorClass.ERROR : ErrorClass.ERROR;
+		return section ? (section.errorClass ?? ErrorClass.ERROR) : ErrorClass.ERROR;
 	}
 
 	setSectionValue(sectionId, value) {
@@ -1138,7 +1139,7 @@ class SXDSBuilderValidationPanel extends SXBasePropertiesPanelComponent {
 
 	errorLevelSelector(sectionId) {
 		const errorClass = this.getSection(sectionId)
-			? this.getSection(sectionId).errorClass ?? ErrorClass.ERROR
+			? (this.getSection(sectionId).errorClass ?? ErrorClass.ERROR)
 			: ErrorClass.ERROR;
 
 		return (

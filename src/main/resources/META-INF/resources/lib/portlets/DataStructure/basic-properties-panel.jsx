@@ -103,8 +103,8 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 							errorClass: ErrorClass.ERROR
 						},
 						minLength: {
-							value: 6,
-							message: Util.getTranslationObject(this.languageId, "shorter-than", 6),
+							value: 3,
+							message: Util.getTranslationObject(this.languageId, "shorter-than", 3),
 							errorClass: ErrorClass.ERROR
 						},
 						maxLength: {

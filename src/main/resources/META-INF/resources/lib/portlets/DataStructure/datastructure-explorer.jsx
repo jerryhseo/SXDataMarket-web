@@ -69,7 +69,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 			start: this.params.start ?? 0,
 			delta: this.params.delta ?? 10,
 			keywords: this.params.keywords ?? "",
-			searchContainerKey: Util.randomKey(),
+			searchContainerKey: Util.nowTime(),
 			infoDialog: false,
 			dialogHeader: <></>,
 			dialogBody: <></>,
@@ -136,7 +136,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 		}
 
 		const selectedDataStructureId = this.searchResults[data].id;
-		console.log("[DataStructureExplorer] listenerPopActionClicked: ", this.searchResults[data], action, data);
+		//console.log("[DataStructureExplorer] listenerPopActionClicked: ", this.searchResults[data], action, data);
 
 		switch (action) {
 			case "update": {
@@ -218,7 +218,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 			return;
 		}
 
-		console.log("[DataStructureExplorer] listenerResponse received: ", requestId, params, data);
+		//console.log("[DataStructureExplorer] listenerResponse received: ", requestId, params, data);
 
 		const { error } = data;
 		if (error) {
@@ -242,10 +242,12 @@ class DataStructureExplorer extends SXBaseVisualizer {
 				const { dataStructureList } = data;
 
 				this.setState({
-					dlgHeader: SXModalUtil.successDlgHeader(this.spritemap),
-					dlgBody: Util.translate("datastructures-deleted-successfully", dataStructureList),
+					dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+					dialogBody: Util.translate("datastructures-deleted-successfully", dataStructureList),
 					infoDialog: true
 				});
+
+				this.searchResults = [];
 
 				this.fireRequest({
 					requestId: RequestIDs.searchDataStructures,
@@ -324,7 +326,7 @@ class DataStructureExplorer extends SXBaseVisualizer {
 	}
 
 	convertSearchResultsToContent(results) {
-		console.log("seachec dataStructureList: ", results);
+		//console.log("seachec dataStructureList: ", results);
 		this.searchResults = results.map((dataStructure, index) => {
 			const { dataStructureId, paramCode, paramVersion, displayName } = dataStructure;
 
@@ -373,6 +375,10 @@ class DataStructureExplorer extends SXBaseVisualizer {
 
 			return row;
 		});
+
+		this.setState({
+			searchContainerKey: Util.nowTime()
+		});
 	}
 
 	deleteDataStructures = () => {
@@ -381,13 +387,17 @@ class DataStructureExplorer extends SXBaseVisualizer {
 				? [this.state.dataStructureIdToBeDeleted]
 				: this.selectedDataStructureIds();
 
-		console.log("deleteDataStructures: ", dataStructureIds);
+		//console.log("deleteDataStructures: ", dataStructureIds);
 
 		this.fireRequest({
 			requestId: RequestIDs.deleteDataStructures,
 			params: {
 				dataStructureIds: dataStructureIds
 			}
+		});
+
+		this.setState({
+			loadingStatus: LoadingStatus.PENDING
 		});
 	};
 

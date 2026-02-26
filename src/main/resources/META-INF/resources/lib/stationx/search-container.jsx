@@ -333,7 +333,7 @@ export class SXSearchResultConainer extends React.Component {
 	constructor(props) {
 		super(props);
 
-		console.log("[SXSearchResultConainer props] ", props);
+		//console.log("[SXSearchResultConainer props] ", JSON.stringify(props, null, 4));
 		this.namespace = props.namespace;
 		this.formId = props.formId;
 		this.columns = props.columns ?? [];

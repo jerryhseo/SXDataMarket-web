@@ -82,7 +82,7 @@ class DataTypeExplorer extends SXBaseVisualizer {
 			start: this.params.start ?? 0,
 			delta: this.params.delta ?? 10,
 			keywords: this.params.keywords ?? "",
-			searchContainerKey: Util.randomKey(),
+			searchContainerKey: Util.nowTime(),
 			underConstruction: false
 		};
 
@@ -222,7 +222,7 @@ class DataTypeExplorer extends SXBaseVisualizer {
 			//console.log("[DataTypeExplorer] listenerPopActionClicked event rejected: ", targetPortlet, targetFormId);
 			return;
 		}
-		console.log("[DataTypeExplorer] listenerPopActionClicked: ", action, data);
+		//console.log("[DataTypeExplorer] listenerPopActionClicked: ", action, data);
 
 		const selectedDataTypeId = this.searchResults[data].id;
 
@@ -320,11 +320,11 @@ class DataTypeExplorer extends SXBaseVisualizer {
 			//console.log("[DataTypeExplorer] listenerTableColumnClicked event rejected: ", targetPortlet, targetFormId);
 			return;
 		}
-		console.log("[DataTypeExplorer] listenerTableColumnClicked: ", rowIndex, row, column);
+		//console.log("[DataTypeExplorer] listenerTableColumnClicked: ", rowIndex, row, column);
 
 		const clickedResult = this.searchResults[rowIndex];
 
-		console.log("Selected search result: ", clickedResult);
+		//console.log("Selected search result: ", clickedResult);
 
 		if (!clickedResult.checked) {
 			clickedResult.checked = true;
@@ -362,7 +362,7 @@ class DataTypeExplorer extends SXBaseVisualizer {
 			return;
 		}
 
-		console.log("[DataTypeExplorer] listenerResponse received: ", requestId, params, data);
+		//console.log("[DataTypeExplorer] listenerResponse received: ", requestId, params, data);
 
 		if (data.error) {
 			const dlgBody = data.errorObject ? data.error + ": " + JSON.stringify(data.errorObject) : data.error;
@@ -392,6 +392,8 @@ class DataTypeExplorer extends SXBaseVisualizer {
 					dlgBody: Util.translate("datatypes-deleted-successfully", JSON.stringify(dataTypeList)),
 					infoDialog: true
 				});
+
+				this.searchResults = [];
 
 				this.fireRequest({
 					requestId: RequestIDs.searchDataTypes,
@@ -468,7 +470,6 @@ class DataTypeExplorer extends SXBaseVisualizer {
 				hasStructure
 			} = dataType;
 
-			//console.log("convertSearchResultsToContent: ", result, dataType, Util.isNotEmpty(typeStructureLink));
 			const contentActionMenus = [];
 
 			if (this.permissions.includes(ActionKeys.UPDATE)) {
@@ -534,6 +535,11 @@ class DataTypeExplorer extends SXBaseVisualizer {
 
 			return row;
 		});
+
+		//console.log("[DataTypeExplorer convertSearchResultsToContent] ", results, this.searchResults);
+		this.setState({
+			searchContainerKey: Util.nowTime()
+		});
 	}
 
 	selectedDataTypeIds = () => {
@@ -560,6 +566,10 @@ class DataTypeExplorer extends SXBaseVisualizer {
 			params: {
 				dataTypeIds: dataTypeIds
 			}
+		});
+
+		this.setState({
+			loadingStatus: LoadingStatus.PENDING
 		});
 	};
 

@@ -190,6 +190,7 @@ class SXDataCollectionNavigationBar extends React.Component {
 								}
 							}
 						]}
+						spritemap={this.spritemap}
 					/>
 				)}
 			</>

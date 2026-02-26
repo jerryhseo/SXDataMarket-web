@@ -344,5 +344,8 @@ export const Util = {
 		return str.replace(/\\u([\d\w]{4})/gi, (match, grp) => {
 			return String.fromCharCode(parseInt(grp, 16));
 		});
+	},
+	nowTime: () => {
+		return new Date().getTime();
 	}
 };

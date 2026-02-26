@@ -21,7 +21,7 @@ class SXWorkbenchMenu extends React.Component {
 			dropDown: false
 		};
 
-		//console.log("SXWorkbenchMenu: ", props);
+		console.log("SXWorkbenchMenu: ", props);
 	}
 
 	handleMenuItemClick = (menuId) => {
@@ -35,86 +35,77 @@ class SXWorkbenchMenu extends React.Component {
 	render() {
 		//console.log("SXWorkbenchMenu render: ", this.state.active);
 		return (
-			<NavigationBar
-				spritemap={this.spritemap}
-				style={{ ...this.style }}
-			>
-				{this.menuItems.map((menuItem) => {
-					if (Util.isNotEmpty(menuItem.children)) {
-						return (
-							<NavigationBar.Item
-								key={menuItem.id}
-								style={{ marginRight: "10px" }}
-								spritemap={this.spritemap}
-							>
-								<DropDown
-									active={this.state.active === menuItem.id}
-									alignmentByViewport={true}
-									closeOnClick={true}
-									trigger={
-										<Link
-											style={{ fontWeight: "550", fontSize: "1.0rem" }}
-											spritemap={this.spritemap}
-										>
-											{menuItem.label}
-										</Link>
-									}
-									onActiveChange={(val) => {
-										let active = val ? menuItem.id : "";
-										this.setState({ dropDown: val, active: active });
-									}}
-									style={{
-										cursor: "pointer"
-									}}
-									spritemap={this.spritemap}
+			<Provider value={this.spritemap}>
+				<NavigationBar style={{ ...this.style }}>
+					{this.menuItems.map((menuItem) => {
+						if (Util.isNotEmpty(menuItem.children)) {
+							return (
+								<NavigationBar.Item
+									key={menuItem.id}
+									style={{ marginRight: "10px" }}
 								>
-									{this.state.active === menuItem.id && (
-										<DropDown.ItemList
-											items={menuItem.children}
-											spritemap={this.spritemap}
-										>
-											{(item) => {
-												return (
-													<DropDown.Item
-														key={item.id}
-														onClick={(event) => {
-															//console.log("menu item clicked: ", item);
+									<DropDown
+										active={this.state.active === menuItem.id}
+										alignmentByViewport={true}
+										closeOnClick={true}
+										trigger={
+											<Link
+												style={{ fontWeight: "550", fontSize: "1.0rem" }}
+												spritemap={this.spritemap}
+											>
+												{menuItem.label}
+											</Link>
+										}
+										onActiveChange={(val) => {
+											let active = val ? menuItem.id : "";
+											this.setState({ dropDown: val, active: active });
+										}}
+										style={{
+											cursor: "pointer"
+										}}
+									>
+										{this.state.active === menuItem.id && (
+											<DropDown.ItemList items={menuItem.children}>
+												{(item) => {
+													return (
+														<DropDown.Item
+															key={item.id}
+															onClick={(event) => {
+																//console.log("menu item clicked: ", item);
 
-															this.handleMenuItemClick(item.id);
-														}}
-														spritemap={this.spritemap}
-													>
-														{item.label}
-													</DropDown.Item>
-												);
-											}}
-										</DropDown.ItemList>
-									)}
-								</DropDown>
-							</NavigationBar.Item>
-						);
-					} else {
-						return (
-							<NavigationBar.Item
-								key={menuItem.id}
-								active={this.state.active === menuItem.id}
-								spritemap={this.spritemap}
-							>
-								<Link
-									style={{ fontWeight: "550", fontSize: "1.0rem", cursor: "pointer" }}
-									onClick={(event) => {
-										this.setState({ active: menuItem.id });
-										this.handleMenuItemClick(menuItem.id);
-									}}
-									spritemap={this.spritemap}
+																this.handleMenuItemClick(item.id);
+															}}
+														>
+															{item.label}
+														</DropDown.Item>
+													);
+												}}
+											</DropDown.ItemList>
+										)}
+									</DropDown>
+								</NavigationBar.Item>
+							);
+						} else {
+							return (
+								<NavigationBar.Item
+									key={menuItem.id}
+									active={this.state.active === menuItem.id}
 								>
-									{menuItem.label}
-								</Link>
-							</NavigationBar.Item>
-						);
-					}
-				})}
-			</NavigationBar>
+									<Link
+										style={{ fontWeight: "550", fontSize: "1.0rem", cursor: "pointer" }}
+										onClick={(event) => {
+											this.setState({ active: menuItem.id });
+											this.handleMenuItemClick(menuItem.id);
+										}}
+									>
+										{menuItem.label}
+									</Link>
+								</NavigationBar.Item>
+							);
+						}
+					})}
+				</NavigationBar>
+			</Provider>
 		);
 	}
 }

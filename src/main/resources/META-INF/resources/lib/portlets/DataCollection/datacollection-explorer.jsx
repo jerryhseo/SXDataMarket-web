@@ -38,7 +38,7 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 			start: this.params.start ?? 0,
 			delta: this.params.delta ?? 10,
 			keywords: this.params.keywords ?? "",
-			searchContainerKey: Util.randomKey(),
+			searchContainerKey: Util.nowTime(),
 			filterBy: this.params.filterBy ?? FilterOptions.GROUP_ID,
 			loadingStatus: false,
 			infoDialog: false,
@@ -447,6 +447,10 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 
 			return row;
 		});
+
+		this.setState({
+			searchContainerKey: Util.nowTime()
+		});
 	}
 
 	deleteDataCollections = () => {
@@ -463,6 +467,10 @@ class DataCollectionExplorer extends SXBaseVisualizer {
 			params: {
 				dataCollectionIds: selectedDataCollectionIds
 			}
+		});
+
+		this.setState({
+			loadingStatus: LoadingStatus.PENDING
 		});
 	};
 

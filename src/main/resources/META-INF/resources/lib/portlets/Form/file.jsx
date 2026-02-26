@@ -20,7 +20,7 @@ class SXFile extends SXBaseParameterComponent {
 			underConstruction: false
 		};
 
-		console.log("[SXFile props] ", props, this.parameter, this.state.value);
+		//console.log("[SXFile props] ", props, this.parameter, this.state.value);
 	}
 
 	componentDidMount() {

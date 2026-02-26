@@ -1047,11 +1047,14 @@ class Parameter {
 	}
 
 	checkError(cellIndex) {
-		this.validate(cellIndex);
-
 		if (this.hasError()) {
+			return this.error;
+		}
+
+		const error = this.validate(cellIndex);
+
+		if (error !== 0) {
 			this.dirty = true;
-			//this.refreshKey();
 			return this.error;
 		}
 
@@ -1412,7 +1415,27 @@ class Parameter {
 
 	fireGridCellSelected(cellIndex) {}
 
+	/**
+	 *
+	 * @param {*} cellIndex
+	 * @returns
+	 * 		-1: has error
+	 * 		0 : no error
+	 * 		1 : has warning
+	 */
 	validate(cellIndex) {
+		if (this.displayType === ParameterConstants.DisplayTypes.GRID_CELL && Util.isEmpty(cellIndex)) {
+			const values = this.getValue();
+
+			for (let i = 0; i < values.length; i++) {
+				const error = this.validate(i);
+
+				if (error !== 0) {
+					return error;
+				}
+			}
+		}
+
 		let value = this.getValue(cellIndex);
 		let numValue = Number(this.uncertainty ? value.value : value);
 		let numUncertainty = this.uncertainty ? (value.uncertainty ?? 0) : 0;
@@ -3637,10 +3660,26 @@ export class GroupParameter extends Parameter {
 		this.members.every((member) => {
 			error = member.checkError();
 
-			return Util.isEmpty(error) ? Constant.CONTINUE_EVERY : Constant.STOP_EVERY;
+			return !error ? Constant.CONTINUE_EVERY : Constant.STOP_EVERY;
 		});
 
 		return error;
+	}
+
+	validate() {
+		let hasError = 0;
+
+		this.members.forEach((member) => {
+			const error = member.validate();
+
+			if (hasError === 0 && error !== 0) {
+				hasError = error;
+			} else if (error === -1) {
+				hasError = error;
+			}
+		});
+
+		return hasError;
 	}
 
 	copy() {
