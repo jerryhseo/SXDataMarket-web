@@ -5,6 +5,7 @@ import DropDown from "@clayui/drop-down";
 import { Event } from "../../stationx/station-x";
 import { Util } from "../../stationx/util";
 import { Provider } from "@clayui/core";
+import { ClayIconSpriteContext } from "@clayui/icon";
 
 class SXWorkbenchMenu extends React.Component {
 	constructor(props) {
@@ -35,7 +36,7 @@ class SXWorkbenchMenu extends React.Component {
 	render() {
 		//console.log("SXWorkbenchMenu render: ", this.state.active);
 		return (
-			<Provider value={this.spritemap}>
+			<ClayIconSpriteContext.Provider value={this.spritemap}>
 				<NavigationBar style={{ ...this.style }}>
 					{this.menuItems.map((menuItem) => {
 						if (Util.isNotEmpty(menuItem.children)) {
@@ -60,6 +61,7 @@ class SXWorkbenchMenu extends React.Component {
 											let active = val ? menuItem.id : "";
 											this.setState({ dropDown: val, active: active });
 										}}
+										spritemap={this.spritemap}
 										style={{
 											cursor: "pointer"
 										}}
@@ -75,6 +77,7 @@ class SXWorkbenchMenu extends React.Component {
 
 																this.handleMenuItemClick(item.id);
 															}}
+															spritemap={this.spritemap}
 														>
 															{item.label}
 														</DropDown.Item>
@@ -97,6 +100,7 @@ class SXWorkbenchMenu extends React.Component {
 											this.setState({ active: menuItem.id });
 											this.handleMenuItemClick(menuItem.id);
 										}}
+										spritemap={this.spritemap}
 									>
 										{menuItem.label}
 									</Link>
@@ -105,7 +109,7 @@ class SXWorkbenchMenu extends React.Component {
 						}
 					})}
 				</NavigationBar>
-			</Provider>
+			</ClayIconSpriteContext.Provider>
 		);
 	}
 }
