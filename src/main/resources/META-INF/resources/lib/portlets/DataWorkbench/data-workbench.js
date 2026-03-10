@@ -44,12 +44,9 @@ class DataWorkbench extends React.Component {
 			spritemap: this.spritemap
 		});
 
-		this.dataCollection = null;
 		this.viewMode = DataWorkbench.ViewMode.FORM;
 
 		this.state = {
-			dataCollectionId: props.dataCollectionId ?? 0,
-			dataCollectionSelector: true,
 			workingPortletInstance: {
 				portletName: "",
 				portletId: "",
@@ -60,13 +57,7 @@ class DataWorkbench extends React.Component {
 				portlet: null
 			},
 			openVerticalNav: true,
-			infoDialog: false
 		};
-
-		this.workingPortletRef = createRef();
-		this.canvasRef = createRef();
-
-		//this.boundingRect = null;
 
 		this.topMenuItems = [
 			{
@@ -106,58 +97,7 @@ class DataWorkbench extends React.Component {
 			}
 				*/
 		];
-
-		this.navItems = [];
-		this.dialogHeader = <></>;
-		this.dialogBody = <></>;
 	}
-
-	listenerLoadPortlet = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (dataPacket.targetPortlet !== this.namespace) {
-			return;
-		}
-
-		//console.log("SX_LOAD_PORTLET received: ", dataPacket);
-
-		this.deployPortlet({
-			portletName: dataPacket.portletName,
-			params: dataPacket.params,
-			portletState: dataPacket.portletState
-		});
-	};
-
-	listenerOpenPortletWindow = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (dataPacket.targetPortlet !== this.namespace) {
-			return;
-		}
-
-		//console.log("SX_OPEN_PORTLET_WINDOW received: ", dataPacket);
-
-		this.workbench
-			.openPortletWindow({
-				portletName: dataPacket.portletName,
-				windowTitle: dataPacket.windowTitle,
-				params: dataPacket.params
-			})
-			.then(() => {
-				//console.log("Portlet Window Created: ", this.workbench.windows);
-				this.forceUpdate();
-			});
-	};
-
-	listenerSearchDataTypes = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (dataPacket.targetPortlet !== this.namespace) {
-			return;
-		}
-
-		this.searchDataTypes(dataPacket.params);
-	};
 
 	listenerHandshake = (event) => {
 		const { targetPortlet, sourcePortlet } = event.dataPacket;
@@ -169,12 +109,6 @@ class DataWorkbench extends React.Component {
 		this.workingPortletNamespace = sourcePortlet;
 
 		Event.fire(Event.SX_WORKBENCH_READY, this.namespace, sourcePortlet, {});
-	};
-
-	listenerWindowResize = () => {
-		//this.boundingRect = this.canvasRef.current.getBoundingClientRect();
-
-		this.forceUpdate();
 	};
 
 	listenerMenuItemClick = (event) => {
@@ -227,150 +161,23 @@ class DataWorkbench extends React.Component {
 		this.viewMode = viewMode;
 	};
 
-	listenerDataCollectionSelected = (event) => {
-		const { targetPortlet, sourcePortlet, targetFormId, sourceFormId, dataCollectionId } = event.dataPacket;
-		if (targetPortlet !== this.namespace) {
-			return;
-		}
-
-		//console.log("[DataWorkbench] dataCollectionSelected: ", dataPacket);
-		this.dataCollectionId = dataCollectionId;
-
-		let requestId;
-		let params;
-
-		if (this.viewMode === DataWorkbench.ViewMode.FORM) {
-			requestId = RequestIDs.loadDataCollection;
-			params = {
-				dataCollectionId: dataCollectionId,
-				loadAvailableDataSets: false
-			};
-		} else {
-			requestId = RequestIDs.loadStructuredData;
-			params = {
-				dataCollectionId: dataCollectionId,
-				loadAvailableDataSets: false
-			};
-		}
-
-		this.workbench.processRequest({
-			sourceFormId: sourceFormId,
-			requestId: requestId,
-			requestPortlet: this.namespace,
-			params: params
-		});
-	};
-
-	listenerResponse = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (dataPacket.targetPortlet !== this.namespace) {
-			//console.log("[DataWorkbench] listenerResponce rejected: ", dataPacket);
-			return;
-		}
-
-		//console.log("[DataWorkbench] listenerResonse: ", dataPacket);
-		switch (dataPacket.requestId) {
-			case RequestIDs.loadDataCollection: {
-				this.dataCollection = dataPacket.data;
-
-				this.navItems = this.dataCollection.associatedDataSetList.map((dataSet) => ({
-					id: dataSet.dataSetId,
-					label: dataSet.displayName,
-					type: "dataSet"
-				}));
-
-				//console.log("navItems: ", this.navItems);
-				this.setState({ dataCollectionId: this.dataCollection.dataCollectionId });
-				break;
-			}
-		}
-
-		//this.forceUpdate();
-	};
-
-	listenerCloseVerticalNav = (event) => {
-		const dataPacket = event.dataPacket;
-		if (dataPacket.targetPortlet !== this.namespace) {
-			return;
-		}
-
-		this.setState({ openVerticalNav: dataPacket.open });
-	};
-
-	listenerClosePreviewWindow = (event) => {
-		const dataPacket = event.dataPacket;
-
-		if (dataPacket.targetPortlet !== this.namespace) {
-			return;
-		}
-
-		this.workbench.removeWindow(dataPacket.portletId);
-
-		this.forceUpdate();
-	};
-
-	listenerRequest = async (event) => {
-		const { targetPortlet, sourcePortlet, targetFormId, sourceFormId, requestId, params } = event.dataPacket;
-
-		if (targetPortlet !== this.namespace) {
-			return;
-		}
-
-		//console.log("[DataWorkbench] SX_REQUEST received: ", event.dataPacket);
-		this.workbench.processRequest({
-			requestPortlet: sourcePortlet,
-			sourceFormId: sourceFormId,
-			requestId: requestId,
-			params: params
-		});
-	};
-
 	componentDidMount() {
 		Event.on(Event.SX_HANDSHAKE, this.listenerHandshake);
 		Event.on(Event.SX_MENU_SELECTED, this.listenerMenuItemClick);
-		Event.on(Event.SX_CLOSE_VERTICAL_NAV, this.listenerCloseVerticalNav);
-		Event.on(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
-		Event.on(Event.SX_OPEN_PORTLET_WINDOW, this.listenerOpenPortletWindow);
-		Event.on(Event.SX_REQUEST, this.listenerRequest);
-		Event.on(Event.SX_RESPONSE, this.listenerResponse);
-		Event.on(Event.SX_REMOVE_WINDOW, this.listenerClosePreviewWindow);
-		Event.on(Event.SX_DATACOLLECTION_SELECTED, this.listenerDataCollectionSelected);
 
-		window.addEventListener("resize", this.listenerWindowResize);
-
-		//this.boundingRect = this.canvasRef.current.getBoundingClientRect();
-
-		if (this.state.dataCollectionId === 0) {
-			this.deployPortlet({
+		this.deployPortlet({
 				portletName: PortletKeys.COLLECTION_MANAGEMENT,
 				title: Util.translate("collection-management"),
 				params: {
 					viewMode: this.viewMode
 				},
 				portletState: PortletState.NORMAL
-			});
-		}
+		});
 	}
 	componentWillUnmount() {
 		Event.off(Event.SX_HANDSHAKE, this.listenerHandshake);
 		Event.off(Event.SX_MENU_SELECTED, this.listenerMenuItemClick);
-		Event.off(Event.SX_CLOSE_VERTICAL_NAV, this.listenerCloseVerticalNav);
-		Event.off(Event.SX_LOAD_PORTLET, this.listenerLoadPortlet);
-		Event.off(Event.SX_OPEN_PORTLET_WINDOW, this.listenerOpenPortletWindow);
-		Event.off(Event.SX_REQUEST, this.listenerRequest);
-		Event.off(Event.SX_RESPONSE, this.listenerResponse);
-		Event.off(Event.SX_REMOVE_WINDOW, this.listenerClosePreviewWindow);
-		Event.off(Event.SX_DATACOLLECTION_SELECTED, this.listenerDataCollectionSelected);
-
-		window.removeEventListener("resize", this.listenerWindowResize);
 	}
-
-	searchDataTypes = async (params, targetPortlet) => {
-		const result = await this.workbench.searchDataTypes(params);
-
-		this.workbench.fireLoadData(targetPortlet, result);
-	};
 
 	deployPortlet = async ({ portletName, params = {}, title = "", portletState = PortletState.NORMAL }) => {
 		const portletInstance = await this.workbench.loadPortlet({
@@ -386,10 +193,6 @@ class DataWorkbench extends React.Component {
 		});
 	};
 
-	handleDataCollection = (event) => {
-		event.stopPropagation();
-	};
-
 	render() {
 		let height = window.innerHeight;
 
@@ -401,7 +204,7 @@ class DataWorkbench extends React.Component {
 
 		//console.log("Workbench render: ", this.state);
 		return (
-			<div style={{ border: "3px groove #ccc" }}>
+			<div className="sx-portlet" style={{ border: "3px groove #ccc" }}>
 				<div className="autofit-row">
 					<div className="autofit-col autofit-col-expand">
 						<SXWorkbenchMenu
@@ -421,21 +224,6 @@ class DataWorkbench extends React.Component {
 					/>
 				)}
 
-				{this.workbench.windowCount > 0 && <>{this.workbench.getWindowMap()}</>}
-				{this.state.infoDialog && (
-					<SXModalDialog
-						header={this.dialogHeader}
-						body={this.dialogBody}
-						buttons={[
-							{
-								label: Util.translate("ok"),
-								onClick: () => {
-									this.setState({ infoDialog: false });
-								}
-							}
-						]}
-					/>
-				)}
 			</div>
 		);
 	}

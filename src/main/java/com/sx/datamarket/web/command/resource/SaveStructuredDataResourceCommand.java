@@ -40,164 +40,146 @@ import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-@Component(
-	    immediate = true,
-	    property = {
-	        "javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
-	        "javax.portlet.name=" + WebPortletKey.SXStructuredDataEditorPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_SAVE_STRUCTURED_DATA
-	    },
-	    service = MVCResourceCommand.class
-)
+
+@Component(immediate = true,
+    property = {"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
+        "javax.portlet.name=" + WebPortletKey.SXStructuredDataEditorPortlet,
+        "mvc.command.name=" + MVCCommand.RESOURCE_SAVE_STRUCTURED_DATA},
+    service = MVCResourceCommand.class)
 public class SaveStructuredDataResourceCommand extends BaseMVCResourceCommand {
 
-	@Override
-	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
-			throws Exception {
-		
-		System.out.println("SaveStructuredDataResourceCommand");
+  @Override
+  protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
+      throws Exception {
 
-		long dataCollectionId = ParamUtil.getLong(resourceRequest, "dataCollectionId", 0);
-		long dataSetId = ParamUtil.getLong(resourceRequest, "dataSetId", 0);
-		long dataTypeId = ParamUtil.getLong(resourceRequest, "dataTypeId", 0);
-		long structuredDataId = ParamUtil.getLong(resourceRequest, "structuredDataId", 0);
-		String strFileFields = ParamUtil.getString(resourceRequest, "fileFields", "");
-		String strData = ParamUtil.getString(resourceRequest, "data", "{}");
-		System.out.println("dataCollectionId: " + dataCollectionId);
-		System.out.println("dataSetId: " + dataSetId);
-		System.out.println("dataTypeId: " + dataTypeId);
-		System.out.println("structuredDataId: " + structuredDataId);
-		System.out.println("fileFields: " + strFileFields);
-		System.out.println("Data: " + strData);
-		
-		JSONObject result = JSONFactoryUtil.createJSONObject();
-		
-		DataCollection dataCollection = _dataCollectionLocalService.getDataCollection(dataCollectionId);
-		DataSet dataSet = _dataSetLocalService.getDataSet(dataSetId);
-		DataType dataType = _dataTypeLocalService.getDataType(dataTypeId);
+    System.out.println("SaveStructuredDataResourceCommand");
 
-		if( Validator.isNull(dataCollection) || Validator.isNull(dataSet) || Validator.isNull(dataType)) {
-			result.put("error", 
-					SXUtil.translate(
-							resourceRequest, 
-							"datacollection-id-dataset-id-datatype-id-should-be-provided-to-save-structured-data"));
-			
-			SXPortletURLUtil.responeAjax(resourceResponse, result);
-			
-			return;
-		}
-		
-		if( strData.isEmpty() ) {
-			result.put("error", SXUtil.translate( resourceRequest, "there-is-no-data-to-be-saved"));
-			
-			SXPortletURLUtil.responeAjax(resourceResponse, result);
-			
-			return;
-		}
-		
-		String dataTypeCode = dataType.getDataTypeCode();
-		String dataTypeVersion = dataType.getDataTypeVersion();
-		
-		ServiceContext dataSC = ServiceContextFactory.getInstance(StructuredData.class.getName(), resourceRequest);
+    long dataCollectionId = ParamUtil.getLong(resourceRequest, "dataCollectionId", 0);
+    long dataSetId = ParamUtil.getLong(resourceRequest, "dataSetId", 0);
+    long dataTypeId = ParamUtil.getLong(resourceRequest, "dataTypeId", 0);
+    long structuredDataId = ParamUtil.getLong(resourceRequest, "structuredDataId", 0);
+    String strFileFields = ParamUtil.getString(resourceRequest, "fileFields", "");
+    String strData = ParamUtil.getString(resourceRequest, "data", "{}");
+    System.out.println("dataCollectionId: " + dataCollectionId);
+    System.out.println("dataSetId: " + dataSetId);
+    System.out.println("dataTypeId: " + dataTypeId);
+    System.out.println("structuredDataId: " + structuredDataId);
+    System.out.println("fileFields: " + strFileFields);
+    System.out.println("Data: " + strData);
 
-		StructuredData structuredData = null;
-		
-		if( structuredDataId > 0 ) {
-			structuredData = _structuredDataLocalService.updateStructuredData(
-					structuredDataId, 
-					dataCollectionId, 
-					dataSetId, 
-					dataTypeId, 
-					false, 0, 0, 
-					strData, 
-					WorkflowConstants.STATUS_APPROVED, 
-					dataSC);
-		}
-		else {
-				structuredData = _structuredDataLocalService.addStructuredData(
-						dataCollectionId, 
-						dataSetId, 
-						dataTypeId, 
-						false, 0, 0, 
-						strData, 
-						WorkflowConstants.STATUS_DRAFT, 
-						dataSC);
-		}
-		
-		result.put("message", SXUtil.translate(resourceRequest, "data-saved-as", structuredData.getStructuredDataId()));
-		
-		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
-		long companyId = themeDisplay.getCompanyId();
-		String stationXDataDir = PropsUtil.get("stationx-data-dir");
-		Path sxDataFolderPath = Paths.get( 
-						stationXDataDir + "/" + 
-						companyId + "/" + 
-						themeDisplay.getScopeGroupId() + "/" +
-						dataCollection.getDataCollectionCode() + "/" +
-						dataCollection.getDataCollectionVersion() + "/" +
-						dataSet.getDataSetCode() + "/" +
-						dataSet.getDataSetVersion()
-		);
-		
-		Path dataTypeCodeFolderPath = sxDataFolderPath.resolve(dataTypeCode);
-		Path dataTypeVersionFolderPath = dataTypeCodeFolderPath.resolve(dataTypeVersion);
+    JSONObject result = JSONFactoryUtil.createJSONObject();
 
-		if( strFileFields.isEmpty() ) {
-			SXPortalUtil.deleteFolder(dataTypeCodeFolderPath);
-		} else {
-			String[] fileFields = strFileFields.split(",");
-			
-			JSONObject jsonData =null;
-			
-			try {
-				jsonData = JSONFactoryUtil.createJSONObject(strData);
-				System.out.println("JSON Data: " + jsonData.toString(4));
-			} catch ( JSONException e ) {
-				result.put("error", "wrong-json-format-of-the-data");
-				
-				SXPortletURLUtil.responeAjax(resourceResponse, result);
-				
-				return;
-			}
-			
-			UploadPortletRequest uploadRequest = PortalUtil.getUploadPortletRequest(resourceRequest);
-			JSONArray errorFiles = JSONFactoryUtil.createJSONArray();
-			
-			Iterator< String> keys = jsonData.keys();
-			while( keys.hasNext() ) {
-				String paramCode = keys.next();
-				Path paramCodeFolderPath = dataTypeVersionFolderPath.resolve(paramCode);
-				
-				if( SXUtil.contains(fileFields, paramCode) ) {
-					SXPortalUtil.emptyFolder(paramCodeFolderPath, true);
-					
-					errorFiles = SXPortalUtil.saveUploadFieldFiles(uploadRequest, paramCode, paramCodeFolderPath);
-				} else {
-					SXPortalUtil.deleteFolder(paramCodeFolderPath);
-				}
-			}
-			
-			if( errorFiles.length() > 0 ) {
-				result.put("errorFiles", errorFiles);
-			}
-		}
-		
-		SXPortletURLUtil.responeAjax(resourceResponse, result);
-	}
-	
-	@Reference
-	StructuredDataLocalService _structuredDataLocalService;
-	
-	@Reference
-	DataCollectionLocalService _dataCollectionLocalService;
-	
-	@Reference
-	DataSetLocalService _dataSetLocalService;
-	
-	@Reference
-	DataTypeLocalService _dataTypeLocalService;
-	
-	@Reference
-	DLAppLocalService _dlAppLocalService;
-	
+    DataCollection dataCollection = _dataCollectionLocalService.getDataCollection(dataCollectionId);
+    DataSet dataSet = _dataSetLocalService.getDataSet(dataSetId);
+    DataType dataType = _dataTypeLocalService.getDataType(dataTypeId);
+
+    if (Validator.isNull(dataCollection) || Validator.isNull(dataSet)
+        || Validator.isNull(dataType)) {
+      result.put("error", SXUtil.translate(resourceRequest,
+          "datacollection-id-dataset-id-datatype-id-should-be-provided-to-save-structured-data"));
+
+      SXPortletURLUtil.responeAjax(resourceResponse, result);
+
+      return;
+    }
+
+    if (strData.isEmpty()) {
+      result.put("error", SXUtil.translate(resourceRequest, "there-is-no-data-to-be-saved"));
+
+      SXPortletURLUtil.responeAjax(resourceResponse, result);
+
+      return;
+    }
+
+    String dataTypeCode = dataType.getDataTypeCode();
+    String dataTypeVersion = dataType.getDataTypeVersion();
+
+    ServiceContext dataSC =
+        ServiceContextFactory.getInstance(StructuredData.class.getName(), resourceRequest);
+
+    StructuredData structuredData = null;
+
+    if (structuredDataId > 0) {
+      structuredData = _structuredDataLocalService.updateStructuredData(structuredDataId,
+          dataCollectionId, dataSetId, dataTypeId, false, 0, 0, strData,
+          WorkflowConstants.STATUS_APPROVED, dataSC);
+    } else {
+      structuredData = _structuredDataLocalService.addStructuredData(dataCollectionId, dataSetId,
+          dataTypeId, false, 0, 0, strData, WorkflowConstants.STATUS_DRAFT, dataSC);
+    }
+
+    ThemeDisplay themeDisplay = (ThemeDisplay) resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+    long companyId = themeDisplay.getCompanyId();
+    String stationXDataDir = PropsUtil.get("stationx-data-dir");
+    Path sxDataFolderPath = Paths.get(stationXDataDir + "/" + companyId + "/"
+        + themeDisplay.getScopeGroupId() + "/" + dataCollection.getDataCollectionCode() + "/"
+        + dataCollection.getDataCollectionVersion() + "/" + dataSet.getDataSetCode() + "/"
+        + dataSet.getDataSetVersion());
+
+    Path dataTypeCodeFolderPath = sxDataFolderPath.resolve(dataTypeCode);
+    Path dataTypeVersionFolderPath = dataTypeCodeFolderPath.resolve(dataTypeVersion);
+
+    if (strFileFields.isEmpty()) {
+      SXPortalUtil.deleteFolder(dataTypeCodeFolderPath);
+    } else {
+      String[] fileFields = strFileFields.split(",");
+
+      JSONObject jsonData = null;
+
+      try {
+        jsonData = JSONFactoryUtil.createJSONObject(strData);
+        System.out.println("JSON Data: " + jsonData.toString(4));
+      } catch (JSONException e) {
+        result.put("error", "wrong-json-format-of-the-data");
+
+        SXPortletURLUtil.responeAjax(resourceResponse, result);
+
+        return;
+      }
+
+      UploadPortletRequest uploadRequest = PortalUtil.getUploadPortletRequest(resourceRequest);
+      JSONArray errorFiles = JSONFactoryUtil.createJSONArray();
+
+      Iterator<String> keys = jsonData.keys();
+      while (keys.hasNext()) {
+        String paramCode = keys.next();
+        Path paramCodeFolderPath = dataTypeVersionFolderPath.resolve(paramCode);
+
+        if (SXUtil.contains(fileFields, paramCode)) {
+          SXPortalUtil.emptyFolder(paramCodeFolderPath, true);
+
+          errorFiles =
+              SXPortalUtil.saveUploadFieldFiles(uploadRequest, paramCode, paramCodeFolderPath);
+        } else {
+          SXPortalUtil.deleteFolder(paramCodeFolderPath);
+        }
+      }
+
+      if (errorFiles.length() > 0) {
+        result.put("errorFiles", errorFiles);
+      }
+    }
+
+    result.put("structuredDataId", structuredData.getStructuredDataId());
+    result.put("message",
+        SXUtil.translate(resourceRequest, "data-saved-as", structuredData.getStructuredDataId()));
+
+    SXPortletURLUtil.responeAjax(resourceResponse, result);
+  }
+
+  @Reference
+  StructuredDataLocalService _structuredDataLocalService;
+
+  @Reference
+  DataCollectionLocalService _dataCollectionLocalService;
+
+  @Reference
+  DataSetLocalService _dataSetLocalService;
+
+  @Reference
+  DataTypeLocalService _dataTypeLocalService;
+
+  @Reference
+  DLAppLocalService _dlAppLocalService;
+
 }

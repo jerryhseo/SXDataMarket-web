@@ -1,501 +1,478 @@
-import React from "react";
-import { Util } from "../../stationx/util";
-import { Event, LoadingStatus, RequestIDs } from "../../stationx/station-x";
-import Button from "@clayui/button";
-import Icon from "@clayui/icon";
-import DataStructure from "../DataStructure/data-structure";
-import SXBaseVisualizer from "../../stationx/visualizer";
-import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
-import { SXLabeledText } from "../Form/form";
+import React from 'react';
+import { Util } from '../../stationx/util';
+import { EditStatus, Event, LoadingStatus, RequestIDs } from '../../stationx/station-x';
+import Button from '@clayui/button';
+import Icon from '@clayui/icon';
+import DataStructure from '../DataStructure/data-structure';
+import SXBaseVisualizer from '../../stationx/visualizer';
+import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
+import { SXLabeledText } from '../Form/form';
 
 class StructuredDataEditor extends SXBaseVisualizer {
-	static EditState = {
-		WAIT: "wait",
-		PREVIEW: "preview",
-		ADD: "add",
-		UPDATE: "update",
-		VIEW: "view",
-		ERROR: "error"
-	};
+  constructor(props) {
+    super(props);
 
-	constructor(props) {
-		super(props);
+    console.log('StructuredDataEditor props: ', props);
 
-		//console.log("StructuredDataEditor props: ", props);
+    this.editStatus = this.params.editStatus ? this.params.editStatus : EditStatus.PREVIEW;
+    this.dataCollectionId = this.params.dataCollectionId ?? 0;
+    this.dataSetId = this.params.dataSetId ?? 0;
+    this.dataTypeId = this.params.dataTypeId ?? 0;
+    this.dataStructureId = this.params.dataStructureId ?? 0;
+    this.structuredData = null;
 
-		this.editState = this.params.editState ? this.params.editState : StructuredDataEditor.EditState.PREVIEW;
-		this.dataCollectionId = this.params.dataCollectionId ?? 0;
-		this.dataSetId = this.params.dataSetId ?? 0;
-		this.dataTypeId = this.params.dataTypeId ?? 0;
-		this.dataStructureId = this.params.dataStructureId ?? 0;
-		this.structuredData = null;
+    this.dataStructure = null;
 
-		this.dataStructure = null;
+    this.state = {
+      structuredDataId: this.params.structuredDataId ?? 0,
+      infoDialog: false,
+      saveWarningDialog: false,
+      dialogHeader: <></>,
+      dialogBody: <></>,
+      loadingStatus: LoadingStatus.PENDING
+    };
 
-		this.state = {
-			structuredDataId: this.params.structuredDataId ?? 0,
-			infoDialog: false,
-			saveWarningDialog: false,
-			dialogHeader: <></>,
-			dialogBody: <></>,
-			loadingStatus: LoadingStatus.PENDING
-		};
-
-		this.abstract = "";
-		/*
+    this.abstract = '';
+    /*
 		console.log(
 			"StructuredDataEditor constructor: ",
 			this.namespace,
 			this.portletId,
 			this.workbenchId,
 			this.workbenchNamespace,
-			this.editState
+			this.editStatus
 		);
 		*/
 
-		this.componentId = this.formId;
-	}
+    this.componentId = this.formId;
+  }
 
-	listenerLoadData = (event) => {
-		const { targetPortlet, data } = event.dataPacket;
+  listenerLoadData = (event) => {
+    const { targetPortlet, data } = event.dataPacket;
 
-		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("StructuredDataEditor listenerLoadData REJECTED: ", event.dataPacket);
-			return;
-		}
+    if (dataPacket.targetPortlet !== this.namespace) {
+      console.log('StructuredDataEditor listenerLoadData REJECTED: ', event.dataPacket);
+      return;
+    }
 
-		console.log("StructuredDataEditor listenerLoadData: ", event.dataPacket);
+    console.log('StructuredDataEditor listenerLoadData: ', event.dataPacket);
 
-		this.structuredData = data;
-		this.forceUpdate();
-	};
+    this.structuredData = data;
+    this.forceUpdate();
+  };
 
-	listenerWorkbenchReady = (event) => {
-		const { targetPortlet } = event.dataPacket;
+  listenerWorkbenchReady = (event) => {
+    const { targetPortlet } = event.dataPacket;
 
-		if (targetPortlet !== this.namespace) {
-			//console.log("[StructuredDataEditor] listenerWorkbenchReady event rejected: ", targetPortlet);
-			return;
-		}
+    if (targetPortlet !== this.namespace) {
+      //console.log("[StructuredDataEditor] listenerWorkbenchReady event rejected: ", targetPortlet);
+      return;
+    }
 
-		console.log("[StructuredDataEditor] listenerWorkbenchReady received: ", this.editState);
+    console.log('[StructuredDataEditor] listenerWorkbenchReady received: ', this.editStatus);
 
-		switch (this.editState) {
-			case StructuredDataEditor.EditState.PREVIEW:
-			case StructuredDataEditor.EditState.ADD: {
-				this.fireRequest({
-					requestId: RequestIDs.loadDataStructure,
-					params: {
-						dataTypeId: this.dataTypeId
-					}
-				});
+    switch (this.editStatus) {
+      case EditStatus.PREVIEW:
+      case EditStatus.ADD: {
+        this.fireRequest({
+          requestId: RequestIDs.loadDataStructure,
+          params: {
+            dataTypeId: this.dataTypeId
+          }
+        });
 
-				this.setState({ loadingStatus: LoadingStatus.PENDING });
-				break;
-			}
-			case StructuredDataEditor.EditState.UPDATE: {
-				this.fireRequest({
-					requestId: RequestIDs.loadStructuredData,
-					params: {
-						structuredDataId: this.state.structuredDataId
-					}
-				});
+        this.setState({ loadingStatus: LoadingStatus.PENDING });
+        break;
+      }
+      case EditStatus.UPDATE: {
+        this.fireRequest({
+          requestId: RequestIDs.loadStructuredData,
+          params: {
+            dataCollectionId: this.dataCollectionId,
+            dataSetId: this.dataSetId,
+            dataTypeId: this.dataTypeId,
+            structuredDataId: this.state.structuredDataId
+          }
+        });
 
-				this.setState({ loadingStatus: LoadingStatus.PENDING });
-				break;
-			}
-		}
-	};
+        this.setState({ loadingStatus: LoadingStatus.PENDING });
+        break;
+      }
+    }
+  };
 
-	listenerResponce = (event) => {
-		const { targetPortlet, requestId, data, params, status } = event.dataPacket;
+  listenerResponce = (event) => {
+    const { targetPortlet, requestId, data, params, status } = event.dataPacket;
 
-		if (targetPortlet !== this.namespace) {
-			console.log("[StructuredDataEditor] listenerResponce rejected: ", event.dataPacket);
-			return;
-		}
+    if (targetPortlet !== this.namespace) {
+      console.log('[StructuredDataEditor] listenerResponce rejected: ', event.dataPacket);
+      return;
+    }
 
-		console.log("[StructuredDataEditor] listenerResonse: ", event.dataPacket);
+    console.log('[StructuredDataEditor] listenerResonse: ', event.dataPacket);
 
-		const { error } = data;
-		if (error) {
-			this.setState({
-				infoDialog: true,
-				dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				dialogBody: error
-			});
-		}
+    const { error } = data;
+    if (error) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+        dialogBody: error
+      });
+    }
 
-		switch (requestId) {
-			case RequestIDs.loadStructuredData: {
-				const { dataStructure, structuredData } = data;
+    switch (requestId) {
+      case RequestIDs.loadStructuredData: {
+        const { dataStructure, structuredData } = data;
 
-				this.structuredData = structuredData;
+        this.structuredData = structuredData;
 
-				const { dataCollectionId, dataSetId, dataTypeId, structuredDataId } = structuredData;
+        const { dataCollectionId, dataSetId, dataTypeId, structuredDataId } = structuredData;
 
-				this.dataCollectionId = dataCollectionId;
-				this.dataSetId = dataSetId;
-				this.dataTypeId = dataTypeId;
-				this.state.structuredDataId = structuredDataId;
+        this.dataCollectionId = dataCollectionId;
+        this.dataSetId = dataSetId;
+        this.dataTypeId = dataTypeId;
+        this.state.structuredDataId = structuredDataId;
 
-				this.dataStructure = new DataStructure({
-					namespace: this.namespace,
-					formId: this.portletId,
-					properties: dataStructure ?? {}
-				});
+        this.dataStructure = new DataStructure({
+          namespace: this.namespace,
+          formId: this.portletId,
+          properties: dataStructure ?? {}
+        });
 
-				this.dataStructure.loadData(structuredData.data);
+        this.dataStructure.loadData(structuredData.data);
 
-				console.log("DataStructure filled with values: ", this.dataStructure);
-				break;
-			}
-			case RequestIDs.loadDataStructure: {
-				const { dataStructure } = data;
-				this.dataStructure = new DataStructure({
-					namespace: this.namespace,
-					formId: this.portletId,
-					properties: dataStructure ?? {}
-				});
+        console.log('DataStructure filled with values: ', this.dataStructure);
+        break;
+      }
+      case RequestIDs.loadDataStructure: {
+        const { dataStructure } = data;
+        this.dataStructure = new DataStructure({
+          namespace: this.namespace,
+          formId: this.portletId,
+          properties: dataStructure ?? {}
+        });
 
-				this.componentId = this.formId + this.dataStructure.paramCode + "_" + this.dataStructure.paramVersion;
-				break;
-			}
-			case RequestIDs.saveStructuredData: {
-				console.log("Saved data result: ", data);
-				const { message, structuredDataId } = data;
+        this.componentId = this.formId + this.dataStructure.paramCode + '_' + this.dataStructure.paramVersion;
+        break;
+      }
+      case RequestIDs.saveStructuredData: {
+        console.log('Saved data result: ', data);
+        const { message, structuredDataId } = data;
 
-				this.setState({
-					structuredDataId: structuredDataId,
-					infoDialog: true,
-					dialogHeader: SXModalUtil.successDlgHeader(),
-					dialogBody: message
-				});
+        this.setState({
+          structuredDataId: structuredDataId,
+          infoDialog: true,
+          dialogHeader: SXModalUtil.successDlgHeader(),
+          dialogBody: message
+        });
 
-				break;
-			}
-			case RequestIDs.downloadFieldAttachedFile: {
-				console.log("download finished");
-				const blob = new Blob([data]);
-				const url = window.URL.createObjectURL(blob);
+        this.dataStructure.markClean();
 
-				const link = document.createElement("a");
-				link.href = url;
-				link.download = params.fileName;
-				link.click();
+        break;
+      }
+      case RequestIDs.downloadFieldAttachedFile: {
+        console.log('download finished');
+        const blob = new Blob([data]);
+        const url = window.URL.createObjectURL(blob);
 
-				window.URL.revokeObjectURL(url);
-			}
-			case RequestIDs.openReferenceFile: {
-				this.openDataOnWindow(data);
-			}
-		}
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = params.fileName;
+        link.click();
 
-		this.setState({ loadingStatus: status });
-	};
+        window.URL.revokeObjectURL(url);
+      }
+      case RequestIDs.openReferenceFile: {
+        this.openDataOnWindow(data);
+      }
+    }
 
-	listenerFieldValueChanged = (event) => {
-		const { targetPortlet, parameter } = event.dataPacket;
+    this.setState({ loadingStatus: status });
+  };
 
-		if (targetPortlet !== this.namespace) {
-			//console.log("[StructuredDataEditor] listenerFieldValueChanged rejected: ", event.dataPacket);
-			return;
-		}
+  listenerFieldValueChanged = (event) => {
+    const { targetPortlet, parameter } = event.dataPacket;
 
-		const structuredData = this.dataStructure.toData();
-		console.log("[StructuredDataEditor] listenerFieldValueChanged received: ", event.dataPacket, structuredData);
+    if (targetPortlet !== this.namespace) {
+      //console.log("[StructuredDataEditor] listenerFieldValueChanged rejected: ", event.dataPacket);
+      return;
+    }
 
-		const files = this.dataStructure.getDataFiles();
+    const structuredData = this.dataStructure.toData();
+    console.log('[StructuredDataEditor] listenerFieldValueChanged received: ', event.dataPacket, structuredData);
 
-		//console.log("[StructuredDataEditor files] ", files);
-		//console.log("[StructuredDataEditor data] ", structuredData);
+    const files = this.dataStructure.getDataFiles();
 
-		Event.fire(Event.SX_STRUCTURED_DATA_CHANGED, this.namespace, this.workbenchNamespace, {
-			targetFormId: this.sourceFormId,
-			dataCollectionId: this.dataCollectionId,
-			dataSetId: this.dataSetId,
-			dataTypeId: this.dataTypeId,
-			structuredDataId: this.state.structuredDataId,
-			data: structuredData
-		});
-	};
+    //console.log("[StructuredDataEditor files] ", files);
+    //console.log("[StructuredDataEditor data] ", structuredData);
 
-	listenerDownloadFieldAttachedFile = (event) => {
-		const { targetPortlet, fileName, fileType, paramCode, paramVersion } = event.dataPacket;
+    Event.fire(Event.SX_STRUCTURED_DATA_CHANGED, this.namespace, this.workbenchNamespace, {
+      targetFormId: this.sourceFormId,
+      dataCollectionId: this.dataCollectionId,
+      dataSetId: this.dataSetId,
+      dataTypeId: this.dataTypeId,
+      structuredDataId: this.state.structuredDataId,
+      data: structuredData
+    });
+  };
 
-		if (targetPortlet !== this.namespace) {
-			console.log("[StructuredDataEditor] listenerDownloadFieldAttachedFile rejected: ", event.dataPacket);
-			return;
-		}
+  listenerDownloadFieldAttachedFile = (event) => {
+    const { targetPortlet, fileName, fileType, paramCode, paramVersion } = event.dataPacket;
 
-		console.log("[StructuredDataEditor] listenerDownloadFieldAttachedFile received: ", event.dataPacket);
+    if (targetPortlet !== this.namespace) {
+      console.log('[StructuredDataEditor] listenerDownloadFieldAttachedFile rejected: ', event.dataPacket);
+      return;
+    }
 
-		this.fireRequest({
-			requestId: RequestIDs.downloadFieldAttachedFile,
-			params: {
-				dataCollectionId: this.dataCollectionId,
-				dataSetId: this.dataSetId,
-				dataTypeId: this.dataTypeId,
-				structuredDataId: this.state.structuredDataId,
-				paramCode: paramCode,
-				paramVersion: paramVersion,
-				fileName: fileName,
-				fileType: fileType,
-				disposition: "attachment"
-			}
-		});
-	};
+    console.log('[StructuredDataEditor] listenerDownloadFieldAttachedFile received: ', event.dataPacket);
 
-	listenerOpenReferenceFile = (event) => {
-		const { targetPortlet, targetFormId, sourceFormId, paramCode, paramVersion, fileName, fileType } =
-			event.dataPacket;
+    this.fireRequest({
+      requestId: RequestIDs.downloadFieldAttachedFile,
+      params: {
+        dataCollectionId: this.dataCollectionId,
+        dataSetId: this.dataSetId,
+        dataTypeId: this.dataTypeId,
+        structuredDataId: this.state.structuredDataId,
+        paramCode: paramCode,
+        paramVersion: paramVersion,
+        fileName: fileName,
+        fileType: fileType,
+        disposition: 'attachment'
+      }
+    });
+  };
 
-		if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
-			console.log(
-				"[StructuredDataEditor] listenerOpenReferenceFile rejected: ",
-				paramCode,
-				event.dataPacket,
-				this.componentId,
-				targetFormId
-			);
+  listenerOpenReferenceFile = (event) => {
+    const { targetPortlet, targetFormId, sourceFormId, paramCode, paramVersion, fileName, fileType } = event.dataPacket;
 
-			return;
-		}
+    if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
+      console.log(
+        '[StructuredDataEditor] listenerOpenReferenceFile rejected: ',
+        paramCode,
+        event.dataPacket,
+        this.componentId,
+        targetFormId
+      );
 
-		console.log(
-			"[StructuredDataEditor] listenerOpenReferenceFile: ",
-			paramCode,
-			paramVersion,
-			fileName,
-			fileType,
-			event.dataPacket
-		);
+      return;
+    }
 
-		this.fireRequest({
-			targetFormId: this.formId,
-			sourceFormId: sourceFormId,
-			requestId: RequestIDs.openReferenceFile,
-			params: {
-				dataStructureCode: this.dataStructure.paramCode,
-				dataStructureVersion: this.dataStructure.paramVersion,
-				paramCode: paramCode,
-				paramVersion: paramVersion,
-				fileName: fileName,
-				fileType: fileType,
-				disposition: "inline"
-			}
-		});
-	};
+    console.log(
+      '[StructuredDataEditor] listenerOpenReferenceFile: ',
+      paramCode,
+      paramVersion,
+      fileName,
+      fileType,
+      event.dataPacket
+    );
 
-	listenerComponentWillUnmount = (event) => {
-		const { targetPortlet } = event.dataPacket;
+    this.fireRequest({
+      targetFormId: this.formId,
+      sourceFormId: sourceFormId,
+      requestId: RequestIDs.openReferenceFile,
+      params: {
+        dataStructureCode: this.dataStructure.paramCode,
+        dataStructureVersion: this.dataStructure.paramVersion,
+        paramCode: paramCode,
+        paramVersion: paramVersion,
+        fileName: fileName,
+        fileType: fileType,
+        disposition: 'inline'
+      }
+    });
+  };
 
-		if (targetPortlet !== this.namespace) {
-			//console.log("[StructuredDataEditor] listenerComponentWillUnmount rejected: ", event.dataPacket);
-			return;
-		}
+  listenerComponentWillUnmount = (event) => {
+    const { targetPortlet } = event.dataPacket;
 
-		//console.log("[StructuredDataEditor] listenerComponentWillUnmount received: ", event.dataPacket);
-		this.componentWillUnmount();
-	};
+    if (targetPortlet !== this.namespace) {
+      //console.log("[StructuredDataEditor] listenerComponentWillUnmount rejected: ", event.dataPacket);
+      return;
+    }
 
-	componentDidMount() {
-		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
-		//this.loadStructuredData();
-		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
-		Event.on(Event.SX_RESPONSE, this.listenerResponce);
-		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
-		Event.on(Event.SX_DOWNLOAD_FIELD_ATTACHED_FILE, this.listenerDownloadFieldAttachedFile);
-		Event.on(Event.SX_OPEN_REFERENCE_FILE, this.listenerOpenReferenceFile);
+    //console.log("[StructuredDataEditor] listenerComponentWillUnmount received: ", event.dataPacket);
+    this.componentWillUnmount();
+  };
 
-		this.fireHandshake();
-	}
+  componentDidMount() {
+    Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+    //this.loadStructuredData();
+    Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+    Event.on(Event.SX_RESPONSE, this.listenerResponce);
+    Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+    Event.on(Event.SX_DOWNLOAD_FIELD_ATTACHED_FILE, this.listenerDownloadFieldAttachedFile);
+    Event.on(Event.SX_OPEN_REFERENCE_FILE, this.listenerOpenReferenceFile);
 
-	componentWillUnmount() {
-		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
-		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
-		Event.off(Event.SX_RESPONSE, this.listenerResponce);
-		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
-		Event.off(Event.SX_DOWNLOAD_FIELD_ATTACHED_FILE, this.listenerDownloadFieldAttachedFile);
-		Event.off(Event.SX_OPEN_REFERENCE_FILE, this.listenerOpenReferenceFile);
-	}
+    this.fireHandshake();
+  }
 
-	loadStructuredData = async () => {
-		const params = {
-			dataCollectionId: this.dataCollectionId,
-			dataSetId: this.dataSetId,
-			dataTypeId: this.dataTypeId,
-			dataStructureId: this.dataStructureId,
-			structuredDataId: this.dataStructureId
-		};
+  componentWillUnmount() {
+    Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+    Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+    Event.off(Event.SX_RESPONSE, this.listenerResponce);
+    Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+    Event.off(Event.SX_DOWNLOAD_FIELD_ATTACHED_FILE, this.listenerDownloadFieldAttachedFile);
+    Event.off(Event.SX_OPEN_REFERENCE_FILE, this.listenerOpenReferenceFile);
+  }
 
-		//this.visualizer.loadData(ResourceIds.LOAD_STRUCTURED_DATA_EDITING, params);
-	};
+  loadStructuredData = async () => {
+    const params = {
+      dataCollectionId: this.dataCollectionId,
+      dataSetId: this.dataSetId,
+      dataTypeId: this.dataTypeId,
+      dataStructureId: this.dataStructureId,
+      structuredDataId: this.dataStructureId
+    };
 
-	saveData = () => {
-		const data = this.dataStructure.toData();
-		console.log("handleSaveData: ", data);
+    //this.visualizer.loadData(ResourceIds.LOAD_STRUCTURED_DATA_EDITING, params);
+  };
 
-		const files = this.dataStructure.getDataFiles();
+  saveData = () => {
+    const data = this.dataStructure.toData();
+    console.log('handleSaveData: ', data);
 
-		console.log("[StructuredDataEditor files] ", files);
-		console.log("[StructuredDataEditor data] ", data);
+    const files = this.dataStructure.getDataFiles();
 
-		console.log(
-			"Handle SaveData: ",
-			this.dataCollectionId,
-			this.dataSetId,
-			this.dataTypeId,
-			this.state.structuredDataId
-		);
+    console.log('[StructuredDataEditor files] ', files);
+    console.log('[StructuredDataEditor data] ', data);
 
-		this.fireRequest({
-			requestId: RequestIDs.saveStructuredData,
-			params: {
-				dataCollectionId: this.dataCollectionId,
-				dataSetId: this.dataSetId,
-				dataTypeId: this.dataTypeId,
-				structuredDataId: this.state.structuredDataId,
-				files: files,
-				data: JSON.stringify(data)
-			}
-		});
-	};
+    console.log(
+      'Handle SaveData: ',
+      this.dataCollectionId,
+      this.dataSetId,
+      this.dataTypeId,
+      this.state.structuredDataId
+    );
 
-	handleSaveData = () => {
-		const hasError = this.dataStructure.validate();
-		console.log("[StructuredDataEditor handleSaveData hasError] ", hasError);
-		if (hasError > 0) {
-			this.setState({
-				saveWarningDialog: true,
-				dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
-				dialogBody: Util.translate("data-has-warning-are-you-sure-to-save-with-warning")
-			});
+    this.fireRequest({
+      requestId: RequestIDs.saveStructuredData,
+      params: {
+        dataCollectionId: this.dataCollectionId,
+        dataSetId: this.dataSetId,
+        dataTypeId: this.dataTypeId,
+        structuredDataId: this.state.structuredDataId,
+        files: files,
+        data: JSON.stringify(data)
+      }
+    });
+  };
 
-			return;
-		} else if (hasError < 0) {
-			this.setState({
-				infoDialog: true,
-				dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-				dialogBody: Util.translate("data-has-error-please-fix-it-to-save")
-			});
+  handleSaveData = () => {
+    const hasError = this.dataStructure.validate();
+    console.log('[StructuredDataEditor handleSaveData hasError] ', hasError);
+    if (hasError > 0) {
+      this.setState({
+        saveWarningDialog: true,
+        dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+        dialogBody: Util.translate('data-has-warning-are-you-sure-to-save-with-warning')
+      });
 
-			return;
-		}
+      return;
+    } else if (hasError < 0) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+        dialogBody: Util.translate('data-has-error-please-fix-it-to-save')
+      });
 
-		this.saveData();
-	};
+      return;
+    }
 
-	handleCancel = () => {
-		Event.fire(Event.SX_REMOVE_WINDOW, this.namespace, this.workbenchNamespace, {
-			targetFormId: this.workbenchId
-		});
-	};
+    this.saveData();
+  };
 
-	render() {
-		//console.log("Editor render: ", this.dataStructure, this.loadingStatus);
-		if (this.loadingStatus === LoadingStatus.PENDING) {
-			return <h3>Loading...</h3>;
-		} else if (this.loadingStatus === LoadingStatus.FAIL) {
-			return <h3>Loading Failed</h3>;
-		} else {
-			return (
-				<>
-					{this.state.structuredDataId > 0 && (
-						<div
-							className="autofit-row"
-							style={{ paddingRight: "10px" }}
-						>
-							<div className="autofit-col autofit-col-expand">
-								<SXLabeledText
-									label={Util.translate("id")}
-									text={this.state.structuredDataId}
-									spritemap={this.spritemap}
-								/>
-							</div>
-							{this.structuredData && <div className="autofit-col"></div>}
-						</div>
-					)}
-					<div
-						className="autofit-row"
-						style={{ backgroundColor: "#fff", paddingTop: "1.5rem", paddingRight: "10px" }}
-					>
-						<div className="autofit-col autofit-col-expand">
-							{Util.isNotEmpty(this.dataStructure) &&
-								this.dataStructure.render({ canvasId: this.namespace, spritemap: this.spritemap })}
-						</div>
-					</div>
-					{this.buttons && (
-						<Button.Group
-							spaced
-							style={{
-								width: "100%",
-								justifyContent: "center",
-								marginTop: "1.5rem",
-								marginBottom: "1.5rem"
-							}}
-						>
-							<Button
-								displayType="primary"
-								onClick={this.handleSaveData}
-								title={Util.translate("save-data")}
-							>
-								<Icon
-									symbol="disk"
-									spritemap={this.spritemap}
-									style={{ marginRight: "5px" }}
-								/>
-								{Util.translate("save")}
-							</Button>
-							<Button
-								displayType="secondary"
-								onClick={this.handleCancel}
-								title={Util.translate("cancel")}
-							>
-								{Util.translate("cancel")}
-							</Button>
-						</Button.Group>
-					)}
-					{this.state.infoDialog && (
-						<SXModalDialog
-							header={this.state.dialogHeader}
-							body={this.state.dialogBody}
-							buttons={[
-								{
-									label: Util.translate("ok"),
-									onClick: (e) => {
-										this.setState({ infoDialog: false });
-									}
-								}
-							]}
-						/>
-					)}
-					{this.state.saveWarningDialog && (
-						<SXModalDialog
-							header={this.state.dialogHeader}
-							body={this.state.dialogBody}
-							buttons={[
-								{
-									label: Util.translate("save"),
-									onClick: (e) => {
-										this.saveData();
+  handleCancel = () => {
+    Event.fire(Event.SX_REMOVE_WINDOW, this.namespace, this.workbenchNamespace, {
+      targetFormId: this.workbenchId
+    });
+  };
 
-										this.setState({ saveWarningDialog: false });
-									}
-								},
-								{
-									label: Util.translate("cancel"),
-									onClick: (e) => {
-										this.setState({ saveWarningDialog: false });
-									}
-								}
-							]}
-						/>
-					)}
-				</>
-			);
-		}
-	}
+  render() {
+    //console.log("Editor render: ", this.dataStructure, this.loadingStatus);
+    if (this.loadingStatus === LoadingStatus.PENDING) {
+      return <h3>Loading...</h3>;
+    } else if (this.loadingStatus === LoadingStatus.FAIL) {
+      return <h3>Loading Failed</h3>;
+    } else {
+      return (
+        <>
+          {this.state.structuredDataId > 0 && (
+            <div className="autofit-row" style={{ paddingRight: '10px' }}>
+              <div className="autofit-col autofit-col-expand">
+                <SXLabeledText
+                  label={Util.translate('id')}
+                  text={this.state.structuredDataId}
+                  spritemap={this.spritemap}
+                />
+              </div>
+              {this.structuredData && <div className="autofit-col"></div>}
+            </div>
+          )}
+          <div className="autofit-row" style={{ backgroundColor: '#fff', paddingTop: '1.5rem', paddingRight: '10px' }}>
+            <div className="autofit-col autofit-col-expand">
+              {Util.isNotEmpty(this.dataStructure) &&
+                this.dataStructure.render({ canvasId: this.namespace, spritemap: this.spritemap })}
+            </div>
+          </div>
+          {this.buttons && (
+            <Button.Group
+              spaced
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                marginTop: '1.5rem',
+                marginBottom: '1.5rem'
+              }}
+            >
+              <Button displayType="primary" onClick={this.handleSaveData} title={Util.translate('save-data')}>
+                <Icon symbol="disk" spritemap={this.spritemap} style={{ marginRight: '5px' }} />
+                {Util.translate('save')}
+              </Button>
+              <Button displayType="secondary" onClick={this.handleCancel} title={Util.translate('cancel')}>
+                {Util.translate('cancel')}
+              </Button>
+            </Button.Group>
+          )}
+          {this.state.infoDialog && (
+            <SXModalDialog
+              header={this.state.dialogHeader}
+              body={this.state.dialogBody}
+              buttons={[
+                {
+                  label: Util.translate('ok'),
+                  onClick: (e) => {
+                    this.setState({ infoDialog: false });
+                  }
+                }
+              ]}
+            />
+          )}
+          {this.state.saveWarningDialog && (
+            <SXModalDialog
+              header={this.state.dialogHeader}
+              body={this.state.dialogBody}
+              buttons={[
+                {
+                  label: Util.translate('save'),
+                  onClick: (e) => {
+                    this.saveData();
+
+                    this.setState({ saveWarningDialog: false });
+                  }
+                },
+                {
+                  label: Util.translate('cancel'),
+                  onClick: (e) => {
+                    this.setState({ saveWarningDialog: false });
+                  }
+                }
+              ]}
+            />
+          )}
+        </>
+      );
+    }
+  }
 }
 
 export default StructuredDataEditor;

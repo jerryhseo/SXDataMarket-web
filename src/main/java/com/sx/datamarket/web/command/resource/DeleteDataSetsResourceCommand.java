@@ -22,7 +22,8 @@ import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.DataType;
 import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
-
+import com.sx.util.SXUtil;
+import com.sx.util.portlet.SXPortletURLUtil;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,43 +39,66 @@ import javax.portlet.ResourceResponse;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
-@Component(
-	    immediate = true,
-	    property = {
-	        "javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
-	        "javax.portlet.name=" + WebPortletKey.SXDataSetExplorerPortlet,
-	        "javax.portlet.name=" + WebPortletKey.SXDataSetEditorPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_DELETE_DATASETS
-	    },
-	    service = MVCResourceCommand.class
-)
-public class DeleteDataSetsResourceCommand extends BaseMVCResourceCommand{
+@Component(immediate = true,
+    property = {"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
+        "javax.portlet.name=" + WebPortletKey.SXDataSetExplorerPortlet,
+        "javax.portlet.name=" + WebPortletKey.SXDataSetEditorPortlet,
+        "mvc.command.name=" + MVCCommand.RESOURCE_DELETE_DATASETS},
+    service = MVCResourceCommand.class)
+public class DeleteDataSetsResourceCommand extends BaseMVCResourceCommand {
 
-	@Override
-	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
-			throws Exception {
+  @Override
+  protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
+      throws Exception {
 
-		System.out.println("DeleteDataSetsResourceCommand");
-		String strDataSetIds = ParamUtil.getString(resourceRequest, "dataSetIds", "");
-		System.out.println("strDataSetIds: " + strDataSetIds);
-		
-		String[] strAryDataSetIds = strDataSetIds.split(",");
-		long[] longAryDataSetIds = Arrays.stream(strAryDataSetIds).mapToLong(Long::parseLong).toArray();
-		
-		_dataSetLocalService.removeDataSets(longAryDataSetIds);
-		
-		PrintWriter pw = resourceResponse.getWriter();
-		
-		JSONObject result = JSONFactoryUtil.createJSONObject();
-		
-		result.put("dataSetIds", longAryDataSetIds);
-		
-		pw.write(result.toJSONString());
-		pw.flush();
-		pw.close();
-	}
-	
-	@Reference
-	private DataSetLocalService _dataSetLocalService;
-	
+    System.out.println("DeleteDataSetsResourceCommand");
+    String strDataSetIds = ParamUtil.getString(resourceRequest, "dataSetIds", "");
+    System.out.println("strDataSetIds: " + strDataSetIds);
+
+    JSONObject result = JSONFactoryUtil.createJSONObject();
+
+    if (strDataSetIds.isEmpty()) {
+      result.put("error", SXUtil.translate(resourceRequest, "dataset-ids-should-be-provided"));
+
+      SXPortletURLUtil.responeAjax(resourceResponse, result);
+
+      return;
+    }
+
+    String[] strAryDataSetIds = strDataSetIds.split(",");
+
+    ThemeDisplay themeDisplay = (ThemeDisplay) resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+
+    JSONArray deletedDataSets = JSONFactoryUtil.createJSONArray();
+    JSONArray failedDataSets = JSONFactoryUtil.createJSONArray();
+
+    for (int i = 0; i < strAryDataSetIds.length; i++) {
+      long dataSetId = Long.parseLong(strAryDataSetIds[i]);
+
+      try {
+        _dataSetLocalService.removeDataSet(dataSetId);
+
+        deletedDataSets.put(dataSetId);
+      } catch (PortalException e) {
+        failedDataSets.put(dataSetId);
+      }
+    }
+
+    if (deletedDataSets.length() > 0) {
+      result.put("deletedDataSets", deletedDataSets);
+    }
+
+    if (failedDataSets.length() > 0) {
+      result.put("failedDataSets", failedDataSets);
+    }
+
+    result.put("message",
+        SXUtil.translate(resourceRequest, "datasets-are-deleted-successfully", strDataSetIds));
+
+    SXPortletURLUtil.responeAjax(resourceResponse, result);
+  }
+
+  @Reference
+  private DataSetLocalService _dataSetLocalService;
+
 }

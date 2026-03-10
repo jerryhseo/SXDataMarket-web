@@ -139,6 +139,7 @@ public class SearchDataCollectionsResourceCommand extends BaseMVCResourceCommand
 			
 			DataType dataType = _dataTypeLocalService.getDataType(setTypeLink.getDataTypeId());
 			JSONObject jsonDataType = dataType.toJSON(locale);
+			jsonDataType.put("hasDataStructure", _dataTypeLocalService.hasDataStructure(dataType.getDataTypeId()));
 			jsonDataType.put("linkId", setTypeLink.getSetTypeLinkId());
 			
 			jsonTypeArray.put(jsonDataType);

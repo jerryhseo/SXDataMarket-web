@@ -5,9 +5,11 @@ dependencies {
 	compileOnly group: "javax.servlet", name: "javax.servlet-api"
 	compileOnly group: "org.osgi", name: "org.osgi.service.component.annotations"
 	
-	compile project(":modules:StationX:StationX-api")
+	cssBuilder group: "com.liferay", name: "com.liferay.css.builder", version: "3.1.4"
 	
-	compile project(":modules:SXSpyglass:SXSpyglass-api")
-	compile project(":modules:SXIcecap-2:SXIcecap-api")
-	compile project(":modules:SXIcecap-2:SXIcecap-service")
+	api project(":modules:StationX:StationX-api")
+	
+	api project(":modules:SXSpyglass:SXSpyglass-api")
+	api project(":modules:SXIcecap-2:SXIcecap-api")
+	api project(":modules:SXIcecap-2:SXIcecap-service")
 }

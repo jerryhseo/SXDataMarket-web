@@ -1,493 +1,532 @@
-import React from "react";
-import SXBaseVisualizer from "../../stationx/visualizer";
+import React from 'react';
+import SXBaseVisualizer from '../../stationx/visualizer';
 import {
-	ActionKeys,
-	DisplayStyles,
-	Event,
-	LoadingStatus,
-	PortletKeys,
-	PortletState,
-	RequestIDs
-} from "../../stationx/station-x";
-import { SXManagementToolbar, SXSearchResultConainer } from "../../stationx/search-container";
-import { SXModalDialog, SXModalUtil } from "../../stationx/modal";
-import { Util } from "../../stationx/util";
-import { SXCommentIcon, SXFreezeIcon, SXVerifyIcon } from "../../stationx/icon";
+  ActionKeys,
+  DisplayStyles,
+  Event,
+  LoadingStatus,
+  PortletKeys,
+  PortletState,
+  RequestIDs
+} from '../../stationx/station-x';
+import { SXManagementToolbar, SXSearchResultConainer } from '../../stationx/search-container';
+import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
+import { Util } from '../../stationx/util';
+import { SXCommentIcon, SXFreezeIcon, SXVerifyIcon } from '../../stationx/icon';
 
 class DataSetExplorer extends SXBaseVisualizer {
-	constructor(props) {
-		super(props);
+  constructor(props) {
+    super(props);
 
-		//console.log("DataSetExplorer props: ", props);
-		this.dataCollectionId = props.dataCollectionId ?? 0;
+    //console.log("DataSetExplorer props: ", props);
+    this.dataCollectionId = props.dataCollectionId ?? 0;
 
-		this.dataSetList = [];
+    this.dataSetList = [];
 
-		this.availableDataTypeList = [];
+    this.availableDataTypeList = [];
 
-		this.searchResults = [];
-		this.checkboxEnabled = true;
+    this.searchResults = [];
+    this.checkboxEnabled = true;
 
-		this.actionButtons = [];
-		if (this.checkboxEnabled) {
-			this.actionButtons.push({
-				id: "deleteSelected",
-				name: Util.translate("delete-selected"),
-				symbol: "trash"
-			});
-		}
+    this.actionButtons = [];
+    if (this.checkboxEnabled) {
+      this.actionButtons.push({
+        id: 'deleteSelected',
+        name: Util.translate('delete-selected'),
+        symbol: 'trash'
+      });
+    }
 
-		this.tableColumns = [
-			{ id: "index", name: Util.translate("index"), width: "3.5rem" },
-			{
-				id: "id",
-				name: Util.translate("id"),
-				width: "5rem"
-			},
-			{
-				id: "dataset",
-				name: Util.translate("dataset"),
-				width: "auto"
-			},
-			{
-				id: "version",
-				name: Util.translate("version"),
-				width: "5rem"
-			},
-			{
-				id: "dataset-code",
-				name: Util.translate("dataset-code"),
-				width: "10rem"
-			},
-			{
-				id: "staus",
-				name: Util.translate("status"),
-				width: "6rem"
-			},
-			{
-				id: "actions",
-				name: "actions",
-				width: "3.5rem"
-			}
-		];
-		if (this.permissions.includes(ActionKeys.UPDATE)) {
-			this.tableColumns.unshift({ id: "checkbox", name: "", width: "2.5rem" });
-		}
+    this.tableColumns = [
+      { id: 'index', name: Util.translate('index'), width: '3.5rem' },
+      {
+        id: 'id',
+        name: Util.translate('id'),
+        width: '5rem'
+      },
+      {
+        id: 'dataset',
+        name: Util.translate('dataset'),
+        width: 'auto'
+      },
+      {
+        id: 'version',
+        name: Util.translate('version'),
+        width: '5rem'
+      },
+      {
+        id: 'dataset-code',
+        name: Util.translate('dataset-code'),
+        width: '10rem'
+      },
+      {
+        id: 'staus',
+        name: Util.translate('status'),
+        width: '6rem'
+      },
+      {
+        id: 'actions',
+        name: 'actions',
+        width: '3.5rem'
+      }
+    ];
+    if (this.permissions.includes(ActionKeys.UPDATE)) {
+      this.tableColumns.unshift({ id: 'checkbox', name: '', width: '2.5rem' });
+    }
 
-		this.state = {
-			displayStyle: DisplayStyles.TABLE,
-			start: this.params.start ?? 0,
-			delta: this.params.delta ?? 10,
-			keywords: this.params.keywords ?? "",
-			searchContainerKey: Util.randomKey(),
-			infoDialog: false,
-			confirmDeleteDialog: false,
-			dataSetIdToBeDeleted: 0,
-			dialogHeader: <></>,
-			dialogBody: <></>,
-			loadingStatus: LoadingStatus.PENDING
-		};
-	}
+    this.state = {
+      displayStyle: DisplayStyles.TABLE,
+      start: this.params.start ?? 0,
+      delta: this.params.delta ?? 10,
+      keywords: this.params.keywords ?? '',
+      searchContainerKey: Util.nowTime(),
+      infoDialog: false,
+      confirmDeleteDialog: false,
+      dialogHeader: <></>,
+      dialogBody: <></>,
+      loadingStatus: LoadingStatus.PENDING
+    };
 
-	listenerSelectAll = (event) => {
-		const { targetPortlet, targetFormId, selectAll } = event.dataPacket;
+    this.dataSetIdsToBeDeleted = [];
+  }
 
-		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
-			console.log("[DataSetExplorer] listenerSelectAll event rejected: ", event.dataPacket);
-			return;
-		}
+  listenerSelectAll = (event) => {
+    const { targetPortlet, targetFormId, selectAll } = event.dataPacket;
 
-		console.log("[DataSetExplorer] listenerSelectAll: ", event.dataPacket);
+    if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+      console.log('[DataSetExplorer] listenerSelectAll event rejected: ', event.dataPacket);
+      return;
+    }
 
-		this.searchResults.forEach((result) => {
-			result.checked = selectAll;
-			return result;
-		});
+    console.log('[DataSetExplorer] listenerSelectAll: ', event.dataPacket);
 
-		this.forceUpdate();
-	};
+    this.searchResults.forEach((result) => {
+      result.checked = selectAll;
+      return result;
+    });
 
-	listenerFieldValueChanged = (event) => {
-		const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
+    this.forceUpdate();
+  };
 
-		if (!dataPacket) {
-			console.log("[DataSetExplorer] listenerFieldValueChanged rejected: ", dataPacket);
+  listenerFieldValueChanged = (event) => {
+    const dataPacket = Event.pickUpDataPacket(event, this.namespace, this.formId);
 
-			return;
-		}
+    if (!dataPacket) {
+      console.log('[DataSetExplorer] listenerFieldValueChanged rejected: ', dataPacket);
 
-		console.log("[DataSetExplorer] listenerFieldValueChanged received: ", dataPacket);
-	};
+      return;
+    }
 
-	listenerAddButtonClicked = (event) => {
-		const dataPacket = event.dataPacket;
+    console.log('[DataSetExplorer] listenerFieldValueChanged received: ', dataPacket);
+  };
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataSetExplorer] listenerAddButtonClicked event rejected: ", dataPacket);
-			return;
-		}
-		console.log("[DataSetExplorer] listenerAddButtonClicked: ", dataPacket);
+  listenerAddButtonClicked = (event) => {
+    const dataPacket = event.dataPacket;
 
-		this.fireLoadPortlet({
-			portletName: PortletKeys.DATASET_EDITOR,
-			portletState: PortletState.NORMAL,
-			title: Util.translate("create-dataset"),
-			params: {
-				dataCollectionId: this.dataCollectionId
-			}
-		});
-	};
+    if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
+      console.log('[DataSetExplorer] listenerAddButtonClicked event rejected: ', dataPacket);
+      return;
+    }
+    console.log('[DataSetExplorer] listenerAddButtonClicked: ', dataPacket);
 
-	listenerPopActionClicked = (event) => {
-		const { targetPortlet, targetFormId, action, data } = event.dataPacket;
+    this.fireLoadPortlet({
+      portletName: PortletKeys.DATASET_EDITOR,
+      portletState: PortletState.NORMAL,
+      title: Util.translate('create-dataset'),
+      params: {
+        dataCollectionId: this.dataCollectionId
+      }
+    });
+  };
 
-		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
-			console.log("[DataSetExplorer] listenerPopActionClicked event rejected: ", targetPortlet, targetFormId);
-			return;
-		}
+  listenerPopActionClicked = (event) => {
+    const { targetPortlet, targetFormId, action, data } = event.dataPacket;
 
-		const selectedDataSetId = this.searchResults[data].id;
-		console.log("[DataSetExplorer] listenerPopActionClicked: ", action, data);
+    if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+      console.log('[DataSetExplorer] listenerPopActionClicked event rejected: ', targetPortlet, targetFormId);
+      return;
+    }
 
-		switch (action) {
-			case "update": {
-				this.fireLoadPortlet({
-					portletName: PortletKeys.DATASET_EDITOR,
-					params: {
-						dataCollectionId: this.dataCollectionId,
-						dataSetId: selectedDataSetId
-					}
-				});
+    const selectedDataSetId = this.searchResults[data].id;
+    console.log('[DataSetExplorer] listenerPopActionClicked: ', action, data);
 
-				break;
-			}
-			case "delete": {
-				this.setState({
-					confirmDeleteDialog: true,
-					dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
-					dialogBody: Util.translate("this-is-not-recoverable-are-you-sure-to-proceed"),
-					dataSetIdToBeDeleted: selectedDataSetId
-				});
+    switch (action) {
+      case 'update': {
+        this.fireLoadPortlet({
+          portletName: PortletKeys.DATASET_EDITOR,
+          params: {
+            dataCollectionId: this.dataCollectionId,
+            dataSetId: selectedDataSetId
+          }
+        });
 
-				break;
-			}
-		}
-	};
+        break;
+      }
+      case 'delete': {
+        this.dataSetIdsToBeDeleted = [selectedDataSetId];
 
-	listenerSelectedResultsChanged = (event) => {
-		const dataPacket = event.dataPacket;
+        this.setState({
+          confirmDeleteDialog: true,
+          dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+          dialogBody: Util.translate('this-is-not-recoverable-are-you-sure-to-proceed')
+        });
 
-		if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
-			console.log("[DataSetExplorer] listenerSelectedResultsChanged event rejected: ", dataPacket);
-			return;
-		}
-		console.log("[DataSetExplorer] listenerSelectedResultsChanged: ", dataPacket);
-		this.forceUpdate();
-	};
+        break;
+      }
+    }
+  };
 
-	listenerDeleteSelected = (event) => {
-		const { targetPortlet, targetFormId } = event.dataPacket;
+  listenerSelectedResultsChanged = (event) => {
+    const dataPacket = event.dataPacket;
 
-		if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
-			//console.log("[DataSetExplorer] listenerDeleteSelected rejected: ", event.dataPacket);
-			return;
-		}
-		//console.log("[DataSetExplorer] listenerDeleteSelected: ", event.dataPacket);
+    if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.formId) {
+      console.log('[DataSetExplorer] listenerSelectedResultsChanged event rejected: ', dataPacket);
+      return;
+    }
+    console.log('[DataSetExplorer] listenerSelectedResultsChanged: ', dataPacket);
+    this.forceUpdate();
+  };
 
-		this.setState({
-			confirmDeleteDialog: true,
-			dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
-			dialogBody: Util.translate("this-is-not-recoverable-are-you-sure-to-proceed")
-		});
-	};
+  listenerDeleteSelected = (event) => {
+    const { targetPortlet, targetFormId } = event.dataPacket;
 
-	listenerWorkbenchReady = (event) => {
-		const { targetPortlet } = event.dataPacket;
+    if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
+      //console.log("[DataSetExplorer] listenerDeleteSelected rejected: ", event.dataPacket);
+      return;
+    }
+    //console.log("[DataSetExplorer] listenerDeleteSelected: ", event.dataPacket);
 
-		if (targetPortlet !== this.namespace) {
-			//console.log("[DataSetExplorer] listenerWorkbenchReady event rejected: ", event.dataPacket);
-			return;
-		}
+    this.setState({
+      confirmDeleteDialog: true,
+      dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+      dialogBody: Util.translate('this-is-not-recoverable-are-you-sure-to-proceed')
+    });
+  };
 
-		//console.log("[DataSetExplorer] listenerWorkbenchReady received: ", event.dataPacket);
+  listenerWorkbenchReady = (event) => {
+    const { targetPortlet } = event.dataPacket;
 
-		this.fireRequest({
-			requestId: RequestIDs.searchDataSets,
-			params: {
-				dataCollectionId: this.dataCollectionId,
-				keywords: this.state.keywords,
-				start: this.state.start,
-				delta: this.state.delta,
-				filterBy: this.state.filterBy
-			}
-		});
-	};
+    if (targetPortlet !== this.namespace) {
+      //console.log("[DataSetExplorer] listenerWorkbenchReady event rejected: ", event.dataPacket);
+      return;
+    }
 
-	listenerResponse = (event) => {
-		const { targetPortlet, requestId, params, data } = event.dataPacket;
+    //console.log("[DataSetExplorer] listenerWorkbenchReady received: ", event.dataPacket);
 
-		if (targetPortlet !== this.namespace) {
-			console.log("[DataSetExplorer] listenerResponse rejected: ", targetPortlet);
-			return;
-		}
+    this.fireRequest({
+      requestId: RequestIDs.searchDataSets,
+      params: {
+        dataCollectionId: this.dataCollectionId,
+        keywords: this.state.keywords,
+        start: this.state.start,
+        delta: this.state.delta,
+        filterBy: this.state.filterBy
+      }
+    });
+  };
 
-		console.log("[DataSetExplorer] listenerResponse received: ", requestId, params, data);
+  listenerResponse = (event) => {
+    const { targetPortlet, requestId, params, data } = event.dataPacket;
 
-		switch (requestId) {
-			case RequestIDs.searchDataSets: {
-				this.convertSearchResultsToContent(data);
-				break;
-			}
-			case RequestIDs.deleteDataSets: {
-				this.fireRequest({
-					requestId: RequestIDs.searchDataSets,
-					params: this.params
-				});
+    if (targetPortlet !== this.namespace) {
+      console.log('[DataSetExplorer] listenerResponse rejected: ', targetPortlet);
+      return;
+    }
 
-				this.setState({
-					infoDialog: true,
-					dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
-					dialogBody: Util.translate("datasets-deleted-successfully")
-				});
+    console.log('[DataSetExplorer] listenerResponse received: ', requestId, params, data);
 
-				return;
-			}
-		}
+    const { error } = data;
+    if (error) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+        dialogBody: error
+      });
 
-		this.setState({
-			loadingStatus: LoadingStatus.COMPLETE
-		});
-	};
+      return;
+    }
 
-	listenerComponentWillUnmount = (event) => {
-		const dataPacket = event.dataPacket;
+    switch (requestId) {
+      case RequestIDs.searchDataSets: {
+        this.convertSearchResultsToContent(data);
 
-		if (dataPacket.targetPortlet !== this.namespace) {
-			console.log("[DataSetExplorer] listenerComponentWillUnmount rejected: ", dataPacket);
-			return;
-		}
+        this.setState({
+          searchContainerKey: Util.nowTime()
+        });
 
-		console.log("[DataSetExplorer] listenerComponentWillUnmount received: ", dataPacket);
-		this.componentWillUnmount();
-	};
+        break;
+      }
+      case RequestIDs.deleteDataSets: {
+        const { deletedDataSetIds, failedDataSetIds, message } = data;
 
-	componentDidMount() {
-		//Loading dataType
-		//this.loadDataType();
+        this.fireRequest({
+          requestId: RequestIDs.searchDataSets,
+          params: this.params
+        });
 
-		Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
-		Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
-		Event.on(Event.SX_RESPONSE, this.listenerResponse);
-		Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
-		Event.on(Event.SX_SELECT_ALL, this.listenerSelectAll);
-		Event.on(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
-		Event.on(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
-		Event.on(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
-		Event.on(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
+        this.setState({
+          infoDialog: true,
+          dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+          dialogBody: message
+        });
 
-		this.fireHandshake();
-	}
+        return;
+      }
+    }
 
-	componentWillUnmount() {
-		console.log("[DataSetExplorer] componentWillUnmount");
-		Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
-		Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
-		Event.off(Event.SX_RESPONSE, this.listenerResponse);
-		Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
-		Event.off(Event.SX_SELECT_ALL, this.listenerSelectAll);
-		Event.off(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
-		Event.off(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
-		Event.off(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
-		Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
-	}
+    this.setState({
+      loadingStatus: LoadingStatus.COMPLETE
+    });
+  };
 
-	checkAllDataSetsSelected = () => {
-		const selectedDataSetIds = this.selectedDataSetIds();
+  listenerComponentWillUnmount = (event) => {
+    const dataPacket = event.dataPacket;
 
-		return selectedDataSetIds.length == this.searchResults.length;
-	};
+    if (dataPacket.targetPortlet !== this.namespace) {
+      console.log('[DataSetExplorer] listenerComponentWillUnmount rejected: ', dataPacket);
+      return;
+    }
 
-	selectedDataSetIds = () => {
-		return this.searchResults
-			.filter((result) => result.checked)
-			.map((result) => {
-				return result.id;
-			});
-	};
+    console.log('[DataSetExplorer] listenerComponentWillUnmount received: ', dataPacket);
+    this.componentWillUnmount();
+  };
 
-	convertSearchResultsToContent(results) {
-		this.searchResults = results.map((dataSet, index) => {
-			const {
-				dataCollectionId = this.dataCollectionId,
-				dataSetId,
-				dataSetCode,
-				dataSetVersion,
-				displayName,
-				verified = false,
-				freezed = false,
-				commentCount = 0
-			} = dataSet;
+  componentDidMount() {
+    //Loading dataType
+    //this.loadDataType();
 
-			//console.log("convertSearchResultsToContent: ", result, dataType, Util.isNotEmpty(typeStructureLink));
-			const contentActionMenus = [];
+    Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+    Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+    Event.on(Event.SX_RESPONSE, this.listenerResponse);
+    Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+    Event.on(Event.SX_SELECT_ALL, this.listenerSelectAll);
+    Event.on(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
+    Event.on(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
+    Event.on(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
+    Event.on(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
 
-			if (this.permissions.includes(ActionKeys.UPDATE)) {
-				contentActionMenus.push({
-					id: "update",
-					name: Util.translate("update"),
-					symbol: "pencil"
-				});
-				contentActionMenus.push({
-					id: "delete",
-					name: Util.translate("delete"),
-					symbol: "trash"
-				});
-			}
+    this.fireHandshake();
+  }
 
-			let row = {
-				id: dataSetId,
-				index: index,
-				checked: false,
-				columns: [
-					{
-						id: "dataSetId",
-						value: dataSetId
-					},
-					{
-						id: "displayName",
-						value: displayName[this.languageId]
-					},
-					{
-						id: "dataSetVersion",
-						value: dataSetVersion
-					},
-					{
-						id: "dataSetCode",
-						value: dataSetCode
-					},
-					{
-						id: "status",
-						value: (
-							<>
-								<span style={{ marginRight: "5px" }}>
-									<SXCommentIcon commentCount={commentCount}></SXCommentIcon>
-								</span>
-								<span style={{ marginRight: "5px" }}>
-									<SXVerifyIcon verified={verified} />
-								</span>
-								<span style={{ marginRight: "5px" }}>
-									<SXFreezeIcon freezed={freezed} />
-								</span>
-							</>
-						)
-					},
-					{
-						id: "actions",
-						value: contentActionMenus
-					}
-				]
-			};
+  componentWillUnmount() {
+    console.log('[DataSetExplorer] componentWillUnmount');
+    Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
+    Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
+    Event.off(Event.SX_RESPONSE, this.listenerResponse);
+    Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
+    Event.off(Event.SX_SELECT_ALL, this.listenerSelectAll);
+    Event.off(Event.SX_SELECTED_RESULTS_CHANGED, this.listenerSelectedResultsChanged);
+    Event.off(Event.SX_DELETE_SELECTED, this.listenerDeleteSelected);
+    Event.off(Event.SX_ADD_BUTTON_CLICKED, this.listenerAddButtonClicked);
+    Event.off(Event.SX_POP_ACTION_CLICKED, this.listenerPopActionClicked);
+  }
 
-			return row;
-		});
-	}
+  checkAllDataSetsSelected = () => {
+    const selectedDataSetIds = this.selectedDataSetIds();
 
-	deleteDataSets = () => {
-		/*
+    return selectedDataSetIds.length == this.searchResults.length;
+  };
+
+  selectedDataSetIds = () => {
+    return Util.isNotEmpty(this.dataSetIdsToBeDeleted)
+      ? this.dataSetIdsToBeDeleted
+      : this.searchResults
+          .filter((result) => result.checked)
+          .map((result) => {
+            return result.id;
+          });
+  };
+
+  convertSearchResultsToContent(results) {
+    this.searchResults = results.map((dataSet, index) => {
+      const {
+        dataCollectionId = this.dataCollectionId,
+        dataSetId,
+        dataSetCode,
+        dataSetVersion,
+        displayName,
+        verified = false,
+        freezed = false,
+        commentCount = 0
+      } = dataSet;
+
+      //console.log("convertSearchResultsToContent: ", result, dataType, Util.isNotEmpty(typeStructureLink));
+      const contentActionMenus = [];
+
+      if (this.permissions.includes(ActionKeys.UPDATE)) {
+        contentActionMenus.push({
+          id: 'update',
+          name: Util.translate('update'),
+          symbol: 'pencil'
+        });
+        contentActionMenus.push({
+          id: 'delete',
+          name: Util.translate('delete'),
+          symbol: 'trash'
+        });
+      }
+      contentActionMenus.push({
+        id: 'data',
+        name: Util.translate('data'),
+        symbol: 'polls'
+      });
+
+      let row = {
+        id: dataSetId,
+        index: index,
+        checked: false,
+        columns: [
+          {
+            id: 'dataSetId',
+            value: dataSetId
+          },
+          {
+            id: 'displayName',
+            value: displayName[this.languageId]
+          },
+          {
+            id: 'dataSetVersion',
+            value: dataSetVersion
+          },
+          {
+            id: 'dataSetCode',
+            value: dataSetCode
+          },
+          {
+            id: 'status',
+            value: (
+              <>
+                <span style={{ marginRight: '5px' }}>
+                  <SXCommentIcon commentCount={commentCount}></SXCommentIcon>
+                </span>
+                <span style={{ marginRight: '5px' }}>
+                  <SXVerifyIcon verified={verified} />
+                </span>
+                <span style={{ marginRight: '5px' }}>
+                  <SXFreezeIcon freezed={freezed} />
+                </span>
+              </>
+            )
+          },
+          {
+            id: 'actions',
+            value: contentActionMenus
+          }
+        ]
+      };
+
+      return row;
+    });
+  }
+
+  deleteDataSets = () => {
+    /*
 		console.log(
 			"deleteDataSets: ",
 			this.selectedDataSetIds()
 		);
 		*/
-		const selectedDataSetIds = this.state.dataSetIdToBeDeleted
-			? [this.state.dataSetIdToBeDeleted]
-			: this.selectedDataSetIds();
-		if (Util.isEmpty(selectedDataSetIds)) {
-			return;
-		}
+    const selectedDataSetIds = this.selectedDataSetIds();
+    if (Util.isEmpty(selectedDataSetIds)) {
+      return;
+    }
 
-		this.fireRequest({
-			requestId: RequestIDs.deleteDataSets,
-			params: {
-				dataSetIds: selectedDataSetIds
-			}
-		});
-	};
+    Event.fire(Event.SX_DELETE_DATASETS, this.namespace, this.workbenchNamespace, {
+      targetFormId: this.formId,
+      dataSetIds: selectedDataSetIds
+    });
 
-	render() {
-		if (this.state.loadingStatus == LoadingStatus.PENDING) {
-			return <h3>Loading....</h3>;
-		} else if (this.state.loadingStatus == LoadingStatus.FAIL) {
-			return <h3>Loading failed</h3>;
-		}
+    /*
+    this.fireRequest({
+      requestId: RequestIDs.deleteDataSets,
+      params: {
+        dataSetIds: selectedDataSetIds
+      }
+    });
+    */
+  };
 
-		return (
-			<div>
-				<SXManagementToolbar
-					key={this.checkAllDataSetsSelected()}
-					namespace={this.namespace}
-					formId={this.formId}
-					searchBar={true}
-					addButton={true}
-					actionButtons={this.actionButtons}
-					actionMenus={this.actionMenus}
-					checkbox={this.checkboxEnabled}
-					checkboxChecked={this.checkAllDataSetsSelected()}
-					start={this.state.start}
-					delta={this.state.delta}
-					keywords={this.state.keywords}
-					spritemap={this.spritemap}
-				/>
-				<SXSearchResultConainer
-					key={this.state.searchContainerKey}
-					namespace={this.namespace}
-					formId={this.formId}
-					checkbox={this.checkboxEnabled}
-					checkAll={this.checkAllDataSetsSelected()}
-					index={true}
-					columns={this.tableColumns}
-					searchResults={this.searchResults}
-					spritemap={this.spritemap}
-				/>
-				{this.state.infoDialog && (
-					<SXModalDialog
-						header={this.state.dialogHeader}
-						body={this.state.dialogBody}
-						buttons={[
-							{
-								label: Util.translate("ok"),
-								onClick: () => {
-									this.setState({ infoDialog: false });
-								}
-							}
-						]}
-					/>
-				)}
-				{this.state.confirmDeleteDialog && (
-					<SXModalDialog
-						header={this.state.dialogHeader}
-						body={this.state.dialogBody}
-						buttons={[
-							{
-								label: Util.translate("confirm"),
-								onClick: (e) => {
-									this.deleteDataSets();
-									this.setState({ confirmDeleteDialog: false, dataSetIdToBeDeleted: 0 });
-								},
-								displayType: "secondary"
-							},
-							{
-								label: Util.translate("cancel"),
-								onClick: (e) => {
-									this.setState({ confirmDeleteDialog: false, dataSetIdToBeDeleted: 0 });
-								}
-							}
-						]}
-					/>
-				)}
-			</div>
-		);
-	}
+  handleProceedDeleting = (e) => {
+    this.deleteDataSets();
+    this.setState({ confirmDeleteDialog: false });
+  };
+
+  handleCancelDeleting = (e) => {
+    this.dataSetIdsToBeDeleted = [];
+    this.setState({ confirmDeleteDialog: false });
+  };
+
+  handleCloseDialog = (e) => {
+    this.setState({ infoDialog: false });
+  };
+
+  render() {
+    if (this.state.loadingStatus == LoadingStatus.PENDING) {
+      return <h3>Loading....</h3>;
+    } else if (this.state.loadingStatus == LoadingStatus.FAIL) {
+      return <h3>Loading failed</h3>;
+    }
+
+    return (
+      <div>
+        <SXManagementToolbar
+          key={this.checkAllDataSetsSelected()}
+          namespace={this.namespace}
+          formId={this.formId}
+          searchBar={true}
+          addButton={true}
+          actionButtons={this.actionButtons}
+          actionMenus={this.actionMenus}
+          checkbox={this.checkboxEnabled}
+          checkboxChecked={this.checkAllDataSetsSelected()}
+          start={this.state.start}
+          delta={this.state.delta}
+          keywords={this.state.keywords}
+          spritemap={this.spritemap}
+        />
+        <SXSearchResultConainer
+          key={this.state.searchContainerKey}
+          namespace={this.namespace}
+          formId={this.formId}
+          checkbox={this.checkboxEnabled}
+          checkAll={this.checkAllDataSetsSelected()}
+          index={true}
+          columns={this.tableColumns}
+          searchResults={this.searchResults}
+          spritemap={this.spritemap}
+        />
+        {this.state.infoDialog && (
+          <SXModalDialog
+            header={this.state.dialogHeader}
+            body={this.state.dialogBody}
+            buttons={[
+              {
+                label: Util.translate('ok'),
+                onClick: this.handleCloseDialog
+              }
+            ]}
+          />
+        )}
+        {this.state.confirmDeleteDialog && (
+          <SXModalDialog
+            header={this.state.dialogHeader}
+            body={this.state.dialogBody}
+            buttons={[
+              {
+                label: Util.translate('confirm'),
+                onClick: this.handleProceedDeleting,
+                displayType: 'secondary'
+              },
+              {
+                label: Util.translate('cancel'),
+                onClick: this.handleCancelDeleting
+              }
+            ]}
+          />
+        )}
+      </div>
+    );
+  }
 }
 
 export default DataSetExplorer;

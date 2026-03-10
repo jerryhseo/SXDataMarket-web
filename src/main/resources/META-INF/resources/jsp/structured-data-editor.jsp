@@ -11,7 +11,7 @@
 <%@ include file="./init.jsp" %>
 
 <%
-    String editState = ParamUtil.getString(renderRequest, "editState", "");
+    String editStatus = ParamUtil.getString(renderRequest, "editStatus", "");
     long dataCollectionId = ParamUtil.getLong(renderRequest, "dataCollectionId", 0);
     long dataSetId = ParamUtil.getLong(renderRequest, "dataSetId", 0);
     long dataTypeId = ParamUtil.getLong(renderRequest, "dataTypeId", 0);
@@ -60,7 +60,7 @@
 				workbenchNamespace: '<%= workbenchNamespace %>',
 				workbenchPortletId: '<%= workbenchId %>',
 				params:{
-					editState: "<%= editState %>",
+					editStatus: "<%= editStatus %>",
 					structuredDataId: Number('<%= structuredDataId %>'),
 					dataCollectionId: Number('<%= dataCollectionId %>'),
 					dataSetId: Number('<%= dataSetId %>'),

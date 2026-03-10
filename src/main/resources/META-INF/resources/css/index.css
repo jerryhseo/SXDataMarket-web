@@ -26,6 +26,10 @@
 	--sx-highlight-border: 2px solid #7ff47d;
 }
 
+.sx-portlet .container-fluid-max-xl{
+	max-width: 100%;
+}
+
 .sx-control-label {
 	display: inline-block;
 	color: black;
