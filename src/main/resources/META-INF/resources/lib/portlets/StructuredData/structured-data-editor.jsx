@@ -212,7 +212,8 @@ class StructuredDataEditor extends SXBaseVisualizer {
       dataSetId: this.dataSetId,
       dataTypeId: this.dataTypeId,
       structuredDataId: this.state.structuredDataId,
-      data: structuredData
+      files: files,
+      data: JSON.stringify(structuredData)
     });
   };
 

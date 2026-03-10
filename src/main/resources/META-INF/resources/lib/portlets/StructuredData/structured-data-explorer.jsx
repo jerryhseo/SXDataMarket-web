@@ -257,14 +257,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
     }
 
     const { id, dataCollectionId, dataSetId, dataTypeId } = this.searchResults[data];
-    console.log(
-      '[StructuredDataExplorer listenerPopActionClicked] ',
-      this.searchResults[data],
-      id,
-      dataCollectionId,
-      dataSetId,
-      dataTypeId
-    );
+    console.log('[StructuredDataExplorer listenerPopActionClicked] ', action, data, this.searchResults[data]);
 
     switch (action) {
       case 'update': {
@@ -284,7 +277,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
         break;
       }
       case 'delete': {
-        this.dataIdsToBeDeleted = [selectedDataId];
+        this.dataIdsToBeDeleted = [id];
 
         this.setState({
           confirmDeleteDialog: true,
@@ -657,6 +650,9 @@ class StructuredDataExplorer extends SXBaseVisualizer {
     Event.fire(Event.SX_REQUEST, this.namespace, this.workbenchNamespace, {
       requestId: RequestIDs.deleteStructuredData,
       params: {
+        dataCollectionId: this.state.dataCollectionId,
+        dataSetId: this.state.dataSetId,
+        dataTypeId: this.state.dataTypeId,
         structuredDataIdList: dataIds
       }
     });

@@ -178,8 +178,4 @@ public class SaveStructuredDataResourceCommand extends BaseMVCResourceCommand {
 
   @Reference
   DataTypeLocalService _dataTypeLocalService;
-
-  @Reference
-  DLAppLocalService _dlAppLocalService;
-
 }
