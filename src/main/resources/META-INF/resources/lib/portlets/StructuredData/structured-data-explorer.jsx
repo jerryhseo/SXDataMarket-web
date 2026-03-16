@@ -403,7 +403,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
     }
 
     console.log('[StructuredDataExplorer] listenerResponse received: ', targetPortlet, requestId, params, data);
-    const { error } = data;
+    const { error, message } = data;
     if (error) {
       this.setState({
         infoDialog: true,
@@ -430,7 +430,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
         this.setState({
           infoDialog: true,
           dialogHeader: SXModalUtil.successDlgHeader(),
-          dialogBody: Util.translate('data-is-deleted-successfully')
+          dialogBody: message
         });
 
         this.fireRequest({
@@ -659,102 +659,96 @@ class StructuredDataExplorer extends SXBaseVisualizer {
   };
 
   render() {
-    if (this.state.loadingStatus == LoadingStatus.PENDING) {
-      return <SXLoadingModal imageURL={this.imagePath + '/searching.gif'} />;
-    } else if (this.state.loadingStatus == LoadingStatus.FAIL) {
-      return <SXErrorModal imageURL={this.imagePath + '/ajax-error.gif'} />;
-    } else {
-      //console.log("SXInstanceInfo.render: ", this.dataType);
-      return (
-        <div>
-          {(this.state.dataCollectionId > 0 || this.state.dataSetId > 0 || this.state.dataTypeId > 0) && (
-            <>
-              {this.breadcrumb && <Breadcrumb items={[]} style={{ display: 'flex' }} spritemap={this.spritemap} />}
-              <SXManagementToolbar
-                key={this.checkAllResultsSelected()}
-                namespace={this.namespace}
-                formId={this.formId}
-                searchBar={true}
-                addButton={this.addButton}
-                displayStyleOptions={this.displayStyles}
-                displayStyle={this.state.displayStyle}
-                filterOptions={this.filterOptions}
-                filterBy={this.state.filterBy}
-                actionButtons={this.actionButtons}
-                actionMenus={this.actionMenus}
-                checkbox={this.checkbox}
-                checkboxChecked={this.checkAllResultsSelected()}
-                start={this.state.start}
-                delta={this.state.delta}
-                keywords={this.state.keywords}
-                spritemap={this.spritemap}
-              />
-            </>
-          )}
-          <SXSearchResultConainer
-            key={this.state.searchContainerKey}
-            namespace={this.namespace}
-            formId={this.formId}
-            checkbox={this.checkbox}
-            checkAll={this.checkAllResultsSelected()}
-            index={true}
-            columns={this.dataTableColumns}
-            searchResults={this.searchResults}
-            spritemap={this.spritemap}
-          />
-          {this.state.confirmDeleteDialog && (
-            <SXModalDialog
-              header={this.state.dialogHeader}
-              body={this.state.dialogBody}
-              buttons={[
-                {
-                  label: Util.translate('confirm'),
-                  onClick: (e) => {
-                    this.deleteData();
-                    this.setState({ confirmDeleteDialog: false });
-                  },
-                  displayType: 'secondary'
+    //console.log("SXInstanceInfo.render: ", this.dataType);
+    return (
+      <div>
+        {(this.state.dataCollectionId > 0 || this.state.dataSetId > 0 || this.state.dataTypeId > 0) && (
+          <>
+            {this.breadcrumb && <Breadcrumb items={[]} style={{ display: 'flex' }} spritemap={this.spritemap} />}
+            <SXManagementToolbar
+              key={this.checkAllResultsSelected()}
+              namespace={this.namespace}
+              formId={this.formId}
+              searchBar={true}
+              addButton={this.addButton}
+              displayStyleOptions={this.displayStyles}
+              displayStyle={this.state.displayStyle}
+              filterOptions={this.filterOptions}
+              filterBy={this.state.filterBy}
+              actionButtons={this.actionButtons}
+              actionMenus={this.actionMenus}
+              checkbox={this.checkbox}
+              checkboxChecked={this.checkAllResultsSelected()}
+              start={this.state.start}
+              delta={this.state.delta}
+              keywords={this.state.keywords}
+              spritemap={this.spritemap}
+            />
+          </>
+        )}
+        <SXSearchResultConainer
+          key={this.state.searchContainerKey}
+          namespace={this.namespace}
+          formId={this.formId}
+          checkbox={this.checkbox}
+          checkAll={this.checkAllResultsSelected()}
+          index={true}
+          columns={this.dataTableColumns}
+          searchResults={this.searchResults}
+          spritemap={this.spritemap}
+        />
+        {this.state.confirmDeleteDialog && (
+          <SXModalDialog
+            header={this.state.dialogHeader}
+            body={this.state.dialogBody}
+            buttons={[
+              {
+                label: Util.translate('confirm'),
+                onClick: (e) => {
+                  this.deleteData();
+                  this.setState({ confirmDeleteDialog: false });
                 },
-                {
-                  label: Util.translate('cancel'),
-                  onClick: (e) => {
-                    this.setState({ confirmDeleteDialog: false });
-                  }
+                displayType: 'secondary'
+              },
+              {
+                label: Util.translate('cancel'),
+                onClick: (e) => {
+                  this.setState({ confirmDeleteDialog: false });
                 }
-              ]}
-            />
-          )}
-          {this.state.infoDialog && (
-            <SXModalDialog
-              header={this.state.dialogHeader}
-              body={this.state.dialogBody}
-              buttons={[
-                {
-                  label: Util.translate('ok'),
-                  onClick: (e) => {
-                    this.setState({ infoDialog: false });
-                  }
+              }
+            ]}
+          />
+        )}
+        {this.state.infoDialog && (
+          <SXModalDialog
+            header={this.state.dialogHeader}
+            body={this.state.dialogBody}
+            buttons={[
+              {
+                label: Util.translate('ok'),
+                onClick: (e) => {
+                  this.setState({ infoDialog: false });
                 }
-              ]}
-            />
-          )}
-          {this.state.underConstruction && (
-            <SXModalDialog
-              header={Util.translate('underconstruction')}
-              body={<UnderConstruction />}
-              buttons={[
-                {
-                  label: Util.translate('ok'),
-                  onClick: () => {
-                    this.setState({ underConstruction: false });
-                  }
+              }
+            ]}
+          />
+        )}
+        {this.state.underConstruction && (
+          <SXModalDialog
+            header={Util.translate('underconstruction')}
+            body={<UnderConstruction />}
+            buttons={[
+              {
+                label: Util.translate('ok'),
+                onClick: () => {
+                  this.setState({ underConstruction: false });
                 }
-              ]}
-            />
-          )}
-        </div>
-      );
-    }
+              }
+            ]}
+          />
+        )}
+      </div>
+    );
   }
 }
 

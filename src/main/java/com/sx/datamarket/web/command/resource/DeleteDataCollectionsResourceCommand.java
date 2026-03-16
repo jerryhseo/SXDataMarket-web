@@ -12,77 +12,84 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.sx.icecap.constant.MVCCommand;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.service.DataCollectionLocalService;
-import com.sx.util.SXUtil;
+import com.sx.util.SXLocalizationUtil;
 import com.sx.util.portlet.SXPortletURLUtil;
-
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
-@Component(immediate = true,
-    property = {"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
-        "javax.portlet.name=" + WebPortletKey.SXDataCollectionExplorerPortlet,
-        "javax.portlet.name=" + WebPortletKey.SXDataCollectionEditorPortlet,
-        "mvc.command.name=" + MVCCommand.RESOURCE_DELETE_DATACOLLECTIONS},
-    service = MVCResourceCommand.class)
+@Component(
+			immediate = true,
+			property = {"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
+					"javax.portlet.name=" + WebPortletKey.SXDataCollectionExplorerPortlet,
+					"javax.portlet.name=" + WebPortletKey.SXDataCollectionEditorPortlet,
+					"mvc.command.name=" + MVCCommand.RESOURCE_DELETE_DATACOLLECTIONS},
+			service = MVCResourceCommand.class
+)
 public class DeleteDataCollectionsResourceCommand extends BaseMVCResourceCommand {
 
-  @Override
-  protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
-      throws Exception {
+	@Override
+	protected void doServeResource ( ResourceRequest resourceRequest, ResourceResponse resourceResponse )
+				throws Exception {
 
-    System.out.println("DeleteDataCollectionsResourceCommand");
-    String strDataCollectionIds = ParamUtil.getString(resourceRequest, "dataCollectionIds", "");
-    System.out.println("strDataCollectionIds: " + strDataCollectionIds);
+		System.out.println ( "DeleteDataCollectionsResourceCommand" );
+		String strDataCollectionIds = ParamUtil.getString ( resourceRequest, "dataCollectionIds", "" );
+		System.out.println ( "strDataCollectionIds: " + strDataCollectionIds );
 
-    JSONObject result = JSONFactoryUtil.createJSONObject();
+		JSONObject result = JSONFactoryUtil.createJSONObject ();
 
-    if (strDataCollectionIds.isEmpty()) {
-      result.put("error",
-          SXUtil.translate(resourceRequest, "datacollection-ids-should-be-provided"));
+		if ( strDataCollectionIds.isEmpty () ) {
+			result.put (
+						"error",
+						SXLocalizationUtil.translate ( resourceRequest, "datacollection-ids-should-be-provided" )
+			);
 
-      SXPortletURLUtil.responeAjax(resourceResponse, result);
+			SXPortletURLUtil.responeAjax ( resourceResponse, result );
 
-      return;
-    }
+			return;
+		}
 
-    String[] strAryDataCollectionIds = strDataCollectionIds.split(",");
+		String[] strAryDataCollectionIds = strDataCollectionIds.split ( "," );
 
-    ThemeDisplay themeDisplay = (ThemeDisplay) resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay = ( ThemeDisplay ) resourceRequest.getAttribute ( WebKeys.THEME_DISPLAY );
 
-    JSONArray deletedDataCollections = JSONFactoryUtil.createJSONArray();
-    JSONArray failedDataCollections = JSONFactoryUtil.createJSONArray();
+		JSONArray deletedDataCollections = JSONFactoryUtil.createJSONArray ();
+		JSONArray failedDataCollections = JSONFactoryUtil.createJSONArray ();
 
-    for (int i = 0; i < strAryDataCollectionIds.length; i++) {
-      long dataCollectionId = Long.parseLong(strAryDataCollectionIds[i]);
+		for ( int i = 0; i < strAryDataCollectionIds.length; i++ ) {
+			long dataCollectionId = Long.parseLong ( strAryDataCollectionIds[i] );
 
-      try {
-        _dataCollectionLocalService.removeDataCollection(themeDisplay.getScopeGroupId(),
-            dataCollectionId);
+			try {
+				_dataCollectionLocalService.removeDataCollection ( themeDisplay.getScopeGroupId (), dataCollectionId );
 
-        deletedDataCollections.put(dataCollectionId);
-      } catch (PortalException e) {
-        failedDataCollections.put(dataCollectionId);
-      }
-    }
+				deletedDataCollections.put ( dataCollectionId );
+			} catch ( PortalException e ) {
+				failedDataCollections.put ( dataCollectionId );
+			}
+		}
 
-    if (deletedDataCollections.length() > 0) {
-      result.put("deletedDataCollections", deletedDataCollections);
-    }
+		if ( deletedDataCollections.length () > 0 ) {
+			result.put ( "deletedDataCollections", deletedDataCollections );
+		}
 
-    if (failedDataCollections.length() > 0) {
-      result.put("failedDataCollections", failedDataCollections);
-    }
+		if ( failedDataCollections.length () > 0 ) {
+			result.put ( "failedDataCollections", failedDataCollections );
+		}
 
-    result.put("message", SXUtil.translate(resourceRequest,
-        "datacollections-are-deleted-successfully", strDataCollectionIds));
+		result.put (
+					"message",
+					SXLocalizationUtil.translate (
+								resourceRequest,
+								"datacollections-are-deleted-successfully",
+								strDataCollectionIds
+					)
+		);
 
-    SXPortletURLUtil.responeAjax(resourceResponse, result);
-  }
+		SXPortletURLUtil.responeAjax ( resourceResponse, result );
+	}
 
-  @Reference
-  private DataCollectionLocalService _dataCollectionLocalService;
+	@Reference
+	private DataCollectionLocalService _dataCollectionLocalService;
 
 }

@@ -733,25 +733,19 @@ class Parameter {
     } else {
       this.dirty = true;
     }
-
-    //this.refreshKey();
   }
 
   getDirty(cellIndex) {
     if (this.isGridCell() && Util.isNotEmpty(cellIndex)) {
-      if (!(this.dirty instanceof Array)) {
-        return false;
-      }
-
-      return this.dirty[cellIndex];
+      return this.dirty instanceof Array ? (this.dirty[cellIndex] ?? false) : false;
     } else {
-      return this.dirty;
+      return this.dirty ?? false;
     }
   }
 
   markClean() {
     if (this.isGridCell()) {
-      this.dirty = this.dirty.map((elem) => false);
+      this.dirty = [];
     } else {
       this.dirty = false;
     }
@@ -1060,7 +1054,7 @@ class Parameter {
     const error = this.validate(cellIndex);
 
     if (error !== 0) {
-      this.dirty = true;
+      this.setDirty(true, cellIndex);
       return this.error;
     }
 
@@ -1703,8 +1697,12 @@ class Parameter {
   }
 
   loadData(data) {
+    if (!data) {
+      return;
+    }
+
     if (this.commentable) {
-      //this.comments = data.comments;
+      this.comments = data.comments;
     }
     this.historyItems = data.historyItems;
 
@@ -3142,6 +3140,7 @@ export class FileParameter extends Parameter {
   toDataObject(fileItem) {
     return {
       name: fileItem.name,
+      lastModified: fileItem.lastModified,
       type: fileItem.type
     };
   }
@@ -3791,10 +3790,12 @@ export class GroupParameter extends Parameter {
   }
 
   loadData(data) {
-    super.loadData(data);
+    //console.log('GroupParameter.loadData: ', this.paramCode, data);
+    //super.loadData(data);
 
     this.members.forEach((member) => {
-      const memberData = data[member.paramCode];
+      const memberData = data.value[member.paramCode];
+      //console.log('GroupParameter.loadData member: ', member.paramCode, memberData);
 
       if (Util.isNotEmpty(memberData)) {
         member.loadData(memberData);
@@ -4181,13 +4182,15 @@ export class GridParameter extends GroupParameter {
 
     this.rowCount = json.rowCount ?? 0;
 
-    if (Util.isNotEmpty(json.columns)) {
-      this.columns = json.columns.map((column) => {
+    const members = Util.isEmpty(json.members) ? (Util.isEmpty(json.columns) ? [] : json.columns) : json.members;
+
+    if (Util.isNotEmpty(members)) {
+      this.columns = members.map((member) => {
         return ParameterUtil.createParameter({
           namespace: this.namespace,
           formId: this.componentId,
-          paramType: column.paramType,
-          properties: column
+          paramType: member.paramType,
+          properties: member
         });
       });
     }
@@ -4203,8 +4206,8 @@ export class GridParameter extends GroupParameter {
 
     json.rowCount = this.rowCount;
 
-    json.columns = [];
-    this.columns.forEach((column) => json.columns.push(column.toJSON()));
+    json.members = [];
+    this.columns.forEach((column) => json.members.push(column.toJSON()));
 
     return json;
   }
@@ -4214,7 +4217,7 @@ export class GridParameter extends GroupParameter {
 
     json.rowCount = this.rowCount;
 
-    json.columns = this.columns.map((column) => {
+    json.members = this.columns.map((column) => {
       return column.toProperties();
     });
 
@@ -4747,7 +4750,7 @@ export class PhoneParameter extends Parameter {
     return this.isGridCell() ? this.value[cellIndex].stationNo : this.value.stationNo;
   }
   getPersonalNo(cellIndex) {
-    return this.isGridCell() ? this.value[cellIndex].personal : this.value.personal;
+    return this.isGridCell() ? this.value[cellIndex].personal : this.value.personalNo;
   }
   get enableCountryNo() {
     return this.#enableCountryNo;

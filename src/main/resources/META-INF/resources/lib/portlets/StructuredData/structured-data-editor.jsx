@@ -12,7 +12,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
   constructor(props) {
     super(props);
 
-    console.log('StructuredDataEditor props: ', props);
+    //console.log('StructuredDataEditor props: ', props);
 
     this.editStatus = this.params.editStatus ? this.params.editStatus : EditStatus.PREVIEW;
     this.dataCollectionId = this.params.dataCollectionId ?? 0;

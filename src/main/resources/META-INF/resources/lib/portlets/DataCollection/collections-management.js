@@ -68,6 +68,7 @@ class CollectionsManagement extends SXBaseVisualizer {
     this.applicationTitle = '';
 
     this.applicationBarButtons = [];
+    this.applicationBarRefreshKey = Util.nowTime();
 
     this.idsToBeDeleted = [];
   }
@@ -189,7 +190,6 @@ class CollectionsManagement extends SXBaseVisualizer {
     console.log('[CollectionManagement listenerNavItemSelected] ', item, this.state);
 
     let portletName = PortletKeys.STRUCTURED_DATA_EXPLORER;
-    let requestId;
     let requestParams;
     let addButton = true;
 
@@ -274,17 +274,10 @@ class CollectionsManagement extends SXBaseVisualizer {
       //Event.fire()
     }
 
-    if (requestId) {
-      this.workbench.processRequest({
-        requestPortlet: this.namespace,
-        requestId: requestId,
-        params: requestParams
-      });
-    }
-
     this.setState({ selectedNavItem: item });
+    this.applicationBarRefreshKey = Util.nowTime();
 
-    this.applicationTitle = '';
+    this.applicationTitle = this.buildApplicationTitle();
 
     const portletParams = {
       dataCollectionId: dataCollectionId,
@@ -312,11 +305,11 @@ class CollectionsManagement extends SXBaseVisualizer {
     const { targetPortlet, sourcePortlet, requestId, params, data } = event.dataPacket;
 
     if (targetPortlet !== this.namespace) {
-      //console.log("[CollectionsManagement] listenerResponce rejected: ", dataPacket);
+      console.log('[CollectionsManagement] listenerResponce rejected: ', targetPortlet);
       return;
     }
 
-    //console.log('[CollectionsManagement] listenerResponse: ', requestId, params, data);
+    console.log('[CollectionsManagement] listenerResponse: ', requestId, params, data);
 
     const { error } = data;
     if (Util.isNotEmpty(error)) {
@@ -481,16 +474,36 @@ class CollectionsManagement extends SXBaseVisualizer {
           this.navItems.unshift(this.state.selectedNavItem);
         }
 
+        const dataSetNavItems = associatedDataSets.map((dataSet) => ({
+          id: dataSet.linkId,
+          parent: this.state.selectedNavItem,
+          modelId: dataSet.dataSetId,
+          label: dataSet.displayName,
+          items: dataSet.dataTypeList,
+          verified: dataSet.verified ?? { verified: false },
+          freezed: dataSet.freezed ?? { freezed: false },
+          type: CollectionsManagement.ItemTypes.DATASET
+        }));
+
+        dataSetNavItems.forEach((dataSetNavItem) => {
+          dataSetNavItem.items = dataSetNavItem.items.map((dataType) => ({
+            id: dataType.linkId,
+            parent: dataSetNavItem,
+            modelId: dataType.dataTypeId,
+            label: dataType.displayName,
+            verified: dataType.verified ?? { verified: false },
+            freezed: dataType.freezed ?? { freezed: false },
+            type: CollectionsManagement.ItemTypes.DATATYPE
+          }));
+        });
+
         this.applySelectedNavItemChanged({
           id: dataCollection.dataCollectionId,
           modelId: dataCollection.dataCollectionId,
           label: dataCollection.displayName,
-          items: associatedDataSets.map((dataSet) => ({
-            id: dataSet.linkId,
-            modelId: dataSet.dataSetId,
-            label: dataSet.displayName,
-            type: CollectionsManagement.ItemTypes.DATASET
-          })),
+          verified: dataCollection.verified,
+          freezed: dataCollection.freezed,
+          items: dataSetNavItems,
           dirty: false
         });
 
@@ -527,15 +540,9 @@ class CollectionsManagement extends SXBaseVisualizer {
         break;
       }
       case RequestIDs.saveDataSet: {
-        const { dataSet, deletedDataTypeList, associatedDataTypeList, message } = data;
-        /*
-        console.log(
-          '[DataSetEditor.listenerResponse.saveDataSet]: ',
-          dataSet,
-          deletedDataTypeList,
-          associatedDataTypeList,
-          message
-        ); */
+        const { dataSet, associatedDataTypeList } = data;
+
+        console.log('[DataSetEditor.listenerResponse.saveDataSet]: ', dataSet, associatedDataTypeList);
 
         this.workbench.fireResponse({
           targetPortlet: this.state.workingPortletInstance.namespace,
@@ -544,10 +551,13 @@ class CollectionsManagement extends SXBaseVisualizer {
           data: data
         });
 
-        console.log('this.state.selectedNavItem: ', dataSet, JSON.stringify(this.state.selectedNavItem, null, 4));
+        console.log('this.state.selectedNavItem: ', dataSet, this.state.selectedNavItem);
         this.state.selectedNavItem.active = false;
+
+        let dataSetNavItem;
         if (this.state.selectedNavItem.type === CollectionsManagement.ItemTypes.COLLECTION) {
-          const dataSetNavItem = {
+          dataSetNavItem = {
+            parent: this.state.selectedNavItem,
             type: CollectionsManagement.ItemTypes.DATASET
           };
 
@@ -555,13 +565,18 @@ class CollectionsManagement extends SXBaseVisualizer {
 
           this.fireNavRefresh({ additionalExpandedKeys: [this.state.selectedNavItem.id, dataSet.dataSetId] });
 
-          this.state.selectedNavItem = dataSetNavItem;
+          this.setState({ selectedNavItem: dataSetNavItem });
+        } else {
+          dataSetNavItem = this.state.selectedNavItem;
         }
 
         this.applySelectedNavItemChanged({
           id: dataSet.dataSetId,
+          parent: dataSetNavItem.parent,
           modelId: dataSet.dataSetId,
           label: dataSet.displayName,
+          verified: dataSet.verified,
+          freezed: dataSet.freezed,
           items: associatedDataTypeList.map((dataType) => ({
             id: dataType.linkId,
             modelId: dataType.dataTypeId,
@@ -722,6 +737,7 @@ class CollectionsManagement extends SXBaseVisualizer {
     }
 
     const portletParams = this.getDeployPortletParams(viewMode);
+    this.applicationBarRefreshKey = Util.nowTime();
 
     if (portletName && portletParams) {
       this.deployPortlet({
@@ -765,12 +781,12 @@ class CollectionsManagement extends SXBaseVisualizer {
     }
 
     let params = this.getDeployPortletParams();
+    this.applicationBarRefreshKey = Util.nowTime();
 
     this.deployPortlet({
       portletName: portletName,
       params: {
-        ...params,
-        titleBar: true
+        ...params
       }
     });
   };
@@ -872,17 +888,17 @@ class CollectionsManagement extends SXBaseVisualizer {
       //console.log("[CollectionsManagement listenerSaveDataSet REJECTED] ", event.dataPacket);
       return;
     }
-    /*
-		console.log(
-			"[CollectionsManagement listenerSaveDataSet] ",
-			dataCollectionId,
+
+    console.log(
+      '[CollectionsManagement listenerSaveDataSet] ',
+      dataCollectionId,
       dataSetId,
       dataSetCode,
       dataSetVersion,
       displayName,
       description,
       associatedDataTypes
-		); */
+    );
 
     const params = {
       dataCollectionId: dataCollectionId ?? 0,
@@ -923,6 +939,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 		); */
 
     const params = this.getDeployPortletParams();
+    this.applicationBarRefreshKey = Util.nowTime();
 
     this.workbench.processRequest({
       requestPortlet: this.namespace,
@@ -1001,6 +1018,7 @@ class CollectionsManagement extends SXBaseVisualizer {
 		); */
 
     const params = this.getDeployPortletParams();
+    this.applicationBarRefreshKey = Util.nowTime();
 
     this.workbench.processRequest({
       requestPortlet: this.namespace,
@@ -1124,18 +1142,30 @@ class CollectionsManagement extends SXBaseVisualizer {
     return null;
   };
 
-  applySelectedNavItemChanged = ({ id, modelId, label, items, active = true, dirty = true }) => {
-    this.state.selectedNavItem.id = id;
-    this.state.selectedNavItem.modelId = modelId;
-    this.state.selectedNavItem.label = label;
-    if (items) {
-      this.state.selectedNavItem.items = items;
-    }
-
-    this.state.selectedNavItem.active = active;
-    this.state.selectedNavItem.dirty = dirty;
-
-    this.buildApplicationTitle();
+  applySelectedNavItemChanged = ({
+    id,
+    parent,
+    modelId,
+    label,
+    verified = { verified: false },
+    freezed = { freezed: false },
+    items,
+    active = true,
+    dirty = true
+  }) => {
+    this.setState({
+      selectedNavItem: {
+        id: id,
+        parent: parent,
+        modelId: modelId,
+        label: label,
+        verified: verified,
+        freezed: freezed,
+        items: items,
+        active: active,
+        dirty: dirty
+      }
+    });
   };
 
   findNavItem = (items, id) => {
@@ -1448,7 +1478,7 @@ class CollectionsManagement extends SXBaseVisualizer {
             )}
             <div className="autofit-col autofit-col-expand" style={{ height: '100%', padding: '5px' }}>
               <SXApplicationBar
-                key={applicationTitle + this.state.viewMode}
+                key={this.applicationBarRefreshKey}
                 namespace={this.namespace}
                 formId={this.namespace}
                 applicationTitle={applicationTitle}

@@ -7,7 +7,7 @@ import {
   LoadingStatus,
   ParamType,
   RequestIDs,
-  ValidationRule,
+  ValidationRule
 } from '../../stationx/station-x';
 import Button from '@clayui/button';
 import Icon from '@clayui/icon';
@@ -31,7 +31,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
       dialogHeader: <></>,
       dialogBody: <></>,
       warningAndSaveDialog: false,
-      loadingStatus: LoadingStatus.PENDING,
+      loadingStatus: LoadingStatus.PENDING
     };
 
     this.dataCollectionCode = ParameterUtil.createParameter({
@@ -47,28 +47,28 @@ class DataCollectionEditor extends SXBaseVisualizer {
           required: {
             value: true,
             message: Util.getTranslationObject(this.languageId, 'this-field-is-required'),
-            errorClass: ErrorClass.ERROR,
+            errorClass: ErrorClass.ERROR
           },
           pattern: {
             value: ValidationRule.VARIABLE,
             message: Util.getTranslationObject(this.languageId, 'invalid-code'),
-            errorClass: ErrorClass.ERROR,
+            errorClass: ErrorClass.ERROR
           },
           minLength: {
             value: 3,
             message: Util.getTranslationObject(this.languageId, 'shorter-than-min-length', '3'),
-            errorClass: ErrorClass.ERROR,
+            errorClass: ErrorClass.ERROR
           },
           maxLength: {
             value: 32,
             message: Util.getTranslationObject(this.languageId, 'longer-than-max-length', '32'),
-            errorClass: ErrorClass.ERROR,
-          },
+            errorClass: ErrorClass.ERROR
+          }
         },
         style: {
-          width: '250px',
-        },
-      },
+          width: '250px'
+        }
+      }
     });
 
     this.dataCollectionVersion = ParameterUtil.createParameter({
@@ -84,19 +84,19 @@ class DataCollectionEditor extends SXBaseVisualizer {
           required: {
             value: true,
             message: Util.getTranslationObject(this.languageId, 'this-field-is-required'),
-            errorClass: ErrorClass.ERROR,
+            errorClass: ErrorClass.ERROR
           },
           pattern: {
             value: ValidationRule.VERSION,
             message: Util.getTranslationObject(this.languageId, 'invalid-version-format'),
-            errorClass: ErrorClass.ERROR,
-          },
+            errorClass: ErrorClass.ERROR
+          }
         },
         defaultValue: '1.0.0',
         style: {
-          width: '150px',
-        },
-      },
+          width: '150px'
+        }
+      }
     });
 
     this.displayName = ParameterUtil.createParameter({
@@ -113,21 +113,21 @@ class DataCollectionEditor extends SXBaseVisualizer {
           required: {
             value: true,
             message: Util.getTranslationObject(this.languageId, 'this-field-is-required'),
-            errorClass: ErrorClass.ERROR,
+            errorClass: ErrorClass.ERROR
           },
           minLength: {
             value: 3,
             message: Util.getTranslationObject(this.languageId, 'shorter-than-min-length', '3'),
-            errorClass: ErrorClass.ERROR,
+            errorClass: ErrorClass.ERROR
           },
           maxLength: {
             value: 64,
             message: Util.getTranslationObject(this.languageId, 'longer-than-max-length', '64'),
-            errorClass: ErrorClass.ERROR,
-          },
+            errorClass: ErrorClass.ERROR
+          }
         },
-        className: 'autofit-col-expand',
-      },
+        className: 'autofit-col-expand'
+      }
     });
 
     this.description = ParameterUtil.createParameter({
@@ -140,8 +140,8 @@ class DataCollectionEditor extends SXBaseVisualizer {
         displayName: Util.getTranslationObject(this.languageId, 'description'),
         placeholder: Util.getTranslationObject(this.languageId, 'description'),
         tooltip: Util.getTranslationObject(this.languageId, 'description-tooltip'),
-        multipleLine: true,
-      },
+        multipleLine: true
+      }
     });
 
     this.groupParameter = ParameterUtil.createParameter({
@@ -154,8 +154,8 @@ class DataCollectionEditor extends SXBaseVisualizer {
         displayName: Util.getTranslationObject(this.languageId, 'required-properties'),
         viewType: ParameterConstants.GroupViewTypes.FIELDSET,
         members: [this.dataCollectionCode, this.dataCollectionVersion, this.displayName],
-        membersPerRow: 3,
-      },
+        membersPerRow: 3
+      }
     });
 
     this.dataSets = ParameterUtil.createParameter({
@@ -166,8 +166,8 @@ class DataCollectionEditor extends SXBaseVisualizer {
         paramCode: 'dataSets',
         displayName: Util.getTranslationObject(this.languageId, 'associated-datasets'),
         tooltip: Util.getTranslationObject(this.languageId, 'associated-datasets-tooltip'),
-        viewType: ParameterConstants.DualListViewTypes.ORDERED,
-      },
+        viewType: ParameterConstants.DualListViewTypes.ORDERED
+      }
     });
   }
 
@@ -195,8 +195,8 @@ class DataCollectionEditor extends SXBaseVisualizer {
         dataCollectionVersion: this.dataCollectionVersion.getValue(),
         displayName: this.displayName.getValue(),
         description: this.description.getValue(),
-        dataSets: this.dataSets.getValue().map((strDataSetId) => Number(strDataSetId)),
-      },
+        dataSets: this.dataSets.getValue().map((strDataSetId) => Number(strDataSetId))
+      }
     });
   };
 
@@ -213,8 +213,8 @@ class DataCollectionEditor extends SXBaseVisualizer {
       requestId: RequestIDs.loadDataCollection,
       params: {
         dataCollectionId: this.state.dataCollectionId,
-        loadAvailableDataSets: true,
-      },
+        loadAvailableDataSets: true
+      }
     });
   };
 
@@ -227,6 +227,18 @@ class DataCollectionEditor extends SXBaseVisualizer {
     }
 
     console.log('[dataCollectionEditor] listenerResonse: ', event.dataPacket);
+
+    const { error } = data;
+    if (Util.isNotEmpty(error)) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+        dialogBody: error
+      });
+
+      return;
+    }
+
     switch (requestId) {
       case RequestIDs.loadDataCollection: {
         const { dataCollection, associatedDataSetList = [], availableDataSetList = [] } = data;
@@ -253,7 +265,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
             return {
               key: dataSet.dataSetId,
               value: dataSet.dataSetId,
-              label: label,
+              label: label
             };
           });
         }
@@ -265,19 +277,19 @@ class DataCollectionEditor extends SXBaseVisualizer {
             return {
               key: dataSetId,
               label: Util.getTranslationObject(this.languageId, displayName + ' v.' + dataSetVersion),
-              value: dataSetId,
+              value: dataSetId
             };
           });
 
           this.dataSets.setValue({
-            value: associatedDataSetIds,
+            value: associatedDataSetIds
           });
         }
 
         this.dataSets.refreshKey();
 
         this.setState({
-          loadingStatus: LoadingStatus.COMPLETE,
+          loadingStatus: LoadingStatus.COMPLETE
         });
 
         break;
@@ -288,7 +300,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
         this.setState({
           editStatus: EditStatus.UPDATE,
           dataCollectionId: Number(dataCollection.dataCollectionId),
-          loadingStatus: LoadingStatus.COMPLETE,
+          loadingStatus: LoadingStatus.COMPLETE
         });
 
         break;
@@ -391,13 +403,13 @@ class DataCollectionEditor extends SXBaseVisualizer {
         this.setState({
           infoDialog: true,
           dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-          dialogBody: Util.translate('fix-the-error-first', error.message),
+          dialogBody: Util.translate('fix-the-error-first', error.message)
         });
       } else {
         this.setState({
           waringAndSaveDialog: true,
           dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
-          dialogBody: Util.translate('data-has-warning-do-you-proceed-anyway', error.message),
+          dialogBody: Util.translate('data-has-warning-do-you-proceed-anyway', error.message)
         });
       }
 
@@ -411,7 +423,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
     event.stopPropagation();
 
     Event.fire(Event.SX_DELETE_DATACOLLECTION, this.namespace, this.workbenchNamespace, {
-      dataCollectionId: this.state.dataCollectionId,
+      dataCollectionId: this.state.dataCollectionId
     });
   };
 
@@ -420,7 +432,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
       dataCollectionId: this.state.dataCollectionId,
       dataCollectionCode: this.dataCollectionCode.getValue(),
       dataCollectionVersion: this.dataCollectionVersion.getValue(),
-      associatedDataSetList: this.dataSets.getValue(),
+      associatedDataSetList: this.dataSets.getValue()
     };
 
     //console.log("saveDataCollection: ", this.dataSets.getValue());
@@ -434,7 +446,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
     }
 
     Event.fire(Event.SX_SAVE_DATACOLLECTION, this.namespace, this.workbenchNamespace, {
-      dataCollection: params,
+      dataCollection: params
     });
 
     /*
@@ -495,8 +507,8 @@ class DataCollectionEditor extends SXBaseVisualizer {
                   label: Util.translate('ok'),
                   onClick: () => {
                     this.setState({ infoDialog: false });
-                  },
-                },
+                  }
+                }
               ]}
             />
           )}
@@ -511,14 +523,14 @@ class DataCollectionEditor extends SXBaseVisualizer {
                     this.saveDataCollection();
                     this.setState({ waringAndSaveDialog: false });
                   },
-                  displayType: 'secondary',
+                  displayType: 'secondary'
                 },
                 {
                   label: Util.translate('cancel'),
                   onClick: (e) => {
                     this.setState({ waringAndSaveDialog: false });
-                  },
-                },
+                  }
+                }
               ]}
             />
           )}
