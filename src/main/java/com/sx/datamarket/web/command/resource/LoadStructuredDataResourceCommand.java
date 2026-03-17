@@ -130,7 +130,7 @@ public class LoadStructuredDataResourceCommand extends BaseMVCResourceCommand {
 
 		}
 
-		System.out.println ( "Result: " + result.toString ( 4 ) );
+		// System.out.println ( "Result: " + result.toString ( 4 ) );
 		SXPortletURLUtil.responeAjax ( resourceResponse, result );
 
 		// System.out.println("--- End LoadStructuredDataResourceCommand" );

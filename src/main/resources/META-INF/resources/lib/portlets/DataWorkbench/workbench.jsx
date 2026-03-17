@@ -303,27 +303,28 @@ export class Workbench {
   convertParamsToFormData = (params) => {
     const formData = new FormData();
 
-    let fileFields = [];
+    let fileFields = new Set();
     Object.keys(params).forEach((key) => {
       let webKey = this.namespace + key;
       const data = params[key];
       if (key === 'files') {
-        data.forEach((fileItem) => {
-          if (fileItem.file instanceof File && !fileFields.includes(fileItem.paramCode)) {
+        data.forEach((fileItem, index) => {
+          if (fileItem.file instanceof File) {
+            fileFields.add(fileItem.paramCode);
+
             webKey = this.namespace + fileItem.paramCode;
 
-            fileFields.push(fileItem.paramCode);
+            console.log(fileItem.paramCode + ': ', fileItem, index);
+
             formData.append(webKey, fileItem.file);
           }
         });
       } else {
         formData.append(webKey, data);
       }
-
-      //console.log(this.namespace + key + ": " + params[key]);
     });
 
-    formData.append(this.namespace + 'fileFields', fileFields);
+    formData.append(this.namespace + 'fileFields', [...fileFields]);
 
     return formData;
   };

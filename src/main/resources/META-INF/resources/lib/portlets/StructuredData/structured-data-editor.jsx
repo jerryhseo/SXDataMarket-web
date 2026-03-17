@@ -337,13 +337,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
     console.log('[StructuredDataEditor files] ', files);
     console.log('[StructuredDataEditor data] ', data);
 
-    console.log(
-      'Handle SaveData: ',
-      this.dataCollectionId,
-      this.dataSetId,
-      this.dataTypeId,
-      this.state.structuredDataId
-    );
+    console.log('SaveData: ', this.dataCollectionId, this.dataSetId, this.dataTypeId, this.state.structuredDataId);
 
     this.fireRequest({
       requestId: RequestIDs.saveStructuredData,

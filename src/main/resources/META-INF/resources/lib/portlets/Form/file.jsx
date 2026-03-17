@@ -1,7 +1,7 @@
 import React from 'react';
 import SXBaseParameterComponent from './base-parameter-component';
 import { Util } from '../../stationx/util';
-import { ClayButtonWithIcon } from '@clayui/button';
+import Button, { ClayButtonWithIcon } from '@clayui/button';
 import { ClayInput } from '@clayui/form';
 import DropDown from '@clayui/drop-down';
 import { SXModalDialog } from '../../stationx/modal';
@@ -158,7 +158,7 @@ class SXFile extends SXBaseParameterComponent {
     }
 
     return (
-      <div ref={this.focusRef}>
+      <>
         <ClayInput
           type="file"
           accept={this.parameter.accepts}
@@ -169,8 +169,19 @@ class SXFile extends SXBaseParameterComponent {
             this.handleFileSelectionChanged(e.target.files);
           }}
           sizing="sm"
-          style={{ paddingLeft: '10px', marginBottom: '5px' }}
+          style={{ display: 'none', paddingLeft: '10px', marginBottom: '5px' }}
         />
+        <Button
+          small
+          onClick={() => {
+            this.inputRef.current.click();
+          }}
+          displayType="secondary"
+          disabled={this.parameter.getDisabled(this.cellIndex)}
+          ref={this.focusRef}
+        >
+          {Util.translate('add-file')}
+        </Button>
         {this.parameter.fileManager && Util.isNotEmpty(this.state.value) && this.state.value.length > 0 && (
           <div style={{ paddingLeft: '1rem' }}>
             <table style={{ width: '100%', fontSize: '0.750rem', borderCollapse: 'collapse', border: 'none' }}>
@@ -256,12 +267,12 @@ class SXFile extends SXBaseParameterComponent {
             </table>
           </div>
         )}
-      </div>
+      </>
     );
   }
 
   renderGridCell() {
-    return this.renderFileManager();
+    return <div style={{ textAlign: this.state.value.length > 0 ? 'left' : 'center' }}>{this.renderFileManager()}</div>;
   }
 
   renderFormField() {
@@ -270,13 +281,15 @@ class SXFile extends SXBaseParameterComponent {
         {this.parameter.renderTitle({
           spritemap: this.spritemap
         })}
-        {this.parameter.showDefinition && (
-          <div className="sx-param-definition">
-            <pre>{this.parameter.getDefinition()}</pre>
-          </div>
-        )}
-        {this.renderFileManager()}
-        {this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
+        <div style={{ marginLeft: '1.0rem' }}>
+          {this.parameter.showDefinition && (
+            <div className="sx-param-definition">
+              <pre>{this.parameter.getDefinition()}</pre>
+            </div>
+          )}
+          {this.renderFileManager()}
+          {this.state.openComments && this.parameter.renderCommentDisplayer(this.spritemap)}
+        </div>
       </>
     );
   }

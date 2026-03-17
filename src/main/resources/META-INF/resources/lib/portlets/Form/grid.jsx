@@ -177,6 +177,7 @@ class SXGrid extends SXBaseParameterComponent {
   }
 
   renderBodyRows() {
+    //console.log('[SXGrid renderBodyRows] ', this.parameter.columns, this.parameter.rowCount);
     let rows = [];
     let rowCount = this.parameter.rowCount;
 
@@ -216,7 +217,7 @@ class SXGrid extends SXBaseParameterComponent {
                 active={this.state.activeDropdown && this.state.selectedRow == rowIndex}
                 trigger={<div style={{ textAlign: 'center' }}>{rowIndex + 1}</div>}
                 onActiveChange={(val) => {
-                  console.log('DoropDown Active changed: ', val, rowIndex);
+                  //console.log('DoropDown Active changed: ', val, rowIndex);
                   this.setState({ activeDropdown: val, selectedRow: rowIndex });
                 }}
                 menuWidth="shrink"
@@ -266,7 +267,7 @@ class SXGrid extends SXBaseParameterComponent {
           </div>
         )}
         <div style={{ paddingLeft: '10px', overflowX: 'auto', width: '100%' }}>
-          <table className="sx-table" style={{ width: '100%' }}>
+          <table className="sx-table" style={{ width: 'fit-content' }}>
             <thead>
               <tr>
                 {this.getHeadItems().map((column, index) => (

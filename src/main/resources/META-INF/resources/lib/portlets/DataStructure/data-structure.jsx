@@ -46,6 +46,10 @@ class DataStructure extends GroupParameter {
     if (Util.isNotEmpty(properties)) {
       this.parse(properties);
     }
+
+    console.log('[DataStructure constructor] ', namespace, formId, properties);
+    this.paramCode = properties.paramCode ?? formId;
+    this.paramVersion = properties.paramVersion ?? '1.0.0';
   }
 
   get paramDelimiter() {
@@ -77,6 +81,10 @@ class DataStructure extends GroupParameter {
   }
   get freezed() {
     return this.#freezed;
+  }
+
+  get label() {
+    return '_ROOT_';
   }
 
   set paramDelimiter(val) {
@@ -301,7 +309,7 @@ class DataStructure extends GroupParameter {
     let files = [];
 
     this.members.forEach((param) => {
-      if (param.paramType === ParamType.GROUP || param.paramType === ParamType.GRID) {
+      if (param.isGroup || param.isGrid) {
         files = [...files, ...param.getDataFiles()];
       } else if (param.paramType === ParamType.FILE && param.hasValue()) {
         files = [...files, ...param.getDataFiles()];
@@ -362,7 +370,7 @@ class DataStructure extends GroupParameter {
   }
 
   renderPreview({ formId = this.formId, spritemap }) {
-    //console.log("DataStructure.renderPreview: ", formId, this.formId);
+    console.log('DataStructure.renderPreview: ', formId, this.formId);
     return (
       <>
         {this.members.map((parameter, order) => {

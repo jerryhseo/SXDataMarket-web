@@ -1979,6 +1979,7 @@ class Parameter {
   }
 
   renderPreview({ formId = this.formId, actionItems = [], spritemap }) {
+    //console.log('Parameter.renderPreview: ', this.paramCode, formId, actionItems);
     return (
       <SXPreviewRow
         key={this.key}
@@ -3151,16 +3152,15 @@ export class FileParameter extends Parameter {
     if (this.hasValue()) {
       if (this.displayType === ParameterConstants.DisplayTypes.GRID_CELL) {
         // It means the value is an Array of JSON Array
-        files = this.value.map((value) => {
-          return value.map((item) => this.toFileObject(item));
+        this.value.forEach((value) => {
+          files.push(...value.filter((item) => item.file).map((item) => this.toFileObject(item)));
         });
       } else {
         // It means the value is an Array of JSON object
-        files = this.value.map((item) => this.toFileObject(item));
+        files = this.value.filter((item) => item.file).map((item) => this.toFileObject(item));
       }
     }
 
-    //console.log("FileParameter: ", files);
     return files;
   }
 
@@ -3482,6 +3482,7 @@ export class GroupParameter extends Parameter {
 
   deleteMemberByIndex(index) {
     const removed = this.members[index];
+    console.log('GroupParameter.deleteMemberByIndex: ', index, removed, this.members);
 
     this.members.splice(index, 1);
 
@@ -3504,6 +3505,7 @@ export class GroupParameter extends Parameter {
       return order > 0 ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
     });
 
+    console.log('GroupParameter.deleteMemberByCode: ', memCode, memVersion, order);
     if (order >= 0) {
       return this.deleteMemberByIndex(order);
     }
@@ -3563,7 +3565,7 @@ export class GroupParameter extends Parameter {
     this.members.every((field) => {
       if (field.equalTo(paramCode, paramVersion)) {
         found = field;
-      } else if (descendant && field.isGroup) {
+      } else if (descendant && (field.isGroup || field.isGrid)) {
         found = field.findParameter({
           paramCode: paramCode,
           paramVersion: paramVersion,
@@ -3582,9 +3584,9 @@ export class GroupParameter extends Parameter {
     const targetIndex = srcIndex - 1;
     const targetParam = this.members[targetIndex];
     this.members[targetIndex] = this.members[srcIndex];
-    //this.members[targetIndex].refreshKey();
+    this.members[targetIndex].refreshKey();
     this.members[srcIndex] = targetParam;
-    //this.members[srcIndex].refreshKey();
+    this.members[srcIndex].refreshKey();
 
     this.setMemberOrders();
   }
@@ -3594,7 +3596,9 @@ export class GroupParameter extends Parameter {
     const targetIndex = srcIndex + 1;
     const targetParam = this.members[targetIndex];
     this.members[targetIndex] = this.members[srcIndex];
+    this.members[targetIndex].refreshKey();
     this.members[srcIndex] = targetParam;
+    this.members[srcIndex].refreshKey();
 
     this.setMemberOrders();
   }
@@ -3728,6 +3732,8 @@ export class GroupParameter extends Parameter {
 
     this.members.forEach((member) => {
       if (member.paramType === ParamType.FILE) {
+        files = [...files, ...member.getDataFiles()];
+      } else if (member.isGroup || member.isGrid) {
         files = [...files, ...member.getDataFiles()];
       }
     });
@@ -3907,6 +3913,7 @@ export class GroupParameter extends Parameter {
   }
 
   renderPreview({ formId = this.formId, actionItems = [], spritemap }) {
+    //console.log('GroupParameter.renderPreview: ', this.paramCode, formId, actionItems);
     return (
       <SXPreviewRow key={this.key} formId={formId} parameter={this} actionItems={actionItems} spritemap={spritemap} />
     );
@@ -4081,7 +4088,7 @@ export class GridParameter extends GroupParameter {
       column.value.splice(copyedIndex, 0, null);
 
       column.setValue({ value: column.getValue(rowIndex), cellIndex: copyedIndex });
-      //column.refreshKey();
+      column.refreshKey();
     });
 
     this.rowCount++;
@@ -4091,16 +4098,18 @@ export class GridParameter extends GroupParameter {
 
   deleteRow(rowIndex) {
     if (this.rowCount == 1) {
-      this.columns.forEach((column) => column.initValue(0));
-      return;
+      this.columns.forEach((column) => {
+        column.initValue(0);
+        column.refreshKey();
+      });
+    } else {
+      this.columns.forEach((column) => {
+        column.value.splice(rowIndex, 1);
+        column.refreshKey();
+      });
     }
 
-    this.columns.forEach((column) => {
-      column.value.splice(rowIndex, 1);
-      //column.refreshKey();
-    });
-
-    if (this.rowCount >= 1) {
+    if (this.rowCount > 1) {
       this.rowCount--;
     }
 
@@ -4117,7 +4126,7 @@ export class GridParameter extends GroupParameter {
       column.setValue({ value: prevValue, cellIndex: rowIndex });
       column.setValue({ value: targetValue, cellIndex: prevIndex });
 
-      //column.refreshKey();
+      column.refreshKey();
     });
 
     this.setDirty(true);
@@ -4133,7 +4142,7 @@ export class GridParameter extends GroupParameter {
       column.setValue({ value: nextValue, cellIndex: rowIndex });
       column.setValue({ value: targetValue, cellIndex: nextIndex });
 
-      //column.refreshKey();
+      column.refreshKey();
     });
 
     this.setDirty(true);

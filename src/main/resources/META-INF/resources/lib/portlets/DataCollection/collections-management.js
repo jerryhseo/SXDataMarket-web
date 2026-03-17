@@ -205,6 +205,14 @@ class CollectionsManagement extends SXBaseVisualizer {
 
         if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
           portletName = PortletKeys.DATACOLLECTION_VIEWER;
+
+          this.applicationBarButtons = [
+            {
+              id: 'addDataSet',
+              label: Util.translate('add-dataset'),
+              symbol: 'plus'
+            }
+          ];
         }
 
         /*
@@ -225,6 +233,14 @@ class CollectionsManagement extends SXBaseVisualizer {
 
         if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
           portletName = PortletKeys.DATASET_VIEWER;
+
+          this.applicationBarButtons = [
+            {
+              id: 'addDataType',
+              label: Util.translate('add-datatype'),
+              symbol: 'plus'
+            }
+          ];
         }
 
         /*
@@ -250,6 +266,8 @@ class CollectionsManagement extends SXBaseVisualizer {
 
         if (this.state.viewMode === CollectionsManagement.ViewMode.FORM) {
           portletName = PortletKeys.DATATYPE_VIEWER;
+
+          this.applicationBarButtons = [];
         } else if (this.state.viewMode === CollectionsManagement.ViewMode.DATA && hasDataStructure === false) {
           this.setState({
             infoDialog: true,
@@ -1288,6 +1306,8 @@ class CollectionsManagement extends SXBaseVisualizer {
       dataTypeId: dataTypeId
     };
 
+    this.applicationBarRefreshKey = Util.nowTime();
+
     if (viewMode === CollectionsManagement.ViewMode.DATA) {
       this.applicationBarButtons = [];
 
@@ -1372,14 +1392,13 @@ class CollectionsManagement extends SXBaseVisualizer {
         applicationTitle = Util.translate('select-datacollection');
       }
 
-      /*
       console.log(
         'CollectionManagement render: ',
         this.state.viewMode,
         applicationTitle,
         this.state.selectedNavItem,
         this.applicationBarButtons
-      ); */
+      );
 
       return (
         <div>
