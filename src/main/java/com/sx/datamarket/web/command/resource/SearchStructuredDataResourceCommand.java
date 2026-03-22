@@ -1,5 +1,6 @@
 package com.sx.datamarket.web.command.resource;
 
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -7,7 +8,6 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.sx.constant.StationXConstants;
@@ -23,7 +23,6 @@ import com.sx.icecap.service.DataCollectionLocalService;
 import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.StructuredDataLocalService;
-import com.sx.util.SXLocalizationUtil;
 import com.sx.util.portlet.SXPortletURLUtil;
 import java.util.Iterator;
 import java.util.List;
@@ -122,55 +121,34 @@ public class SearchStructuredDataResourceCommand extends BaseMVCResourceCommand 
 			JSONObject jsonData = data.toJSON ();
 
 			if ( dataCollectionId == 0 ) {
-				DataCollection dataCollection =
-							_dataCollectionLocalService.getDataCollection ( structuredDataCollectionId );
+				DataCollection dataCollection = null;
 
-				if ( Validator.isNotNull ( dataCollection ) ) {
+				try {
+					dataCollection = _dataCollectionLocalService.getDataCollection ( structuredDataCollectionId );
 					jsonData.put ( "dataCollection", dataCollection.toJSON ( locale ) );
-				} else {
-					result.put (
-								"error",
-								SXLocalizationUtil.translate (
-											resourceRequest,
-											"cannot-find-datacollection",
-											structuredDataCollectionId
-								)
-					);
-					SXPortletURLUtil.responeAjax ( resourceResponse, result );
-
-					return;
+				} catch ( PortalException e ) {
+					System.out.println ( "StructuredData is orphaned for DataCollection" );
 				}
+
 			}
 
 			if ( dataSetId == 0 ) {
-				DataSet dataSet = _dataSetLocalService.getDataSet ( structuredDataSetId );
-
-				if ( Validator.isNotNull ( dataSet ) ) {
+				DataSet dataSet = null;
+				try {
+					dataSet = _dataSetLocalService.getDataSet ( structuredDataSetId );
 					jsonData.put ( "dataSet", dataSet.toJSON ( locale ) );
-				} else {
-					result.put (
-								"error",
-								SXLocalizationUtil.translate ( resourceRequest, "cannot-find-dataset", dataSetId )
-					);
-					SXPortletURLUtil.responeAjax ( resourceResponse, result );
-
-					return;
+				} catch ( PortalException e ) {
+					System.out.println ( "StructuredData is orphaned for DataSet" );
 				}
 			}
 
 			if ( dataTypeId == 0 ) {
-				DataType dataType = _dataTypeLocalService.getDataType ( structuredDataTypetId );
-
-				if ( Validator.isNotNull ( dataType ) ) {
+				DataType dataType = null;
+				try {
+					dataType = _dataTypeLocalService.getDataType ( structuredDataTypetId );
 					jsonData.put ( "dataType", dataType.toJSON ( locale ) );
-				} else {
-					result.put (
-								"error",
-								SXLocalizationUtil.translate ( resourceRequest, "cannot-find-datatype", dataTypeId )
-					);
-					SXPortletURLUtil.responeAjax ( resourceResponse, result );
-
-					return;
+				} catch ( PortalException e ) {
+					System.out.println ( "[Orphaned Data]StructuredData is orphaned for DataType" );
 				}
 			}
 

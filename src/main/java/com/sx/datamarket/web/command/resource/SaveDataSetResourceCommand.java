@@ -21,6 +21,7 @@ import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.SetTypeLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
+import com.sx.util.SXStringUtil;
 import com.sx.util.portlet.SXPortletURLUtil;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -100,31 +101,23 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 						WorkflowConstants.STATUS_APPROVED,
 						dataSetSC
 			);
-
-			dataSetId = dataSet.getDataSetId ();
 		}
 
 		System.out.println ( "saved DataSet : " + dataSet.toJSON ( dataSetSC.getLocale () ) );
-		result.put ( "dataSet", dataSet.toJSON ( dataSetSC.getLocale () ) );
+		JSONObject jsonDataSet = dataSet.toJSON ( dataSetSC.getLocale () );
+		jsonDataSet.put ( "key", SXStringUtil.generateRandomString ( 16 ) );
+		result.put ( "dataSet", jsonDataSet );
 
 		long groupId = dataSetSC.getScopeGroupId ();
 
-		CollectionSetLink collectionSetLink = null;
-		if ( dataCollectionId > 0 ) {
-			collectionSetLink =
-						_collectionSetLinkLocalService.getCollectionSetLink ( groupId, dataCollectionId, dataSetId );
+		if ( dataCollectionId > 0 && dataSetId == 0 ) {
+			dataSetId = dataSet.getDataSetId ();
 
-			if ( Validator.isNull ( collectionSetLink ) ) {
-				System.out.println ( "Create Collection-Set link: " + dataCollectionId );
+			_collectionSetLinkLocalService.reorderLinkedDataSets ( groupId, dataCollectionId, 1 );
 
-				int linkCount = _collectionSetLinkLocalService
-							.countCollectionSetLinkListByCollection ( groupId, dataCollectionId );
-
-				ServiceContext collectionSetLinkSC =
-							ServiceContextFactory.getInstance ( CollectionSetLink.class.getName (), resourceRequest );
-				collectionSetLink = _collectionSetLinkLocalService
-							.addCollectionSetLink ( dataCollectionId, dataSetId, linkCount, collectionSetLinkSC );
-			}
+			ServiceContext collectionSetLinkSC =
+						ServiceContextFactory.getInstance ( CollectionSetLink.class.getName (), resourceRequest );
+			_collectionSetLinkLocalService.addCollectionSetLink ( dataCollectionId, dataSetId, 0, collectionSetLinkSC );
 		}
 
 		String[] strAryAssociatedDataTypes =
@@ -183,9 +176,11 @@ public class SaveDataSetResourceCommand extends BaseMVCResourceCommand {
 			} ;
 		}
 
+		_setTypeLinkLocalService.reorderLinkedDataTypes ( groupId, dataCollectionId, dataSetId, 0 );
+
 		JSONArray dataTypeList = JSONFactoryUtil.createJSONArray ();
 		List<SetTypeLink> linkList =
-					_setTypeLinkLocalService.getSetTypeLinkListByCollectionSet ( groupId, dataCollectionId, dataSetId );
+					_setTypeLinkLocalService.reorderLinkedDataTypes ( groupId, dataCollectionId, dataSetId, 0 );
 		Iterator<SetTypeLink> linkIter = linkList.iterator ();
 		while ( linkIter.hasNext () ) {
 			SetTypeLink setTypeLink = linkIter.next ();

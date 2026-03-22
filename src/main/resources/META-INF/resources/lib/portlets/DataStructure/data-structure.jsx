@@ -47,7 +47,7 @@ class DataStructure extends GroupParameter {
       this.parse(properties);
     }
 
-    console.log('[DataStructure constructor] ', namespace, formId, properties);
+    //console.log('[DataStructure constructor] ', namespace, formId, properties);
     this.paramCode = properties.paramCode ?? formId;
     this.paramVersion = properties.paramVersion ?? '1.0.0';
   }
@@ -324,7 +324,9 @@ class DataStructure extends GroupParameter {
       const memberData = data[member.paramCode];
       console.log('DataStructure.loadData member: ', member.paramCode, memberData);
 
-      member.loadData(memberData);
+      if (Util.isNotEmpty(memberData)) {
+        member.loadData(memberData);
+      }
     });
   }
 
@@ -370,7 +372,6 @@ class DataStructure extends GroupParameter {
   }
 
   renderPreview({ formId = this.formId, spritemap }) {
-    console.log('DataStructure.renderPreview: ', formId, this.formId);
     return (
       <>
         {this.members.map((parameter, order) => {

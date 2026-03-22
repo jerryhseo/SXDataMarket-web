@@ -30,6 +30,7 @@ import com.sx.util.SXLocalizationUtil;
 import com.sx.util.SXUtil;
 import com.sx.util.portlet.SXPortletURLUtil;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import javax.portlet.ResourceRequest;
@@ -280,19 +281,23 @@ public class SaveStructuredDataResourceCommand extends BaseMVCResourceCommand {
 		while ( iter.hasNext () ) {
 			String paramCode = iter.next ();
 
+			JSONObject paramData = fileFieldDataList.getJSONObject ( paramCode );
+			System.out.println ( "+++paramData: " + paramData.toString ( 4 ) );
+
+			JSONArray dataFiles = paramData.getJSONArray ( "value" );
+			List<String> dataFileNameList = new ArrayList<> ();
+			for ( int i = 0; i < dataFiles.length (); i++ ) {
+				JSONObject dataFile = dataFiles.getJSONObject ( i );
+			}
+
 			Path fileFolderPath = path.resolve ( paramCode );
 
-			List<String> files = SXFileUtil.lookUpFolder ( fileFolderPath );
+			List<Path> files = SXFileUtil.lookUpFolder ( fileFolderPath );
 
-			System.out.println (
-						"[file field value " + paramCode + "]"
-									+ fileFieldDataList.getJSONObject ( paramCode ).toString ( 4 )
-			);
-			System.out.println ( "--- files " );
-			Iterator<String> fileIter = files.iterator ();
+			Iterator<Path> fileIter = files.iterator ();
 			while ( fileIter.hasNext () ) {
-				String fileName = fileIter.next ();
-				System.out.println ( "------ " + fileName );
+				Path filePath = fileIter.next ();
+				System.out.println ( "------ " + filePath.getFileName () );
 			}
 		}
 	}

@@ -8,72 +8,60 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.sx.icecap.constant.MVCCommand;
 import com.sx.constant.StationXConstants;
 import com.sx.constant.StationXWebKeys;
+import com.sx.icecap.constant.MVCCommand;
 import com.sx.icecap.constant.WebPortletKey;
-import com.sx.icecap.model.DataType;
 import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
-
-import java.io.PrintWriter;
-import java.util.List;
-
+import com.sx.util.portlet.SXPortletURLUtil;
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 @Component(
-	    immediate = true,
-	    property = {
-	        "javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
-	        "javax.portlet.name=" + WebPortletKey.SXDataSetExplorerPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_SEARCH_DATASETS
-	    },
-	    service = MVCResourceCommand.class
+			immediate = true,
+			property = {"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
+					"javax.portlet.name=" + WebPortletKey.SXDataSetExplorerPortlet,
+					"mvc.command.name=" + MVCCommand.RESOURCE_SEARCH_DATASETS},
+			service = MVCResourceCommand.class
 )
-public class SearchDataSetsResourceCommand extends BaseMVCResourceCommand{
+public class SearchDataSetsResourceCommand extends BaseMVCResourceCommand {
 
 	@Override
-	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
-			throws Exception {
+	protected void doServeResource ( ResourceRequest resourceRequest, ResourceResponse resourceResponse )
+				throws Exception {
 
-		System.out.println("SearchDataSetsResourceCommand");
-		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		System.out.println ( "SearchDataSetsResourceCommand" );
+		ThemeDisplay themeDisplay = ( ThemeDisplay ) resourceRequest.getAttribute ( WebKeys.THEME_DISPLAY );
 
-		long dataCollectionId = ParamUtil.getLong(resourceRequest,  "dataCollectionId", 0);
-		
-		int start = ParamUtil.getInteger(resourceRequest, StationXWebKeys.START, StationXConstants.DEFAULT_START);
-		int delta = ParamUtil.getInteger(resourceRequest, StationXWebKeys.DELTA, StationXConstants.DEFAULT_DELTA);
+		long dataCollectionId = ParamUtil.getLong ( resourceRequest, "dataCollectionId", 0 );
+
+		int start = ParamUtil.getInteger ( resourceRequest, StationXWebKeys.START, StationXConstants.DEFAULT_START );
+		int delta = ParamUtil.getInteger ( resourceRequest, StationXWebKeys.DELTA, StationXConstants.DEFAULT_DELTA );
 		int end = start + delta - 1;
-		long groupId = ParamUtil.getLong(resourceRequest, StationXWebKeys.GROUP_ID, themeDisplay.getScopeGroupId());
-		long userId = ParamUtil.getLong(resourceRequest, StationXWebKeys.USER_ID, themeDisplay.getUserId());
-		
-		int status = ParamUtil.getInteger(resourceRequest, StationXWebKeys.STATUS, WorkflowConstants.STATUS_ANY);
-		String filterBy = ParamUtil.getString(resourceRequest, "filterBy", "groupId");
-		String keywords = ParamUtil.getString(resourceRequest, StationXWebKeys.KEYWORDS, "");
-		
-		System.out.println("Start: " + start);
-		System.out.println("End: " + end);
-		List<DataType> dataSetList = null;
-		
-		JSONArray dataSetListInfo = JSONFactoryUtil.createJSONArray(); 
-		dataSetListInfo = 
-					_dataSetLocalService.getDataSetListInfo(groupId, dataCollectionId, themeDisplay.getLocale());
-		
-		//System.out.println("dataSetListInfo: " + dataSetListInfo.toString(4));
+		long groupId = ParamUtil.getLong ( resourceRequest, StationXWebKeys.GROUP_ID, themeDisplay.getScopeGroupId () );
+		long userId = ParamUtil.getLong ( resourceRequest, StationXWebKeys.USER_ID, themeDisplay.getUserId () );
 
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(dataSetListInfo.toJSONString());
-		pw.flush();
-		pw.close();
+		int status = ParamUtil.getInteger ( resourceRequest, StationXWebKeys.STATUS, WorkflowConstants.STATUS_ANY );
+		String filterBy = ParamUtil.getString ( resourceRequest, "filterBy", "groupId" );
+		String keywords = ParamUtil.getString ( resourceRequest, StationXWebKeys.KEYWORDS, "" );
+
+		System.out.println ( "dataCollectionId: " + dataCollectionId );
+
+		JSONArray dataSetListInfo = JSONFactoryUtil.createJSONArray ();
+		dataSetListInfo =
+					_dataSetLocalService.getDataSetListInfo ( groupId, dataCollectionId, themeDisplay.getLocale () );
+
+		// System.out.println("dataSetListInfo: " + dataSetListInfo.toString(4));
+
+		SXPortletURLUtil.responeAjax ( resourceResponse, dataSetListInfo );
 	}
-	
+
 	@Reference
 	private DataSetLocalService _dataSetLocalService;
-	
+
 	@Reference
 	private DataTypeLocalService _dataTypeLocalService;
 }

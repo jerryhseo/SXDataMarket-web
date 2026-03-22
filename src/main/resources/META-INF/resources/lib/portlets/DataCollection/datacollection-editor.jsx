@@ -6,6 +6,7 @@ import {
   Event,
   LoadingStatus,
   ParamType,
+  PortletKeys,
   RequestIDs,
   ValidationRule
 } from '../../stationx/station-x';
@@ -25,12 +26,13 @@ class DataCollectionEditor extends SXBaseVisualizer {
     //console.log("DataCollectionEditor props: ", props);
 
     this.state = {
-      editStatus: this.props.dataCollectionId > 0 ? EditStatus.UPDATE : EditStatus.ADD,
       dataCollectionId: Number(this.params.dataCollectionId ?? 0),
       infoDialog: false,
       dialogHeader: <></>,
       dialogBody: <></>,
       warningAndSaveDialog: false,
+      warningAndDeleteDialog: false,
+      disableSaveButton: true,
       loadingStatus: LoadingStatus.PENDING
     };
 
@@ -188,6 +190,19 @@ class DataCollectionEditor extends SXBaseVisualizer {
 			this.dataSets.getValue().map((strDataSetId) => Number(strDataSetId))
 		); */
 
+    if (
+      !this.dataCollectionCode.hasError() &&
+      this.dataCollectionCode.hasValue() &&
+      !this.dataCollectionVersion.hasError() &&
+      this.dataCollectionVersion.hasValue() &&
+      !this.displayName.hasError() &&
+      this.displayName.hasValue()
+    ) {
+      this.setState({
+        disableSaveButton: false
+      });
+    }
+
     Event.fire(Event.SX_DATACOLLECTION_CHANGED, this.namespace, this.workbenchNamespace, {
       dataCollection: {
         dataCollectionId: this.state.dataCollectionId,
@@ -228,7 +243,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
 
     console.log('[dataCollectionEditor] listenerResonse: ', event.dataPacket);
 
-    const { error } = data;
+    const { error, message } = data;
     if (Util.isNotEmpty(error)) {
       this.setState({
         infoDialog: true,
@@ -237,6 +252,12 @@ class DataCollectionEditor extends SXBaseVisualizer {
       });
 
       return;
+    } else if (Util.isNotEmpty(message)) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+        dialogBody: message
+      });
     }
 
     switch (requestId) {
@@ -294,13 +315,27 @@ class DataCollectionEditor extends SXBaseVisualizer {
 
         break;
       }
+      case RequestIDs.addDataCollection: {
+        const { dataCollection } = data;
+
+        this.cleanDirty();
+
+        this.setState({
+          dataCollectionId: dataCollection.dataCollectionId
+        });
+
+        break;
+      }
       case RequestIDs.saveDataCollection: {
         const { dataCollection } = data;
 
-        this.setState({
-          editStatus: EditStatus.UPDATE,
-          dataCollectionId: Number(dataCollection.dataCollectionId),
-          loadingStatus: LoadingStatus.COMPLETE
+        this.cleanDirty();
+
+        break;
+      }
+      case RequestIDs.deleteDataCollections: {
+        this.redirectTo({
+          portletName: PortletKeys.DATACOLLECTION_EXPLORER
         });
 
         break;
@@ -395,6 +430,24 @@ class DataCollectionEditor extends SXBaseVisualizer {
     return warning;
   };
 
+  isDirty() {
+    return (
+      this.dataCollectionCode.dirty ||
+      this.dataCollectionVersion.dirty ||
+      this.displayName.dirty ||
+      this.description.dirty ||
+      this.dataSets.dirty
+    );
+  }
+
+  cleanDirty() {
+    this.dataCollectionCode.dirty = false;
+    this.dataCollectionVersion.dirty = false;
+    this.displayName.dirty = false;
+    this.description.dirty = false;
+    this.dataSets.dirty = false;
+  }
+
   handleSaveDataCollection = () => {
     const error = this.checkFieldError();
 
@@ -422,8 +475,10 @@ class DataCollectionEditor extends SXBaseVisualizer {
   handleDeleteClick = (event) => {
     event.stopPropagation();
 
-    Event.fire(Event.SX_DELETE_DATACOLLECTION, this.namespace, this.workbenchNamespace, {
-      dataCollectionId: this.state.dataCollectionId
+    this.setState({
+      warningAndDeleteDialog: true,
+      dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+      dialogBody: Util.translate('datacollection-will-be-deleted-permanently-with-data-do-you-want-to-continue')
     });
   };
 
@@ -445,9 +500,14 @@ class DataCollectionEditor extends SXBaseVisualizer {
       params.description = JSON.stringify(this.description.getValue());
     }
 
-    Event.fire(Event.SX_SAVE_DATACOLLECTION, this.namespace, this.workbenchNamespace, {
-      dataCollection: params
-    });
+    Event.fire(
+      this.state.dataCollectionId > 0 ? Event.SX_SAVE_DATACOLLECTION : Event.SX_ADD_DATACOLLECTION,
+      this.namespace,
+      this.workbenchNamespace,
+      {
+        dataCollection: params
+      }
+    );
 
     /*
 		this.fireRequest({
@@ -455,6 +515,12 @@ class DataCollectionEditor extends SXBaseVisualizer {
 			params: params
 		});
 		*/
+  };
+
+  deleteDataCollection = () => {
+    Event.fire(Event.SX_DELETE_DATACOLLECTIONS, this.namespace, this.workbenchNamespace, {
+      dataCollectionIds: [this.state.dataCollectionId]
+    });
   };
 
   render() {
@@ -483,6 +549,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
           <Button.Group spaced style={{ width: '100%', justifyContent: 'center' }}>
             <Button
               displayType="primary"
+              disabled={this.state.disableSaveButton}
               onClick={this.handleSaveDataCollection}
               title={Util.translate('save-datacollection')}
             >
@@ -501,7 +568,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
           {this.state.infoDialog && (
             <SXModalDialog
               header={this.state.dialogHeader}
-              body={this.dialogBody}
+              body={this.state.dialogBody}
               buttons={[
                 {
                   label: Util.translate('ok'),
@@ -515,7 +582,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
           {this.state.waringAndSaveDialog && (
             <SXModalDialog
               header={this.state.dialogHeader}
-              body={this.dialogBody}
+              body={this.state.dialogBody}
               buttons={[
                 {
                   label: Util.translate('confirm'),
@@ -529,6 +596,28 @@ class DataCollectionEditor extends SXBaseVisualizer {
                   label: Util.translate('cancel'),
                   onClick: (e) => {
                     this.setState({ waringAndSaveDialog: false });
+                  }
+                }
+              ]}
+            />
+          )}
+          {this.state.warningAndDeleteDialog && (
+            <SXModalDialog
+              header={this.state.dialogHeader}
+              body={this.state.dialogBody}
+              buttons={[
+                {
+                  label: Util.translate('confirm'),
+                  onClick: (e) => {
+                    this.deleteDataCollection();
+                    this.setState({ warningAndDeleteDialog: false });
+                  },
+                  displayType: 'secondary'
+                },
+                {
+                  label: Util.translate('cancel'),
+                  onClick: (e) => {
+                    this.setState({ warningAndDeleteDialog: false });
                   }
                 }
               ]}

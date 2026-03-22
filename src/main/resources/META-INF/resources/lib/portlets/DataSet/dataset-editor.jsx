@@ -1,6 +1,14 @@
 import React from 'react';
 import SXBaseVisualizer from '../../stationx/visualizer';
-import { ErrorClass, Event, LoadingStatus, ParamType, RequestIDs, ValidationRule } from '../../stationx/station-x';
+import {
+  ErrorClass,
+  Event,
+  LoadingStatus,
+  ParamType,
+  PortletKeys,
+  RequestIDs,
+  ValidationRule
+} from '../../stationx/station-x';
 import { Util } from '../../stationx/util';
 import Button from '@clayui/button';
 import Icon from '@clayui/icon';
@@ -165,7 +173,7 @@ class DataSetEditor extends SXBaseVisualizer {
       dialogHeader: <></>,
       dialogBody: <></>,
       infoDialog: false,
-      warningDeleteDialog: false,
+      warningAndDeleteDialog: false,
       waringAndSaveDialog: false,
       loadingStatus: LoadingStatus.PENDING
     };
@@ -182,7 +190,7 @@ class DataSetEditor extends SXBaseVisualizer {
       return;
     }
 
-    console.log('[dataSetEditor] listenerFieldValueChanged received: ', event.dataPacket, parameter);
+    //console.log('[dataSetEditor] listenerFieldValueChanged received: ', event.dataPacket, parameter);
 
     Event.fire(Event.SX_DATASET_CHANGED, this.namespace, this.workbenchNamespace, {
       dataSet: {
@@ -227,7 +235,7 @@ class DataSetEditor extends SXBaseVisualizer {
     }
 
     //console.log("[dataSetEditor] listenerResponse received: ", requestId, params, data);
-    const { error } = data;
+    const { error, message } = data;
     if (Util.isNotEmpty(error)) {
       this.setState({
         infoDialog: true,
@@ -236,21 +244,17 @@ class DataSetEditor extends SXBaseVisualizer {
       });
 
       return;
+    } else if (Util.isNotEmpty(message)) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+        dialogBody: message
+      });
     }
 
     switch (requestId) {
       case RequestIDs.loadDataSet: {
-        const { dataCollection, dataSet, associatedDataTypeList = [], availableDataTypeList = [], error } = data;
-
-        if (Util.isNotEmpty(error)) {
-          this.setState({
-            infoDialog: true,
-            dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-            dialogBody: Util.translate('loading-dataset-is-failed', JSON.stringify(params, null, 4))
-          });
-
-          return;
-        }
+        const { dataCollection, dataSet, associatedDataTypeList = [], availableDataTypeList = [] } = data;
 
         this.dataSetCode.setValue({ value: Util.isEmpty(dataSet) ? '' : dataSet.dataSetCode });
         this.dataSetVersion.setValue({ value: Util.isEmpty(dataSet) ? '1.0.0' : dataSet.dataSetVersion });
@@ -295,8 +299,19 @@ class DataSetEditor extends SXBaseVisualizer {
 
         break;
       }
+      case RequestIDs.addDataSet: {
+        const { dataSet, deletedDataTypeList, associatedDataTypeList } = data;
+
+        this.cleanDirty();
+
+        this.setState({
+          dataSetId: dataSet.dataSetId
+        });
+
+        break;
+      }
       case RequestIDs.saveDataSet: {
-        const { dataSet, deletedDataTypeList, associatedDataTypeList, message } = data;
+        const { dataSet, deletedDataTypeList, associatedDataTypeList } = data;
         console.log(
           '[DataSetEditor.listenerResponse.saveDataSet]: ',
           dataSet,
@@ -321,11 +336,14 @@ class DataSetEditor extends SXBaseVisualizer {
         });
         */
 
-        this.setState({
-          infoDialog: true,
-          dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
-          dialogBody: message,
-          dataSetId: dataSet.dataSetId
+        break;
+      }
+      case RequestIDs.deleteDataSets: {
+        this.redirectTo({
+          portletName: PortletKeys.DATASET_EXPLORER,
+          params: {
+            dataCollectionId: this.dataCollectionId
+          }
         });
 
         break;
@@ -450,7 +468,9 @@ class DataSetEditor extends SXBaseVisualizer {
     return warning;
   };
 
-  handleSaveClick = () => {
+  handleSaveClick = (event) => {
+    event.stopPropagation();
+
     const error = this.checkFieldError();
     //console.log("handleSaveClick: ", error);
     if (Util.isNotEmpty(error)) {
@@ -460,17 +480,15 @@ class DataSetEditor extends SXBaseVisualizer {
           dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
           dialogBody: Util.translate('fix-the-error-first', error.message)
         });
-
-        return;
       } else {
         this.setState({
           waringAndSaveDialog: true,
           dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
           dialogBody: Util.translate('data-has-warning-do-you-proceed-anyway', error.message)
         });
-
-        return;
       }
+
+      return;
     }
 
     this.saveDataSet();
@@ -479,15 +497,15 @@ class DataSetEditor extends SXBaseVisualizer {
   handleDeleteClick = (event) => {
     event.stopPropagation();
 
-    Event.fire(Event.SX_DELETE_DATASET, this.namespace, this.workbenchNamespace, {
-      dataCollectionId: this.dataCollectionId,
-      dataSetId: this.state.dataSetId
+    this.setState({
+      warningAndDeleteDialog: true,
+      dialogHeader: SXModalUtil.warningDlgHeader(this.spritemap),
+      dialogBody: Util.translate('dataset-will-be-deleted-permanently-with-data-do-you-want-to-continue')
     });
   };
 
   saveDataSet = () => {
-    //console.log("associatedDataTypeIDs: ", this.dataTypes.getValue());
-
+    console.log('DataSetEditor.saveDataSet: ', this.state.dataSetId, this.state.dataSetId > 0);
     const params = {
       dataCollectionId: this.dataCollectionId,
       dataSetId: this.state.dataSetId,
@@ -504,16 +522,18 @@ class DataSetEditor extends SXBaseVisualizer {
       params.description = JSON.stringify(this.description.getValue());
     }
 
-    Event.fire(Event.SX_SAVE_DATASET, this.namespace, this.workbenchNamespace, params);
+    Event.fire(
+      this.state.dataSetId > 0 ? Event.SX_SAVE_DATASET : Event.SX_ADD_DATASET,
+      this.namespace,
+      this.workbenchNamespace,
+      params
+    );
   };
 
   deleteDataSet = () => {
-    this.fireRequest({
-      requestId: RequestIDs.deleteDataSets,
-      params: {
-        dataCollectionId: this.dataCollectionId,
-        dataSetIds: [this.state.dataSetId]
-      }
+    Event.fire(Event.SX_DELETE_DATASETS, this.namespace, this.workbenchNamespace, {
+      dataCollectionId: this.dataCollectionId,
+      dataSetIds: [this.state.dataSetId]
     });
   };
 
@@ -583,7 +603,7 @@ class DataSetEditor extends SXBaseVisualizer {
               ]}
             />
           )}
-          {this.state.warningDeleteDialog && (
+          {this.state.warningAndDeleteDialog && (
             <SXModalDialog
               header={this.state.dialogHeader}
               body={this.state.dialogBody}
@@ -592,14 +612,14 @@ class DataSetEditor extends SXBaseVisualizer {
                   label: Util.translate('confirm'),
                   onClick: (e) => {
                     this.deleteDataSet();
-                    this.setState({ warningDeleteDialog: false });
+                    this.setState({ warningAndDeleteDialog: false });
                   },
                   displayType: 'secondary'
                 },
                 {
                   label: Util.translate('cancel'),
                   onClick: (e) => {
-                    this.setState({ warningDeleteDialog: false });
+                    this.setState({ warningAndDeleteDialog: false });
                   }
                 }
               ]}

@@ -124,7 +124,7 @@ export class Workbench {
       portletName: portletName
     });
 
-    //console.log("Workbench loadPortlet: ", portletInstance);
+    //console.log('Workbench loadPortlet portletInstance: ', typeof portletInstance, portletInstance);
     portletInstance.title = title;
 
     params.workbenchNamespace = this.namespace;
@@ -140,11 +140,16 @@ export class Workbench {
       dataParams: params
     });
 
+    //console.log('Workbench loadPortlet renderURL: ', renderURL);
+
     const portletContent = await this.ajax({
       url: renderURL,
       type: 'get',
-      dataType: 'html'
+      dataType: 'html',
+      jsonParse: false
     });
+
+    //console.log('Workbench loadPortlet portletContent: ', portletContent);
 
     return {
       portletName: portletName,
@@ -314,8 +319,6 @@ export class Workbench {
 
             webKey = this.namespace + fileItem.paramCode;
 
-            console.log(fileItem.paramCode + ': ', fileItem, index);
-
             formData.append(webKey, fileItem.file);
           }
         });
@@ -330,7 +333,7 @@ export class Workbench {
   };
 
   ajax = async ({ url, params = {}, type = 'post', dataType = 'json', jsonParse = true }) => {
-    //console.log("Workbench ajax URL: ", url, type, dataType);
+    //console.log('Workbench ajax URL: ', url, type, dataType);
     if (type === 'post') {
       const formData = this.convertParamsToFormData(params);
 
@@ -346,7 +349,7 @@ export class Workbench {
             processData: false,
             contentType: false,
             success: (result) => {
-              //console.log("Data Ajax finished: ", typeof result, result);
+              //console.log('Data Ajax finished: ', typeof result, result, result.length);
               if (jsonParse === true) {
                 resolve(JSON.parse(result));
               } else {
@@ -359,7 +362,7 @@ export class Workbench {
         }
       });
     } else {
-      //console.log("Ajax get: ", url, params);
+      //console.log('Ajax get: ', url, params);
       return new Promise((resolve, reject) => {
         try {
           $.ajax({
@@ -442,10 +445,6 @@ export class Workbench {
         });
         return;
       }
-      case RequestIDs.addDataType: {
-        resourceId = ResourceIds.ADD_DATATYPE;
-        break;
-      }
       case RequestIDs.checkDataTypeUnique: {
         resourceId = ResourceIds.CHECK_DATATYPE_UNIQUE;
         break;
@@ -496,6 +495,7 @@ export class Workbench {
         resourceId = ResourceIds.VIEW_DATACOLLECTION;
         break;
       }
+      case RequestIDs.addDataCollection:
       case RequestIDs.saveDataCollection: {
         resourceId = ResourceIds.SAVE_DATACOLLECTION;
         break;
@@ -528,6 +528,7 @@ export class Workbench {
         resourceId = ResourceIds.LOAD_DATASET;
         break;
       }
+      case RequestIDs.addDataSet:
       case RequestIDs.saveDataSet: {
         resourceId = ResourceIds.SAVE_DATASET;
         break;
@@ -538,6 +539,10 @@ export class Workbench {
       }
       case RequestIDs.deleteDataStructures: {
         resourceId = ResourceIds.DELETE_DATASTRUCTURES;
+        break;
+      }
+      case RequestIDs.exportDataStructure: {
+        resourceId = ResourceIds.EXPORT_DATASTRUCTURE;
         break;
       }
       case RequestIDs.deleteStructuredData: {
@@ -579,6 +584,7 @@ export class Workbench {
         resourceId = ResourceIds.LOAD_ASSOCIATED_DATATYPES;
         break;
       }
+      case RequestIDs.addDataType:
       case RequestIDs.saveDataType: {
         resourceId = ResourceIds.SAVE_DATATYPE;
         break;
@@ -589,7 +595,7 @@ export class Workbench {
     if (Util.isNotEmpty(resourceId)) {
       const url = await this.createResourceURL({ resourceId: resourceId });
 
-      //console.log("[Workbench processRequest] ", url, params);
+      //console.log('[Workbench processRequest] ', url, params);
 
       result = await this.ajax({
         url: url,
@@ -848,6 +854,6 @@ export class SXPortlet extends React.Component {
   }
 
   render() {
-    return <div ref={this.portletRootRef}></div>;
+    return <div ref={this.portletRootRef} style={{ overflowX: 'hidden' }}></div>;
   }
 }

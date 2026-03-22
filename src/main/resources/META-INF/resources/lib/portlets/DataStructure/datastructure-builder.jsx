@@ -543,23 +543,26 @@ class DataStructureBuilder extends SXBaseVisualizer {
   };
 
   listenerResponce = (event) => {
-    const { targetPortlet, requestId, params, data, status } = event.dataPacket;
+    const { targetPortlet, requestId, params, data } = event.dataPacket;
 
     if (targetPortlet !== this.namespace) {
-      //console.log("[DataStructureBuilder] listenerResponce rejected: ", targetPortlet);
+      console.log('[DataStructureBuilder] listenerResponce rejected: ', targetPortlet);
       return;
     }
 
-    //console.log("[DataStructureBuilder] listenerResonse: ", requestId, params, data);
-    const state = {};
+    console.log('[DataStructureBuilder] listenerResonse: ', requestId, params, data);
+    let state = {};
     const result = data;
 
-    if (data.error) {
+    const { error, message } = data;
+    if (error) {
       this.setState({
         infoDialog: true,
         dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
-        dialogBody: data.error
+        dialogBody: error
       });
+
+      console.log('When error: ', this.state.loadingStatus);
 
       return;
     }
@@ -609,19 +612,35 @@ class DataStructureBuilder extends SXBaseVisualizer {
         this.dataStructure.dataStructureId = result.dataStructureId;
         this.dataStructure.setDirty(false);
 
-        state.infoDialog = true;
-        state.dialogHeader = SXModalUtil.successDlgHeader(this.spritemap);
-        state.dialogBody = <h4>{data.message}</h4>;
+        state = {
+          ...state,
+          infoDialog: true,
+          dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+          dialogBody: <h4>{data.message}</h4>
+        };
 
         break;
       }
       case RequestIDs.openReferenceFile: {
         //console.log("Open referenceFile finished");
         this.openDataOnWindow(data);
+
+        break;
+      }
+      case RequestIDs.exportDataStructure: {
+        //console.log("Export DataStructure: ", data);
+        state = {
+          ...state,
+          infoDialog: true,
+          dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+          dialogBody: <h4>{data.message}</h4>
+        };
+
+        break;
       }
     }
 
-    this.setState({ ...state, loadingStatus: status });
+    this.setState({ ...state, loadingStatus: LoadingStatus.COMPLETE });
   };
 
   componentDidMount() {
@@ -736,7 +755,19 @@ class DataStructureBuilder extends SXBaseVisualizer {
   }
 
   exportDataStructure = () => {
-    console.log('Export DataStructure: ', this.dataStructure);
+    //console.log('Export DataStructure: ', dataStructureInfo);
+
+    this.fireRequest({
+      requestId: RequestIDs.exportDataStructure,
+      params: {
+        dataStructureCode: this.structureCode.getValue(),
+        dataStructureVersion: this.structureVersion.getValue(),
+        displayName: JSON.stringify(this.structureDisplayName.getValue()),
+        description: JSON.stringify(this.structureDescription.getValue()),
+        files: this.dataStructure.getReferenceFiles(),
+        dataStructure: JSON.stringify(this.dataStructure.toJSON())
+      }
+    });
   };
 
   handleEnableInputStatusChange(val) {

@@ -107,6 +107,8 @@ class StructuredDataExplorer extends SXBaseVisualizer {
       this.scope = 'dataSet';
     } else if (this.state.dataCollectionId > 0) {
       this.scope = 'dataCollection';
+    } else {
+      this.scope = 'orphan';
     }
 
     this.contentActionMenus = [];
@@ -149,6 +151,25 @@ class StructuredDataExplorer extends SXBaseVisualizer {
       });
     } else if (this.scope === 'dataCollection') {
       this.dataTableColumns = this.dataTableColumns.concat([
+        {
+          id: 'dataSetId',
+          name: Util.translate('dataset'),
+          width: '8rem'
+        },
+        {
+          id: 'dataTypeId',
+          name: Util.translate('datatype'),
+          width: '8rem'
+        }
+      ]);
+    } else if (this.scope === 'dataType') {
+    } else {
+      this.dataTableColumns = this.dataTableColumns.concat([
+        {
+          id: 'dataCollectionId',
+          name: Util.translate('datacollection'),
+          width: '8rem'
+        },
         {
           id: 'dataSetId',
           name: Util.translate('dataset'),
@@ -413,6 +434,13 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 
       return;
     }
+    if (message) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+        dialogBody: message
+      });
+    }
 
     switch (requestId) {
       case RequestIDs.searchStructuredData: {
@@ -420,9 +448,9 @@ class StructuredDataExplorer extends SXBaseVisualizer {
 
         this.convertSearchResultsToContent(structuredDataList);
 
-        this.dataCollection = data.dataCollection;
-        this.dataSet = data.dataSet ?? {};
-        this.dataType = data.dataSet ?? {};
+        this.dataCollection = structuredDataList.dataCollection ?? {};
+        this.dataSet = structuredDataList.dataSet ?? {};
+        this.dataType = structuredDataList.dataType ?? {};
 
         break;
       }
@@ -536,6 +564,7 @@ class StructuredDataExplorer extends SXBaseVisualizer {
     this.searchResults = results.map((result, index) => {
       const {
         structuredDataId, //
+        dataCollection,
         dataCollectionId,
         dataSet,
         dataSetId,
@@ -568,30 +597,70 @@ class StructuredDataExplorer extends SXBaseVisualizer {
         row.columns = row.columns.concat([
           {
             id: 'dataSet',
-            value: (
+            value: dataSet ? (
               <Text size={3} truncate>
                 {dataSet.displayName}
               </Text>
+            ) : (
+              <Text>-</Text>
             )
           },
           {
             id: 'dataType',
-            value: (
+            value: dataType ? (
               <Text size={3} truncate>
                 {dataType.displayName}
               </Text>
+            ) : (
+              <Text>-</Text>
             )
           }
         ]);
       } else if (this.scope === 'dataSet') {
         row.columns.push({
           id: 'dataType',
-          value: (
+          value: dataType ? (
             <Text size={3} truncate>
               {dataType.displayName}
             </Text>
+          ) : (
+            <Text>-</Text>
           )
         });
+      } else if (this.scope === 'dataType') {
+      } else {
+        row.columns = row.columns.concat([
+          {
+            id: 'dataCollection',
+            value: dataCollection ? (
+              <Text size={3} truncate>
+                {dataCollection.displayName}
+              </Text>
+            ) : (
+              <Text>-</Text>
+            )
+          },
+          {
+            id: 'dataSet',
+            value: dataSet ? (
+              <Text size={3} truncate>
+                {dataSet.displayName}
+              </Text>
+            ) : (
+              <Text>-</Text>
+            )
+          },
+          {
+            id: 'dataType',
+            value: dataType ? (
+              <Text size={3} truncate>
+                {dataType.displayName}
+              </Text>
+            ) : (
+              <Text>-</Text>
+            )
+          }
+        ]);
       }
 
       row.columns = row.columns.concat([

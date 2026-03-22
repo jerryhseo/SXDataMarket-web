@@ -262,7 +262,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 
         break;
       }
-      case 'referenceFile': {
+      case ParamProperty.REFERENCE_FILE: {
         console.log('[SXDSBuilderBasicPropertiesPanel referenceFile value] ', parameter, value);
         this.workingParam.referenceFile = value[0];
 

@@ -82,7 +82,7 @@ class DataTypeEditor extends SXBaseVisualizer {
   constructor(props) {
     super(props);
 
-    //console.log("DataTypeEditor props: ", props);
+    console.log('DataTypeEditor props: ', props);
 
     /* Set global constants */
     this.dataCollectionId = this.params.dataCollectionId ?? 0;
@@ -240,25 +240,6 @@ class DataTypeEditor extends SXBaseVisualizer {
       }
     });
 
-    this.visualizers = ParameterUtil.createParameter({
-      namespace: this.namespace,
-      formId: this.componentId,
-      paramType: 'DualList',
-      properties: {
-        paramCode: DataTypeProperty.VISUALIZERS,
-        displayName: Util.getTranslationObject(this.languageId, 'associated-visualizers'),
-        tooltip: Util.getTranslationObject(this.languageId, 'associated-visualizers-tooltip'),
-        viewType: ParameterConstants.DualListViewTypes.HORIZONTAL,
-        validation: {
-          required: {
-            value: true,
-            message: Util.getTranslationObject(this.languageId, 'this-field-is-required'),
-            errorClass: ErrorClass.ERROR
-          }
-        },
-        options: []
-      }
-    });
     this.dataStructure = ParameterUtil.createParameter({
       namespace: this.namespace,
       formId: this.componentId,
@@ -287,7 +268,7 @@ class DataTypeEditor extends SXBaseVisualizer {
       }
     });
 
-    this.fields = [this.groupParameter, this.description, this.dataStructure, this.visualizers];
+    this.fields = [this.groupParameter, this.description, this.dataStructure];
 
     this.state = {
       dataTypeId: this.params.dataTypeId ?? 0,
@@ -324,7 +305,7 @@ class DataTypeEditor extends SXBaseVisualizer {
       return;
     }
 
-    const error = this.validateFormValues();
+    const error = this.checkFieldError();
 
     const validated = Util.isEmpty(error);
     console.log('[DataTypeEditor SX_FIELD_VALUE_CHANGED] ', parameter, error, validated);
@@ -356,21 +337,24 @@ class DataTypeEditor extends SXBaseVisualizer {
     }
 
     //console.log("[dataTypeEditor] listenerWorkbenchReady received: ", event.dataPacket);
-
-    this.fireRequest({
-      requestId: RequestIDs.loadDataType,
-      params: {
-        dataCollectionId: this.dataCollectionId,
-        dataSetId: this.dataSetId,
-        dataTypeId: this.state.dataTypeId,
-        loadStructure: true,
-        loadVisualizers: true,
-        loadAvailableVisualizers: true,
-        loadAvailableStructures: true
-      }
-    });
-
-    this.setState({ loadingStatus: LoadingStatus.PENDING });
+    if (this.state.dataTypeId > 0) {
+      this.fireRequest({
+        requestId: RequestIDs.loadDataType,
+        params: {
+          dataCollectionId: this.dataCollectionId,
+          dataSetId: this.dataSetId,
+          dataTypeId: this.state.dataTypeId,
+          loadStructure: true,
+          loadVisualizers: true,
+          loadAvailableVisualizers: true,
+          loadAvailableStructures: true
+        }
+      });
+    } else {
+      this.setState({
+        loadingStatus: LoadingStatus.COMPLETE
+      });
+    }
   };
 
   listenerResponse = (event) => {
@@ -381,28 +365,50 @@ class DataTypeEditor extends SXBaseVisualizer {
       return;
     }
 
-    //console.log("[DataTypeEditor] listenerResonse: ", requestId, params, data);
+    console.log('[DataTypeEditor] listenerResonse: ', requestId, params, data);
+    const { error, message } = data;
+    if (Util.isNotEmpty(error)) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+        dialogBody: error
+      });
 
-    const state = {};
+      return;
+    } else if (Util.isNotEmpty(message)) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+        dialogBody: message
+      });
+    }
+
     switch (requestId) {
       case RequestIDs.saveDataType: {
         const { dataType } = data;
 
+        this.cleanDirty();
+
+        break;
+      }
+      case RequestIDs.addDataType: {
+        const { dataType } = data;
+
+        this.cleanDirty();
+
         this.setState({ dataTypeId: dataType.dataTypeId });
+        break;
+      }
+      case RequestIDs.deleteDataTypes: {
+        this.redirectTo({
+          portletName: PortletKeys.DATATYPE_EXPLORER
+        });
+
         break;
       }
       case RequestIDs.loadDataType: {
         // Set dataType values to fields and initialize fields
         this.setFormValues(data);
-
-        /*
-		console.log(
-			"In Loading: ",
-			JSON.stringify(this.structureLink, null, 4),
-			this.structureLink,
-			this.dataStructure
-		);
-		*/
 
         break;
       }
@@ -466,30 +472,6 @@ class DataTypeEditor extends SXBaseVisualizer {
         value: item.id
       }));
     }
-
-    if (availableVisualizers) {
-      this.visualizers.options = availableVisualizers.map((item) => ({
-        label: item.displayName,
-        value: item.id + '',
-        typeVisualizerLinkId: item.typeVisualizerLinkId ?? 0
-      }));
-    }
-
-    if (visualizers) {
-      //console.log("data.visualizers: ", data.visualizers);
-      this.visualizers.setValue({
-        value: visualizers.map((v) => {
-          if (typeof v === 'object') {
-            return this.visualizers.getOptionByValue(v.id);
-          } else {
-            return this.visualizers.getOptionByValue(v);
-          }
-        }),
-        validate: false
-      });
-
-      //this.visualizers.dirty = false;
-    }
   };
 
   isDirty() {
@@ -499,7 +481,6 @@ class DataTypeEditor extends SXBaseVisualizer {
       this.extension.dirty ||
       this.displayName.dirty ||
       this.description.dirty ||
-      this.visualizers.dirty ||
       this.dataStructure.dirty
     );
   }
@@ -510,7 +491,6 @@ class DataTypeEditor extends SXBaseVisualizer {
     this.extension.dirty = false;
     this.displayName.dirty = false;
     this.description.dirty = false;
-    this.visualizers.dirty = false;
     this.dataStructure.dirty = false;
   }
 
@@ -521,46 +501,66 @@ class DataTypeEditor extends SXBaseVisualizer {
     this.displayName.clearValue();
     this.description.clearValue();
 
-    this.visualizers.clearValue();
     this.dataStructure.clearValue();
 
     this.forceUpdate();
   };
 
   deleteDataType = () => {
-    this.fireRequest({
-      requestId: RequestIDs.deleteDataTypes,
-      params: {
-        dataTypeIds: [this.state.dataTypeId]
-      }
+    Event.fire(Event.SX_DELETE_DATATYPES, this.namespace, this.workbenchNamespace, {
+      dataTypeIds: [this.state.dataTypeId]
     });
   };
 
-  validateFormValues = () => {
-    this.dataTypeCode.validate();
-    if (this.dataTypeCode.hasError()) {
+  checkFieldError = () => {
+    let error = this.dataTypeCode.validate();
+    let warning = null;
+    if (error === -1) {
+      this.dataTypeCode.dirty = true;
       return this.dataTypeCode.error;
+    } else if (error === 1) {
+      warning = this.dataTypeCode.error;
     }
-    this.dataTypeVersion.validate();
-    if (this.dataTypeVersion.hasError()) {
+
+    error = this.dataTypeVersion.validate();
+    if (error === -1) {
+      this.dataTypeVersion.dirty = true;
       return this.dataTypeVersion.error;
+    } else if (error === 1 && Util.isEmpty(warning)) {
+      warning = this.dataTypeVersion.error;
     }
-    this.extension.validate();
-    if (this.extension.hasError()) {
-      return this.extension.error;
-    }
-    this.displayName.validate();
-    if (this.displayName.hasError()) {
+
+    error = this.displayName.validate();
+    if (error === -1) {
+      this.displayName.dirty = true;
       return this.displayName.error;
+    } else if (error === 1 && Util.isEmpty(warning)) {
+      warning = this.displayName.error;
     }
-    this.visualizers.validate();
-    if (this.visualizers.hasError()) {
-      return this.visualizers.error;
+
+    error = this.description.validate();
+    if (error === -1) {
+      this.description.dirty = true;
+      return this.description.error;
+    } else if (error === 1 && Util.isEmpty(warning)) {
+      warning = this.description.error;
     }
+
+    error = this.dataStructure.validate();
+    if (error === -1) {
+      this.dataStructure.dirty = true;
+      return this.dataStructure.error;
+    } else if (error === 1 && Util.isEmpty(warning)) {
+      warning = this.dataStructure.error;
+    }
+
+    return warning;
   };
 
-  handleBtnSaveClick(e) {
-    const error = this.validateFormValues();
+  handleBtnSaveClick = (event) => {
+    event.stopPropagation();
+
+    const error = this.checkFieldError();
 
     if (error) {
       this.setState({
@@ -572,19 +572,24 @@ class DataTypeEditor extends SXBaseVisualizer {
       return;
     }
 
-    Event.fire(Event.SX_SAVE_DATATYPE, this.namespace, this.workbenchNamespace, {
-      dataCollectionId: this.dataCollectionId,
-      dataSetId: this.dataSetId,
-      dataTypeId: this.state.dataTypeId,
-      dataTypeCode: this.dataTypeCode.getValue(),
-      dataTypeVersion: this.dataTypeVersion.getValue(),
-      extension: this.extension.getValue(),
-      displayName: JSON.stringify(this.displayName.getValue()),
-      description: JSON.stringify(this.description.getValue()),
-      visualizers: this.visualizers.getValue(),
-      dataStructureId: this.hasStructure ? 0 : this.dataStructure.getValue()[0]
-    });
-  }
+    console.log('DataTypeEditor.handleBtnSaveClick');
+    Event.fire(
+      this.state.dataTypeId > 0 ? Event.SX_SAVE_DATATYPE : Event.SX_ADD_DATATYPE,
+      this.namespace,
+      this.workbenchNamespace,
+      {
+        dataCollectionId: this.dataCollectionId,
+        dataSetId: this.dataSetId,
+        dataTypeId: this.state.dataTypeId,
+        dataTypeCode: this.dataTypeCode.getValue(),
+        dataTypeVersion: this.dataTypeVersion.getValue(),
+        extension: this.extension.getValue(),
+        displayName: JSON.stringify(this.displayName.getValue()),
+        description: JSON.stringify(this.description.getValue()),
+        dataStructureId: this.hasStructure ? 0 : this.dataStructure.getValue()[0]
+      }
+    );
+  };
 
   handleBtnNewDataStructure = () => {
     this.redirectTo({
@@ -650,7 +655,6 @@ class DataTypeEditor extends SXBaseVisualizer {
           )}
           {this.groupParameter.renderField({ spritemap: this.spritemap })}
           {this.description.renderField({ spritemap: this.spritemap })}
-          {this.visualizers.renderField({ spritemap: this.spritemap })}
           {!this.hasStructure && this.dataStructure.renderField({ spritemap: this.spritemap })}
           {/*!this.hasStructure && (
 						<div
@@ -677,8 +681,8 @@ class DataTypeEditor extends SXBaseVisualizer {
               <SXButtonWithIcon
                 label={Util.translate('save')}
                 symbol={'disk'}
-                disabled={!this.isDirty() || this.validateFormValues()}
-                onClick={(e) => this.handleBtnSaveClick(e)}
+                disabled={!this.isDirty() || this.checkFieldError()}
+                onClick={this.handleBtnSaveClick}
                 spritemap={this.spritemap}
               />
               {this.state.dataTypeId > 0 && (
@@ -687,14 +691,14 @@ class DataTypeEditor extends SXBaseVisualizer {
                     label={Util.translate('edit-datastructure')}
                     symbol={'forms'}
                     displayType="secondary"
-                    onClick={(e) => this.handleUpdateStructure(e)}
+                    onClick={this.handleUpdateStructure}
                     spritemap={this.spritemap}
                   />
                   <SXButtonWithIcon
                     label={Util.translate('delete')}
                     symbol={'trash'}
                     displayType="warning"
-                    onClick={(e) => this.handleDeleteDataTypeBtnClick(e)}
+                    onClick={this.handleDeleteDataTypeBtnClick}
                     spritemap={this.spritemap}
                   />
                 </>
@@ -705,7 +709,7 @@ class DataTypeEditor extends SXBaseVisualizer {
           {this.state.infoDialog && (
             <SXModalDialog
               header={this.state.dialogHeader}
-              body={this.dialogBody}
+              body={this.state.dialogBody}
               buttons={[
                 {
                   label: Util.translate('ok'),
@@ -719,7 +723,7 @@ class DataTypeEditor extends SXBaseVisualizer {
           {this.state.deleteWarningDialog && (
             <SXModalDialog
               header={this.state.dialogHeader}
-              body={this.dialogBody}
+              body={this.state.dialogBody}
               buttons={[
                 {
                   label: Util.translate('confirm'),

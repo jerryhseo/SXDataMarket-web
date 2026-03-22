@@ -10,9 +10,9 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.sx.icecap.constant.MVCCommand;
 import com.sx.constant.StationXConstants;
 import com.sx.constant.StationXWebKeys;
+import com.sx.icecap.constant.MVCCommand;
 import com.sx.icecap.constant.WebPortletKey;
 import com.sx.icecap.model.CollectionSetLink;
 import com.sx.icecap.model.DataCollection;
@@ -24,144 +24,139 @@ import com.sx.icecap.service.DataCollectionLocalService;
 import com.sx.icecap.service.DataSetLocalService;
 import com.sx.icecap.service.DataTypeLocalService;
 import com.sx.icecap.service.SetTypeLinkLocalService;
-
-import java.io.PrintWriter;
+import com.sx.util.SXStringUtil;
+import com.sx.util.portlet.SXPortletURLUtil;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 @Component(
-	    immediate = true,
-	    property = {
-	        "javax.portlet.name=" + WebPortletKey.SXDataWorkbenchPortlet,
-	        "javax.portlet.name=" + WebPortletKey.SXDataCollectionExplorerPortlet,
-	        "javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
-	        "mvc.command.name="+MVCCommand.RESOURCE_SEARCH_DATACOLLECTIONS
-	    },
-	    service = MVCResourceCommand.class
+			immediate = true,
+			property = {"javax.portlet.name=" + WebPortletKey.SXDataCollectionExplorerPortlet,
+					"javax.portlet.name=" + WebPortletKey.SXCollectionManagementPortlet,
+					"mvc.command.name=" + MVCCommand.RESOURCE_SEARCH_DATACOLLECTIONS},
+			service = MVCResourceCommand.class
 )
-public class SearchDataCollectionsResourceCommand extends BaseMVCResourceCommand{
+public class SearchDataCollectionsResourceCommand extends BaseMVCResourceCommand {
 
 	@Override
-	protected void doServeResource(ResourceRequest resourceRequest, ResourceResponse resourceResponse)
-			throws Exception {
+	protected void doServeResource ( ResourceRequest resourceRequest, ResourceResponse resourceResponse )
+				throws Exception {
 
-		System.out.println("SearchDataCollectionsResourceCommand");
-		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(WebKeys.THEME_DISPLAY);
+		System.out.println ( "SearchDataCollectionsResourceCommand" );
+		ThemeDisplay themeDisplay = ( ThemeDisplay ) resourceRequest.getAttribute ( WebKeys.THEME_DISPLAY );
 
-		int start = ParamUtil.getInteger(resourceRequest, StationXWebKeys.START, StationXConstants.DEFAULT_START);
-		int delta = ParamUtil.getInteger(resourceRequest, StationXWebKeys.DELTA, StationXConstants.DEFAULT_DELTA);
+		int start = ParamUtil.getInteger ( resourceRequest, StationXWebKeys.START, StationXConstants.DEFAULT_START );
+		int delta = ParamUtil.getInteger ( resourceRequest, StationXWebKeys.DELTA, StationXConstants.DEFAULT_DELTA );
 		int end = start + delta - 1;
-		long groupId = ParamUtil.getLong(resourceRequest, StationXWebKeys.GROUP_ID, themeDisplay.getScopeGroupId());
-		long userId = ParamUtil.getLong(resourceRequest, StationXWebKeys.USER_ID, themeDisplay.getUserId());
-		
-		int status = ParamUtil.getInteger(resourceRequest, StationXWebKeys.STATUS, WorkflowConstants.STATUS_ANY);
-		String filterBy = ParamUtil.getString(resourceRequest, "filterBy", "groupId");
-		String groupBy = ParamUtil.getString(resourceRequest, "groupBy", "groupId");
-		String keywords = ParamUtil.getString(resourceRequest, StationXWebKeys.KEYWORDS, "");
+		long groupId = ParamUtil.getLong ( resourceRequest, StationXWebKeys.GROUP_ID, themeDisplay.getScopeGroupId () );
+		long userId = ParamUtil.getLong ( resourceRequest, StationXWebKeys.USER_ID, themeDisplay.getUserId () );
+
+		int status = ParamUtil.getInteger ( resourceRequest, StationXWebKeys.STATUS, WorkflowConstants.STATUS_ANY );
+		String filterBy = ParamUtil.getString ( resourceRequest, "filterBy", "groupId" );
+		String groupBy = ParamUtil.getString ( resourceRequest, "groupBy", "groupId" );
+		String keywords = ParamUtil.getString ( resourceRequest, StationXWebKeys.KEYWORDS, "" );
 
 		/*
-		System.out.println("groupId: " + groupId);
-		System.out.println("dataCollectionId: " + dataCollectionId);
-		*/
-		
-		JSONArray result = JSONFactoryUtil.createJSONArray();
-		List<DataCollection> dataCollectionList = null;
-		//List<DataType> dataTypeList = null;
-		//if( dataTypeId > 0) {
-			dataCollectionList = _dataCollectionLocalService.getDataCollectionListByGroupId(groupId);
-			
-			Iterator<DataCollection> collectionIter = dataCollectionList.iterator();
-			while( collectionIter.hasNext()) {
-				DataCollection collection = collectionIter.next();
-				JSONObject jsonCollection = collection.toJSON(themeDisplay.getLocale());
-				
-				jsonCollection.put(
-						"dataSetList", 
-						_getDataSetJSONArray(
-								groupId, 
-								collection.getDataCollectionId(), 
-								themeDisplay.getLocale())
-				);
-				
-				result.put(jsonCollection);
-			}
-		//}
+		 * System.out.println("groupId: " + groupId); System.out.println("dataCollectionId: " +
+		 * dataCollectionId);
+		 */
 
-		PrintWriter pw = resourceResponse.getWriter();
-		pw.write(result.toJSONString());
-		pw.flush();
-		pw.close();
+		JSONArray result = JSONFactoryUtil.createJSONArray ();
+		List<DataCollection> dataCollectionList = null;
+		// List<DataType> dataTypeList = null;
+		// if( dataTypeId > 0) {
+		dataCollectionList = _dataCollectionLocalService.getDataCollectionListByGroupId ( groupId );
+
+		Iterator<DataCollection> collectionIter = dataCollectionList.iterator ();
+		while ( collectionIter.hasNext () ) {
+			DataCollection collection = collectionIter.next ();
+			JSONObject jsonCollection = collection.toJSON ( themeDisplay.getLocale () );
+			jsonCollection.put ( "key", SXStringUtil.generateRandomString ( 16 ) );
+
+			jsonCollection.put (
+						"dataSetList",
+						_getDataSetJSONArray ( groupId, collection.getDataCollectionId (), themeDisplay.getLocale () )
+			);
+
+			result.put ( jsonCollection );
+		}
+		// }
+
+		SXPortletURLUtil.responeAjax ( resourceResponse, result );
 	}
-	
-	private JSONArray _getDataSetJSONArray( long groupId, long collectionId, Locale locale )
-			throws PortalException {
-		JSONArray jsonSetArray = JSONFactoryUtil.createJSONArray();
-		
-		List<CollectionSetLink> setLinkList = 
-				_collectionSetLinkLocalService.getCollectionSetLinkListByCollection(
-						groupId, collectionId);
-		
-		if( setLinkList.size() > 0 ) {
-			Iterator<CollectionSetLink> collectionSetLinkIter = setLinkList.iterator();
-			while( collectionSetLinkIter.hasNext()) {
-				CollectionSetLink collectionSetLink = collectionSetLinkIter.next();
-				
-				DataSet dataSet = _dataSetLocalService.getDataSet(collectionSetLink.getDataSetId());
-				JSONObject jsonSet = dataSet.toJSON(locale);
-				jsonSet.put("linkId", collectionSetLink.getCollectionSetLinkId());
-				//System.out.println("jsonSet: " + jsonSet.toString(4));
-				jsonSet.put("dataTypeList",  _getDataTypeJSONArray(groupId, collectionId, dataSet.getDataSetId(), locale) );
-				
-				jsonSetArray.put(jsonSet);
+
+	private JSONArray _getDataSetJSONArray ( long groupId, long collectionId, Locale locale ) throws PortalException {
+		JSONArray jsonSetArray = JSONFactoryUtil.createJSONArray ();
+
+		List<CollectionSetLink> setLinkList =
+					_collectionSetLinkLocalService.getCollectionSetLinkListByCollection ( groupId, collectionId );
+
+		if ( setLinkList.size () > 0 ) {
+			Iterator<CollectionSetLink> collectionSetLinkIter = setLinkList.iterator ();
+			while ( collectionSetLinkIter.hasNext () ) {
+				CollectionSetLink collectionSetLink = collectionSetLinkIter.next ();
+
+				DataSet dataSet = _dataSetLocalService.getDataSet ( collectionSetLink.getDataSetId () );
+				JSONObject jsonSet = dataSet.toJSON ( locale );
+				jsonSet.put ( "key", SXStringUtil.generateRandomString ( 16 ) );
+				// System.out.println("jsonSet: " + jsonSet.toString(4));
+				jsonSet.put (
+							"dataTypeList",
+							_getDataTypeJSONArray ( groupId, collectionId, dataSet.getDataSetId (), locale )
+				);
+
+				jsonSetArray.put ( jsonSet );
 			}
 		}
-		
-		//System.out.println("jsonSetArray: " + jsonSetArray.toString(4));
-		
+
+		// System.out.println("jsonSetArray: " + jsonSetArray.toString(4));
+
 		return jsonSetArray;
 	}
-	
-	private JSONArray _getDataTypeJSONArray( long groupId, long collectionId, long setId, Locale locale )
-			throws PortalException{
-		JSONArray jsonTypeArray = JSONFactoryUtil.createJSONArray();
-		
-		List<SetTypeLink> setTypeLinkList = _setTypeLinkLocalService.getSetTypeLinkListByCollectionSet(groupId, collectionId, setId);
-		Iterator<SetTypeLink> setTypeLinkIter = setTypeLinkList.iterator();
-		while( setTypeLinkIter.hasNext()) {
-			SetTypeLink setTypeLink = setTypeLinkIter.next();
-			
-			DataType dataType = _dataTypeLocalService.getDataType(setTypeLink.getDataTypeId());
-			JSONObject jsonDataType = dataType.toJSON(locale);
-			jsonDataType.put("hasDataStructure", _dataTypeLocalService.hasDataStructure(dataType.getDataTypeId()));
-			jsonDataType.put("linkId", setTypeLink.getSetTypeLinkId());
-			
-			jsonTypeArray.put(jsonDataType);
+
+	private JSONArray _getDataTypeJSONArray ( long groupId, long collectionId, long setId, Locale locale )
+				throws PortalException {
+		JSONArray jsonTypeArray = JSONFactoryUtil.createJSONArray ();
+
+		List<SetTypeLink> setTypeLinkList =
+					_setTypeLinkLocalService.getSetTypeLinkListByCollectionSet ( groupId, collectionId, setId );
+		Iterator<SetTypeLink> setTypeLinkIter = setTypeLinkList.iterator ();
+		while ( setTypeLinkIter.hasNext () ) {
+			SetTypeLink setTypeLink = setTypeLinkIter.next ();
+
+			DataType dataType = _dataTypeLocalService.getDataType ( setTypeLink.getDataTypeId () );
+			JSONObject jsonDataType = dataType.toJSON ( locale );
+			jsonDataType.put (
+						"hasDataStructure",
+						_dataTypeLocalService.hasDataStructure ( dataType.getDataTypeId () )
+			);
+			jsonDataType.put ( "key", SXStringUtil.generateRandomString ( 16 ) );
+
+			jsonTypeArray.put ( jsonDataType );
 		}
-		
-		//System.out.println("jsonTypeArray: " + jsonTypeArray.toString(4));
-		
+
+		// System.out.println("jsonTypeArray: " + jsonTypeArray.toString(4));
+
 		return jsonTypeArray;
 	}
-	
+
 	@Reference
 	private DataCollectionLocalService _dataCollectionLocalService;
-	
+
 	@Reference
 	private CollectionSetLinkLocalService _collectionSetLinkLocalService;
-	
+
 	@Reference
 	private DataSetLocalService _dataSetLocalService;
-	
+
 	@Reference
 	private SetTypeLinkLocalService _setTypeLinkLocalService;
-	
+
 	@Reference
 	private DataTypeLocalService _dataTypeLocalService;
 }

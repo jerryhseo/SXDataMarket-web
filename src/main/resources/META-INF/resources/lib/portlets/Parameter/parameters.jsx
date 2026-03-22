@@ -823,7 +823,6 @@ class Parameter {
 
   getReferenceFiles() {
     if (Util.isNotEmpty(this.referenceFile)) {
-      console.log('[Parameter getReferenceFiles] ', this.referenceFile);
       return [this.toFileObject(this.referenceFile)];
     } else {
       return [];
@@ -2152,6 +2151,7 @@ export class SelectParameter extends Parameter {
   #listboxSize = 3;
   #placeholder = '';
   #multiple = true;
+  #nullValue = true;
 
   constructor({ namespace, formId, paramType = ParamType.SELECT, properties = {} }) {
     super({
@@ -2192,6 +2192,9 @@ export class SelectParameter extends Parameter {
 
     return '';
   }
+  get nullValue() {
+    return this.#nullValue;
+  }
 
   set options(val) {
     this.#options = val;
@@ -2207,6 +2210,9 @@ export class SelectParameter extends Parameter {
   }
   set placeholder(val) {
     this.#placeholder = val;
+  }
+  set nullValue(val) {
+    this.#nullValue = val;
   }
 
   initProperties(json) {
@@ -2329,6 +2335,7 @@ export class SelectParameter extends Parameter {
     this.listboxSize = json.listboxSize ?? this.#listboxSize;
     this.multiple = json.multiple ?? true;
     this.placeholder = json.placeholder;
+    this.nullValue = json.nullValue ?? false;
   }
 
   toJSON() {
@@ -2349,6 +2356,10 @@ export class SelectParameter extends Parameter {
       json.multiple = false;
     }
 
+    if (this.nullValue) {
+      json.nullValue = this.nullValue;
+    }
+
     if (Util.isNotEmpty(this.placeholder)) {
       json.placeholder = this.placeholder;
     }
@@ -2365,6 +2376,7 @@ export class SelectParameter extends Parameter {
     json.listboxSize = this.listboxSize;
     json.multiple = this.multiple;
     json.placeholder = this.placeholder;
+    json.nullValue = this.nullValue;
 
     return json;
   }

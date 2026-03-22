@@ -85,8 +85,6 @@ class SXBaseVisualizer extends React.Component {
       requestId: requestId,
       params: params
     });
-
-    this.setState({ loadingStatus: LoadingStatus.PENDING });
   }
 
   redirectTo({ portletName, params = {} }) {

@@ -61,7 +61,7 @@ public class DeleteDataCollectionsResourceCommand extends BaseMVCResourceCommand
 			long dataCollectionId = Long.parseLong ( strAryDataCollectionIds[i] );
 
 			try {
-				_dataCollectionLocalService.removeDataCollection ( themeDisplay.getScopeGroupId (), dataCollectionId );
+				_dataCollectionLocalService.removeDataCollection ( dataCollectionId );
 
 				deletedDataCollections.put ( dataCollectionId );
 			} catch ( PortalException e ) {

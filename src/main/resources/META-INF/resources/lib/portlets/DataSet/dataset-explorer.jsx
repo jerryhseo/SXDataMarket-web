@@ -18,8 +18,8 @@ class DataSetExplorer extends SXBaseVisualizer {
   constructor(props) {
     super(props);
 
-    //console.log("DataSetExplorer props: ", props);
-    this.dataCollectionId = props.dataCollectionId ?? 0;
+    console.log('DataSetExplorer props: ', props);
+    this.dataCollectionId = this.params.dataCollectionId ?? 0;
 
     this.dataSetList = [];
 

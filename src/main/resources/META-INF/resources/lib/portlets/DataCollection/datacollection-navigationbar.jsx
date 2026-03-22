@@ -16,19 +16,20 @@ class SXDataCollectionNavigationBar extends React.Component {
   constructor(props) {
     super(props);
 
-    //console.log('SXDataCollectionNavigationBar: ', props);
+    console.log('SXDataCollectionNavigationBar: ', props);
     this.namespace = props.namespace;
     this.formId = props.formId;
     this.componentId = props.componentId;
     this.navType = props.navType ?? SXDataCollectionNavigationBar.NavTypes.DATACOLLECTION;
     this.spritemap = props.spritemap;
-    this.navItems = props.navItems ?? [];
     this.expandAll = props.expandAll ?? false;
     this.orderable = props.orderable;
     this.style = props.style;
 
+    const navItems = props.navItems ?? [];
     this.state = {
-      expandedKeys: this.expandAll ? this.getAllExpandKeys(this.navItems) : new Set(),
+      navItems: navItems,
+      expandedKeys: this.expandAll ? this.getAllExpandKeys(navItems) : new Set(),
       confirmItemSelectDialog: false,
       dialogHeader: <></>,
       dialogBody: <></>,
@@ -38,22 +39,28 @@ class SXDataCollectionNavigationBar extends React.Component {
   }
 
   listenerRefreshNaveBar = (event) => {
-    const { targetPortlet, targetFormId, additionalExpandedKeys = [], removedExpandedKeys = [] } = event.dataPacket;
+    const {
+      targetPortlet,
+      targetFormId,
+      navItems,
+      selectedNavItem,
+      additionalExpandedKeys = [],
+      removedExpandedKeys = []
+    } = event.dataPacket;
 
     if (!(this.namespace === targetPortlet && this.componentId === targetFormId)) {
       //console.log('[SXDataCollectionNavigationBar] REFRESH rejectred: ', targetPortlet);
       return;
     }
 
-    /*
     console.log(
       '[SXDataCollectionNavigationBar] REFRESH: ',
-      event.dataPacket,
+      navItems,
+      selectedNavItem,
       additionalExpandedKeys,
       removedExpandedKeys,
       this.state.expandedKeys
     );
-    */
 
     additionalExpandedKeys.forEach((element) => {
       this.state.expandedKeys.add(element);
@@ -63,7 +70,15 @@ class SXDataCollectionNavigationBar extends React.Component {
       this.state.expandedKeys.delete(element);
     });
 
-    this.forceUpdate();
+    if (navItems) {
+      this.setState({
+        navItems: [...navItems],
+        expandedKeys: this.expandAll ? this.getAllExpandKeys(navItems) : this.state.expandedKeys,
+        selectedNavItem: selectedNavItem ? selectedNavItem : this.state.selectedItem
+      });
+    } else {
+      this.forceUpdate();
+    }
   };
 
   componentDidMount() {
@@ -75,13 +90,15 @@ class SXDataCollectionNavigationBar extends React.Component {
   }
 
   getAllExpandKeys = (navItems) => {
-    const expandedKeys = new Set([]);
+    let expandedKeys = new Set([]);
 
     navItems.map((item) => {
       expandedKeys.add(item.id);
 
       if (item.items) {
-        this.getAllExpandKeys(item.items).forEach((subKey) => expandedKeys.add(subKey));
+        const subExpadedKeys = this.getAllExpandKeys(item.items);
+
+        expandedKeys = new Set([...expandedKeys, ...subExpadedKeys]);
       }
     });
 
@@ -126,7 +143,10 @@ class SXDataCollectionNavigationBar extends React.Component {
   };
 
   fireNavItemSelected = (item) => {
-    if (this.state.selectedItem !== item && this.state.selectedItem !== null) {
+    if (this.state.selectedItem === item) {
+      console.log('Same Nav Item clicked: Do nothing!');
+      return;
+    } else if (this.state.selectedItem !== null) {
       this.state.selectedItem.dirty = false;
       this.state.selectedItem.active = false;
     }
@@ -137,19 +157,20 @@ class SXDataCollectionNavigationBar extends React.Component {
 
     Event.fire(Event.SX_NAVITEM_SELECTED, this.namespace, this.namespace, {
       targetFormId: this.formId,
+      prevItem: this.state.selectedItem,
       item: item
     });
   };
 
   render() {
-    //console.log('[Navigation render] ', this.navItems, this.state.selectedItem, this.state.expandedKeys);
+    console.log('[Navigation render] ', this.state.navItems, this.state.selectedItem, this.state.expandedKeys);
 
     return (
       <>
         <ClayVerticalNav
-          key={Util.randomKey()}
+          key={this.state.selectedItem?.id}
           aria-label="vertical navbar"
-          items={this.navItems}
+          items={this.state.navItems}
           large={false}
           decorated={true}
           expandedKeys={this.state.expandedKeys}
@@ -157,7 +178,8 @@ class SXDataCollectionNavigationBar extends React.Component {
           style={this.style}
           spritemap={this.spritemap}
         >
-          {(item, index) => {
+          {(item) => {
+            //console.log('NavItem: ', item.label, item.id, item.modelId);
             const itemStyle = {};
 
             if (item.active) {

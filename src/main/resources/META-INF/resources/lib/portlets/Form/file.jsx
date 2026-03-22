@@ -4,10 +4,11 @@ import { Util } from '../../stationx/util';
 import Button, { ClayButtonWithIcon } from '@clayui/button';
 import { ClayInput } from '@clayui/form';
 import DropDown from '@clayui/drop-down';
-import { SXModalDialog } from '../../stationx/modal';
+import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
 import { UnderConstruction } from '../../stationx/common';
 import ParameterConstants from '../Parameter/parameter-constants';
 import Icon from '@clayui/icon';
+import { Constant } from '../../stationx/station-x';
 
 class SXFile extends SXBaseParameterComponent {
   constructor(props) {
@@ -17,10 +18,12 @@ class SXFile extends SXBaseParameterComponent {
 
     this.state = {
       value: files.filter((file) => !!file.name),
-      underConstruction: false
+      infoDialog: false,
+      dialogHeader: <></>,
+      dialogBody: <></>
     };
 
-    //console.log("[SXFile props] ", props, this.parameter, this.state.value);
+    console.log('[SXFile props] ', props, this.parameter, this.state.value);
   }
 
   componentDidMount() {
@@ -40,31 +43,47 @@ class SXFile extends SXBaseParameterComponent {
     }
   }
 
-  hasFiles() {
-    let hasFile;
-
-    this.state.value.every((fileInfo) => {
-      hasFile = this.isFileInstance(fileInfo);
-
-      return hasFile ? false : true;
-    });
-
-    return !!hasFile;
-  }
-
   isFileInstance(fileItem) {
     return fileItem.file instanceof File;
   }
 
-  handleFileSelectionChanged(files) {
-    //console.log("[SXFile handleFileSelectionChanged] ", this.parameter.paramCode, files);
+  duplicatedFiles(selectedFiles) {
+    const existingFileNames = this.state.value
+      .filter((fileInfo) => !this.isFileInstance(fileInfo))
+      .map((fileInfo) => fileInfo.name);
+
+    let duplicated;
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      if (existingFileNames.includes(file.name)) {
+        duplicated = file.name;
+        break;
+      }
+    }
+
+    return duplicated;
+  }
+
+  handleFileSelectionChanged(selectedFiles) {
+    //console.log('[SXFile handleFileSelectionChanged] ', this.parameter.paramCode, selectedFiles);
+    const duplicatedFileName = this.duplicatedFiles(selectedFiles);
+    if (duplicatedFileName) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
+        dialogBody: Util.translate('file-is-already-saved', duplicatedFileName)
+      });
+
+      return;
+    }
 
     let fileList;
     if (this.parameter.multipleFiles) {
       fileList = this.state.value.filter((fileInfo) => !this.isFileInstance(fileInfo));
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
 
         fileList.push({
           name: file.name,
@@ -74,12 +93,14 @@ class SXFile extends SXBaseParameterComponent {
         });
       }
     } else {
-      const file = files[0];
+      const file = selectedFiles[0];
       fileList = file ? [{ name: file.name, lastModified: file.lastModified, type: file.type, file: file }] : [];
     }
 
     this.setState({ value: fileList });
     this.parameter.setValue({ value: fileList, cellIndex: this.cellIndex });
+
+    this.parameter.fireValueChanged(this.cellIndex);
   }
 
   valueToFiles() {
@@ -197,7 +218,7 @@ class SXFile extends SXBaseParameterComponent {
               <tbody>
                 {this.state.value.map((fileInfo) => {
                   return (
-                    <tr key={fileInfo.name}>
+                    <tr key={fileInfo.name} style={{ color: this.isFileInstance(fileInfo) ? 'red' : 'black' }}>
                       <td>{fileInfo.name}</td>
                       <td style={{ textAlign: 'right' }}>{new Date(fileInfo.lastModified).toLocaleString()}</td>
                       <td style={{ textAlign: 'center' }}>
@@ -294,27 +315,6 @@ class SXFile extends SXBaseParameterComponent {
     );
   }
 
-  renderUnderConstruction() {
-    return (
-      <>
-        {this.state.underConstruction && (
-          <SXModalDialog
-            header={Util.translate('sorry')}
-            body={<UnderConstruction />}
-            buttons={[
-              {
-                label: Util.translate('ok'),
-                onClick: () => {
-                  this.setState({ underConstruction: false });
-                }
-              }
-            ]}
-          />
-        )}
-      </>
-    );
-  }
-
   render() {
     return (
       <div
@@ -324,6 +324,20 @@ class SXFile extends SXBaseParameterComponent {
         {this.parameter.displayType == ParameterConstants.DisplayTypes.FORM_FIELD && this.renderFormField()}
         {this.parameter.displayType == ParameterConstants.DisplayTypes.GRID_CELL && this.renderGridCell()}
         {this.parameter.renderFormFieldFeedback(this.spritemap, this.cellIndex)}
+        {this.state.infoDialog && (
+          <SXModalDialog
+            header={this.state.dialogHeader}
+            body={this.state.dialogBody}
+            buttons={[
+              {
+                label: Util.translate('ok'),
+                onClick: () => {
+                  this.setState({ infoDialog: false });
+                }
+              }
+            ]}
+          />
+        )}
       </div>
     );
   }

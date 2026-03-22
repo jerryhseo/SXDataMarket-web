@@ -7,11 +7,6 @@
 <%@page import="com.liferay.portal.kernel.util.ParamUtil"%>
 <%@ include file="./init.jsp" %>
 
-<link
-	rel="stylesheet"
-	href="https://cdn.jsdelivr.net/npm/@clayui/css/lib/css/atlas.css"
-/>
-
 <%
 	String workingPortletName = ParamUtil.getString(
 						renderRequest, 

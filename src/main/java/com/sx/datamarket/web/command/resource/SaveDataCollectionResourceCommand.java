@@ -20,6 +20,7 @@ import com.sx.icecap.model.DataSet;
 import com.sx.icecap.service.CollectionSetLinkLocalService;
 import com.sx.icecap.service.DataCollectionLocalService;
 import com.sx.icecap.service.DataSetLocalService;
+import com.sx.icecap.service.SetTypeLinkLocalService;
 import com.sx.util.SXLocalizationUtil;
 import com.sx.util.portlet.SXPortletURLUtil;
 import java.util.ArrayList;
@@ -47,6 +48,9 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 
 	@Reference
 	private DataSetLocalService _dataSetLocalService;
+
+	@Reference
+	private SetTypeLinkLocalService _setTypeLinkLocalService;
 
 	@Override
 	protected void doServeResource ( ResourceRequest resourceRequest, ResourceResponse resourceResponse )
@@ -189,12 +193,22 @@ public class SaveDataCollectionResourceCommand extends BaseMVCResourceCommand {
 				JSONObject jsonDataSet = dataSet.toJSON ( themeDisplay.getLocale () );
 				jsonDataSet.put ( "linkId", collectionSetLink.getCollectionSetLinkId () );
 
+				JSONArray dataTypeList = _dataSetLocalService
+							.getLinkedDataTypeList ( groupId, dataCollectionId, dataSetId, themeDisplay.getLocale () );
+
+				jsonDataSet.put ( "dataTypeList", dataTypeList );
+
 				jsonAssociatedDataSets.put ( jsonDataSet );
 			}
 		}
 
 		result.put ( "dataCollection", jsonDataCollection );
 		result.put ( "associatedDataSets", jsonAssociatedDataSets );
+
+		result.put (
+					"message",
+					SXLocalizationUtil.translate ( resourceRequest, "datacollection-saved-as", dataCollectionId )
+		);
 
 		SXPortletURLUtil.responeAjax ( resourceResponse, result );
 	}
