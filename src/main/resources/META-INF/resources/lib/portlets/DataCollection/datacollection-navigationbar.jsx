@@ -5,6 +5,7 @@ import { Util } from '../../stationx/util';
 import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
 import Icon from '@clayui/icon';
 import CollectionsManagement from './collections-management';
+import { Provider } from '@clayui/core';
 
 class SXDataCollectionNavigationBar extends React.Component {
   static NavTypes = {
@@ -166,7 +167,7 @@ class SXDataCollectionNavigationBar extends React.Component {
     console.log('[Navigation render] ', this.state.navItems, this.state.selectedItem, this.state.expandedKeys);
 
     return (
-      <>
+      <Provider spritemap={this.spritemap}>
         <ClayVerticalNav
           key={this.state.selectedItem?.id}
           aria-label="vertical navbar"
@@ -233,7 +234,7 @@ class SXDataCollectionNavigationBar extends React.Component {
             spritemap={this.spritemap}
           />
         )}
-      </>
+      </Provider>
     );
   }
 }

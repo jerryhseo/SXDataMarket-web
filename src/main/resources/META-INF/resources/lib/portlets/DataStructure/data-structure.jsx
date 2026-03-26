@@ -34,6 +34,10 @@ class DataStructure extends GroupParameter {
   #paramValueDelimiter = '=';
   #hierarchicalData = false;
 
+  #inputStatus = false;
+  #jumpTo = false;
+  #bulletNo = false;
+
   #verified = {};
   #freezed = {};
 
@@ -76,6 +80,18 @@ class DataStructure extends GroupParameter {
   get description() {
     return this.definition;
   }
+  get inputStatus() {
+    return this.#inputStatus;
+  }
+  get jumpTo() {
+    return this.#jumpTo;
+  }
+  get bulletNo() {
+    return this.#bulletNo;
+  }
+  get jumpTo() {
+    return this.#jumpTo;
+  }
   get verified() {
     return this.#verified;
   }
@@ -110,6 +126,15 @@ class DataStructure extends GroupParameter {
   }
   set description(val) {
     this.definition = val;
+  }
+  set inputStatus(inputStatus) {
+    this.#inputStatus = inputStatus;
+  }
+  set jumpTo(jumpTo) {
+    this.#jumpTo = jumpTo;
+  }
+  set bulletNo(bulletNo) {
+    this.#bulletNo = bulletNo;
   }
   set verified(verified) {
     this.#verified = verified;
@@ -154,17 +179,51 @@ class DataStructure extends GroupParameter {
     super.addMember(member);
   }
 
-  getSiblingParameters({ groupCode = '', groupVersion = '', paramCode, paramVersion }) {
-    let siblings;
+  getParentGroup(parameter) {
+    return this.findParameter({
+      paramCode: parameter.parent?.code,
+      paramVersion: parameter.parent?.version
+    });
+  }
 
-    if (!groupCode) {
-      siblings = this.members;
+  getSiblingParameters({ group, parameter }) {
+    return group.members?.filter((member) => member !== parameter);
+  }
+
+  getSiblingCodes({ group = this, parameter }) {
+    let members = group.members.filter((member) => member !== parameter);
+
+    let siblingCodes = new Set([]);
+    if (members.length === group.members.length) {
+      members.forEach((member) => {
+        if (member.isGroup || member.isGrid) {
+          const subSiblingCodes = this.getSiblingCodes({ member, parameter });
+          if (subSiblingCodes.length > 0) {
+            siblingCodes = new Set([...siblingCodes, ...subSiblingCodes]);
+          }
+        }
+      });
     } else {
-      const group = this.findParameter(groupCode, groupVersion);
-      siblings = group.members;
+      siblingCodes = new Set(members.map((member) => member.paramCode));
     }
 
-    return siblings.filter((param) => !(param.paramCode == paramCode && param.paramVersion == paramVersion));
+    return [...siblingCodes];
+  }
+
+  getSlavedSiblingCodes({ group, parameter }) {
+    let members = group.members.filter((member) => member !== parameter);
+
+    let slavedCodes = new Set([]);
+    members.forEach((member) => {
+      if (member.paramType === ParamType.SELECT || member.paramType === ParamType.BOOLEAN) {
+        const subSlavedCodes = member.getAllOptionSlaves({});
+        if (subSlavedCodes?.length > 0) {
+          slavedCodes = new Set([...slavedCodes, ...subSlavedCodes]);
+        }
+      }
+    });
+
+    return [...slavedCodes];
   }
 
   getSiblingGroups({ groupCode = '', groupVersion = '', paramCode, paramVersion }) {
@@ -343,6 +402,8 @@ class DataStructure extends GroupParameter {
   parse(json = {}) {
     super.parse(json);
 
+    //this.inactivateSlaves(false);
+
     this.viewType = DataStructure.ViewTypes.BAREBONE;
     this.parent = {};
 
@@ -351,6 +412,9 @@ class DataStructure extends GroupParameter {
     this.paramValueDelimiter = json.paramValueDelimiter ?? '=';
 
     this.dataStructureId = json.paramId ?? json.dataStructureId;
+    this.inputStatus = json.inputStatus ?? false;
+    this.jumpTo = json.jumpTo ?? false;
+    this.bulletNo = json.bulletNo ?? false;
 
     this.verified = json.verified ?? { verified: false };
     this.freezed = json.freezed ?? { freezed: false };
@@ -362,6 +426,9 @@ class DataStructure extends GroupParameter {
     if (this.paramDelimiter !== ';') json.paramDelimiter = this.paramDelimiter;
     if (this.paramDelimiterPosition !== 'end') json.paramDelimiterPosition = this.paramDelimiterPosition;
     if (this.paramValueDelimiter !== '=') json.paramValueDelimiter = this.paramValueDelimiter;
+    if (this.inputStatus !== '=') json.inputStatus = this.inputStatus;
+    if (this.jumpTo !== '=') json.jumpTo = this.jumpTo;
+    if (this.bulletNo !== '=') json.bulletNo = this.bulletNo;
 
     json.dataStructureId = this.dataStructureId;
 
@@ -372,9 +439,11 @@ class DataStructure extends GroupParameter {
   }
 
   renderPreview({ formId = this.formId, spritemap }) {
+    const visiableMembers = this.activeMembers;
+
     return (
       <>
-        {this.members.map((parameter, order) => {
+        {visiableMembers.map((parameter, order) => {
           let actionItems = this.getPreviewActionItems(order);
 
           parameter.formId = formId;
@@ -393,16 +462,21 @@ class DataStructure extends GroupParameter {
   }
 
   render({ canvasId, events, className, style, spritemap }) {
+    const visiableMembers = this.activeMembers;
+    console.log('DataStructure.render: ', this.members, visiableMembers);
+
     return (
       <div id={canvasId}>
-        {this.members.map((parameter) =>
-          parameter.renderField({
-            events: events,
-            className: className,
-            style: style,
-            spritemap: spritemap
-          })
-        )}
+        {visiableMembers.map((parameter) => {
+          if (parameter.active) {
+            return parameter.renderField({
+              events: events,
+              className: className,
+              style: style,
+              spritemap: spritemap
+            });
+          }
+        })}
       </div>
     );
   }

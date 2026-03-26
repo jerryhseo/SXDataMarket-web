@@ -228,7 +228,7 @@ export const ParamProperty = {
   MULTIPLE_FILES: 'multipleFiles',
   MULTIPLE_LINE: 'multipleLine',
   NAME: 'name',
-  NULL_VALUE: 'nullValue',
+  NULLABLE: 'nullable',
   NUMERIC_PLACE_HOLDER: 'numericPlaceHolder',
   OPTION_LABEL: 'optionLabel',
   OPTION_VALUE: 'optionValue',

@@ -244,6 +244,12 @@ span.toggle-switch-bar {
   background-color: #f1f2f5;
 }
 
+/*
+.clay-reorder .form-control-inset + .clay-reorder-underlay {
+  height: auto;
+}
+  */
+
 .breadcrumb-bar {
   display: inline-flex;
   align-items: center;

@@ -56,16 +56,16 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
           }
         }
       }),
-      nullValue: ParameterUtil.createParameter({
+      nullable: ParameterUtil.createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.BOOLEAN,
         properties: {
-          paramCode: ParamProperty.NULL_VALUE,
-          viewType: ParameterConstants.SelectViewTypes.CHECKBOX,
-          displayName: Util.getTranslationObject(this.languageId, 'null-value'),
-          tooltip: Util.getTranslationObject(this.languageId, 'null-value-tooltip'),
-          defaultValue: false
+          paramCode: ParamProperty.NULLABLE,
+          viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
+          displayName: Util.getTranslationObject(this.languageId, 'nullable'),
+          tooltip: Util.getTranslationObject(this.languageId, 'nullable-tooltip'),
+          value: this.workingParam.nullable ?? false
         }
       }),
       optionsPerRow: ParameterUtil.createParameter({
@@ -120,7 +120,7 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
               errorClass: ErrorClass.ERROR
             }
           },
-          value: this.workingParam.listboxSize
+          value: this.workingParam.listboxSize ?? 5
         }
       }),
       placeholder: ParameterUtil.createParameter({
@@ -144,7 +144,7 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
               errorClass: ErrorClass.ERROR
             }
           },
-          value: this.workingParam.placeholder
+          value: this.workingParam.placeholder ?? {}
         }
       })
     };
@@ -157,30 +157,60 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
     );
   }
 
-  listenerFieldValueChanged = (e) => {
-    const dataPacket = e.dataPacket;
-    if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
+  listenerFieldValueChanged = (event) => {
+    const { targetPortlet, targetFormId, parameter, cellIndex } = event.dataPacket;
+    if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
       return;
     }
 
     /*
         console.log(
             "SXDSBuilderTypeSpecificPanel SX_FIELD_VALUE_CHANGED: ",
-            dataPacket,
+            parameter,
             this.workingParam,
-            this.fields[dataPacket.paramCode],
-            this.fields[dataPacket.paramCode].getValue()
+            this.fields[parameter.paramCode],
+            this.fields[parameter.paramCode].getValue()
         );
         */
-    if (dataPacket.parameter.hasError()) {
-      this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+    if (parameter.hasError()) {
+      this.dataStructure.setError(parameter.errorClass, parameter.errorMessage);
       return;
     }
 
-    this.workingParam[dataPacket.paramCode] = this.fields[dataPacket.paramCode].getValue();
+    this.workingParam[parameter.paramCode] = this.fields[parameter.paramCode].getValue();
 
-    if (dataPacket.paramCode == 'viewType') {
-      this.forceUpdate();
+    switch (parameter.paramCode) {
+      case 'viewType': {
+        const viewType = parameter.getValue();
+
+        const multiple =
+          viewType === ParameterConstants.BooleanViewTypes.DROPDOWN ||
+          viewType === ParameterConstants.BooleanViewTypes.RADIO
+            ? false
+            : true;
+
+        this.workingParam.multiple = multiple;
+        this.workingParam.initValue(cellIndex);
+
+        this.forceUpdate();
+        break;
+      }
+      case 'placeholder': {
+        if (parameter.hasValue()) {
+          this.workingParam.nullable = true;
+        } else {
+          this.workingParam.nullable = false;
+        }
+
+        this.workingParam.initValue(cellIndex);
+
+        break;
+      }
+      case 'nullable': {
+        this.workingParam.initValue(cellIndex);
+
+        break;
+      }
     }
 
     //this.workingParam.initValue();
@@ -191,11 +221,11 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
     //this.forceUpdate();
 
     if (this.workingParam.isRendered()) {
-      if (dataPacket.paramCode == 'viewType') {
-        if (ParameterConstants.SelectViewTypes.DROPDOWN || ParameterConstants.SelectViewTypes.RADIO) {
-          this.workingParam.setValue({ value: '' });
-        } else {
+      if (parameter.paramCode == 'viewType') {
+        if (this.workingParam.multiple) {
           this.workingParam.setValue({ value: [] });
+        } else {
+          this.workingParam.setValue({ value: '' });
         }
       }
 
@@ -209,7 +239,7 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
 				});
                 */
       } else {
-        this.workingParam.fireRefreshPreview();
+        this.workingParam.fireRefresh();
       }
     }
   };
@@ -240,7 +270,7 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
       <>
         {this.fields.viewType.renderField({ spritemap: this.spritemap })}
         {this.workingParam.viewType === ParameterConstants.SelectViewTypes.RADIO &&
-          this.fields.nullValue.renderField({ spritemap: this.spritemap })}
+          this.fields.nullable.renderField({ spritemap: this.spritemap })}
         {this.displayOptionsPerRow() &&
           this.fields.optionsPerRow.renderField({
             spritemap: this.spritemap

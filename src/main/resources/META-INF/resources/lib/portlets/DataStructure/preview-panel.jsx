@@ -8,14 +8,12 @@ import { Util } from '../../stationx/util';
 import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
 import SXBasePropertiesPanelComponent from './base-properties-panel-component';
 import { ParameterUtil } from '../Parameter/parameters';
-import { SXLabeledText } from '../Form/form';
 import { Icon, Text, TreeView } from '@clayui/core';
-import { Workbench } from '../DataWorkbench/workbench';
 
 class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
   constructor(props) {
     super(props);
-    //console.log("[SXDataStructurePreviewer props]: ", props);
+    console.log('[SXDataStructurePreviewer props]: ', props);
 
     this.inputStatus = props.inputStatus ?? false;
     this.jumpTo = props.jumpto ?? false;
@@ -47,8 +45,8 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
   }
 
   listenerFieldValueChanged = (event) => {
-    const dataPacket = event.dataPacket;
-    if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) return;
+    const { targetPortlet, targetFormId, parameter } = event.dataPacket;
+    if (targetPortlet !== this.namespace || targetFormId !== this.componentId) return;
 
     /*
 		console.log(
@@ -58,6 +56,8 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
 			this.dataStructure.members
 		);
 		*/
+
+    this.workingParam.defaultValue = parameter.getValue();
 
     if (this.inputStatus) {
       this.forceUpdate();

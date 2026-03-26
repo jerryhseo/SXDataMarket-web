@@ -287,8 +287,6 @@ class CollectionsManagement extends SXBaseVisualizer {
 
     if (this.state.selectedNavItem === item && portletName === this.state.workingPortletInstance.portletName) {
       return;
-    } else if (portletName === this.state.workingPortletInstance.portletName) {
-      //Event.fire()
     }
 
     this.setState({ selectedNavItem: item });

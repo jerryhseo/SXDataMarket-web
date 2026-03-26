@@ -152,6 +152,8 @@ class SXGrid extends SXBaseParameterComponent {
   };
 
   getHeadItems() {
+    const activeColumns = this.parameter.activeMembers;
+
     return [
       {
         id: 'rowIndex',
@@ -159,7 +161,7 @@ class SXGrid extends SXBaseParameterComponent {
         textValue: 'order',
         style: { maxWidth: '5rem' }
       },
-      ...this.parameter.columns.map((column) => {
+      ...activeColumns.map((column) => {
         return {
           id: column.paramCode,
           name: column.renderTitle({
@@ -178,6 +180,7 @@ class SXGrid extends SXBaseParameterComponent {
 
   renderBodyRows() {
     //console.log('[SXGrid renderBodyRows] ', this.parameter.columns, this.parameter.rowCount);
+    const activeColumns = this.parameter.activeMembers;
     let rows = [];
     let rowCount = this.parameter.rowCount;
 
@@ -234,7 +237,7 @@ class SXGrid extends SXBaseParameterComponent {
             )}
             {this.parameter.getDisabled(this.cellIndex) && <div style={{ textAlign: 'center' }}>{rowIndex + 1}</div>}
           </td>
-          {this.parameter.columns.map((column, colIndex) => (
+          {activeColumns.map((column, colIndex) => (
             <td
               key={colIndex}
               onClick={(e) => {
@@ -257,6 +260,10 @@ class SXGrid extends SXBaseParameterComponent {
   }
 
   render() {
+    if (!this.parameter.active) {
+      return <></>;
+    }
+
     //console.log("[SXGrid render] ", this.parameter);
     return (
       <div style={{ ...this.parameter.style }}>

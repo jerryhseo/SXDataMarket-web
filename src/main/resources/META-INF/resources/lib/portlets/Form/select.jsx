@@ -12,7 +12,7 @@ class SXSelect extends SXBaseParameterComponent {
 
     this.state = {
       focus: false,
-      value: this.parameter.getValue(this.cellIndex) ?? (this.parameter.isMultiple() ? [] : '')
+      value: this.parameter.getValue(this.cellIndex) ?? (this.parameter.isMultiple ? [] : '')
     };
 
     //console.log("SXSelect Remounted: ", this.parameter.paramCode, this.parameter);
@@ -26,7 +26,7 @@ class SXSelect extends SXBaseParameterComponent {
   }
 
   handleRadioClick(val) {
-    if (this.state.value == val && this.parameter.nullValue) {
+    if (this.state.value == val && this.parameter.nullable) {
       this.setValue('');
     }
   }
@@ -37,7 +37,7 @@ class SXSelect extends SXBaseParameterComponent {
 
   handleValueChange(val) {
     let newValue = val;
-    if (this.parameter.isMultiple()) {
+    if (this.parameter.isMultiple) {
       if (this.state.value.includes(val)) {
         newValue = this.state.value.filter((elem) => elem !== val);
       } else {
@@ -74,7 +74,7 @@ class SXSelect extends SXBaseParameterComponent {
       <ClaySelectBox
         value={value}
         items={optionItems}
-        multiple={this.parameter.isMultiple()}
+        multiple={this.parameter.isMultiple}
         disabled={this.parameter.getDisabled(this.cellIndex)}
         size={this.parameter.listboxSize ?? 4}
         onSelectChange={this.handleLiastboxSelectChanged}
@@ -177,7 +177,7 @@ class SXSelect extends SXBaseParameterComponent {
                 }}
               >
                 <ClayRadio
-                  label={Util.getTranslation(option.label, this.parameter.languageId, this.defaultLanguageId)}
+                  label={Util.getTranslation(option.label, this.languageId, this.defaultLanguageId)}
                   value={option.value}
                   checked={this.state.value == option.value}
                   onClick={(e) => this.handleRadioClick(e.target.value)}
@@ -196,7 +196,7 @@ class SXSelect extends SXBaseParameterComponent {
           optionRows.map((option) => (
             <ClayRadio
               key={option.value}
-              label={Util.getTranslation(option.label, this.parameter.languageId, this.defaultLanguageId)}
+              label={Util.getTranslation(option.label, this.languageId, this.defaultLanguageId)}
               value={option.value}
               checked={this.state.value == option.value}
               onClick={(e) => this.handleRadioClick(e.target.value)}
@@ -219,7 +219,7 @@ class SXSelect extends SXBaseParameterComponent {
                   }}
                 >
                   <ClayRadio
-                    label={Util.getTranslation(option.label, this.parameter.languageId, this.defaultLanguageId)}
+                    label={Util.getTranslation(option.label, this.languageId, this.defaultLanguageId)}
                     value={option.value}
                     checked={this.state.value == option.value}
                     onClick={(e) => this.handleRadioClick(e.target.value)}
@@ -267,6 +267,7 @@ class SXSelect extends SXBaseParameterComponent {
           this.handleValueChange(e.target.value);
         }}
         sizing="sm"
+        style={{ height: 'auto' }}
       >
         {optionItems.map((option, index) => {
           return <ClaySelect.Option key={option.key} label={option.label} value={option.value} />;
@@ -313,6 +314,7 @@ class SXSelect extends SXBaseParameterComponent {
   }
 
   render() {
+    console.log('SXSelect.render: ', this.parameter);
     return (
       <div
         className={this.parameter.getClassName(this.className, this.cellIndex)}

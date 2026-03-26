@@ -137,7 +137,8 @@ class DataSetEditor extends SXBaseVisualizer {
         displayName: Util.getTranslationObject(this.languageId, 'description'),
         placeholder: Util.getTranslationObject(this.languageId, 'description'),
         tooltip: Util.getTranslationObject(this.languageId, 'description-tooltip'),
-        multipleLine: true
+        multipleLine: true,
+        rows: '5'
       }
     });
 

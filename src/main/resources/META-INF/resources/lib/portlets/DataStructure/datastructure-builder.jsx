@@ -23,7 +23,6 @@ import ParameterConstants from '../Parameter/parameter-constants';
 import { ParameterUtil } from '../Parameter/parameters';
 import SXGroupSelector from './group-selector';
 import SXInstanceInfo from '../../stationx/instance-info';
-import StructuredDataEditor from '../StructuredData/structured-data-editor';
 
 class DataStructureBuilder extends SXBaseVisualizer {
   rerenderProperties = [
@@ -1052,6 +1051,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
                 namespace={this.namespace}
                 formId={this.componentId}
                 dataStructure={this.dataStructure}
+                workingParam={this.workingParam}
                 inputStatus={Util.isEmpty(this.dataType) ? false : this.dataType.inputStatus}
                 jumpTo={Util.isEmpty(this.dataType) ? false : this.dataType.inputStatus}
                 spritemap={this.spritemap}

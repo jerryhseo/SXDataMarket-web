@@ -1,6 +1,6 @@
 import React from 'react';
 import { Util } from '../../stationx/util';
-import { EditStatus, Event, LoadingStatus, RequestIDs } from '../../stationx/station-x';
+import { EditStatus, Event, LoadingStatus, ParamType, RequestIDs } from '../../stationx/station-x';
 import Button from '@clayui/button';
 import Icon from '@clayui/icon';
 import DataStructure from '../DataStructure/data-structure';
@@ -105,18 +105,26 @@ class StructuredDataEditor extends SXBaseVisualizer {
     const { targetPortlet, requestId, data, params, status } = event.dataPacket;
 
     if (targetPortlet !== this.namespace) {
-      console.log('[StructuredDataEditor] listenerResponce rejected: ', event.dataPacket);
+      console.log('[StructuredDataEditor] listenerResponce rejected: ', targetPortlet);
       return;
     }
 
-    console.log('[StructuredDataEditor] listenerResonse: ', event.dataPacket);
+    console.log('[StructuredDataEditor] listenerResonse: ', requestId, data, params);
 
-    const { error } = data;
+    const { error, message } = data;
     if (error) {
       this.setState({
         infoDialog: true,
         dialogHeader: SXModalUtil.errorDlgHeader(this.spritemap),
         dialogBody: error
+      });
+
+      return;
+    } else if (message) {
+      this.setState({
+        infoDialog: true,
+        dialogHeader: SXModalUtil.successDlgHeader(this.spritemap),
+        dialogBody: message
       });
     }
 
@@ -139,6 +147,8 @@ class StructuredDataEditor extends SXBaseVisualizer {
           properties: dataStructure ?? {}
         });
 
+        this.dataStructure.inactivateSlaves(false);
+
         this.dataStructure.loadData(structuredData.data);
 
         console.log('DataStructure filled with values: ', this.dataStructure);
@@ -151,6 +161,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
           formId: this.portletId,
           properties: dataStructure ?? {}
         });
+        this.dataStructure.inactivateSlaves(false);
 
         this.componentId = this.formId + this.dataStructure.paramCode + '_' + this.dataStructure.paramVersion;
         break;
@@ -160,10 +171,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
         const { message, structuredDataId } = data;
 
         this.setState({
-          structuredDataId: structuredDataId,
-          infoDialog: true,
-          dialogHeader: SXModalUtil.successDlgHeader(),
-          dialogBody: message
+          structuredDataId: structuredDataId
         });
 
         this.dataStructure.markClean();
@@ -187,11 +195,13 @@ class StructuredDataEditor extends SXBaseVisualizer {
       }
     }
 
-    this.setState({ loadingStatus: status });
+    this.setState({
+      loadingStatus: LoadingStatus.COMPLETE
+    });
   };
 
   listenerFieldValueChanged = (event) => {
-    const { targetPortlet, parameter } = event.dataPacket;
+    const { targetPortlet, parameter, cellIndex } = event.dataPacket;
 
     if (targetPortlet !== this.namespace) {
       //console.log("[StructuredDataEditor] listenerFieldValueChanged rejected: ", event.dataPacket);
@@ -199,7 +209,7 @@ class StructuredDataEditor extends SXBaseVisualizer {
     }
 
     const structuredData = this.dataStructure.toData();
-    console.log('[StructuredDataEditor] listenerFieldValueChanged received: ', event.dataPacket, structuredData);
+    console.log('[StructuredDataEditor] listenerFieldValueChanged received: ', parameter, structuredData);
 
     const files = this.dataStructure.getDataFiles();
 
@@ -215,6 +225,30 @@ class StructuredDataEditor extends SXBaseVisualizer {
       files: files,
       data: JSON.stringify(structuredData)
     });
+
+    console.log('StructuredDataEditor.listenerFieldValueChanged: ', parameter, cellIndex);
+
+    if (parameter.isJunction) {
+      const value = parameter.getValue(cellIndex);
+      const slaveCodes = parameter.getOptionSlaves(value);
+
+      if (slaveCodes?.length > 0) {
+        console.log('StructuredDataEditor.listenerFieldValueChanged value, slaveCodes: ', value, slaveCodes);
+        const parentGroup = this.dataStructure.findParameter({
+          paramCode: parameter.parent?.code,
+          paramVersion: parameter.parent?.version
+        });
+        console.log('StructuredDataEditor.listenerFieldValueChanged parentGroup: ', parentGroup);
+
+        this.dataStructure.activateSlaveMembers({
+          group: parentGroup,
+          activeParamCodes: slaveCodes,
+          junction: parameter
+        });
+
+        this.forceUpdate();
+      }
+    }
   };
 
   listenerDownloadFieldAttachedFile = (event) => {
@@ -383,90 +417,84 @@ class StructuredDataEditor extends SXBaseVisualizer {
   };
 
   render() {
-    //console.log("Editor render: ", this.dataStructure, this.loadingStatus);
-    if (this.loadingStatus === LoadingStatus.PENDING) {
-      return <h3>Loading...</h3>;
-    } else if (this.loadingStatus === LoadingStatus.FAIL) {
-      return <h3>Loading Failed</h3>;
-    } else {
-      return (
-        <>
-          {this.state.structuredDataId > 0 && (
-            <div className="autofit-row" style={{ paddingRight: '10px' }}>
-              <div className="autofit-col autofit-col-expand">
-                <SXLabeledText
-                  label={Util.translate('id')}
-                  text={this.state.structuredDataId}
-                  spritemap={this.spritemap}
-                />
-              </div>
-              {this.structuredData && <div className="autofit-col"></div>}
-            </div>
-          )}
-          <div className="autofit-row" style={{ backgroundColor: '#fff', paddingTop: '1.5rem', paddingRight: '10px' }}>
+    console.log('StructuredDataEditor.render: ', this.dataStructure);
+    return (
+      <>
+        {this.state.structuredDataId > 0 && (
+          <div className="autofit-row" style={{ paddingRight: '10px' }}>
             <div className="autofit-col autofit-col-expand">
-              {Util.isNotEmpty(this.dataStructure) &&
-                this.dataStructure.render({ canvasId: this.namespace, spritemap: this.spritemap })}
+              <SXLabeledText
+                label={Util.translate('id')}
+                text={this.state.structuredDataId}
+                spritemap={this.spritemap}
+              />
             </div>
+            {this.structuredData && <div className="autofit-col"></div>}
           </div>
-          {this.buttons && (
-            <Button.Group
-              spaced
-              style={{
-                width: '100%',
-                justifyContent: 'center',
-                marginTop: '1.5rem',
-                marginBottom: '1.5rem'
-              }}
-            >
-              <Button displayType="primary" onClick={this.handleSaveData} title={Util.translate('save-data')}>
-                <Icon symbol="disk" spritemap={this.spritemap} style={{ marginRight: '5px' }} />
-                {Util.translate('save')}
-              </Button>
-              <Button displayType="secondary" onClick={this.handleCancel} title={Util.translate('cancel')}>
-                {Util.translate('cancel')}
-              </Button>
-            </Button.Group>
-          )}
-          {this.state.infoDialog && (
-            <SXModalDialog
-              header={this.state.dialogHeader}
-              body={this.state.dialogBody}
-              buttons={[
-                {
-                  label: Util.translate('ok'),
-                  onClick: (e) => {
-                    this.setState({ infoDialog: false });
-                  }
+        )}
+        <div className="autofit-row" style={{ backgroundColor: '#fff', paddingTop: '1.5rem', paddingRight: '10px' }}>
+          <div className="autofit-col autofit-col-expand">
+            {Util.isNotEmpty(this.dataStructure) &&
+              this.dataStructure.render({ canvasId: this.namespace, spritemap: this.spritemap })}
+          </div>
+        </div>
+        {this.buttons && (
+          <Button.Group
+            spaced
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              marginTop: '1.5rem',
+              marginBottom: '1.5rem'
+            }}
+          >
+            <Button displayType="primary" onClick={this.handleSaveData} title={Util.translate('save-data')}>
+              <Icon symbol="disk" spritemap={this.spritemap} style={{ marginRight: '5px' }} />
+              {Util.translate('save')}
+            </Button>
+            <Button displayType="secondary" onClick={this.handleCancel} title={Util.translate('cancel')}>
+              {Util.translate('cancel')}
+            </Button>
+          </Button.Group>
+        )}
+        {this.state.infoDialog && (
+          <SXModalDialog
+            header={this.state.dialogHeader}
+            body={this.state.dialogBody}
+            buttons={[
+              {
+                label: Util.translate('ok'),
+                onClick: (e) => {
+                  this.setState({ infoDialog: false });
                 }
-              ]}
-            />
-          )}
-          {this.state.saveWarningDialog && (
-            <SXModalDialog
-              header={this.state.dialogHeader}
-              body={this.state.dialogBody}
-              buttons={[
-                {
-                  label: Util.translate('save'),
-                  onClick: (e) => {
-                    this.saveData();
+              }
+            ]}
+          />
+        )}
+        {this.state.saveWarningDialog && (
+          <SXModalDialog
+            header={this.state.dialogHeader}
+            body={this.state.dialogBody}
+            buttons={[
+              {
+                label: Util.translate('save'),
+                onClick: (e) => {
+                  this.saveData();
 
-                    this.setState({ saveWarningDialog: false });
-                  }
-                },
-                {
-                  label: Util.translate('cancel'),
-                  onClick: (e) => {
-                    this.setState({ saveWarningDialog: false });
-                  }
+                  this.setState({ saveWarningDialog: false });
                 }
-              ]}
-            />
-          )}
-        </>
-      );
-    }
+              },
+              {
+                label: Util.translate('cancel'),
+                onClick: (e) => {
+                  this.setState({ saveWarningDialog: false });
+                }
+              }
+            ]}
+          />
+        )}
+      </>
+    );
   }
 }
 

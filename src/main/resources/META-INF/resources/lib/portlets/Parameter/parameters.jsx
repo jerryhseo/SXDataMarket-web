@@ -21,7 +21,6 @@ import SXMatrix from '../Form/matrix';
 import SXNumeric from '../Form/numeric';
 import SXPhone from '../Form/phone';
 import SXCommentDisplayer from '../../stationx/comment';
-import { Workbench } from '../DataWorkbench/workbench';
 
 export class ParameterUtil {
   static createParameter({ namespace, formId, paramType, properties = {} }) {
@@ -173,6 +172,7 @@ class Parameter {
   #state = Constant.State.ACTIVE;
   #referenceFile = {};
   #position = Constant.Position.MIDDLE;
+  #active = true;
 
   #commentable = false;
   #verifiable = false;
@@ -446,7 +446,7 @@ class Parameter {
     return !!this.validation.custom;
   }
   get active() {
-    return this.state == Constant.State.ACTIVE || this.state == Constant.State.DISABLED;
+    return this.#active;
   }
   get value() {
     return this.#value;
@@ -619,7 +619,7 @@ class Parameter {
     this.#validation = val;
   }
   set active(val) {
-    this.#state = val ? Constant.State.ACTIVE : Constant.State.INACTIVE;
+    this.#active = val;
   }
   set value(val) {
     this.#value = val;
@@ -668,8 +668,7 @@ class Parameter {
   }
 
   refreshKey() {
-    //console.log("Parameter key refreshed: ", this.paramCode);
-    this.key = Util.randomKey();
+    this.key = Util.nowTime();
 
     return this.key;
   }
@@ -733,6 +732,8 @@ class Parameter {
     } else {
       this.dirty = true;
     }
+
+    this.refreshKey();
   }
 
   getDirty(cellIndex) {
@@ -847,6 +848,14 @@ class Parameter {
 
   get isGrid() {
     return this.paramType == ParamType.GRID;
+  }
+
+  get isCollection() {
+    return this.paramType == ParamType.GROUP || this.paramType == ParamType.GRID;
+  }
+
+  get isJunction() {
+    return this.paramType === ParamType.SELECT || this.paramType === ParamType.BOOLEAN;
   }
 
   postfixParameterCode(postfix) {
@@ -1253,7 +1262,8 @@ class Parameter {
         paramCode: this.parent.code,
         paramVersion: this.parent.version,
         parameter: this,
-        cellIndex: cellIndex
+        cellIndex: cellIndex,
+        value: this.getValue(cellIndex)
       });
     } else {
       Event.fire(Event.SX_REFRESH, this.namespace, this.namespace, {
@@ -1261,7 +1271,8 @@ class Parameter {
         paramCode: this.paramCode,
         paramVersion: this.paramVersion,
         parameter: this,
-        cellIndex: cellIndex
+        cellIndex: cellIndex,
+        value: this.value
       });
     }
   }
@@ -1768,7 +1779,7 @@ class Parameter {
 
   toData() {
     let data;
-    if (this.hasValue()) {
+    if (this.active && this.hasValue()) {
       data = {};
       data[this.paramCode] = {};
       const strucValue = data[this.paramCode];
@@ -2150,8 +2161,9 @@ export class SelectParameter extends Parameter {
   #optionsPerRow = 0;
   #listboxSize = 3;
   #placeholder = '';
-  #multiple = true;
-  #nullValue = true;
+  #multiple = false;
+  #nullable = false;
+  #showAnyway = false;
 
   constructor({ namespace, formId, paramType = ParamType.SELECT, properties = {} }) {
     super({
@@ -2162,6 +2174,10 @@ export class SelectParameter extends Parameter {
 
     if (Util.isNotEmpty(properties)) {
       this.parse(properties);
+    }
+
+    if (!this.nullable) {
+      console.log('SelectParameter.constructor nullable: ', this.nullable);
     }
   }
 
@@ -2192,8 +2208,11 @@ export class SelectParameter extends Parameter {
 
     return '';
   }
-  get nullValue() {
-    return this.#nullValue;
+  get nullable() {
+    return this.#nullable;
+  }
+  get showAnyway() {
+    return this.#showAnyway;
   }
 
   set options(val) {
@@ -2211,8 +2230,31 @@ export class SelectParameter extends Parameter {
   set placeholder(val) {
     this.#placeholder = val;
   }
-  set nullValue(val) {
-    this.#nullValue = val;
+  set nullable(val) {
+    this.#nullable = val;
+
+    let value = this.defaultValue ?? (this.displayType === ParameterConstants.DisplayTypes.GRID_CELL ? [] : '');
+    if (Util.isEmpty(value)) {
+      let initVal;
+
+      if (this.nullable) {
+        initVal = this.multiple ? [] : '';
+      } else {
+        const firstOptionVal = this.options[0]?.value;
+        if (firstOptionVal) {
+          initVal = this.multiple ? [firstOptionVal] : firstOptionVal;
+        } else {
+          initVal = this.multiple ? [] : '';
+        }
+      }
+
+      if (Util.isNotEmpty(initVal)) {
+        this.displayType === ParameterConstants.DisplayTypes.GRID_CELL ? value.push(initVal) : initVal;
+      }
+    }
+  }
+  set showAnyway(val) {
+    this.#showAnyway = val;
   }
 
   initProperties(json) {
@@ -2223,7 +2265,7 @@ export class SelectParameter extends Parameter {
         this.value = [];
       }
 
-      this.value.forEach((val, cellIndex) => {
+      this.value?.forEach((val, cellIndex) => {
         if (!this.hasValue(cellIndex)) {
           this.initValue(cellIndex);
         }
@@ -2235,7 +2277,7 @@ export class SelectParameter extends Parameter {
     }
   }
 
-  isMultiple() {
+  get isMultiple() {
     return (
       this.viewType == ParameterConstants.SelectViewTypes.CHECKBOX ||
       (this.viewType == ParameterConstants.SelectViewTypes.LISTBOX && this.multiple)
@@ -2248,17 +2290,12 @@ export class SelectParameter extends Parameter {
 
   checkDuplicatedOptionValue(optionValue) {
     if (!this.options) {
-      return false;
+      return true;
     }
 
-    let duplicated = false;
-    this.options.every((option) => {
-      duplicated = option.value == optionValue;
+    const duplicated = this.options.filter((option) => option.value === optionValue);
 
-      return duplicated ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
-    });
-
-    return duplicated;
+    return duplicated.length > 0;
   }
 
   addOption(option) {
@@ -2275,18 +2312,18 @@ export class SelectParameter extends Parameter {
 
   copyOption(index) {
     const insertPlace = index + 1;
-    const newOption = { ...this.getOption(index), value: '' };
+    const option = this.getOption(index);
+
+    const newOption = { label: { ...option.label }, value: option.value + '_' + (index + 1) };
     this.options = [...this.options.slice(0, insertPlace), newOption, ...this.options.slice(insertPlace)];
-    //this.refreshKey();
+
     return newOption;
   }
 
   removeOption(index) {
     this.#options.splice(index, 1);
 
-    //this.refreshKey();
-
-    return this.#options.length > 0 ? this.#options[0] : {};
+    return this.#options.length > 0 && index > 0 ? this.#options[index - 1] : {};
   }
 
   switchOptions(index1, index2) {
@@ -2317,13 +2354,42 @@ export class SelectParameter extends Parameter {
     return index + 1;
   }
 
+  fetchOption(optionValue) {
+    return this.options.filter((option) => option.value === optionValue)[0];
+  }
+
+  getOptionSlaves(optionValue) {
+    const option = this.fetchOption(optionValue);
+
+    return option?.slaves;
+  }
+
+  getAllOptionSlaves({ exceptOption }) {
+    let slaveSet = new Set([]);
+
+    const options = this.#options?.filter((option) => option !== exceptOption);
+    options.forEach((option) => {
+      const optionSlaves = option.slaves ?? [];
+      slaveSet = new Set([...slaveSet, ...optionSlaves]);
+    });
+
+    return [...slaveSet];
+  }
+
   initValue(cellIndex) {
-    let value = this.defaultValue;
-    if (this.isMultiple()) {
-      value = this.defaultValue ?? [];
+    let value = this.defaultValue ?? (this.multiple ? [] : '');
+    if (Util.isEmpty(value)) {
+      if (!this.nullable) {
+        const firstOptionVal = this.options[0]?.value;
+        if (firstOptionVal) {
+          value = this.multiple ? [firstOptionVal] : firstOptionVal;
+        }
+      }
     }
 
     super.setValue({ value: value, cellIndex: cellIndex });
+
+    console.log('SelectParameter.initValue: ', this);
   }
 
   parse(json) {
@@ -2335,7 +2401,8 @@ export class SelectParameter extends Parameter {
     this.listboxSize = json.listboxSize ?? this.#listboxSize;
     this.multiple = json.multiple ?? true;
     this.placeholder = json.placeholder;
-    this.nullValue = json.nullValue ?? false;
+    this.nullable = json.nullable ?? false;
+    this.showAnyway = json.showAnyway ?? false;
   }
 
   toJSON() {
@@ -2356,8 +2423,12 @@ export class SelectParameter extends Parameter {
       json.multiple = false;
     }
 
-    if (this.nullValue) {
-      json.nullValue = this.nullValue;
+    if (this.nullable) {
+      json.nullable = this.nullable;
+    }
+
+    if (this.showAnyway) {
+      json.showAnyway = this.showAnyway;
     }
 
     if (Util.isNotEmpty(this.placeholder)) {
@@ -2376,7 +2447,8 @@ export class SelectParameter extends Parameter {
     json.listboxSize = this.listboxSize;
     json.multiple = this.multiple;
     json.placeholder = this.placeholder;
-    json.nullValue = this.nullValue;
+    json.nullable = this.nullable;
+    json.showAnyway = this.showAnyway;
 
     return json;
   }
@@ -3178,7 +3250,7 @@ export class FileParameter extends Parameter {
 
   toData() {
     let data;
-    if (this.hasValue()) {
+    if (this.active && this.hasValue()) {
       data = {};
       data[this.paramCode] = {};
       const strucValue = data[this.paramCode];
@@ -3308,6 +3380,10 @@ export class GroupParameter extends Parameter {
   get memberCount() {
     return this.members.length;
   }
+  get activeMembers() {
+    return this.members.filter((member) => member.active);
+  }
+
   get firstMember() {
     return this.members.length > 0 ? this.members[0] : null;
   }
@@ -3492,6 +3568,11 @@ export class GroupParameter extends Parameter {
     return isMember;
   }
 
+  getSiblings(paramCode, paramVersion) {
+    const param = this.findParameter({ paramCode, paramVersion });
+    console.log('GroupParameter.getSiblings: ', param);
+  }
+
   deleteMemberByIndex(index) {
     const removed = this.members[index];
     console.log('GroupParameter.deleteMemberByIndex: ', index, removed, this.members);
@@ -3589,6 +3670,66 @@ export class GroupParameter extends Parameter {
     });
 
     return found;
+  }
+
+  /**
+   *
+   * @param {JSONObject} {}
+   * @returns
+   */
+  inactivateSlaves(force = false) {
+    let junctions = [];
+
+    let groupSlaveCodes = [];
+    this.members.forEach((member) => {
+      if (member.isJunction) {
+        let slaveCodes = [];
+
+        if (force || !member.showAnyway) {
+          junctions.push(member);
+
+          slaveCodes = member.getAllOptionSlaves({});
+        }
+
+        groupSlaveCodes = [...groupSlaveCodes, ...slaveCodes];
+      }
+    });
+
+    this.#members.forEach((member) => {
+      if (groupSlaveCodes.includes(member.paramCode)) {
+        member.active = false;
+      }
+
+      if (member.isCollection) {
+        const subJunctions = member.inactivateSlaves(force);
+
+        junctions = [...junctions, ...subJunctions];
+      }
+    });
+
+    return junctions;
+  }
+
+  activateParameter(paramCode, active = true) {
+    this.members.forEach((member) => {
+      if (paramCode === member.paramCode) {
+        member.active = active;
+      }
+
+      if (member.isGroup || member.isGrid) {
+        member.activateParameter(paramCode, active);
+      }
+    });
+  }
+
+  activateSlaveMembers({ group = this, activeParamCodes, junction }) {
+    const slaveCodes = junction.getAllOptionSlaves({});
+
+    group.members.forEach((member) => {
+      if (member !== junction && slaveCodes.includes(member.paramCode)) {
+        member.active = activeParamCodes.includes(member.paramCode);
+      }
+    });
   }
 
   moveMemberUp(paramOrder) {
@@ -3822,6 +3963,10 @@ export class GroupParameter extends Parameter {
   }
 
   toData() {
+    if (!this.active) {
+      return;
+    }
+
     let memberOutputs = {};
     this.members.forEach((member) => {
       const memberData = member.toData();
@@ -3942,18 +4087,20 @@ export class GroupParameter extends Parameter {
     cellIndex
   }) {
     return (
-      <SXGroup
-        key={this.key}
-        parameter={this}
-        events={events}
-        className={className}
-        style={style}
-        spritemap={spritemap}
-        displayType={displayType}
-        viewType={viewType}
-        cellIndex={cellIndex}
-        preview={preview}
-      />
+      this.active && (
+        <SXGroup
+          key={this.key}
+          parameter={this}
+          events={events}
+          className={className}
+          style={style}
+          spritemap={spritemap}
+          displayType={displayType}
+          viewType={viewType}
+          cellIndex={cellIndex}
+          preview={preview}
+        />
+      )
     );
   }
 }
@@ -4256,18 +4403,20 @@ export class GridParameter extends GroupParameter {
     cellIndex
   }) {
     return (
-      <SXGrid
-        key={this.key}
-        parameter={this}
-        events={events}
-        className={className}
-        style={style}
-        spritemap={spritemap}
-        displayType={displayType}
-        viewType={viewType}
-        cellIndex={cellIndex}
-        preview={preview}
-      />
+      this.active && (
+        <SXGrid
+          key={this.key}
+          parameter={this}
+          events={events}
+          className={className}
+          style={style}
+          spritemap={spritemap}
+          displayType={displayType}
+          viewType={viewType}
+          cellIndex={cellIndex}
+          preview={preview}
+        />
+      )
     );
   }
 }

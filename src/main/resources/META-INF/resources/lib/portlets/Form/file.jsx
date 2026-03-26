@@ -23,7 +23,7 @@ class SXFile extends SXBaseParameterComponent {
       dialogBody: <></>
     };
 
-    console.log('[SXFile props] ', props, this.parameter, this.state.value);
+    //console.log('[SXFile props] ', props, this.parameter, this.state.value);
   }
 
   componentDidMount() {
