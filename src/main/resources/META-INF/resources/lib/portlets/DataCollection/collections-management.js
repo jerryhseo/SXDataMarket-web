@@ -181,7 +181,7 @@ class CollectionsManagement extends SXBaseVisualizer {
       return;
     }
 
-    console.log('[CollectionManagement listenerNavItemSelected] ', prevItem, item);
+    //console.log('[CollectionManagement listenerNavItemSelected] ', prevItem, item);
 
     let portletName = PortletKeys.STRUCTURED_DATA_EXPLORER;
     let addButton = true;

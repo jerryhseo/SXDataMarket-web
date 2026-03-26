@@ -9,7 +9,7 @@ class SXApplicationBar extends React.Component {
   constructor(props) {
     super(props);
 
-    console.log('ApplicationBar props: ', props);
+    //console.log('ApplicationBar props: ', props);
     this.namespace = props.namespace;
     this.formId = props.formId;
     this.spritemap = props.spritemap;
@@ -45,7 +45,7 @@ class SXApplicationBar extends React.Component {
   };
 
   render() {
-    console.log('ApplicationBar render: ', this.state.verticalNavOpened);
+    //console.log('ApplicationBar render: ', this.state.verticalNavOpened);
     return (
       <nav className="application-bar application-bar-dark navbar navbar-expand-md" style={{ height: '40px' }}>
         <ul className="navbar-nav">

@@ -15,7 +15,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
   constructor(props) {
     super(props);
 
-    console.log('SXSelectOptionBuilder constructor: ', props);
+    //console.log('SXSelectOptionBuilder constructor: ', props);
 
     const attachedOption = this.workingParam.options?.length > 0;
     this.state = {
@@ -152,11 +152,11 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
     const { targetPortlet, targetFormId, action, data } = event.dataPacket;
 
     if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
-      console.log('[SXSelectOptionBuilder.listenerPopActionClicked] REJECTED: ', targetPortlet, targetFormId);
+      //console.log('[SXSelectOptionBuilder.listenerPopActionClicked] REJECTED: ', targetPortlet, targetFormId);
       return;
     }
 
-    console.log('[SXSelectOptionBuilder.listenerPopActionClicked] ', action, data);
+    //console.log('[SXSelectOptionBuilder.listenerPopActionClicked] ', action, data);
 
     const checked = this.checkFieldError();
     if (checked) {
@@ -285,7 +285,6 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 
   removeOption = (index) => {
     const nextOption = this.workingParam.removeOption(index);
-    console.log('removeOption nextOption: ', nextOption);
 
     this.setState({
       selectedOption: nextOption,
@@ -294,7 +293,6 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 
     this.fieldOptionLabel.setValue({ value: nextOption.label ?? {} });
     this.fieldOptionValue.setValue({ value: nextOption.value });
-    //console.log("removeOption: ", this.fieldOptionLabel, this.fieldOptionValue);
     this.fieldOptionLabel.refreshKey();
     this.fieldOptionValue.refreshKey();
 
@@ -365,7 +363,6 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
     event.stopPropagation();
 
     const value = event.target.checked;
-    console.log('handleSlaveSelectionChanged: ', param, event.target.checked);
 
     const slaveSet = new Set(this.state.selectedOption.slaves ?? []);
     if (value) {
@@ -389,7 +386,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
   };
 
   handleShowAllSlaves = (val) => {
-    console.log('handleShowAllSlaves: ', val);
+    //console.log('handleShowAllSlaves: ', val);
 
     this.workingParam.showAnyway = val;
   };
@@ -568,7 +565,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
                   <Cell textAlign="center">
                     <div style={{ backgroundColor: selected ? selectedColor : 'inherit' }}>
                       <SXActionDropdown
-                        key={this.state.actionRefreshKey}
+                        key={index}
                         namespace={this.namespace}
                         formId={this.componentId}
                         actionItems={actionItems}

@@ -17,7 +17,7 @@ class SXDataCollectionNavigationBar extends React.Component {
   constructor(props) {
     super(props);
 
-    console.log('SXDataCollectionNavigationBar: ', props);
+    //console.log('SXDataCollectionNavigationBar: ', props);
     this.namespace = props.namespace;
     this.formId = props.formId;
     this.componentId = props.componentId;
@@ -54,6 +54,7 @@ class SXDataCollectionNavigationBar extends React.Component {
       return;
     }
 
+    /*
     console.log(
       '[SXDataCollectionNavigationBar] REFRESH: ',
       navItems,
@@ -62,6 +63,7 @@ class SXDataCollectionNavigationBar extends React.Component {
       removedExpandedKeys,
       this.state.expandedKeys
     );
+    */
 
     additionalExpandedKeys.forEach((element) => {
       this.state.expandedKeys.add(element);
@@ -145,7 +147,7 @@ class SXDataCollectionNavigationBar extends React.Component {
 
   fireNavItemSelected = (item) => {
     if (this.state.selectedItem === item) {
-      console.log('Same Nav Item clicked: Do nothing!');
+      //console.log('Same Nav Item clicked: Do nothing!');
       return;
     } else if (this.state.selectedItem !== null) {
       this.state.selectedItem.dirty = false;
@@ -164,7 +166,7 @@ class SXDataCollectionNavigationBar extends React.Component {
   };
 
   render() {
-    console.log('[Navigation render] ', this.state.navItems, this.state.selectedItem, this.state.expandedKeys);
+    //console.log('[Navigation render] ', this.state.navItems, this.state.selectedItem, this.state.expandedKeys);
 
     return (
       <Provider spritemap={this.spritemap}>

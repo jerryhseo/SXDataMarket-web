@@ -94,7 +94,6 @@ class DataStructureBuilder extends SXBaseVisualizer {
     this.state = {
       dataStructureId: this.params.dataStructureId ?? 0,
       paramType: ParamType.STRING,
-      dataStructurePreviewerReloadKey: Util.randomKey(),
       loadingStatus: LoadingStatus.PENDING,
       infoDialog: false,
       confirmParamDeleteDlg: false,
@@ -246,8 +245,9 @@ class DataStructureBuilder extends SXBaseVisualizer {
     console.log(
       '[DataStructureBuilder] SX_PARAMETER_SELECTED received: ',
       JSON.stringify(this.dataStructure),
-      JSON.stringify(parameter.referenceFile, null, 4)
-    ); */
+      JSON.stringify(parameter, null, 4)
+    );
+    */
 
     if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
       this.openErrorDlg(Util.translate('fix-the-error-first', this.dataStructure.errorMessage));
@@ -1047,7 +1047,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
             </div>
             <div style={this.previewPanelStyles}>
               <SXDataStructurePreviewer
-                key={this.state.dataStructurePreviewerReloadKey}
+                key={this.workingParam.key}
                 namespace={this.namespace}
                 formId={this.componentId}
                 dataStructure={this.dataStructure}

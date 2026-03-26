@@ -13,7 +13,7 @@ import { Icon, Text, TreeView } from '@clayui/core';
 class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
   constructor(props) {
     super(props);
-    console.log('[SXDataStructurePreviewer props]: ', props);
+    //console.log('[SXDataStructurePreviewer props]: ', props);
 
     this.inputStatus = props.inputStatus ?? false;
     this.jumpTo = props.jumpto ?? false;
@@ -24,7 +24,7 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
       confirmDlgState: false,
       confirmDlgHeader: SXModalUtil.errorDlgHeader(this.spritemap),
       confirmDlgBody: <></>,
-      childRefreshKey: Util.randomKey(),
+      childRefreshKey: Util.nowTime(),
       addCommentModal: false
     };
 
@@ -49,19 +49,16 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
     if (targetPortlet !== this.namespace || targetFormId !== this.componentId) return;
 
     /*
-		console.log(
-			"[SXDataStructurePreviewer] SX_FIELD_VALUE_CHANGED RECEIVED: ",
-			dataPacket,
-			this.dataStructure,
-			this.dataStructure.members
-		);
-		*/
+    console.log(
+      '[SXDataStructurePreviewer] SX_FIELD_VALUE_CHANGED RECEIVED: ',
+      this.dataStructure,
+      this.dataStructure.members,
+      parameter.getValue(),
+      this.workingParam
+    );
+    */
 
     this.workingParam.defaultValue = parameter.getValue();
-
-    if (this.inputStatus) {
-      this.forceUpdate();
-    }
   };
 
   listenerMoveParameterUp = (event) => {
@@ -124,7 +121,7 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
     }
 
     this.setState({
-      childRefreshKey: Util.randomKey()
+      childRefreshKey: Util.nowTime()
     });
   };
 
@@ -136,7 +133,7 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
       return;
     }
 
-    //console.log("[DataStructurePreviewer] SX_PARAMETER_SELECTED: ", parameter);
+    //console.log('[DataStructurePreviewer] SX_PARAMETER_SELECTED: ', parameter);
 
     if (!parameter.focused) {
       Event.fire(Event.SX_PARAMETER_SELECTED, this.namespace, this.namespace, {
@@ -340,7 +337,7 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
   };
 
   render() {
-    //console.log('[SXDataStructurePreviewer] render(): ', this.dataStructure);
+    //console.log('[SXDataStructurePreviewer] render(): ', this.dataStructure, this.workingParam);
     return (
       <>
         <Toolbar style={{ paddingLeft: '10px', paddingRight: '10px', background: '#d8f2df', marginBottom: '15px' }}>

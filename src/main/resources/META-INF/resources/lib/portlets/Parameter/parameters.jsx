@@ -2175,10 +2175,6 @@ export class SelectParameter extends Parameter {
     if (Util.isNotEmpty(properties)) {
       this.parse(properties);
     }
-
-    if (!this.nullable) {
-      console.log('SelectParameter.constructor nullable: ', this.nullable);
-    }
   }
 
   get options() {
@@ -2233,8 +2229,8 @@ export class SelectParameter extends Parameter {
   set nullable(val) {
     this.#nullable = val;
 
-    let value = this.defaultValue ?? (this.displayType === ParameterConstants.DisplayTypes.GRID_CELL ? [] : '');
-    if (Util.isEmpty(value)) {
+    this.value = this.defaultValue ?? (this.displayType === ParameterConstants.DisplayTypes.GRID_CELL ? [] : '');
+    if (Util.isEmpty(this.value)) {
       let initVal;
 
       if (this.nullable) {
@@ -2249,7 +2245,11 @@ export class SelectParameter extends Parameter {
       }
 
       if (Util.isNotEmpty(initVal)) {
-        this.displayType === ParameterConstants.DisplayTypes.GRID_CELL ? value.push(initVal) : initVal;
+        if (this.value instanceof Array) {
+          this.value.push(initVal);
+        } else {
+          this.value = initVal;
+        }
       }
     }
   }
@@ -2381,15 +2381,13 @@ export class SelectParameter extends Parameter {
     if (Util.isEmpty(value)) {
       if (!this.nullable) {
         const firstOptionVal = this.options[0]?.value;
-        if (firstOptionVal) {
+        if (Util.isNotEmpty(firstOptionVal)) {
           value = this.multiple ? [firstOptionVal] : firstOptionVal;
         }
       }
     }
 
     super.setValue({ value: value, cellIndex: cellIndex });
-
-    console.log('SelectParameter.initValue: ', this);
   }
 
   parse(json) {
@@ -2510,12 +2508,6 @@ export class BooleanParameter extends SelectParameter {
   get falseLabel() {
     return this.falseOption.label;
   }
-  get allowUnsetValue() {
-    return (
-      this.viewType == ParameterConstants.BooleanViewTypes.RADIO ||
-      this.viewType == ParameterConstants.BooleanViewTypes.DROPDOWN
-    );
-  }
 
   get abstract() {
     if (this.abstractKey && this.hasValue()) {
@@ -2525,6 +2517,33 @@ export class BooleanParameter extends SelectParameter {
     return '';
   }
 
+  set nullable(val) {
+    super.nullable = val;
+
+    this.value = this.defaultValue ?? (this.displayType === ParameterConstants.DisplayTypes.GRID_CELL ? [] : '');
+    if (Util.isEmpty(this.value)) {
+      let initVal;
+
+      if (this.nullable) {
+        initVal = '';
+      } else {
+        const firstOptionVal = this.options[0]?.value;
+        if (Util.isNotEmpty(firstOptionVal)) {
+          initVal = firstOptionVal;
+        } else {
+          initVal = '';
+        }
+      }
+
+      if (Util.isNotEmpty(initVal)) {
+        if (this.value instanceof Array) {
+          this.value.push(initVal);
+        } else {
+          this.value = initVal;
+        }
+      }
+    }
+  }
   set trueOption(option) {
     this.options[1] = option;
   }
@@ -2571,15 +2590,17 @@ export class BooleanParameter extends SelectParameter {
   }
 
   initValue(cellIndex) {
-    let defaultValue = this.defaultValue;
-    if (
-      this.viewType == ParameterConstants.BooleanViewTypes.CHECKBOX ||
-      this.viewType == ParameterConstants.BooleanViewTypes.TOGGLE
-    ) {
-      defaultValue = this.defaultValue ?? false;
+    let value = this.defaultValue;
+    if (Util.isEmpty(value)) {
+      if (!this.nullable) {
+        const firstOptionVal = this.falseOption.value;
+        if (Util.isNotEmpty(firstOptionVal)) {
+          value = firstOptionVal;
+        }
+      }
     }
 
-    super.setValue({ value: defaultValue, cellIndex: cellIndex });
+    this.setValue({ value: value, cellIndex: cellIndex });
   }
 
   parse(json) {
@@ -3570,12 +3591,12 @@ export class GroupParameter extends Parameter {
 
   getSiblings(paramCode, paramVersion) {
     const param = this.findParameter({ paramCode, paramVersion });
-    console.log('GroupParameter.getSiblings: ', param);
+    //console.log('GroupParameter.getSiblings: ', param);
   }
 
   deleteMemberByIndex(index) {
     const removed = this.members[index];
-    console.log('GroupParameter.deleteMemberByIndex: ', index, removed, this.members);
+    //console.log('GroupParameter.deleteMemberByIndex: ', index, removed, this.members);
 
     this.members.splice(index, 1);
 
@@ -3598,7 +3619,7 @@ export class GroupParameter extends Parameter {
       return order > 0 ? Constant.STOP_EVERY : Constant.CONTINUE_EVERY;
     });
 
-    console.log('GroupParameter.deleteMemberByCode: ', memCode, memVersion, order);
+    //console.log('GroupParameter.deleteMemberByCode: ', memCode, memVersion, order);
     if (order >= 0) {
       return this.deleteMemberByIndex(order);
     }

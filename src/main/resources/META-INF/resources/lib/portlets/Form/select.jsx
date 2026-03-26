@@ -314,7 +314,7 @@ class SXSelect extends SXBaseParameterComponent {
   }
 
   render() {
-    console.log('SXSelect.render: ', this.parameter);
+    //console.log('SXSelect.render: ', this.parameter);
     return (
       <div
         className={this.parameter.getClassName(this.className, this.cellIndex)}

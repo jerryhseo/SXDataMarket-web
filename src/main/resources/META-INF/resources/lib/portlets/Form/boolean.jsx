@@ -13,7 +13,7 @@ class SXBoolean extends SXBaseParameterComponent {
         : (this.parameter.defaultValue ?? false)
     };
 
-    //console.log("SXBoolean constructor: ", this.parameter.paramCode, this.parameter, props);
+    //console.log('SXBoolean constructor: ', this.parameter.paramCode, this.parameter, props);
   }
 
   setValue(value) {

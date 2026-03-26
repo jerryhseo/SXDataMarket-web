@@ -4,7 +4,7 @@ import { Util } from '../../../stationx/util';
 import DataStructure from '../data-structure';
 import SXBasePropertiesPanelComponent from '../base-properties-panel-component.jsx';
 import ParameterConstants from '../../Parameter/parameter-constants.jsx';
-import { ParameterUtil } from '../../Parameter/parameters.jsx';
+import { BooleanParameter, ParameterUtil } from '../../Parameter/parameters.jsx';
 import Button from '@clayui/button';
 import { SXModalDialog } from '../../../stationx/modal.jsx';
 import { ClayCheckbox, ClayToggle } from '@clayui/form';
@@ -61,18 +61,6 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
           }
         }
       }),
-      defaultValue: ParameterUtil.createParameter({
-        namespace: this.namespace,
-        formId: this.componentId,
-        paramType: ParamType.BOOLEAN,
-        properties: {
-          paramCode: ParamProperty.DEFAULT_VALUE,
-          viewType: ParameterConstants.BooleanViewTypes.RADIO,
-          displayName: Util.getTranslationObject(this.languageId, 'default-value'),
-          tooltip: Util.getTranslationObject(this.languageId, 'default-value-tooltip'),
-          defaultValue: this.workingParam.defaultValue ?? (this.workingParam.nullable ? null : false)
-        }
-      }),
       nullable: ParameterUtil.createParameter({
         namespace: this.namespace,
         formId: this.componentId,
@@ -82,7 +70,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
           viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
           displayName: Util.getTranslationObject(this.languageId, 'nullable'),
           tooltip: Util.getTranslationObject(this.languageId, 'nullable-tooltip'),
-          defaultValue: this.workingParam.nullable ?? false
+          value: this.workingParam.nullable ?? false
         }
       }),
       placeholder: ParameterUtil.createParameter({
@@ -106,7 +94,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
               errorClass: ErrorClass.ERROR
             }
           },
-          defaultValue: this.workingParam.placeholder ?? {}
+          value: this.workingParam.placeholder ?? {}
         }
       }),
       trueLabel: ParameterUtil.createParameter({
@@ -119,7 +107,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
           displayName: Util.getTranslationObject(this.languageId, 'true-label'),
           placeholder: Util.getTranslationObject(this.languageId, 'label-for-true-option'),
           tooltip: Util.getTranslationObject(this.languageId, 'label-for-true-option-tooltip'),
-          defaultValue: this.workingParam.trueLabel
+          value: this.workingParam.trueLabel
         }
       }),
 
@@ -133,14 +121,14 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
           displayName: Util.getTranslationObject(this.languageId, 'false-label'),
           placeholder: Util.getTranslationObject(this.languageId, 'label-for-false-option'),
           tooltip: Util.getTranslationObject(this.languageId, 'label-for-false-option-tooltip'),
-          defaultValue: this.workingParam.falseLabel
+          value: this.workingParam.falseLabel
         }
       })
     };
   }
 
   listenerFieldValueChanged = (e) => {
-    const { targetPortlet, targetFormId, parameter } = e.dataPacket;
+    const { targetPortlet, targetFormId, parameter, cellIndex } = e.dataPacket;
     if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
       return;
     }
@@ -160,8 +148,36 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
 
     this.workingParam[parameter.paramCode] = this.fields[parameter.paramCode].getValue();
 
-    if (parameter.paramCode == 'viewType') {
-      this.forceUpdate();
+    switch (parameter.paramCode) {
+      case 'viewType': {
+        const viewType = parameter.getValue();
+
+        if (viewType === BooleanParameter.ViewTypes.CHECKBOX || viewType === BooleanParameter.ViewTypes.TOGGLE) {
+          this.workingParam.nullable = false;
+          this.workingParam.placeholder = {};
+        }
+
+        this.workingParam.initValue(cellIndex);
+
+        this.forceUpdate();
+        break;
+      }
+      case 'placeholder': {
+        if (parameter.hasValue()) {
+          this.workingParam.nullable = true;
+        } else {
+          this.workingParam.nullable = false;
+        }
+
+        this.workingParam.initValue(cellIndex);
+
+        break;
+      }
+      case 'nullable': {
+        this.workingParam.initValue(cellIndex);
+
+        break;
+      }
     }
 
     if (Util.isNotEmpty(this.checkError())) {
@@ -210,7 +226,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
     event.stopPropagation();
 
     const value = event.target.checked;
-    console.log('handleSlaveSelectionChanged: ', param, event.target.checked);
+    //console.log('handleSlaveSelectionChanged: ', param, event.target.checked);
 
     const slaveSet = new Set(this.state.selectedOption.slaves ?? []);
     if (value) {
@@ -230,28 +246,23 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
     const paramSlavedCodes = this.workingParam.getAllOptionSlaves({
       exceptOption: this.state.selectedOption
     });
-    console.log('paramSlavedCodes: ', paramSlavedCodes);
 
     // Slaved param codes of the currently selected option to check checkbox
     const optionSlavedCodes = this.state.selectedOption.slaves ?? [];
-    console.log('optionSlavedCodes: ', optionSlavedCodes);
 
     const parentGroup = this.dataStructure.getParentGroup(this.workingParam);
-    console.log('parentGroup: ', parentGroup);
 
     // All sibling codes to be displayed as checkbox
     const siblingParams = this.dataStructure.getSiblingParameters({
       group: parentGroup,
       parameter: this.workingParam
     });
-    console.log('siblingParams: ', siblingParams);
 
     //Slaved sibling codes to be disabled
     const slavedSiblingCodes = this.dataStructure.getSlavedSiblingCodes({
       group: parentGroup,
       parameter: this.workingParam
     });
-    console.log('slavedSiblingCodes: ', slavedSiblingCodes);
 
     const rows = Util.convertArrayToRows(siblingParams, 2);
 
@@ -283,7 +294,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
   handleSetSlaves = (event, value) => {
     event.stopPropagation();
 
-    console.log('SXBooleanTypeOptionForm.handleSetSlaves: ', event, value);
+    //console.log('SXBooleanTypeOptionForm.handleSetSlaves: ', event, value);
 
     const selectedOption = value ? this.workingParam.trueOption : this.workingParam.falseOption;
 
@@ -300,7 +311,6 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
         {this.fields.viewType.renderField({ spritemap: this.spritemap })}
         {this.workingParam.viewType === ParameterConstants.BooleanViewTypes.RADIO &&
           this.fields.nullable.renderField({ spritemap: this.spritemap })}
-        {this.fields.defaultValue.renderField({ spritemap: this.spritemap })}
         {this.workingParam.viewType === ParameterConstants.BooleanViewTypes.DROPDOWN &&
           this.fields.placeholder.renderField({ spritemap: this.spritemap })}
         {this.fields.trueLabel.renderField({ spritemap: this.spritemap })}
