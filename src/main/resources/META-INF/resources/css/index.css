@@ -515,6 +515,10 @@ div .under-construction {
   justify-self: anchor-center;
 }
 
+.sx-inline .simple-toggle-switch.toggle-switch {
+  width: fit-content;
+}
+
 .datastructure-info-modal .modal-dialog {
   overflow: hidden;
   justify-self: anchor-center;

@@ -15,8 +15,8 @@ import Icon from '@clayui/icon';
 import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
 import { SXLabeledText } from '../Form/form';
 import ParameterConstants from '../Parameter/parameter-constants';
-import { ParameterUtil } from '../Parameter/parameters';
 import { Text } from '@clayui/core';
+import { createParameter } from '../DataStructure/datastructure-builder';
 
 class DataSetEditor extends SXBaseVisualizer {
   constructor(props) {
@@ -29,7 +29,7 @@ class DataSetEditor extends SXBaseVisualizer {
     this.associatedDataTypeList = [];
     this.availableDataTypeList = [];
 
-    this.dataSetCode = ParameterUtil.createParameter({
+    this.dataSetCode = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: ParamType.STRING,
@@ -68,7 +68,7 @@ class DataSetEditor extends SXBaseVisualizer {
 
     const versionPlaceholder = {};
     versionPlaceholder[this.languageId] = '1.0.0';
-    this.dataSetVersion = ParameterUtil.createParameter({
+    this.dataSetVersion = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: ParamType.STRING,
@@ -96,7 +96,7 @@ class DataSetEditor extends SXBaseVisualizer {
       }
     });
 
-    this.displayName = ParameterUtil.createParameter({
+    this.displayName = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: ParamType.STRING,
@@ -127,7 +127,7 @@ class DataSetEditor extends SXBaseVisualizer {
       }
     });
 
-    this.description = ParameterUtil.createParameter({
+    this.description = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: ParamType.STRING,
@@ -142,7 +142,7 @@ class DataSetEditor extends SXBaseVisualizer {
       }
     });
 
-    this.basicProps = ParameterUtil.createParameter({
+    this.basicProps = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: ParamType.GROUP,
@@ -157,7 +157,7 @@ class DataSetEditor extends SXBaseVisualizer {
       }
     });
 
-    this.dataTypes = ParameterUtil.createParameter({
+    this.dataTypes = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: 'DualList',
@@ -186,12 +186,12 @@ class DataSetEditor extends SXBaseVisualizer {
     const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
     if (targetPortlet !== this.namespace || targetFormId !== this.formId) {
-      //console.log('[dataSetEditor] listenerFieldValueChanged rejected: ', event.dataPacket, this.formId);
+      console.log('[dataSetEditor] listenerFieldValueChanged rejected: ', event.dataPacket, this.formId);
 
       return;
     }
 
-    //console.log('[dataSetEditor] listenerFieldValueChanged received: ', event.dataPacket, parameter);
+    console.log('[dataSetEditor] listenerFieldValueChanged received: ', event.dataPacket, parameter);
 
     Event.fire(Event.SX_DATASET_CHANGED, this.namespace, this.workbenchNamespace, {
       dataSet: {
@@ -374,7 +374,6 @@ class DataSetEditor extends SXBaseVisualizer {
     Event.on(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
     Event.on(Event.SX_RESPONSE, this.listenerResponse);
     Event.on(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
-    Event.on(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
 
     this.fireHandshake();
   }
@@ -385,7 +384,6 @@ class DataSetEditor extends SXBaseVisualizer {
     Event.off(Event.SX_WORKBENCH_READY, this.listenerWorkbenchReady);
     Event.off(Event.SX_RESPONSE, this.listenerResponse);
     Event.off(Event.SX_COMPONENT_WILL_UNMOUNT, this.listenerComponentWillUnmount);
-    Event.off(Event.SX_FIELD_VALUE_CHANGED, this.listenerFieldValueChanged);
   }
 
   getAssociatedDataTypeInfos(dataTypeStrIds) {

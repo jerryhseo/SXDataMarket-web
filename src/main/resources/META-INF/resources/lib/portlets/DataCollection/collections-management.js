@@ -914,17 +914,29 @@ class CollectionsManagement extends SXBaseVisualizer {
 
     switch (button.id) {
       case 'addDataSet': {
+        if (this.state.selectedNavItem?.dirty) {
+          this.state.selectedNavItem.dirty = false;
+        }
+
         portletName = PortletKeys.DATASET_EDITOR;
 
         break;
       }
       case 'addDataType': {
+        if (this.state.selectedNavItem?.dirty) {
+          this.state.selectedNavItem.dirty = false;
+        }
+
         portletName = PortletKeys.DATATYPE_EDITOR;
         //console.log("dataCollectionId: ", this.state.selectedNavItem, this.state);
 
         break;
       }
       case 'editDataStructure': {
+        if (this.state.selectedNavItem?.dirty) {
+          this.state.selectedNavItem.dirty = false;
+        }
+
         portletName = PortletKeys.DATASTRUCTURE_BUILDER;
         //console.log("dataCollectionId: ", this.state.selectedNavItem, this.state);
 
@@ -1655,21 +1667,23 @@ class CollectionsManagement extends SXBaseVisualizer {
   openDataCollectionEditor = () => {
     //console.log('[CollectionManagement openDataCollectionEditor] ', this.state.selectedNavItem);
     if (!this.state.selectedNavItem) {
-      this.applicationTitle = Util.translate('add-datacollection');
-
-      this.applicationBarRefreshKey = Util.nowTime();
+      this.applicationBarButtons = [];
     }
+
+    this.applicationTitle = Util.translate('add-datacollection');
 
     this.deployPortlet({
       portletName: PortletKeys.DATACOLLECTION_EDITOR,
       portletState: PortletState.NORMAL
     });
 
+    this.applicationBarRefreshKey = Util.nowTime();
+
     if (this.state.selectedNavItem) {
       this.state.selectedNavItem.active = false;
       this.state.selectedNavItem.dirty = false;
 
-      this.fireNavRefresh({ additionalExpandedKeys: [this.state.selectedNavItem.id] });
+      this.fireNavRefresh();
     }
   };
 

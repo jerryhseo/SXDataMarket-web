@@ -50,16 +50,9 @@ class SXBaseParameterComponent extends React.PureComponent {
   }
 
   listenerRefresh = (event) => {
-    const { targetPortlet, targetFormId, paramCode, paramVersion = '1.0.0', cellIndex, value } = event.dataPacket;
+    const { targetPortlet, targetFormId, parameter, cellIndex } = event.dataPacket;
 
-    if (
-      !(
-        this.namespace === targetPortlet &&
-        this.formId === targetFormId &&
-        paramCode === this.parameter.paramCode &&
-        paramVersion === this.parameter.paramVersion
-      )
-    ) {
+    if (!(this.namespace === targetPortlet && this.formId === targetFormId && parameter === this.parameter)) {
       return;
     }
 
@@ -70,23 +63,16 @@ class SXBaseParameterComponent extends React.PureComponent {
     }
 
     this.setState({
-      value: value
+      value: parameter.getValue(cellIndex)
     });
 
     this.forceUpdate();
   };
 
   listenerFocus = (event) => {
-    const { targetPortlet, targetFormId, paramCode, paramVersion = '1.0.0', cellIndex } = event.dataPacket;
+    const { targetPortlet, targetFormId, parameter, cellIndex } = event.dataPacket;
 
-    if (
-      !(
-        this.namespace === targetPortlet &&
-        this.formId === targetFormId &&
-        paramCode === this.parameter.paramCode &&
-        paramVersion === this.parameter.paramVersion
-      )
-    ) {
+    if (!(this.namespace === targetPortlet && this.formId === targetFormId && parameter === this.parameter)) {
       return;
     }
 
@@ -177,15 +163,6 @@ class SXBaseParameterComponent extends React.PureComponent {
     Event.off(Event.SX_OPEN_COMMENTS, this.listenerOpenComments);
     Event.off(Event.SX_FREEZE_COMMENTS, this.listenerFreezeComments);
     Event.off(Event.SX_REQUEST, this.listenerRequest);
-  }
-
-  isMyEvent({ targetPortlet, targetFormId, paramCode, paramVersion = '1.0.0' }) {
-    return (
-      this.namespace === targetPortlet &&
-      this.formId === targetFormId &&
-      paramCode === this.parameter.paramCode &&
-      paramVersion === this.parameter.paramVersion
-    );
   }
 
   render() {

@@ -6,10 +6,10 @@ import { SXLabel } from '../Form/form';
 import { Table, Head, Body, Cell, Row, Text } from '@clayui/core';
 import Icon from '@clayui/icon';
 import Button, { ClayButtonWithIcon } from '@clayui/button';
-import { ParameterUtil } from '../Parameter/parameters';
 import SXBasePropertiesPanelComponent from './base-properties-panel-component';
 import SXActionDropdown from '../../stationx/dropdown';
 import { ClayCheckbox, ClayToggle } from '@clayui/form';
+import { createParameter } from './datastructure-builder';
 
 class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
   constructor(props) {
@@ -31,7 +31,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
 
     this.componentId = this.namespace + 'SXSelectOptionBuilder';
 
-    this.fieldOptionLabel = ParameterUtil.createParameter({
+    this.fieldOptionLabel = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -56,7 +56,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
       }
     });
 
-    this.fieldOptionValue = ParameterUtil.createParameter({
+    this.fieldOptionValue = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -102,6 +102,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
       this.state.selectedOption
     );
     */
+    this.dataStructure.dirty = true;
 
     switch (parameter.paramCode) {
       case 'optionLabel': {
@@ -139,7 +140,7 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
     }
 
     const checked = this.checkFieldError();
-    if (checked && this.workingParam.isRendered()) {
+    if (checked && this.workingParam.rendered) {
       this.rerenderWorkingParam();
     }
 
@@ -394,26 +395,16 @@ class SXSelectOptionBuilder extends SXBasePropertiesPanelComponent {
   renderSlavesSelectorBody = () => {
     // Slaved param codes of the options of the working param to be disabled
     // except for the currently selected option.
-    const paramSlavedCodes = this.workingParam.getAllOptionSlaves({
-      exceptOption: this.state.selectedOption
-    });
+    const paramSlavedCodes = this.workingParam.getAllOptionSlavesExcept(this.state.selectedOption);
 
     // Slaved param codes of the currently selected option to check checkbox
     const optionSlavedCodes = this.state.selectedOption.slaves ?? [];
 
-    const parentGroup = this.dataStructure.getParentGroup(this.workingParam);
-
     // All sibling codes to be displayed as checkbox
-    const siblingParams = this.dataStructure.getSiblingParameters({
-      group: parentGroup,
-      parameter: this.workingParam
-    });
+    const siblingParams = this.dataStructure.getSiblingParameters(this.workingParam);
 
     //Slaved sibling codes to be disabled
-    const slavedSiblingCodes = this.dataStructure.getSlavedSiblingCodes({
-      group: parentGroup,
-      parameter: this.workingParam
-    });
+    const slavedSiblingCodes = this.dataStructure.getSlavedSiblingCodes(this.workingParam);
 
     const rows = Util.convertArrayToRows(siblingParams, 2);
 

@@ -153,12 +153,7 @@ class SXDSBuilderPropertiesPanel extends SXBasePropertiesPanelComponent {
   render() {
     //console.log("SXDSBuilderPropertiesPanel rendered: ", this.workingParam);
 
-    const parentGroup = Util.isNotEmpty(this.workingParam.parent)
-      ? this.dataStructure.findParameter({
-          paramCode: this.workingParam.parent.code,
-          paramVersion: this.workingParam.parent.version
-        })
-      : this.dataStructure;
+    const parentGroup = this.workingParam.parent;
     //console.log("Group selector parentGroup: ", parentGroup, this.options);
 
     return (
@@ -218,7 +213,7 @@ class SXDSBuilderPropertiesPanel extends SXBasePropertiesPanelComponent {
             </ClayInput.Group>
           </Form.Group>
         )}
-        <ClayMultiStepNav className="sx-multistep" style={{ padding: '10px' }} center="true">
+        <ClayMultiStepNav className="sx-multistep" style={{ padding: '10px' }} spritemap={this.spritemap} center="true">
           {this.panelSteps.map(({ subTitle, title }, i) => {
             let panelStep = this.state.panelStep < 0 ? 0 : this.state.panelStep;
             const complete = i < this.state.panelStep;
@@ -230,14 +225,16 @@ class SXDSBuilderPropertiesPanel extends SXBasePropertiesPanelComponent {
                 key={i}
                 state={complete ? 'complete' : undefined}
                 style={{ padding: '0', marginBottom: '0' }}
+                sprivemap={this.spritemap}
               >
-                <ClayMultiStepNav.Title>{title}</ClayMultiStepNav.Title>
-                <ClayMultiStepNav.Divider />
+                <ClayMultiStepNav.Title spritemap={this.spritemap}>{title}</ClayMultiStepNav.Title>
+                <ClayMultiStepNav.Divider spritemap={this.spritemap} />
                 <ClayMultiStepNav.Indicator
                   complete={complete}
                   label={i + 1}
                   onClick={() => this.handlePanelStepChange(i)}
                   subTitle={subTitle}
+                  spritemap={this.spritemap}
                 />
               </ClayMultiStepNav.Item>
             );

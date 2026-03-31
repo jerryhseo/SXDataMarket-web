@@ -5,7 +5,7 @@ import { Util } from '../../../stationx/util';
 import DataStructure from '../data-structure';
 import SXSelectOptionBuilder from '../select-option-builder';
 import ParameterConstants from '../../Parameter/parameter-constants.jsx';
-import { ParameterUtil } from '../../Parameter/parameters.jsx';
+import { createParameter } from '../datastructure-builder.jsx';
 
 class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
   constructor(props) {
@@ -36,7 +36,7 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
     }
 
     this.fields = {
-      viewType: ParameterUtil.createParameter({
+      viewType: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.SELECT,
@@ -47,7 +47,7 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
           optionsPerRow: 2,
           displayName: Util.getTranslationObject(this.languageId, 'view-type'),
           tooltip: Util.getTranslationObject(this.languageId, 'select-view-type-tooltip'),
-          value: this.workingParam.viewType ?? ParameterConstants.SelectViewTypes.DROPDOWN,
+          defaultValue: this.workingParam.viewType ?? ParameterConstants.SelectViewTypes.DROPDOWN,
           validation: {
             required: {
               value: true,
@@ -56,7 +56,7 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
           }
         }
       }),
-      nullable: ParameterUtil.createParameter({
+      nullable: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.BOOLEAN,
@@ -65,10 +65,10 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
           viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
           displayName: Util.getTranslationObject(this.languageId, 'nullable'),
           tooltip: Util.getTranslationObject(this.languageId, 'nullable-tooltip'),
-          value: this.workingParam.nullable ?? false
+          defaultValue: this.workingParam.nullable ?? false
         }
       }),
-      optionsPerRow: ParameterUtil.createParameter({
+      optionsPerRow: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.NUMERIC,
@@ -77,7 +77,7 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
           isInteger: true,
           displayName: Util.getTranslationObject(this.languageId, 'options-per-row'),
           tooltip: Util.getTranslationObject(this.languageId, 'options-per-row-tooltip'),
-          defaultValue: 0,
+          defaultValue: this.workingParam.optionsPerRow ?? 1,
           validation: {
             min: {
               value: 0,
@@ -93,11 +93,10 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
               ),
               errorClass: ErrorClass.ERROR
             }
-          },
-          value: this.workingParam.optionsPerRow
+          }
         }
       }),
-      listboxSize: ParameterUtil.createParameter({
+      listboxSize: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.NUMERIC,
@@ -120,10 +119,10 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
               errorClass: ErrorClass.ERROR
             }
           },
-          value: this.workingParam.listboxSize ?? 5
+          defaultValue: this.workingParam.listboxSize ?? 5
         }
       }),
-      placeholder: ParameterUtil.createParameter({
+      placeholder: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.STRING,
@@ -144,7 +143,7 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
               errorClass: ErrorClass.ERROR
             }
           },
-          value: this.workingParam.placeholder ?? {}
+          defaultValue: this.workingParam.placeholder ?? {}
         }
       })
     };
@@ -220,7 +219,8 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
 
     //this.forceUpdate();
 
-    if (this.workingParam.isRendered()) {
+    console.log('SXSelectTypeOptionForm SX_FIELD_VALUE_CHANGED: ', this.workingParam, this.workingParam.rendered);
+    if (this.workingParam.rendered) {
       if (parameter.paramCode == 'viewType') {
         if (this.workingParam.multiple) {
           this.workingParam.setValue({ value: [] });
@@ -230,7 +230,7 @@ class SXSelectTypeOptionForm extends SXBasePropertiesPanelComponent {
       }
 
       if (this.workingParam.displayType == ParameterConstants.DisplayTypes.GRID_CELL) {
-        this.workingParam.fireRefreshParent(true);
+        this.workingParam.parent.fireRefresh();
         /*
 				Event.fire(Event.SX_REFRESH_PREVIEW, this.namespace, this.namespace, {
 					targetFormId: this.workingParam.formId,

@@ -5,10 +5,8 @@ import Button, { ClayButtonWithIcon } from '@clayui/button';
 import { ClayInput } from '@clayui/form';
 import DropDown from '@clayui/drop-down';
 import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
-import { UnderConstruction } from '../../stationx/common';
 import ParameterConstants from '../Parameter/parameter-constants';
 import Icon from '@clayui/icon';
-import { Constant } from '../../stationx/station-x';
 
 class SXFile extends SXBaseParameterComponent {
   constructor(props) {
@@ -17,7 +15,7 @@ class SXFile extends SXBaseParameterComponent {
     const files = this.parameter.getValue(this.cellIndex) ?? [];
 
     this.state = {
-      value: files.filter((file) => !!file.name),
+      value: this.parameter.getValue(this.cellIndex) ?? [],
       infoDialog: false,
       dialogHeader: <></>,
       dialogBody: <></>
@@ -173,7 +171,7 @@ class SXFile extends SXBaseParameterComponent {
       this.inputRef.current.value = '';
     }
 
-    //console.log("[SXFile render] ", this.parameter.paramCode, this.state.value);
+    //console.log('[SXFile render] ', this.parameter.paramCode, this.state.value);
     if (this.inputRef && this.inputRef.current) {
       this.valueToFiles();
     }
@@ -316,6 +314,7 @@ class SXFile extends SXBaseParameterComponent {
   }
 
   render() {
+    //console.log('[SXFile render] ', this.parameter.paramCode, this.parameter.displayType);
     return (
       <div
         className={this.parameter.getClassName(this.className, this.cellIndex)}

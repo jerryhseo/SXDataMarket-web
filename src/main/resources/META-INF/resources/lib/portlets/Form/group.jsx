@@ -15,6 +15,7 @@ class SXGroup extends SXBaseParameterComponent {
       expanded: this.parameter.expanded
     };
 
+    this.componentId = this.parameter.paramCode;
     //console.log("[SXGroup props] ", this.props);
   }
 
@@ -35,7 +36,7 @@ class SXGroup extends SXBaseParameterComponent {
     if (targetPortlet !== this.namespace || targetFormId !== this.componentId) return;
 
     //console.log("[SXGroup] SX_FIELD_VALUE_CHANGED RECEIVED: ", parameter);
-    const groupValue = this.parameter.value;
+    const groupValue = this.parameter.value ?? {};
     groupValue[parameter.paramCode] = parameter.value;
     this.parameter.value = groupValue;
 
@@ -46,9 +47,17 @@ class SXGroup extends SXBaseParameterComponent {
     const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
     if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
+      console.log(
+        '[SXGroup] listenerMoveParameterUp Rejected: ',
+        this.namespace,
+        targetPortlet,
+        this.componentId,
+        targetFormId,
+        parameter
+      );
       return;
     }
-    //console.log("[SXGroup] listenerMoveParameterUp: ", parameter);
+    console.log('[SXGroup] listenerMoveParameterUp: ', parameter);
 
     this.parameter.moveMemberUp(parameter.order - 1);
 
@@ -75,13 +84,13 @@ class SXGroup extends SXBaseParameterComponent {
       return;
     }
 
-    //console.log("[SXGroup] listenerCopyParameter: ", parameter);
-    const copied = this.parameter.copyMember({
-      paramCode: parameter.paramCode,
-      paramVersion: parameter.paramVersion
-    });
+    const copied = parameter.copy();
+    if (copied.isJunction) {
+      copied.clearSlaves();
+    }
 
-    //console.log("[SXGroup] listenerCopyParameter: ", copied);
+    this.parameter.insertMember(copied, parameter.order);
+
     copied.fireParameterSelected();
   };
 
@@ -144,7 +153,7 @@ class SXGroup extends SXBaseParameterComponent {
 
     return this.preview ? (
       member.renderPreview({
-        formId: this.componentId,
+        formId: this.parameter.paramCode,
         actionItems: this.parameter.getPreviewActionItems(order),
         spritemap: this.spritemap
       })
@@ -184,19 +193,21 @@ class SXGroup extends SXBaseParameterComponent {
         {this.parameter.membersPerRow > 1 &&
           rows.map((row, rowIndex) => (
             <div key={rowIndex} className="autofit-row autofit-padded" style={{ marginBottom: '5px' }}>
-              {row.map((member, order) => (
-                <div
-                  key={member.key}
-                  className={
-                    Util.isEmpty(member.style.width)
-                      ? 'autofit-col autofit-col-expand'
-                      : 'autofit-col autofit-col-shrink'
-                  }
-                  style={{ marginBottom: '0' }}
-                >
-                  {this.renderMember(member, order)}
-                </div>
-              ))}
+              {row.map((member, order) => {
+                return (
+                  <div
+                    key={member.key}
+                    className={
+                      Util.isEmpty(member.style.width)
+                        ? 'autofit-col autofit-col-expand'
+                        : 'autofit-col autofit-col-shrink'
+                    }
+                    style={{ marginBottom: '0' }}
+                  >
+                    {this.renderMember(member, order)}
+                  </div>
+                );
+              })}
             </div>
           ))}
       </div>

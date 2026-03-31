@@ -4,7 +4,7 @@ import { ErrorClass, Event, ParamProperty, ParamType, ValidationRule } from '../
 import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
 import DataStructure from './data-structure';
 import ParameterConstants from '../Parameter/parameter-constants';
-import { ParameterUtil } from '../Parameter/parameters';
+import { createParameter } from './datastructure-builder';
 
 class SXDSBuilderBasicPropertiesPanel extends React.Component {
   constructor(props) {
@@ -27,7 +27,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
     };
 
     this.fields = {
-      paramCode: ParameterUtil.createParameter({
+      paramCode: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.STRING,
@@ -58,10 +58,10 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
               errorClass: ErrorClass.ERROR
             }
           },
-          value: this.workingParam.paramCode
+          defaultValue: this.workingParam.paramCode
         }
       }),
-      paramVersion: ParameterUtil.createParameter({
+      paramVersion: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.STRING,
@@ -83,10 +83,10 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
               errorClass: ErrorClass.ERROR
             }
           },
-          value: this.workingParam.paramVersion
+          defaultValue: this.workingParam.paramVersion
         }
       }),
-      displayName: ParameterUtil.createParameter({
+      displayName: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.STRING,
@@ -113,10 +113,10 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
               errorClass: ErrorClass.ERROR
             }
           },
-          value: this.workingParam.displayName ?? {}
+          defaultValue: this.workingParam.displayName ?? {}
         }
       }),
-      definition: ParameterUtil.createParameter({
+      definition: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.STRING,
@@ -134,10 +134,10 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
               errorClass: ErrorClass.ERROR
             }
           },
-          value: this.workingParam.definition
+          defaultValue: this.workingParam.definition
         }
       }),
-      showDefinition: ParameterUtil.createParameter({
+      showDefinition: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.BOOLEAN,
@@ -146,14 +146,14 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
           viewType: ParameterConstants.BooleanViewTypes.CHECKBOX,
           displayName: Util.getTranslationObject(this.languageId, 'show-definition'),
           tooltip: Util.getTranslationObject(this.languageId, 'show-description-tooltip'),
-          value: this.workingParam.showDefinition,
+          defaultValue: this.workingParam.showDefinition,
           disabled:
             this.workingParam.paramType == ParamType.BOOLEAN &&
             (this.workingParam.viewType == ParameterConstants.BooleanViewTypes.CHECKBOX ||
               this.workingParam.viewType == ParameterConstants.BooleanViewTypes.TOGGLE)
         }
       }),
-      tooltip: ParameterUtil.createParameter({
+      tooltip: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.STRING,
@@ -163,10 +163,10 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
           displayName: Util.getTranslationObject(this.languageId, 'tooltip'),
           placeholder: Util.getTranslationObject(this.languageId, 'tooltip'),
           tooltip: Util.getTranslationObject(this.languageId, 'tooltip-tooltip'),
-          value: this.workingParam.tooltip
+          defaultValue: this.workingParam.tooltip
         }
       }),
-      synonyms: ParameterUtil.createParameter({
+      synonyms: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.STRING,
@@ -175,10 +175,10 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
           displayName: Util.getTranslationObject(this.languageId, 'synonyms'),
           placeholder: Util.getTranslationObject(this.languageId, 'code1, code2'),
           tooltip: Util.getTranslationObject(this.languageId, 'synonyms-tooltip'),
-          value: this.workingParam.synonyms
+          defaultValue: this.workingParam.synonyms
         }
       }),
-      referenceFile: ParameterUtil.createParameter({
+      referenceFile: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.FILE,
@@ -189,7 +189,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
           multipleFiles: false,
           fileManager: true,
           accepts: 'image/*,application/pdf',
-          value: this.workingParam.referenceFile ? [this.workingParam.referenceFile] : []
+          defaultValue: this.workingParam.referenceFile ? [this.workingParam.referenceFile] : []
         }
       })
     };
@@ -214,6 +214,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
 			parameter.getValue()
 		);
 		*/
+    this.dataStructure.setDirty(true);
 
     if (parameter.hasError()) {
       this.dataStructure.setError(parameter.errorClass, parameter.errorMessage);
@@ -284,7 +285,7 @@ class SXDSBuilderBasicPropertiesPanel extends React.Component {
       return;
     }
 
-    if (this.workingParam.isRendered()) {
+    if (this.workingParam.rendered) {
       if (this.workingParam.isGridCell()) {
         const gridParam = this.dataStructure.findParameter({
           paramCode: this.workingParam.parent.code,

@@ -20,9 +20,53 @@ import { UnderConstruction } from '../../stationx/common';
 import { SXLabeledText } from '../Form/form';
 import SXBaseVisualizer from '../../stationx/visualizer';
 import ParameterConstants from '../Parameter/parameter-constants';
-import { ParameterUtil } from '../Parameter/parameters';
 import SXGroupSelector from './group-selector';
 import SXInstanceInfo from '../../stationx/instance-info';
+import { ClayToggle } from '@clayui/form';
+import StringParameter from '../Parameter/string-parameter';
+import NumericParameter from '../Parameter/numeric-parameter';
+import BooleanParameter from '../Parameter/boolean-parameter';
+import DateParameter from '../Parameter/date-parameter';
+import SelectParameter from '../Parameter/select-parameter';
+import DualListParameter from '../Parameter/duallist-parameter';
+import PhoneParameter from '../Parameter/phone-parameter';
+import AddressParameter from '../Parameter/address-parameter';
+import EMailParameter from '../Parameter/email-parameter';
+import GroupParameter from '../Parameter/group-parameter';
+import GridParameter from '../Parameter/grid-parameter';
+import FileParameter from '../Parameter/file-parameter';
+
+export const createParameter = ({ namespace, formId, paramType, properties = {} }) => {
+  switch (paramType) {
+    case ParamType.STRING:
+      return new StringParameter({ namespace, formId, properties });
+    case ParamType.NUMERIC:
+      return new NumericParameter({ namespace, formId, properties });
+    case ParamType.BOOLEAN:
+      return new BooleanParameter({ namespace, formId, properties });
+    case ParamType.DATE:
+      return new DateParameter({ namespace, formId, properties });
+    case ParamType.SELECT:
+      return new SelectParameter({ namespace, formId, properties });
+    case ParamType.DUALLIST:
+      return new DualListParameter({ namespace, formId, properties });
+    case ParamType.PHONE:
+      return new PhoneParameter({ namespace, formId, properties });
+    case ParamType.ADDRESS:
+      return new AddressParameter({ namespace, formId, properties });
+    case ParamType.EMAIL:
+      return new EMailParameter({ namespace, formId, properties });
+    case ParamType.FILE:
+      return new FileParameter({ namespace, formId, properties });
+    case ParamType.GROUP:
+      return new GroupParameter({ namespace, formId, properties });
+    case ParamType.GRID:
+      return new GridParameter({ namespace, formId, properties });
+    // Add other parameter types as needed
+    default:
+      return new StringParameter({ namespace, formId, properties });
+  }
+};
 
 class DataStructureBuilder extends SXBaseVisualizer {
   rerenderProperties = [
@@ -105,7 +149,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
       underConstruction: false
     };
 
-    this.structureCode = ParameterUtil.createParameter({
+    this.structureCode = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -139,7 +183,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
       }
     });
 
-    this.structureVersion = ParameterUtil.createParameter({
+    this.structureVersion = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -175,7 +219,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
       }
     });
 
-    this.structureDisplayName = ParameterUtil.createParameter({
+    this.structureDisplayName = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -205,7 +249,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
       }
     });
 
-    this.structureDescription = ParameterUtil.createParameter({
+    this.structureDescription = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -232,66 +276,61 @@ class DataStructureBuilder extends SXBaseVisualizer {
     const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
     if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
-      //console.log("SX_PARAMETER_SELECTED rejected: ", dataPacket);
+      //console.log('SX_PARAMETER_SELECTED rejected: ', targetPortlet, targetFormId, parameter);
       return;
     }
 
-    const selectedParam = parameter;
-    if (selectedParam == this.workingParam) {
+    if (parameter == this.workingParam) {
       return;
     }
 
-    /*
-    console.log(
-      '[DataStructureBuilder] SX_PARAMETER_SELECTED received: ',
-      JSON.stringify(this.dataStructure),
-      JSON.stringify(parameter, null, 4)
-    );
-    */
+    console.log('[DataStructureBuilder] SX_PARAMETER_SELECTED: ', parameter);
 
     if (this.dataStructure.hasError() || Util.isNotEmpty(this.checkError())) {
       this.openErrorDlg(Util.translate('fix-the-error-first', this.dataStructure.errorMessage));
       return;
     }
 
-    selectedParam.focused = true;
+    parameter.focused = true;
+    parameter.fireRefreshPreview();
 
     this.workingParam.focused = false;
+    this.workingParam.fireRefreshPreview();
 
-    this.workingParam = selectedParam;
+    this.workingParam = parameter;
 
     this.forceUpdate();
   };
 
-  listenerParameterTypeChanged = (e) => {
-    const dataPacket = e.dataPacket;
-    if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) return;
+  listenerParameterTypeChanged = (event) => {
+    const { targetPortlet, targetFormId, paramType } = event.dataPacket;
+    if (targetPortlet !== this.namespace || targetFormId !== this.componentId) return;
 
     if (
-      dataPacket.paramType == ParamType.MATRIX ||
-      dataPacket.paramType == ParamType.DUALLIST ||
-      dataPacket.paramType == ParamType.TABLE ||
-      dataPacket.paramType == ParamType.CALCULATOR ||
-      dataPacket.paramType == ParamType.IMAGE ||
-      dataPacket.paramType == ParamType.LINKER ||
-      dataPacket.paramType == ParamType.REFERENCE
+      paramType == ParamType.MATRIX ||
+      paramType == ParamType.TABLE ||
+      paramType == ParamType.CALCULATOR ||
+      paramType == ParamType.IMAGE ||
+      paramType == ParamType.LINKER ||
+      paramType == ParamType.REFERENCE
     ) {
       this.setState({ underConstruction: true });
       return;
     }
 
-    this.workingParam = ParameterUtil.createParameter({
+    this.workingParam = createParameter({
       namespace: this.namespace,
       formId: this.previewerId,
-      paramType: dataPacket.paramType
+      paramType,
+      properties: {}
     });
 
     this.forceUpdate();
   };
 
-  listenerCopyParameter = (e) => {
-    const dataPacket = e.dataPacket;
-    if (dataPacket.targetPortlet !== this.namespace || dataPacket.targetFormId !== this.componentId) {
+  listenerCopyParameter = (event) => {
+    const { targetPortlet, targetFormId } = event.dataPacket;
+    if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
       return;
     }
 
@@ -305,15 +344,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
     this.workingParam.fireRefresh();
 
     copied.focused = true;
-    copied.refreshKey();
+    if (copied.isJunction) {
+      copied.clearSlaves();
+    }
 
-    const group =
-      this.dataStructure.findParameter({
-        paramCode: copied.parentCode,
-        paramVersion: copied.paramVersion,
-        descendant: true
-      }) ?? this.dataStructure;
-
+    const group = copied.parent;
     group.insertMember(copied, this.workingParam.order);
 
     this.workingParam = copied;
@@ -595,13 +630,14 @@ class DataStructureBuilder extends SXBaseVisualizer {
 
         this.workingParam = this.dataStructure.hasMembers()
           ? this.dataStructure.members[0]
-          : ParameterUtil.createParameter({
+          : createParameter({
               namespace: this.namespace,
               formId: this.componentId,
-              paramType: ParamType.STRING
+              paramType: ParamType.STRING,
+              properties: {}
             });
 
-        if (this.workingParam.isRendered()) {
+        if (this.workingParam.rendered) {
           this.workingParam.focused = true;
         }
 
@@ -691,10 +727,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
         formId: this.componentId,
         properties: {}
       });
-      this.workingParam = ParameterUtil.createParameter({
+      this.workingParam = createParameter({
         namespace: this.namespace,
         formId: this.componentId,
-        paramType: ParamType.STRING
+        paramType: ParamType.STRING,
+        properties: {}
       });
 
       this.setState({ loadingStatus: LoadingStatus.COMPLETE });
@@ -790,10 +827,11 @@ class DataStructureBuilder extends SXBaseVisualizer {
     this.workingParam.focused = false;
     this.workingParam.fireRefreshPreview();
 
-    this.workingParam = ParameterUtil.createParameter({
+    this.workingParam = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
-      paramType: ParamType.STRING
+      paramType: ParamType.STRING,
+      properties: {}
     });
 
     //this.dataStructure.focus();
@@ -844,6 +882,22 @@ class DataStructureBuilder extends SXBaseVisualizer {
     });
   };
 
+  handleToggle = (toggleId) => {
+    switch (toggleId) {
+      case 'inputStatus': {
+        this.dataStructure.inputStatus = !this.dataStructure.inputStatus;
+        break;
+      }
+      case 'bulletNo': {
+        this.dataStructure.bulletNo = !this.dataStructure.bulletNo;
+        break;
+      }
+    }
+
+    this.dataStructure.refreshKey();
+    this.forceUpdate();
+  };
+
   renderDataTypeInfo() {
     return (
       <div style={{ marginTop: '1.5rem' }}>
@@ -887,21 +941,14 @@ class DataStructureBuilder extends SXBaseVisualizer {
       return <h3>Loading Failed...</h3>;
     }
 
-    /*
-		console.log(
-			"DataStructureBuilder render: ",
-			this.dataTypeId,
-			!!this.dataStructure,
-			this.dataStructure.hasMembers()
-		);
-		*/
+    //console.log('DataStructureBuilder render: ', this.dataTypeId, this.dataStructure);
 
     return (
       <>
         {this.dataTypeId > 0 && Util.isNotEmpty(this.dataType) && this.renderDataTypeInfo()}
         <div
           className="autofit-float autofit-padded-no-gutters-x autofit-row"
-          style={{ marginBottom: '2.5rem', borderBottom: '3px solid #c7c7ce' }}
+          style={{ marginBottom: '1.5rem', borderBottom: '3px solid #c7c7ce' }}
         >
           <div className="autofit-col autofit-col-expand">
             <h3>{Util.translate('datastructure-builder')}</h3>
@@ -937,6 +984,36 @@ class DataStructureBuilder extends SXBaseVisualizer {
         </div>
 
         {this.dataTypeId == 0 && this.renderDataStructureInfo()}
+        <div className="sx-inline" style={{ display: 'inline-block', marginLeft: '2.0rem' }}>
+          <span style={{ width: 'fit-content' }}>
+            <ClayToggle
+              label={Util.translate('input-status')}
+              onToggle={(val) => {
+                this.handleToggle('inputStatus');
+              }}
+              spritemap={this.spritemap}
+              symbol={{
+                off: 'times',
+                on: 'check'
+              }}
+              toggled={this.dataStructure.inputStatus}
+            />
+          </span>
+          <span style={{ width: 'fit-content' }}>
+            <ClayToggle
+              label={Util.translate('bullet-numbering')}
+              onToggle={(val) => {
+                this.handleToggle('bulletNo');
+              }}
+              spritemap={this.spritemap}
+              symbol={{
+                off: 'times',
+                on: 'check'
+              }}
+              toggled={this.dataStructure.bulletNo}
+            />
+          </span>
+        </div>
         <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
           <div
             style={{
@@ -1017,7 +1094,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
 									onClick={() => {}}
 									borderless
 									size="md"
-									disabled={this.workingParam.isRendered()}
+									disabled={this.workingParam.rendered}
 									spritemap={this.spritemap}
 								></ClayButtonWithIcon>*/}
                 <ClayButtonWithIcon
@@ -1029,7 +1106,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
                   }}
                   displayType="secondary"
                   size="sm"
-                  disabled={this.workingParam.isRendered()}
+                  disabled={this.workingParam.rendered}
                   spritemap={this.spritemap}
                 ></ClayButtonWithIcon>
                 {/*
@@ -1040,14 +1117,14 @@ class DataStructureBuilder extends SXBaseVisualizer {
 									onClick={() => {}}
 									borderless
 									size="md"
-									disabled={this.workingParam.isRendered()}
+									disabled={this.workingParam.rendered}
 									spritemap={this.spritemap}
 								></ClayButtonWithIcon> */}
               </div>
             </div>
             <div style={this.previewPanelStyles}>
               <SXDataStructurePreviewer
-                key={this.workingParam.key}
+                key={this.dataStructure.key}
                 namespace={this.namespace}
                 formId={this.componentId}
                 dataStructure={this.dataStructure}
@@ -1064,6 +1141,7 @@ class DataStructureBuilder extends SXBaseVisualizer {
                 displayType="primary"
                 onClick={this.handleSaveDataStructure}
                 title={Util.translate('save-data-structure')}
+                disabled={false} //this.dataStructure.hasError() || this.dataStructure.dirty == false}
               >
                 <Icon symbol="disk" spritemap={this.spritemap} style={{ marginRight: '5px' }} />
                 {Util.translate('save')}
@@ -1177,29 +1255,27 @@ class DataStructureBuilder extends SXBaseVisualizer {
               buttons={[
                 {
                   onClick: () => {
-                    const group = this.dataStructure.findParameter({
-                      paramCode: this.workingParam.parentCode,
-                      paramVersion: this.workingParam.parentVersion,
-                      descendant: true
-                    });
+                    const group = this.workingParam.parent;
 
-                    group.removeMember({
-                      paramCode: this.workingParam.paramCode,
-                      paramVersion: this.workingParam.paramVersion
+                    const removed = group.removeMember({
+                      parameter: this.workingParam
                     });
+                    console.log('DataStructure after remove parameter: ', group, removed);
 
-                    const workingParam =
-                      group.firstMember ??
-                      (group.paramCode == ParameterConstants.ROOT_GROUP
-                        ? ParameterUtil.createParameter({
+                    this.workingParam = group.firstMember;
+
+                    this.workingParam =
+                      this.workingParam ??
+                      (!group.parent
+                        ? createParameter({
                             namespace: this.namespace,
                             formId: this.previewerId,
                             paramType: ParamType.STRING
                           })
                         : group);
-                    workingParam.focused = workingParam.isRendered() ? true : false;
 
-                    this.workingParam = workingParam;
+                    this.workingParam.focused = this.workingParam.rendered;
+
                     this.setState({ confirmParamDeleteDlg: false });
                   },
                   label: Util.translate('ok'),

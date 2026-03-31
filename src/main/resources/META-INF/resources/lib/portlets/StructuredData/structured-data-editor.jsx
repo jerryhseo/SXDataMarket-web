@@ -226,26 +226,13 @@ class StructuredDataEditor extends SXBaseVisualizer {
       data: JSON.stringify(structuredData)
     });
 
-    console.log('StructuredDataEditor.listenerFieldValueChanged: ', parameter, cellIndex);
+    console.log('StructuredDataEditor.listenerFieldValueChanged: ', parameter, cellIndex, parameter.isJunction);
 
     if (parameter.isJunction) {
       const value = parameter.getValue(cellIndex);
-      const slaveCodes = parameter.getOptionSlaves(value);
+      //const slaveCodes = parameter.getOptionSlaves(value);
 
-      if (slaveCodes?.length > 0) {
-        console.log('StructuredDataEditor.listenerFieldValueChanged value, slaveCodes: ', value, slaveCodes);
-        const parentGroup = this.dataStructure.findParameter({
-          paramCode: parameter.parent?.code,
-          paramVersion: parameter.parent?.version
-        });
-        console.log('StructuredDataEditor.listenerFieldValueChanged parentGroup: ', parentGroup);
-
-        this.dataStructure.activateSlaveMembers({
-          group: parentGroup,
-          activeParamCodes: slaveCodes,
-          junction: parameter
-        });
-
+      if (parameter.parent.activateSlaveMembers(parameter, value)) {
         this.forceUpdate();
       }
     }

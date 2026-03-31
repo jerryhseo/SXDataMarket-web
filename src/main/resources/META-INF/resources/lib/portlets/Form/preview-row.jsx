@@ -21,13 +21,12 @@ class SXPreviewRow extends SXBaseParameterComponent {
   }
 
   listenerRefreshPreview = (event) => {
-    const { targetPortlet, targetFormId, paramCode, paramVersion = '1.0.0' } = event.dataPacket;
+    const { targetPortlet, targetFormId, parameter } = event.dataPacket;
 
     if (
       targetPortlet !== this.namespace ||
       targetFormId !== this.formId ||
-      paramCode !== this.parameter.paramCode ||
-      paramVersion !== this.parameter.paramVersion
+      parameter !== this.parameter
     ) {
       //console.log("[SXPreviewRow] listenerRefreshPreview Rejected: ", event.dataPacket);
       return;
@@ -40,9 +39,11 @@ class SXPreviewRow extends SXBaseParameterComponent {
   componentDidMount() {
     Event.on(Event.SX_REFRESH_PREVIEW, this.listenerRefreshPreview);
 
+    /*
     if (this.parameter.focused && this.focusRef.current) {
       this.focusRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+      */
   }
 
   componentWillUnmount() {

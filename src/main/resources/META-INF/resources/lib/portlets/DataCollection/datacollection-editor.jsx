@@ -16,14 +16,14 @@ import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
 import SXBaseVisualizer from '../../stationx/visualizer';
 import { SXLabeledText } from '../Form/form';
 import ParameterConstants from '../Parameter/parameter-constants';
-import { ParameterUtil } from '../Parameter/parameters';
 import { Text } from '@clayui/core';
+import { createParameter } from '../DataStructure/datastructure-builder';
 
 class DataCollectionEditor extends SXBaseVisualizer {
   constructor(props) {
     super(props);
 
-    //console.log("DataCollectionEditor props: ", props);
+    console.log('DataCollectionEditor props: ', props);
 
     this.state = {
       dataCollectionId: Number(this.params.dataCollectionId ?? 0),
@@ -36,7 +36,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
       loadingStatus: LoadingStatus.PENDING
     };
 
-    this.dataCollectionCode = ParameterUtil.createParameter({
+    this.dataCollectionCode = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: ParamType.STRING,
@@ -73,7 +73,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
       }
     });
 
-    this.dataCollectionVersion = ParameterUtil.createParameter({
+    this.dataCollectionVersion = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: ParamType.STRING,
@@ -101,7 +101,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
       }
     });
 
-    this.displayName = ParameterUtil.createParameter({
+    this.displayName = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: ParamType.STRING,
@@ -119,12 +119,12 @@ class DataCollectionEditor extends SXBaseVisualizer {
           },
           minLength: {
             value: 3,
-            message: Util.getTranslationObject(this.languageId, 'shorter-than-min-length', '3'),
+            message: Util.getTranslationObject(this.languageId, 'shorter-than-min-length', 3),
             errorClass: ErrorClass.ERROR
           },
           maxLength: {
             value: 64,
-            message: Util.getTranslationObject(this.languageId, 'longer-than-max-length', '64'),
+            message: Util.getTranslationObject(this.languageId, 'longer-than-max-length', 64),
             errorClass: ErrorClass.ERROR
           }
         },
@@ -132,7 +132,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
       }
     });
 
-    this.description = ParameterUtil.createParameter({
+    this.description = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: ParamType.STRING,
@@ -146,7 +146,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
       }
     });
 
-    this.groupParameter = ParameterUtil.createParameter({
+    this.groupParameter = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: ParamType.GROUP,
@@ -160,7 +160,7 @@ class DataCollectionEditor extends SXBaseVisualizer {
       }
     });
 
-    this.dataSets = ParameterUtil.createParameter({
+    this.dataSets = createParameter({
       namespace: this.namespace,
       formId: this.formId,
       paramType: 'DualList',
@@ -524,6 +524,16 @@ class DataCollectionEditor extends SXBaseVisualizer {
   };
 
   render() {
+    /*
+    console.log(
+      'DataCollectionEditor render: ',
+      this.state,
+      this.dataCollectionCode,
+      this.dataCollectionVersion,
+      this.displayName,
+      this.description,
+      this.dataSets
+    ); */
     return (
       <>
         {this.titleBar && this.state.dataCollectionId > 0 && (

@@ -19,7 +19,7 @@ import {
 import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
 import SXBaseVisualizer from '../../stationx/visualizer';
 import ParameterConstants from '../Parameter/parameter-constants';
-import { ParameterUtil } from '../Parameter/parameters';
+import { createParameter } from '../DataStructure/datastructure-builder';
 
 export const DataTypeInfo = ({ title, abstract, items, colsPerRow = 1 }) => {
   let sectionContent;
@@ -90,7 +90,7 @@ class DataTypeEditor extends SXBaseVisualizer {
     this.componentId = this.namespace + 'DataTypeEditor';
 
     /* Definitions of the form fields */
-    this.dataTypeCode = ParameterUtil.createParameter({
+    this.dataTypeCode = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -129,7 +129,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
     const versionPlaceholder = {};
     versionPlaceholder[this.languageId] = '1.0.0';
-    this.dataTypeVersion = ParameterUtil.createParameter({
+    this.dataTypeVersion = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -159,7 +159,7 @@ class DataTypeEditor extends SXBaseVisualizer {
 
     const versionExt = {};
     versionExt[this.languageId] = 'ext';
-    this.extension = ParameterUtil.createParameter({
+    this.extension = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -196,7 +196,7 @@ class DataTypeEditor extends SXBaseVisualizer {
       }
     });
 
-    this.displayName = ParameterUtil.createParameter({
+    this.displayName = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -226,7 +226,7 @@ class DataTypeEditor extends SXBaseVisualizer {
       }
     });
 
-    this.description = ParameterUtil.createParameter({
+    this.description = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -240,7 +240,7 @@ class DataTypeEditor extends SXBaseVisualizer {
       }
     });
 
-    this.dataStructure = ParameterUtil.createParameter({
+    this.dataStructure = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.SELECT,
@@ -255,7 +255,7 @@ class DataTypeEditor extends SXBaseVisualizer {
       }
     });
 
-    this.groupParameter = ParameterUtil.createParameter({
+    this.groupParameter = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.GROUP,

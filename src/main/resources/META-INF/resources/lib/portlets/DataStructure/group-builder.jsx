@@ -7,16 +7,16 @@ import { SXLabel } from '../Form/form';
 import Form, { ClaySelectWithOption } from '@clayui/form';
 import { Table, Head, Body, Cell, Row } from '@clayui/core';
 import Icon from '@clayui/icon';
-import { ParameterUtil } from '../Parameter/parameters';
 import SXBasePropertiesPanelComponent from './base-properties-panel-component';
 import SXActionDropdown from '../../stationx/dropdown';
+import { createParameter } from './datastructure-builder';
 
 class SXGroupBuilder extends SXBasePropertiesPanelComponent {
   constructor(props) {
     super(props);
 
     this.groupParam = props.groupParam;
-    //console.log("[SXGroupBuilder] constructor: ", this.dataStructure);
+    console.log('[SXGroupBuilder] constructor: ', props);
 
     this.availableParamTypes = props.availableParamTypes;
     this.memberDisplayType = props.memberDisplayType;
@@ -41,7 +41,7 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
       }))
     ];
 
-    this.fieldMemberCode = ParameterUtil.createParameter({
+    this.fieldMemberCode = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -75,7 +75,7 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
         value: this.state.selectedMember ? this.state.selectedMember.paramCode : ''
       }
     });
-    this.fieldMemberDisplayName = ParameterUtil.createParameter({
+    this.fieldMemberDisplayName = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
@@ -107,51 +107,41 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
     });
   }
 
-  listenerFieldValueChanged = (e) => {
-    const dataPacket = e.dataPacket;
-    if (dataPacket.targetPortlet !== this.namespace) {
+  listenerFieldValueChanged = (event) => {
+    const { targetPortlet, targetFormId, parameter } = event.dataPacket;
+    if (targetPortlet !== this.namespace || targetFormId !== this.componentId) {
       return;
-    } else {
-      if (dataPacket.targetFormId == this.componentId) {
-        /*
-				console.log(
-					"SXGroupBuilder SX_FIELD_VALUE_CHANGED: ",
-					dataPacket,
-					this.state.selectedMember,
-					this.fieldMemberCode,
-					this.fieldMemberDisplayName
-				);
-				*/
+    }
 
-        if (dataPacket.parameter.hasError()) {
-          this.dataStructure.setError(dataPacket.parameter.errorClass, dataPacket.parameter.errorMessage);
+    console.log('SXGroupBuilder SX_FIELD_VALUE_CHANGED: ', parameter, this.state.selectedMember, this.groupParam);
+
+    if (parameter.hasError()) {
+      this.dataStructure.setError(parameter.errorClass, parameter.errorMessage);
+      return;
+    }
+
+    switch (parameter.paramCode) {
+      case 'memberCode': {
+        let duplicated = false;
+
+        this.state.selectedMember.paramCode = this.fieldMemberCode.getValue();
+        duplicated = this.dataStructure.checkDuplicateParam(this.state.selectedMember);
+
+        if (duplicated) {
+          this.fieldMemberCode.setError(ErrorClass.ERROR, Util.translate('parameter-code-must-be-unique'));
+          this.fieldMemberCode.fireRefresh();
+
+          this.dataStructure.setError(ErrorClass.ERROR, Util.translate('parameter-code-must-be-unique'));
+
           return;
         }
-
-        switch (dataPacket.paramCode) {
-          case 'memberCode': {
-            let duplicated = false;
-
-            this.state.selectedMember.paramCode = this.fieldMemberCode.getValue();
-            duplicated = this.dataStructure.checkDuplicateParam(this.state.selectedMember);
-
-            if (duplicated) {
-              this.fieldMemberCode.setError(ErrorClass.ERROR, Util.translate('parameter-code-must-be-unique'));
-              this.fieldMemberCode.fireRefresh();
-
-              this.dataStructure.setError(ErrorClass.ERROR, Util.translate('parameter-code-must-be-unique'));
-
-              return;
-            }
-            this.state.selectedMember.refreshKey();
-            break;
-          }
-          case 'memberDisplayName': {
-            this.state.selectedMember.displayName = this.fieldMemberDisplayName.getValue();
-            this.state.selectedMember.refreshKey();
-            break;
-          }
-        }
+        this.state.selectedMember.refreshKey();
+        break;
+      }
+      case 'memberDisplayName': {
+        this.state.selectedMember.displayName = this.fieldMemberDisplayName.getValue();
+        this.state.selectedMember.refreshKey();
+        break;
       }
     }
 
@@ -164,8 +154,8 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
       return;
     }
 
-    if (this.groupParam.isRendered()) {
-      this.groupParam.fireRefreshPreview();
+    if (this.groupParam.rendered) {
+      this.groupParam.fireRefresh();
     }
 
     this.forceUpdate();
@@ -311,7 +301,7 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
     }
 
     //console.log("[SXGroupBuilder handleMemberTypeSelect] ", this.namespace);
-    const member = ParameterUtil.createParameter({
+    const member = createParameter({
       namespace: this.namespace,
       formId: this.groupParam.componentId,
       paramType: memberType,
@@ -324,13 +314,14 @@ class SXGroupBuilder extends SXBasePropertiesPanelComponent {
     this.groupParam.addMember(member);
     member.displayName = Util.getTranslationObject(
       this.languageId,
-      'member_' + member.order.toString().padStart(2, '0')
+      this.groupParam.label + '.' + memberType + '_' + member.order.toString().padStart(2, '0')
     );
 
     this.setMemberPropertyFields(member);
 
-    this.groupParam.fireRefreshPreview();
+    this.groupParam.fireRefresh();
 
+    console.log('handleMemberTypeSelect selected: ', this.groupParam.members, member);
     this.setState({ selectedMember: member });
   }
 

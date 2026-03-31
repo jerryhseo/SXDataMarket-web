@@ -4,11 +4,12 @@ import { Util } from '../../../stationx/util';
 import DataStructure from '../data-structure';
 import SXBasePropertiesPanelComponent from '../base-properties-panel-component.jsx';
 import ParameterConstants from '../../Parameter/parameter-constants.jsx';
-import { BooleanParameter, ParameterUtil } from '../../Parameter/parameters.jsx';
 import Button from '@clayui/button';
 import { SXModalDialog } from '../../../stationx/modal.jsx';
 import { ClayCheckbox, ClayToggle } from '@clayui/form';
 import { Text } from '@clayui/core';
+import BooleanParameter from '../../Parameter/boolean-parameter.jsx';
+import { createParameter } from '../datastructure-builder.jsx';
 
 class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
   constructor(props) {
@@ -24,7 +25,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
     };
 
     this.fields = {
-      viewType: ParameterUtil.createParameter({
+      viewType: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.SELECT,
@@ -61,7 +62,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
           }
         }
       }),
-      nullable: ParameterUtil.createParameter({
+      nullable: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.BOOLEAN,
@@ -73,7 +74,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
           value: this.workingParam.nullable ?? false
         }
       }),
-      placeholder: ParameterUtil.createParameter({
+      placeholder: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.STRING,
@@ -97,7 +98,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
           value: this.workingParam.placeholder ?? {}
         }
       }),
-      trueLabel: ParameterUtil.createParameter({
+      trueLabel: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.STRING,
@@ -111,7 +112,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
         }
       }),
 
-      falseLabel: ParameterUtil.createParameter({
+      falseLabel: createParameter({
         namespace: this.namespace,
         formId: this.componentId,
         paramType: ParamType.STRING,
@@ -184,7 +185,7 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
       return;
     }
 
-    if (this.workingParam.isRendered()) {
+    if (this.workingParam.rendered) {
       if (this.workingParam.displayType == ParameterConstants.DisplayTypes.GRID_CELL) {
         this.workingParam.fireRefreshParent(true);
 
@@ -243,26 +244,16 @@ class SXBooleanTypeOptionForm extends SXBasePropertiesPanelComponent {
   renderSlavesSelectorBody = () => {
     // Slaved param codes of the options of the working param to be disabled
     // except for the currently selected option.
-    const paramSlavedCodes = this.workingParam.getAllOptionSlaves({
-      exceptOption: this.state.selectedOption
-    });
+    const paramSlavedCodes = this.workingParam.getAllOptionSlavesExcept(this.state.selectedOption);
 
     // Slaved param codes of the currently selected option to check checkbox
     const optionSlavedCodes = this.state.selectedOption.slaves ?? [];
 
-    const parentGroup = this.dataStructure.getParentGroup(this.workingParam);
-
     // All sibling codes to be displayed as checkbox
-    const siblingParams = this.dataStructure.getSiblingParameters({
-      group: parentGroup,
-      parameter: this.workingParam
-    });
+    const siblingParams = this.dataStructure.getSiblingParameters(this.workingParam);
 
     //Slaved sibling codes to be disabled
-    const slavedSiblingCodes = this.dataStructure.getSlavedSiblingCodes({
-      group: parentGroup,
-      parameter: this.workingParam
-    });
+    const slavedSiblingCodes = this.dataStructure.getSlavedSiblingCodes(this.workingParam);
 
     const rows = Util.convertArrayToRows(siblingParams, 2);
 

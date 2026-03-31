@@ -23,9 +23,7 @@ class SXGroupSelector extends React.Component {
     this.options = this.convertGroupsToOptions();
 
     this.state = {
-      selected: this.getOption(
-        this.workingParam.parentCode ? this.workingParam.parentCode : this.dataStructure.paramCode
-      ),
+      selected: this.getOption(this.workingParam.parent.paramCode),
       openModal: this.open
     };
   }
@@ -55,12 +53,7 @@ class SXGroupSelector extends React.Component {
   }
 
   handleGroupSelected(option) {
-    const srcGroup =
-      this.dataStructure.findParameter({
-        paramCode: this.workingParam.parentCode,
-        paramVersion: this.workingParam.parentVersion,
-        descendant: true
-      }) ?? this.dataStructure;
+    const srcGroup = this.workingParam.parent;
     const targetGroup =
       this.dataStructure.findParameter({
         paramCode: option.paramCode,
@@ -68,13 +61,13 @@ class SXGroupSelector extends React.Component {
         descendant: true
       }) ?? this.dataStructure;
 
-    console.log('handleGroupSelected: ', this.workingParam, srcGroup, targetGroup);
     this.dataStructure.moveParameterGroup(this.workingParam, srcGroup, targetGroup);
 
     this.setState({ selected: option });
   }
 
   render() {
+    //console.log('SXGroupSelector render: ', this.state.selected, this.options);
     return (
       <>
         {this.state.openModal && (
@@ -84,24 +77,19 @@ class SXGroupSelector extends React.Component {
               <div style={{ width: '100%' }}>
                 {Util.convertArrayToRows(this.options, 2).map((row, index) => (
                   <div key={index} style={{ width: '100%', display: 'inline-flex', gap: '1.5rem' }}>
-                    {row.map((option) => {
-                      console.log('option: ', option);
-                      return (
-                        <ClayRadio
-                          key={Util.randomKey()}
-                          name={this.namespace + 'group'}
-                          label={option.label}
-                          value={option.paramCode}
-                          defaultChecked={
-                            Util.isNotEmpty(this.state.selected) && option.paramCode == this.state.selected.paramCode
-                          }
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            this.handleGroupSelected(option);
-                          }}
-                        />
-                      );
-                    })}
+                    {row.map((option) => (
+                      <ClayRadio
+                        key={Util.randomKey()}
+                        name={this.namespace + 'group'}
+                        label={option.label}
+                        value={option.paramCode}
+                        checked={this.state.selected == option}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          this.handleGroupSelected(option);
+                        }}
+                      />
+                    ))}
                   </div>
                 ))}
               </div>

@@ -7,8 +7,8 @@ import Autocomplete from '@clayui/autocomplete';
 import { Util } from '../../stationx/util';
 import { SXModalDialog, SXModalUtil } from '../../stationx/modal';
 import SXBasePropertiesPanelComponent from './base-properties-panel-component';
-import { ParameterUtil } from '../Parameter/parameters';
 import { Icon, Text, TreeView } from '@clayui/core';
+import { createParameter } from './datastructure-builder';
 
 class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
   constructor(props) {
@@ -28,7 +28,7 @@ class SXDataStructurePreviewer extends SXBasePropertiesPanelComponent {
       addCommentModal: false
     };
 
-    this.commentField = ParameterUtil.createParameter({
+    this.commentField = createParameter({
       namespace: this.namespace,
       formId: this.componentId,
       paramType: ParamType.STRING,
